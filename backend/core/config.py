@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     # ===== database =====
     DATABASE_URL: str = "postgresql://postgres:yRuedDjiwzhbrBKDbIDCtCxTMzzRDQTL@yamabiko.proxy.rlwy.net:20407/railway"
 
+    # ===== security =====
+    JWT_SECRET_KEY: str = "dev-secret-key-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+
     # ===== storage =====
     DATA_ROOT: Path = Path("data")
 

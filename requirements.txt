@@ -17,4 +17,6 @@ psycopg2-binary>=2.9
 
 # ---- security ----
 bcrypt>=4.0
+python-jose[cryptography]>=3.3
+python-multipart>=0.0.6
 

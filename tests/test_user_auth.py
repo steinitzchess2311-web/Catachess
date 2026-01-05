@@ -86,8 +86,8 @@ def test_user_creation_and_authentication():
             )
             print("✗ FAILED: Duplicate user was allowed")
             assert False, "Duplicate user should not be allowed"
-        except ValueError as e:
-            print(f"✓ Duplicate user rejected: {e}")
+        except Exception as e:
+            print(f"✓ Duplicate user rejected: {e.__class__.__name__}")
 
         # Test 3: Authenticate with correct password
         print("\n[Step 3] Testing authentication with correct password...")

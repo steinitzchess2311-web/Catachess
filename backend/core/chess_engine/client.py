@@ -3,6 +3,8 @@ import requests
 from core.config import settings
 from core.chess_engine.schemas import EngineResult
 from core.chess_engine.exceptions import EngineError
+from core.log.log_chess_engine import logger
+from core.errors import ChessEngineError, ChessEngineTimeoutError
 
 
 class EngineClient:
@@ -13,6 +15,7 @@ class EngineClient:
     ):
         self.base_url = (base_url or settings.ENGINE_URL).rstrip("/")
         self.timeout = timeout or settings.ENGINE_TIMEOUT
+        logger.info(f"EngineClient initialized with base_url={self.base_url}, timeout={self.timeout}s")
 
     def analyze(
         self,
@@ -20,6 +23,7 @@ class EngineClient:
         depth: int = 15,
         multipv: int = 3,
     ) -> EngineResult:
+        logger.info(f"Analyzing position: fen={fen[:50]}..., depth={depth}, multipv={multipv}")
         try:
             resp = requests.get(
                 f"{self.base_url}/analyze/stream",
@@ -81,9 +85,18 @@ class EngineClient:
             # Build result from collected multipv data
             if multipv_data:
                 lines = [EngineLine(**data) for data in sorted(multipv_data.values(), key=lambda x: x['multipv'])]
-                return EngineResult(lines=lines)
+                result = EngineResult(lines=lines)
+                logger.info(f"Analysis complete: {len(lines)} lines received")
+                return result
             else:
-                raise EngineError("No analysis data received from stream")
+                logger.error("No analysis data received from stream")
+                raise ChessEngineError("No analysis data received from stream")
+        except requests.exceptions.Timeout:
+            logger.error(f"Engine timeout after {self.timeout}s")
+            raise ChessEngineTimeoutError(self.timeout)
+        except ChessEngineError:
+            raise
         except Exception as e:
-            raise EngineError(f"Engine call failed: {e}")
+            logger.error(f"Engine call failed: {e}")
+            raise ChessEngineError(f"Engine call failed: {str(e)}")
 

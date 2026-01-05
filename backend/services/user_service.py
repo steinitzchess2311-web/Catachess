@@ -14,6 +14,8 @@ Does NOT handle:
 from sqlalchemy.orm import Session
 from models.user import User
 from core.security.password import hash_password, verify_password
+from core.log.log_service import logger
+from core.errors import UserAlreadyExistsError, InvalidCredentialsError, UserInactiveError
 
 
 def get_user_by_identifier(db: Session, identifier: str) -> User | None:
@@ -27,7 +29,13 @@ def get_user_by_identifier(db: Session, identifier: str) -> User | None:
     Returns:
         User object if found, None otherwise
     """
-    return db.query(User).filter(User.identifier == identifier).first()
+    logger.debug(f"Looking up user by identifier: {identifier}")
+    user = db.query(User).filter(User.identifier == identifier).first()
+    if user:
+        logger.debug(f"User found: {user.username} (role={user.role})")
+    else:
+        logger.debug(f"User not found: {identifier}")
+    return user
 
 
 def create_user(
@@ -53,12 +61,15 @@ def create_user(
         Created User object
 
     Raises:
-        ValueError: If user with identifier already exists
+        UserAlreadyExistsError: If user with identifier already exists
     """
+    logger.info(f"Creating user: identifier={identifier}, type={identifier_type}, role={role}")
+
     # Check if user exists
     existing_user = get_user_by_identifier(db, identifier)
     if existing_user:
-        raise ValueError(f"User with identifier {identifier} already exists")
+        logger.warning(f"User creation failed: identifier {identifier} already exists")
+        raise UserAlreadyExistsError(identifier)
 
     # Hash password
     hashed_password = hash_password(password)
@@ -76,6 +87,7 @@ def create_user(
     db.commit()
     db.refresh(user)
 
+    logger.info(f"User created successfully: {user.username} (id={user.id}, role={user.role})")
     return user
 
 
@@ -91,14 +103,20 @@ def authenticate_user(db: Session, identifier: str, password: str) -> User | Non
     Returns:
         User object if authentication successful, None otherwise
     """
+    logger.info(f"Authentication attempt for: {identifier}")
+
     user = get_user_by_identifier(db, identifier)
     if not user:
+        logger.warning(f"Authentication failed: user not found ({identifier})")
         return None
 
     if not verify_password(password, user.hashed_password):
+        logger.warning(f"Authentication failed: invalid password for {identifier}")
         return None
 
     if not user.is_active:
+        logger.warning(f"Authentication failed: user inactive ({identifier})")
         return None
 
+    logger.info(f"Authentication successful: {user.username} (role={user.role})")
     return user

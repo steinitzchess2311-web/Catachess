@@ -12,6 +12,12 @@ class Settings(BaseSettings):
     ENGINE_URL: str = "http://192.168.40.33:8001"
     ENGINE_TIMEOUT: int = 60
 
+    # ===== multi-spot engine =====
+    ENABLE_MULTI_SPOT: bool = False
+    ENGINE_SPOTS: str = ""  # JSON array of spot configs
+    SPOT_REQUEST_TIMEOUT: int = 30
+    SPOT_MAX_RETRIES: int = 2
+
     # ===== database =====
     DATABASE_URL: str = "postgresql://postgres:yRuedDjiwzhbrBKDbIDCtCxTMzzRDQTL@yamabiko.proxy.rlwy.net:20407/railway"
 

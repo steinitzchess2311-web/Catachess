@@ -1,0 +1,276 @@
+{
+  "$schema": "Sample WebSocket Messages",
+  "description": "Real message examples for testing and development. Use these for mocks and UI development without connecting to server.",
+
+  "client_to_server": {
+    "join": {
+      "type": "join",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 1,
+      "payload": {},
+      "timestamp": 1704672000
+    },
+
+    "reconnect": {
+      "type": "reconnect",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 1,
+      "payload": {},
+      "timestamp": 1704672100
+    },
+
+    "move": {
+      "type": "move",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 2,
+      "payload": {
+        "move": "e2e4"
+      },
+      "timestamp": 1704672200
+    },
+
+    "resign": {
+      "type": "resign",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 3,
+      "payload": {},
+      "timestamp": 1704672300
+    },
+
+    "draw_offer": {
+      "type": "draw_offer",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 4,
+      "payload": {},
+      "timestamp": 1704672400
+    },
+
+    "draw_accept": {
+      "type": "draw_accept",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 5,
+      "payload": {},
+      "timestamp": 1704672500
+    },
+
+    "draw_decline": {
+      "type": "draw_decline",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 6,
+      "payload": {},
+      "timestamp": 1704672600
+    },
+
+    "sync": {
+      "type": "sync",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 7,
+      "payload": {},
+      "timestamp": 1704672700
+    }
+  },
+
+  "server_to_client": {
+    "game_state_initial": {
+      "type": "game_state",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 1,
+      "payload": {
+        "game_id": "game_abc123",
+        "state": "waiting",
+        "created_at": 1704672000,
+        "players": {
+          "player_xyz789": {
+            "color": "white",
+            "player_id": "player_xyz789"
+          }
+        },
+        "position": {
+          "turn": "white",
+          "move_number": 1,
+          "move_history": [],
+          "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          "result": "in_progress"
+        }
+      },
+      "timestamp": 1704672000
+    },
+
+    "game_state_active": {
+      "type": "game_state",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 2,
+      "payload": {
+        "game_id": "game_abc123",
+        "state": "active",
+        "created_at": 1704672000,
+        "players": {
+          "player_xyz789": {
+            "color": "white",
+            "player_id": "player_xyz789"
+          },
+          "player_def456": {
+            "color": "black",
+            "player_id": "player_def456"
+          }
+        },
+        "position": {
+          "turn": "black",
+          "move_number": 1,
+          "move_history": ["e2e4"],
+          "fen": "rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq e3 0 1",
+          "result": "in_progress"
+        },
+        "clock": {
+          "white": 600,
+          "black": 600
+        }
+      },
+      "timestamp": 1704672200
+    },
+
+    "game_state_mid_game": {
+      "type": "game_state",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 10,
+      "payload": {
+        "game_id": "game_abc123",
+        "state": "active",
+        "created_at": 1704672000,
+        "players": {
+          "player_xyz789": {
+            "color": "white",
+            "player_id": "player_xyz789"
+          },
+          "player_def456": {
+            "color": "black",
+            "player_id": "player_def456"
+          }
+        },
+        "position": {
+          "turn": "white",
+          "move_number": 5,
+          "move_history": ["e2e4", "e7e5", "Ng1f3", "Nb8c6", "Bf1c4", "Ng8f6", "d2d3", "Bf8c5"],
+          "fen": "r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/3P1N2/PPP2PPP/RNBQK2R w KQkq - 4 5",
+          "result": "in_progress"
+        },
+        "clock": {
+          "white": 540,
+          "black": 535
+        }
+      },
+      "timestamp": 1704672800
+    },
+
+    "game_state_ended": {
+      "type": "game_state",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 50,
+      "payload": {
+        "game_id": "game_abc123",
+        "state": "ended",
+        "created_at": 1704672000,
+        "players": {
+          "player_xyz789": {
+            "color": "white",
+            "player_id": "player_xyz789"
+          },
+          "player_def456": {
+            "color": "black",
+            "player_id": "player_def456"
+          }
+        },
+        "position": {
+          "turn": "black",
+          "move_number": 25,
+          "move_history": ["e2e4", "e7e5", "Ng1f3", "Nb8c6"],
+          "fen": "r1bqkb1r/pppp1Qpp/2n2n2/4p3/2B1P3/8/PPPP1PPP/RNB1K2R b KQkq - 0 4",
+          "result": "white_wins"
+        },
+        "clock": {
+          "white": 480,
+          "black": 0
+        },
+        "ended_at": 1704673500,
+        "end_reason": "checkmate"
+      },
+      "timestamp": 1704673500
+    },
+
+    "ack": {
+      "type": "ack",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 2,
+      "payload": {
+        "ack_seq": 2,
+        "status": "ok"
+      },
+      "timestamp": 1704672200
+    },
+
+    "error_invalid_move": {
+      "type": "error",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 3,
+      "payload": {
+        "code": "INVALID_MOVE",
+        "message": "Move e2e5 is not legal in current position",
+        "details": {
+          "attempted_move": "e2e5",
+          "legal_moves": ["e2e4", "e2e3", "d2d4", "d2d3"]
+        }
+      },
+      "timestamp": 1704672250
+    },
+
+    "error_not_your_turn": {
+      "type": "error",
+      "game_id": "game_abc123",
+      "player_id": "player_xyz789",
+      "seq": 4,
+      "payload": {
+        "code": "NOT_YOUR_TURN",
+        "message": "It's not your turn to move",
+        "details": {
+          "current_turn": "black",
+          "your_color": "white"
+        }
+      },
+      "timestamp": 1704672300
+    },
+
+    "error_game_not_found": {
+      "type": "error",
+      "game_id": "game_nonexistent",
+      "player_id": "player_xyz789",
+      "seq": 1,
+      "payload": {
+        "code": "GAME_NOT_FOUND",
+        "message": "Game with id 'game_nonexistent' does not exist"
+      },
+      "timestamp": 1704672350
+    }
+  },
+
+  "usage_notes": [
+    "These are sample messages for frontend development and testing",
+    "Use these to build UI components without connecting to the server",
+    "Import specific messages in your tests or mock implementations",
+    "Message structure must match types.ts definitions",
+    "Timestamps are Unix epoch in seconds"
+  ]
+}

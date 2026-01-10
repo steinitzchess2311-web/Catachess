@@ -1,0 +1,21 @@
+{
+  "spots": [
+    {
+      "id": "cn-shanghai",
+      "url": "http://192.168.40.33:8001",
+      "region": "cn-east",
+      "priority": 100,
+      "enabled": true
+    },
+    {
+      "id": "cn-local",
+      "url": "http://192.168.40.41:5000",
+      "region": "cn-local",
+      "priority": 90,
+      "enabled": true
+    }
+  ],
+  "health_check_interval": 30,
+  "request_timeout": 30,
+  "failover_threshold": 3
+}

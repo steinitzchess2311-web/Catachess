@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Tests</title>
+    <style>
+        body {
+            font-family: monospace;
+            background-color: #1a1a1a;
+            color: #00ff00;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #FFD700;
+        }
+        .test-section {
+            background-color: #0a0a0a;
+            border: 2px solid #4a4a4a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-output {
+            background-color: #000;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 CataChess Frontend Tests</h1>
+
+    <div class="test-section">
+        <h2>Test Controls</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="clearOutput()">Clear Output</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Output</h2>
+        <div id="test-output" class="test-output">Click "Run All Tests" to start...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Sample Data Preview</h2>
+        <div class="test-output">
+            <strong>Available Sample Messages:</strong>
+            <ul>
+                <li>game_state_initial - Waiting for second player</li>
+                <li>game_state_active - Game in progress (1 move)</li>
+                <li>game_state_mid_game - Mid game (5 moves)</li>
+                <li>game_state_ended - Game finished (checkmate)</li>
+                <li>error_invalid_move - Invalid move error</li>
+                <li>error_not_your_turn - Turn error</li>
+                <li>error_game_not_found - Game not found error</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module">
+        import { runTypeTests } from './test_types.js';
+        import { runWebSocketTests } from './test_ws_mock.js';
+
+        let originalConsoleLog = console.log;
+        let originalConsoleError = console.error;
+        let originalConsoleAssert = console.assert;
+
+        function captureConsole() {
+            const output = document.getElementById('test-output');
+
+            console.log = (...args) => {
+                const message = args.join(' ');
+                output.textContent += message + '\n';
+                originalConsoleLog(...args);
+            };
+
+            console.error = (...args) => {
+                const message = args.join(' ');
+                output.innerHTML += `<span class="error">${message}</span>\n`;
+                originalConsoleError(...args);
+            };
+
+            console.assert = (condition, ...args) => {
+                if (!condition) {
+                    const message = args.join(' ');
+                    output.innerHTML += `<span class="error">❌ Assertion failed: ${message}</span>\n`;
+                }
+                originalConsoleAssert(condition, ...args);
+            };
+        }
+
+        function restoreConsole() {
+            console.log = originalConsoleLog;
+            console.error = originalConsoleError;
+            console.assert = originalConsoleAssert;
+        }
+
+        window.runAllTests = async function() {
+            const output = document.getElementById('test-output');
+            output.textContent = '';
+
+            captureConsole();
+
+            try {
+                console.log('=' .repeat(60));
+                console.log('🚀 Starting Frontend Test Suite');
+                console.log('=' .repeat(60) + '\n');
+
+                const typeTestResult = runTypeTests();
+                console.log('\n' + '-'.repeat(60) + '\n');
+
+                const wsTestResult = runWebSocketTests();
+                console.log('\n' + '='.repeat(60));
+
+                if (typeTestResult && wsTestResult) {
+                    console.log('\n🎉 ALL TESTS PASSED! 🎉\n');
+                } else {
+                    console.error('\n❌ SOME TESTS FAILED ❌\n');
+                }
+
+                console.log('='.repeat(60));
+            } catch (error) {
+                console.error('Fatal error running tests:', error);
+            } finally {
+                restoreConsole();
+            }
+        };
+
+        window.clearOutput = function() {
+            document.getElementById('test-output').textContent = 'Output cleared. Click "Run All Tests" to run again.';
+        };
+
+        // Auto-run tests on load
+        setTimeout(() => {
+            console.log('Auto-running tests in 1 second...');
+            runAllTests();
+        }, 1000);
+    </script>
+</body>
+</html>

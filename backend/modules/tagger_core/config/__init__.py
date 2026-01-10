@@ -1,0 +1,99 @@
+"""
+Configuration constants for the tagger system.
+"""
+from pathlib import Path
+
+# Engine configuration
+DEFAULT_STOCKFISH_PATH = "/usr/games/stockfish"
+DEFAULT_DEPTH = 14
+DEFAULT_MULTIPV = 6
+
+# Evaluation thresholds (centipawns)
+CP_THRESHOLD = 100
+SMALL_DROP_CP = 30
+
+# Style component keys (5 dimensions)
+STYLE_COMPONENT_KEYS = (
+    "mobility",
+    "center_control",
+    "king_safety",
+    "structure",
+    "tactics",
+)
+
+# Tolerances and thresholds
+MOBILITY_TOLERANCE = 0.35
+CENTER_TOLERANCE = 0.25
+KING_SAFETY_TOLERANCE = 0.25
+KING_SAFETY_GAIN = 0.3
+MOBILITY_RISK_TRADEOFF = 1.2
+STRUCTURE_THRESHOLD = 0.2
+TACTICAL_THRESHOLD = 0.15
+TACTICAL_DOMINANCE_THRESHOLD = 300  # cp
+TACTICAL_SLOPE_THRESHOLD = 50       # cp
+
+# Control over Dynamics thresholds
+CONTROL_EVAL_DROP = 25       # cp
+CONTROL_VOLATILITY_DROP_CP = 36  # cp
+CONTROL_TENSION_DELTA = -1.0
+CONTROL_TENSION_DELTA_ENDGAME = -2.0
+CONTROL_OPP_MOBILITY_DROP = 3
+CONTROL_COOLDOWN_PLIES = 3
+CONTROL_TACTICAL_WEIGHT_CEILING = 0.55
+CONTROL_PHASE_WEIGHTS = {
+    "opening": 1.0,
+    "middlegame": 1.0,
+    "endgame": 1.2,
+}
+
+# Other thresholds
+RISK_SMALL_LOSS = 50         # cp
+INITIATIVE_BOOST = 50        # cp
+TACTICAL_GAP_FIRST_CHOICE = 80   # cp
+TACTICAL_MISS_LOSS = 150         # cp
+
+# Tension detection
+TENSION_EVAL_MIN = -0.9
+TENSION_EVAL_MAX = 0.1
+TENSION_SYMMETRY_TOL = 0.23
+NEUTRAL_TENSION_BAND = 0.12
+
+# Configuration file path
+CONFIG_DIR = Path(__file__).parent
+THRESHOLDS_FILE = CONFIG_DIR / "thresholds.yml"
+
+__all__ = [
+    "DEFAULT_STOCKFISH_PATH",
+    "DEFAULT_DEPTH",
+    "DEFAULT_MULTIPV",
+    "CP_THRESHOLD",
+    "SMALL_DROP_CP",
+    "STYLE_COMPONENT_KEYS",
+    "MOBILITY_TOLERANCE",
+    "CENTER_TOLERANCE",
+    "KING_SAFETY_TOLERANCE",
+    "KING_SAFETY_GAIN",
+    "MOBILITY_RISK_TRADEOFF",
+    "STRUCTURE_THRESHOLD",
+    "TACTICAL_THRESHOLD",
+    "TACTICAL_DOMINANCE_THRESHOLD",
+    "TACTICAL_SLOPE_THRESHOLD",
+    "CONTROL_EVAL_DROP",
+    "CONTROL_VOLATILITY_DROP_CP",
+    "CONTROL_TENSION_DELTA",
+    "CONTROL_TENSION_DELTA_ENDGAME",
+    "CONTROL_OPP_MOBILITY_DROP",
+    "CONTROL_COOLDOWN_PLIES",
+    "CONTROL_TACTICAL_WEIGHT_CEILING",
+    "CONTROL_PHASE_WEIGHTS",
+    "RISK_SMALL_LOSS",
+    "INITIATIVE_BOOST",
+    "TACTICAL_GAP_FIRST_CHOICE",
+    "TACTICAL_MISS_LOSS",
+    "TENSION_EVAL_MIN",
+    "TENSION_EVAL_MAX",
+    "TENSION_SYMMETRY_TOL",
+    "NEUTRAL_TENSION_BAND",
+    "CONFIG_DIR",
+    "THRESHOLDS_FILE",
+]

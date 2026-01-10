@@ -1,14 +1,14 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from core.chess_engine.client import EngineClient
+from core.chess_engine import get_engine
 from core.chess_engine.exceptions import EngineError
 import json
 
 app = FastAPI(title="CataChess API")
 
-# Initialize engine client
-engine = EngineClient()
+# Initialize engine client (single-spot or multi-spot based on config)
+engine = get_engine()
 
 
 class AnalyzeRequest(BaseModel):

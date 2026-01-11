@@ -7,6 +7,33 @@ import pytest
 from backend.core.tagger.facade import tag_position
 
 
+class TestFacadeSmokeTest:
+    """Quick smoke tests to catch NameError-level wiring issues."""
+
+    def test_tag_position_runs_without_nameerror(self):
+        """
+        Smoke test: Verify tag_position can execute without NameError.
+        This catches typos in detector function names.
+        """
+        fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+        move = "e2e4"
+
+        # Should not raise NameError
+        try:
+            result = tag_position(
+                engine_path=None,
+                fen=fen,
+                played_move_uci=move,
+                depth=10,
+                multipv=3,
+            )
+            # Basic sanity check
+            assert result is not None
+            assert result.played_move == move
+        except NameError as e:
+            pytest.fail(f"NameError in tag_position: {e}. Check for function name typos in facade.py")
+
+
 class TestTaggerIntegration:
     """Integration tests for the tagger system."""
 

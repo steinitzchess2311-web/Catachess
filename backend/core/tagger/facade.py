@@ -258,7 +258,7 @@ def tag_position(
 
     # Knight-Bishop exchange tags
     accurate_kb_exchange_evidence = detect_accurate_knight_bishop_exchange(ctx)
-    inaccurate_kb_exchange_evidence = indetect_accurate_knight_bishop_exchange(ctx)
+    inaccurate_kb_exchange_evidence = detect_inaccurate_knight_bishop_exchange(ctx)
     bad_kb_exchange_evidence = detect_bad_knight_bishop_exchange(ctx)
 
     # Structure tags
@@ -273,7 +273,7 @@ def tag_position(
 
     # Tension tags
     tension_creation_evidence = detect_tension_creation(ctx)
-    neutral_tension_creation_evidence = neutral_detect_tension_creation(ctx)
+    neutral_tension_creation_evidence = detect_neutral_tension_creation(ctx)
     premature_attack_evidence = detect_premature_attack(ctx)
     file_pressure_c_evidence = detect_file_pressure_c(ctx)
 
@@ -303,7 +303,7 @@ def tag_position(
     # Sacrifice tags
     tactical_sacrifice_evidence = detect_tactical_sacrifice(ctx)
     positional_sacrifice_evidence = detect_positional_sacrifice(ctx)
-    inaccurate_tactical_sacrifice_evidence = inaccurate_detect_tactical_sacrifice(ctx)
+    inaccurate_tactical_sacrifice_evidence = detect_inaccurate_tactical_sacrifice(ctx)
     speculative_sacrifice_evidence = detect_speculative_sacrifice(ctx)
     desperate_sacrifice_evidence = detect_desperate_sacrifice(ctx)
     tactical_combination_sacrifice_evidence = detect_tactical_combination_sacrifice(ctx)

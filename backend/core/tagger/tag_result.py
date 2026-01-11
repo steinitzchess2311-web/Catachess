@@ -26,18 +26,28 @@ class TagResult:
     eval_best: float
     delta_eval: float
 
-    # Control over Dynamics tags (parent + 9 subtypes)
+    # Control over Dynamics tags (parent + subtypes)
     control_over_dynamics: bool = False
     control_over_dynamics_subtype: Optional[str] = None
-    cod_simplify: bool = False
-    cod_plan_kill: bool = False
-    cod_freeze_bind: bool = False
-    cod_blockade_passed: bool = False
-    cod_file_seal: bool = False
-    cod_king_safety_shell: bool = False
-    cod_space_clamp: bool = False
-    cod_regroup_consolidate: bool = False
-    cod_slowdown: bool = False
+
+    # CoD v2 subtype tags (modern system - v1.0.0+)
+    cod_prophylaxis: bool = False
+    piece_control_over_dynamics: bool = False
+    pawn_control_over_dynamics: bool = False
+    control_simplification: bool = False
+
+    # Legacy CoD tags (deprecated - defined for schema compatibility, never set)
+    # These are from rule_tagger2's 9-pattern legacy system, replaced by CoD v2
+    # See docs/COD_V2_MIGRATION.md for details
+    cod_simplify: bool = False  # Legacy: use control_simplification instead
+    cod_plan_kill: bool = False  # Legacy: use cod_prophylaxis instead
+    cod_freeze_bind: bool = False  # Legacy: use piece_control_over_dynamics instead
+    cod_blockade_passed: bool = False  # Legacy: use pawn_control_over_dynamics instead
+    cod_file_seal: bool = False  # Legacy: use pawn_control_over_dynamics instead
+    cod_king_safety_shell: bool = False  # Legacy: use pawn_control_over_dynamics instead
+    cod_space_clamp: bool = False  # Legacy: use pawn_control_over_dynamics instead
+    cod_regroup_consolidate: bool = False  # Legacy: use piece_control_over_dynamics instead
+    cod_slowdown: bool = False  # Legacy: use piece_control_over_dynamics instead
 
     # Semantic control tags (no gating)
     control_simplify: bool = False

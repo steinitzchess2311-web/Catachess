@@ -6,14 +6,14 @@ from backend.core.tagger.detectors.helpers.contact import contact_ratio
 def detect_tension_creation(ctx: TagContext) -> TagEvidence:
     """Tension creation."""
     gates_passed, gates_failed, evidence = [], [], {}
-    symmetry_before = check_symmetry_condition(ctx.board)
-    board_after = ctx.board.copy()
-    board_after.push(ctx.played_move)
-    symmetry_after = check_symmetry_condition(board_after)
+    symmetry_before, sym_gap_before = check_symmetry_condition(ctx)
+    # For symmetry_after, we'd need a full TagContext for the position after the move
+    # For now, we'll use the contact ratio change as the primary indicator
     contact_delta = ctx.contact_ratio_played - ctx.contact_ratio_before
-    evidence.update({"symmetry_increase": symmetry_after - symmetry_before, "contact_delta": contact_delta})
+    evidence.update({"symmetry_before": symmetry_before, "contact_delta": contact_delta})
     
-    if symmetry_after > symmetry_before and contact_delta > 0.1:
+    # Tension creation: symmetry exists and contact increases
+    if symmetry_before and contact_delta > 0.1:
         gates_passed.append("tension_created")
         fired, confidence = True, 0.8
     else:

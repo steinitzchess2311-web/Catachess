@@ -1,0 +1,15 @@
+# Chess Tagger Dependencies
+# Required for running tagger analysis and tests
+
+# Core chess library
+chess>=1.10.0
+
+# Engine analysis (optional - Stockfish binary needed separately)
+# stockfish>=3.28  # Python wrapper for Stockfish (optional)
+
+# Testing and comparison
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# For PGN analysis
+python-chess>=1.10.0  # Alias for chess, ensures explicit dependency

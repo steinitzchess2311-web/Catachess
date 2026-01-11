@@ -14,6 +14,8 @@ from .detectors.helpers.metrics import evaluation_and_metrics, metrics_delta
 from .detectors.helpers.phase import estimate_phase_ratio, get_phase_bucket
 from .detectors.helpers.contact import contact_ratio
 from .detectors.helpers.tactical_weight import compute_tactical_weight
+from .detectors.helpers.mate_threat import detect_mate_threat
+from .detectors.helpers.coverage import compute_coverage_delta
 
 # Import Meta tag detectors
 from .detectors.meta import first_choice, missed_tactic, tactical_sensitivity
@@ -88,6 +90,17 @@ from .detectors.sacrifice.desperate import (
     detect_speculative_sacrifice,
     detect_desperate_sacrifice,
 )
+
+# Import CoD v2 detector
+from .detectors.cod_v2 import (
+    ControlOverDynamicsV2Detector,
+    CoDContext,
+    CoDMetrics,
+    is_cod_v2_enabled,
+)
+
+# Import versioning
+from .versioning import CURRENT_VERSION, get_version_info
 
 
 def tag_position(
@@ -185,7 +198,7 @@ def tag_position(
     score_gap_cp = abs(eval_best_cp - candidates[1].score_cp) if len(candidates) > 1 else 0
     best_is_forcing = best_kind in ("dynamic", "forcing")
     played_is_forcing = played_kind in ("dynamic", "forcing")
-    mate_threat = False  # TODO: Detect mate threats
+    mate_threat = detect_mate_threat(board, candidates, eval_before_cp)
 
     tac_weight = compute_tactical_weight(
         delta_eval_cp=int(delta_eval * 100),
@@ -204,9 +217,20 @@ def tag_position(
     # Check if there are dynamic moves in the candidate band
     has_dynamic_in_band = any(c.kind in ("dynamic", "forcing") for c in candidates)
 
+    # Compute coverage delta
+    coverage_delta_value = compute_coverage_delta(board, board_played, board.turn)
+
+    # Determine move characteristics
+    is_capture = board.is_capture(played_move)
+    board.push(played_move)
+    is_check = board.is_check()
+    board.pop()
+    move_number = board.fullmove_number
+
     # Build tag context with all computed values
     ctx = TagContext(
         board=board,
+        board_before=board,  # Same as board - it's the pre-move state
         fen=fen,
         played_move=played_move,
         actor=board.turn,
@@ -235,7 +259,10 @@ def tag_position(
         contact_ratio_played=contact_ratio_played,
         contact_ratio_best=contact_ratio_best,
         tactical_weight=tac_weight,
-        coverage_delta=0,  # TODO: Implement coverage tracking
+        coverage_delta=coverage_delta_value,
+        is_capture=is_capture,
+        is_check=is_check,
+        move_number=move_number,
         has_dynamic_in_band=has_dynamic_in_band,
         analysis_meta=engine_meta,
         engine_depth=depth,
@@ -311,6 +338,67 @@ def tag_position(
     positional_structure_sacrifice_evidence = detect_positional_structure_sacrifice(ctx)
     positional_space_sacrifice_evidence = detect_positional_space_sacrifice(ctx)
 
+    # CoD v2 detection
+    cod_detected = False
+    cod_subtype = None
+    cod_prophylaxis_tag = False
+    piece_control_tag = False
+    pawn_control_tag = False
+    control_simplification_tag = False
+
+    if is_cod_v2_enabled():
+        # Build CoD metrics from context
+        cod_metrics = CoDMetrics(
+            volatility_drop_cp=abs(delta_eval * 100),
+            eval_drop_cp=int(delta_eval * 100),
+            opp_mobility_drop=opp_component_deltas.get("mobility", 0.0),
+            self_mobility_change=component_deltas.get("mobility", 0.0),
+            tension_delta=component_deltas.get("tension", 0.0),
+            structure_gain=component_deltas.get("structure", 0.0),
+            king_safety_gain=component_deltas.get("king_safety", 0.0),
+            space_gain=component_deltas.get("space", 0.0),
+            preventive_score=prophylaxis_score,
+            threat_delta=0.0,  # TODO: Compute from followup analysis
+        )
+
+        # Build CoD context
+        cod_ctx = CoDContext(
+            board=board,
+            played_move=played_move,
+            actor=board.turn,
+            metrics=cod_metrics,
+            eval_drop_cp=int(delta_eval * 100),
+            played_kind=played_kind,
+            current_ply=0,  # TODO: Track ply count
+            last_cod_ply=-999,  # TODO: Track from game state
+            phase_bucket=phase_bucket,
+            allow_positional=(phase_bucket in ("middlegame", "endgame")),
+            has_dynamic_in_band=has_dynamic_in_band,
+            control_cfg={
+                "tactical_weight": tac_weight,
+                "mate_threat": mate_threat,
+            },
+        )
+
+        # Run detector
+        cod_detector = ControlOverDynamicsV2Detector()
+        cod_result = cod_detector.detect(cod_ctx)
+
+        if cod_result.detected:
+            cod_detected = True
+            cod_subtype = cod_result.subtype.value
+            engine_meta["cod_v2"] = cod_result.to_dict()
+
+            # Map subtype to specific boolean tags
+            if cod_subtype == "prophylaxis":
+                cod_prophylaxis_tag = True
+            elif cod_subtype == "piece_control":
+                piece_control_tag = True
+            elif cod_subtype == "pawn_control":
+                pawn_control_tag = True
+            elif cod_subtype == "simplification":
+                control_simplification_tag = True
+
     # Determine mode from evaluation
     if eval_before >= 2.0:
         mode = "winning"
@@ -380,6 +468,13 @@ def tag_position(
         tactical_initiative_sacrifice=tactical_initiative_sacrifice_evidence.fired,
         positional_structure_sacrifice=positional_structure_sacrifice_evidence.fired,
         positional_space_sacrifice=positional_space_sacrifice_evidence.fired,
+        # CoD v2 tags
+        control_over_dynamics=cod_detected,
+        control_over_dynamics_subtype=cod_subtype,
+        cod_prophylaxis=cod_prophylaxis_tag,
+        piece_control_over_dynamics=piece_control_tag,
+        pawn_control_over_dynamics=pawn_control_tag,
+        control_simplification=control_simplification_tag,
         mode=mode,
         analysis_context={
             "engine_meta": engine_meta,
@@ -387,6 +482,8 @@ def tag_position(
             "phase_bucket": phase_bucket,
             "tactical_weight": tac_weight,
             "contact_ratio": contact_ratio_before,
+            "version": CURRENT_VERSION,
+            "version_info": get_version_info(),
         },
     )
 

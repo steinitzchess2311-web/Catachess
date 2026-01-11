@@ -42,8 +42,9 @@ class TagContext:
     All tag detectors receive this context and must not modify it.
     Following the plan's requirement for explicit context passing.
     """
-    # Board state
-    board: chess.Board
+    # Board state (before move is played)
+    board: chess.Board  # The board in its original state (before played_move)
+    board_before: chess.Board  # Alias for board - same object
     fen: str
     played_move: chess.Move
     actor: chess.Color
@@ -89,6 +90,11 @@ class TagContext:
     # Computed features
     tactical_weight: float
     coverage_delta: int
+
+    # Move characteristics
+    is_capture: bool
+    is_check: bool
+    move_number: int  # Move number in the game (fullmove counter)
 
     # Additional analysis metadata
     has_dynamic_in_band: bool

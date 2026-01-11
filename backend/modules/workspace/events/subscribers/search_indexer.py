@@ -29,11 +29,15 @@ class SearchIndexer:
             EventType.DISCUSSION_THREAD_UPDATED,
         }:
             await self._index_thread(event.target_id)
+        if event.type == EventType.DISCUSSION_THREAD_DELETED:
+            await self._delete_entry(event.target_id, "discussion_thread")
         if event.type in {
             EventType.DISCUSSION_REPLY_ADDED,
             EventType.DISCUSSION_REPLY_EDITED,
         }:
             await self._index_reply(event.target_id)
+        if event.type == EventType.DISCUSSION_REPLY_DELETED:
+            await self._delete_entry(event.target_id, "discussion_reply")
 
     async def _index_thread(self, thread_id: str) -> None:
         thread = await self.thread_repo.get_by_id(thread_id)
@@ -57,6 +61,9 @@ class SearchIndexer:
             target_type="discussion_reply",
             content=reply.content,
         )
+
+    async def _delete_entry(self, target_id: str, target_type: str) -> None:
+        await self.search_repo.delete_by_target(target_id, target_type)
 
 
 def register_search_indexer(

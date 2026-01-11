@@ -1,8 +1,4 @@
-"""
-Search index repository.
-"""
-
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from workspace.db.tables.search_index import SearchIndex
@@ -36,3 +32,22 @@ class SearchIndexRepository:
         self.session.add(entry)
         await self.session.flush()
         return entry
+
+    async def get_by_target(
+        self, target_id: str, target_type: str
+    ) -> SearchIndex | None:
+        stmt = select(SearchIndex).where(
+            SearchIndex.target_id == target_id,
+            SearchIndex.target_type == target_type,
+        )
+        result = await self.session.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def delete_by_target(
+        self, target_id: str, target_type: str
+    ) -> None:
+        stmt = delete(SearchIndex).where(
+            SearchIndex.target_id == target_id,
+            SearchIndex.target_type == target_type,
+        )
+        await self.session.execute(stmt)

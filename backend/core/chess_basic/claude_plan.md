@@ -130,14 +130,41 @@ core 引入用户、计时、网络状态
 
 五、推进 Checklist (完成后明确标注已完成)
 
- 架构完整创建（不写逻辑）
+✅ 架构完整创建（不写逻辑）- 已完成 2026-01-10
+   - chess_basic 完整目录结构已创建
+   - 所有模块的 __init__.py 已创建
+   - 所有源文件已创建并包含完整的工程级代码和详细评注
 
- Rule 最小可用（能走完棋）
+✅ Rule 最小可用（能走完棋）- 已完成 2026-01-10
+   - 走法生成 (movegen.py) 已实现
+   - 合法性判断 (legality.py) 已实现
+   - 走法应用 (apply.py) 已实现
+   - 将军/将死/逼和判断 (check.py) 已实现
+   - 特殊走法 (special_moves.py) 已实现
+   - Perft 验证工具 (perft.py) 已实现
 
- CoreSession 固化调用顺序
+✅ CoreSession 固化调用顺序 - 已完成 2026-01-10
+   - CoreSession 已实现，确保调用顺序：rule → pgn
+   - 红线保障：非法走法永远不会到达 PGN writer
 
- PGN no_vari 可输出完整对局
+✅ PGN no_vari 可输出完整对局 - 已完成 2026-01-10
+   - PGNWriterNoVari 已实现
+   - 支持标签管理、走法记录、评注、NAG
+   - 可输出完整 PGN 字符串和保存到文件
 
- PGN vari 支持分支结构
+✅ PGN vari 支持分支结构 - 已完成 2026-01-10
+   - PGNWriterVari 已实现
+   - VariationStack 已实现分支栈管理
+   - 支持多层嵌套分支
+   - 可输出带分支的 PGN 字符串
 
- 前端只调用 core_facade
+✅ 前端只调用 core_facade - 已完成 2026-01-10
+   - CoreFacade 已实现为唯一对外接口
+   - 提供完整的会话管理和走法提交功能
+   - 支持多种会话模式（标准对局、分析、谜题、研究）
+
+✅ 额外完成项 Additional Completions:
+   - 完整的工具模块 (utils/: square, fen, uci, san)
+   - 游戏策略系统 (policies.py)
+   - 完整的测试套件 (7 个测试文件)
+   - 完整的 README_CORE.md 文档

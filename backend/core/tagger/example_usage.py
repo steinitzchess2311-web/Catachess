@@ -3,8 +3,15 @@
 Example usage of the chess tagger system.
 Run this script to see the tagger in action.
 
+The tagger system analyzes chess positions and tags moves with 41 different
+semantic labels covering tactical, positional, and strategic considerations.
+
 Usage:
-    python3 -m backend.modules.tagger_core.example_usage
+    python3 -m backend.core.tagger.example_usage
+
+Or directly:
+    cd /path/to/catachess
+    python3 backend/core/tagger/example_usage.py
 """
 
 import sys
@@ -14,7 +21,7 @@ from pathlib import Path
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from backend.modules.tagger_core.facade import tag_position
+from backend.core.tagger.facade import tag_position
 
 
 def example_good_opening_move():
@@ -163,8 +170,11 @@ def main():
         print("✅ All examples completed successfully!")
         print("=" * 60)
         print()
-        print("Note: Currently only 'first_choice' tag is implemented.")
-        print("See NEXT_STEPS.md for how to add more tags.")
+        print("📊 System Status:")
+        print(f"   • 41 tag detectors implemented")
+        print(f"   • 9 helper modules")
+        print(f"   • Organized in backend/core/tagger/")
+        print(f"   • See README.md for full tag list")
         print()
 
     except Exception as e:

@@ -15,7 +15,7 @@ Evidence:
 - opp_tactics_delta: Reduction in opponent's tactical opportunities
 - delta_eval: Evaluation cost
 """
-from backend.core.tagger.models import TagContext, TagEvidence
+from core.tagger.models import TagContext, TagEvidence
 
 
 def detect(ctx: TagContext) -> TagEvidence:

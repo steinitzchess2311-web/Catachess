@@ -18,7 +18,7 @@ Functions:
 """
 from typing import Tuple, Dict
 import chess
-from backend.core.tagger.models import TagContext
+from core.tagger.models import TagContext
 
 # Piece values in pawns
 PIECE_VALUES = {

@@ -46,7 +46,7 @@ class StorageConfig:
     account_id: str | None = None
 
     @classmethod
-    def from_env(cls) -> "StorageConfig":
+    def from_env(cls, prefix: str | None = None) -> "StorageConfig":
         """
         Create configuration from environment variables.
 
@@ -63,33 +63,60 @@ class StorageConfig:
             >>> print(config.bucket)
             catachess-data
         """
-        required_vars = {
-            "R2_ENDPOINT": "endpoint",
-            "R2_BUCKET": "bucket",
-            "R2_ACCESS_KEY_ID": "access_key_id",
-            "R2_SECRET_ACCESS_KEY": "secret_access_key",
+        prefixes = [prefix] if prefix else ["GAME_STORAGE_R2", "R2"]
+
+        for active_prefix in prefixes:
+            config_dict = cls._read_env(active_prefix)
+            if config_dict:
+                return cls(**config_dict)
+
+        raise ValueError(
+            "Missing required environment variables for storage config. "
+            "Expected GAME_STORAGE_R2_* or R2_*."
+        )
+
+    @staticmethod
+    def _read_env(prefix: str) -> dict[str, str] | None:
+        """
+        Read environment variables for a given prefix.
+
+        Supports both *_ACCESS_KEY_ID and *_ACCESS_KEY naming.
+        """
+        required_map = {
+            f"{prefix}_ENDPOINT": "endpoint",
+            f"{prefix}_BUCKET": "bucket",
+            f"{prefix}_ACCESS_KEY_ID": "access_key_id",
+            f"{prefix}_SECRET_ACCESS_KEY": "secret_access_key",
         }
 
-        config_dict = {}
+        config_dict: dict[str, str] = {}
         missing_vars = []
 
-        for env_var, config_key in required_vars.items():
+        for env_var, config_key in required_map.items():
             value = os.getenv(env_var)
             if not value:
                 missing_vars.append(env_var)
             else:
                 config_dict[config_key] = value
 
+        # Compatibility with existing R2_ACCESS_KEY/R2_SECRET_KEY naming
+        if missing_vars and f"{prefix}_ACCESS_KEY_ID" in missing_vars:
+            fallback = os.getenv(f"{prefix}_ACCESS_KEY")
+            if fallback:
+                config_dict["access_key_id"] = fallback
+                missing_vars.remove(f"{prefix}_ACCESS_KEY_ID")
+        if missing_vars and f"{prefix}_SECRET_ACCESS_KEY" in missing_vars:
+            fallback = os.getenv(f"{prefix}_SECRET_KEY")
+            if fallback:
+                config_dict["secret_access_key"] = fallback
+                missing_vars.remove(f"{prefix}_SECRET_ACCESS_KEY")
+
         if missing_vars:
-            raise ValueError(
-                f"Missing required environment variables: {', '.join(missing_vars)}"
-            )
+            return None
 
-        # Optional variables
-        config_dict["region"] = os.getenv("R2_REGION", "auto")
-        config_dict["account_id"] = os.getenv("R2_ACCOUNT_ID")
-
-        return cls(**config_dict)
+        config_dict["region"] = os.getenv(f"{prefix}_REGION", "auto")
+        config_dict["account_id"] = os.getenv(f"{prefix}_ACCOUNT_ID")
+        return config_dict
 
     @classmethod
     def for_testing(

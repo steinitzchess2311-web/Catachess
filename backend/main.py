@@ -34,6 +34,8 @@ async def startup_event():
     try:
         from init_verification_table import init_verification_table
         init_verification_table()
+        from init_game_tables import init_game_tables
+        init_game_tables()
     except Exception as e:
         logger.warning(f"Could not initialize verification table: {e}")
 

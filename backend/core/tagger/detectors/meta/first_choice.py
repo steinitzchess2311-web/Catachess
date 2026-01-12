@@ -2,7 +2,7 @@
 First Choice tag detector.
 Fires when the played move is the engine's top choice.
 """
-from backend.core.tagger.models import TagContext, TagEvidence
+from core.tagger.models import TagContext, TagEvidence
 from ...config import TACTICAL_GAP_FIRST_CHOICE
 
 

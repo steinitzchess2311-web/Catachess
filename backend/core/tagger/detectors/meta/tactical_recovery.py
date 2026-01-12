@@ -13,7 +13,7 @@ Evidence:
 - eval_played: Evaluation after the move
 - recovery_amount: How much evaluation improved
 """
-from backend.core.tagger.models import TagContext, TagEvidence
+from core.tagger.models import TagContext, TagEvidence
 
 
 def detect(ctx: TagContext) -> TagEvidence:

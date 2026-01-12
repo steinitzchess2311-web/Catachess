@@ -141,7 +141,7 @@ class SearchService:
         # Filter by permissions
         filtered_results = []
         for node in nodes:
-            if await can_read(self.acl_repo, node.id, user_id):
+            if await can_read(self.acl_repo, node, user_id):
                 filtered_results.append(
                     SearchResult(
                         target_id=node.id,
@@ -207,7 +207,8 @@ class SearchService:
         """
         # For nodes (workspace/folder/study), check ACL
         if entry.target_type in ["workspace", "folder", "study"]:
-            return await can_read(self.acl_repo, entry.target_id, user_id)
+            node = await self.node_repo.get_by_id(entry.target_id)
+            return await can_read(self.acl_repo, node, user_id)
 
         # SECURITY FIX: For discussion threads and replies, we need proper permission checking
         # These need to resolve their parent object (study/chapter) and check ACL

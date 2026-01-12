@@ -3,23 +3,19 @@ Integration tests for CoD v2 detection.
 Tests the full pipeline from position to tag detection.
 """
 import sys
-import os
 from pathlib import Path
 
-# Add tagger directory to path for direct imports
-tagger_root = Path(__file__).parent.parent
-sys.path.insert(0, str(tagger_root))
-
-# Change to tagger directory to ensure relative imports work
-os.chdir(tagger_root)
+# Add backend directory to path for package imports
+backend_root = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(backend_root))
 
 try:
-    import facade
+    from core.tagger import facade
     tag_position = facade.tag_position
     print("✓ Successfully imported tag_position from facade")
 except ImportError as e:
     print(f"✗ Failed to import: {e}")
-    print(f"  tagger_root: {tagger_root}")
+    print(f"  backend_root: {backend_root}")
     import traceback
     traceback.print_exc()
     sys.exit(1)

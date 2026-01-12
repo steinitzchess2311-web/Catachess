@@ -10,7 +10,7 @@ NOTIFICATION_RULES = {
         "description": "When someone mentions you in a discussion",
         "priority": "high",
     },
-    EventType.DISCUSSION_THREAD_ADDED: {
+    EventType.DISCUSSION_THREAD_CREATED: {
         "enabled_by_default": False,
         "channels": ["in_app"],
         "description": "When a new discussion thread is created",

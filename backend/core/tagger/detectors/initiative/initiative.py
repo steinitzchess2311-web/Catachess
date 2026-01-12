@@ -1,5 +1,5 @@
 """Initiative tag detectors - 3 detectors in 1 file."""
-from backend.core.tagger.models import TagContext, TagEvidence
+from core.tagger.models import TagContext, TagEvidence
 
 def detect_initiative_exploitation(ctx: TagContext) -> TagEvidence:
     """Initiative exploitation: eval +0.5, mobility >0."""

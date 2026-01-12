@@ -27,6 +27,13 @@ from workspace.api.deps_core import (
     get_search_service,
     get_share_service,
 )
+from workspace.db.session import get_session
+from workspace.db.repos.study_repo import StudyRepository
+from workspace.db.repos.variation_repo import VariationRepository
+from workspace.db.repos.event_repo import EventRepository
+from workspace.domain.services.pgn_clip_service import PgnClipService
+from workspace.events.bus import EventBus
+from workspace.storage.r2_client import create_r2_client_from_env
 from workspace.api.discussion_deps import (
     get_reaction_repo,
     get_reaction_service,
@@ -101,3 +108,27 @@ async def get_current_user_id(
     with existing code that expects user_id as a string.
     """
     return str(user.id)
+
+
+async def get_study_repository(
+    session=Depends(get_session),
+) -> StudyRepository:
+    return StudyRepository(session)
+
+
+async def get_variation_repository(
+    session=Depends(get_session),
+) -> VariationRepository:
+    return VariationRepository(session)
+
+
+async def get_pgn_clip_service(
+    study_repo: StudyRepository = Depends(get_study_repository),
+    variation_repo: VariationRepository = Depends(get_variation_repository),
+    event_repo: EventRepository = Depends(get_event_repo),
+    event_bus: EventBus = Depends(get_event_bus),
+) -> PgnClipService:
+    r2_client = create_r2_client_from_env()
+    return PgnClipService(
+        study_repo, variation_repo, event_repo, event_bus, r2_client
+    )

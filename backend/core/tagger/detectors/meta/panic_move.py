@@ -14,7 +14,7 @@ Evidence:
 - mobility_delta: Change in mobility metric
 - eval_drop_cp: Evaluation drop in centipawns
 """
-from backend.core.tagger.models import TagContext, TagEvidence
+from core.tagger.models import TagContext, TagEvidence
 
 
 def detect(ctx: TagContext) -> TagEvidence:

@@ -7,7 +7,7 @@ The tagger system analyzes chess positions and tags moves with 41 different
 semantic labels covering tactical, positional, and strategic considerations.
 
 Usage:
-    python3 -m backend.core.tagger.example_usage
+    python3 -m core.tagger.example_usage
 
 Or directly:
     cd /path/to/catachess
@@ -21,7 +21,7 @@ from pathlib import Path
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from backend.core.tagger.facade import tag_position
+from core.tagger.facade import tag_position
 
 
 def example_good_opening_move():

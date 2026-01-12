@@ -1,6 +1,6 @@
 """Desperate sacrifice detectors - 2 in 1 file."""
-from backend.core.tagger.models import TagContext, TagEvidence
-from backend.core.tagger.detectors.helpers.sacrifice import is_sacrifice_candidate, SACRIFICE_EVAL_TOLERANCE
+from core.tagger.models import TagContext, TagEvidence
+from core.tagger.detectors.helpers.sacrifice import is_sacrifice_candidate, SACRIFICE_EVAL_TOLERANCE
 
 def detect_speculative_sacrifice(ctx: TagContext) -> TagEvidence:
     """Speculative sacrifice."""

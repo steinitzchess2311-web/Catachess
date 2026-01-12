@@ -9,8 +9,8 @@ Frontend only triggers events through these endpoints.
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from core.db.database import get_db
-from core.auth import get_current_user
+from core.db.deps import get_db
+from core.security.current_user import get_current_user
 from models.user import User
 from schemas.game import (
     SaveMoveRequest,

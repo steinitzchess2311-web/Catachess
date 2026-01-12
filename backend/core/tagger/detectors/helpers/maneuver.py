@@ -8,7 +8,7 @@ Maneuvers are typically non-forcing moves that reposition pieces to better squar
 """
 import chess
 from typing import Dict
-from backend.core.tagger.models import TagContext
+from core.tagger.models import TagContext
 
 
 def is_maneuver_candidate(ctx: TagContext) -> bool:

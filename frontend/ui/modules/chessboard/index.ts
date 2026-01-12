@@ -45,3 +45,13 @@ export { ChessAPI, chessAPI } from './utils/api';
 // Export storage (auto-save system)
 export { GameStorage, createGameStorage } from './storage';
 export type { GameInfo, SaveMoveOptions, GameStorageOptions } from './storage';
+
+// Export engine analysis
+export { EngineAnalysis, createEngineAnalysis } from './components/EngineAnalysis';
+export type { EngineAnalysisOptions } from './components/EngineAnalysis';
+export type {
+  EngineLine,
+  EngineAnalysisResult,
+  EngineSpotMetrics,
+  EngineHealthInfo,
+} from './utils/api';

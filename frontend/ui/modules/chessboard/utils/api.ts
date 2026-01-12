@@ -296,6 +296,99 @@ export class ChessAPI {
     // More sophisticated validation would happen on the backend
     return true;
   }
+
+  /**
+   * Analyze position using Stockfish engine
+   */
+  async analyzePosition(
+    position: BoardPosition,
+    depth: number = 15,
+    multipv: number = 3
+  ): Promise<EngineAnalysisResult> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/engine/analyze`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fen: this.positionToFEN(position),
+          depth: depth,
+          multipv: multipv,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return {
+        lines: data.lines || [],
+        depth: depth,
+      };
+    } catch (error) {
+      console.error('Failed to analyze position:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get engine health and spot metrics
+   */
+  async getEngineHealth(): Promise<EngineHealthInfo> {
+    try {
+      const response = await fetch(`${this.baseURL}/api/engine/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Failed to get engine health:', error);
+      throw error;
+    }
+  }
+}
+
+/**
+ * Engine analysis types
+ */
+export interface EngineLine {
+  multipv: number;
+  score: number | string;
+  pv: string[];
+}
+
+export interface EngineAnalysisResult {
+  lines: EngineLine[];
+  depth: number;
+}
+
+export interface EngineSpotMetrics {
+  id: string;
+  url: string;
+  region: string;
+  priority: number;
+  enabled: boolean;
+  status: string;
+  avg_latency_ms: number;
+  success_rate: number;
+  total_requests: number;
+  failure_count: number;
+}
+
+export interface EngineHealthInfo {
+  status: string;
+  engine_type: string;
+  spots?: EngineSpotMetrics[];
 }
 
 // Global API instance

@@ -1,0 +1,3 @@
+"""
+Signup tests package
+"""

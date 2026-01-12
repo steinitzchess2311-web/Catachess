@@ -5,6 +5,8 @@ Responsibilities:
     1. Check if user identifier exists
     2. Create new user (with hashed password)
     3. Authenticate user (verify password)
+    4. Get user by ID
+    5. Update user profile
 
 Does NOT handle:
     - JWT token creation (that's jwt.py)
@@ -16,6 +18,7 @@ from models.user import User
 from core.security.password import hash_password, verify_password
 from core.log.log_service import logger
 from core.errors import UserAlreadyExistsError, InvalidCredentialsError, UserInactiveError
+import uuid
 
 
 def get_user_by_identifier(db: Session, identifier: str) -> User | None:
@@ -119,4 +122,72 @@ def authenticate_user(db: Session, identifier: str, password: str) -> User | Non
         return None
 
     logger.info(f"Authentication successful: {user.username} (role={user.role})")
+    return user
+
+
+def get_user_by_id(db: Session, user_id: uuid.UUID | str) -> User | None:
+    """
+    Get user by ID.
+
+    Args:
+        db: Database session
+        user_id: User ID (UUID or string)
+
+    Returns:
+        User object if found, None otherwise
+    """
+    if isinstance(user_id, str):
+        try:
+            user_id = uuid.UUID(user_id)
+        except ValueError:
+            logger.warning(f"Invalid user ID format: {user_id}")
+            return None
+
+    logger.debug(f"Looking up user by ID: {user_id}")
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        logger.debug(f"User found: {user.username} (role={user.role})")
+    else:
+        logger.debug(f"User not found: {user_id}")
+    return user
+
+
+def update_user_profile(db: Session, user_id: uuid.UUID | str, update_data: dict) -> User | None:
+    """
+    Update user profile with provided data.
+
+    Args:
+        db: Database session
+        user_id: User ID (UUID or string)
+        update_data: Dictionary of fields to update
+
+    Returns:
+        Updated User object if found, None otherwise
+    """
+    if isinstance(user_id, str):
+        try:
+            user_id = uuid.UUID(user_id)
+        except ValueError:
+            logger.warning(f"Invalid user ID format: {user_id}")
+            return None
+
+    logger.info(f"Updating user profile: user_id={user_id}, fields={list(update_data.keys())}")
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        logger.warning(f"Update failed: user not found {user_id}")
+        return None
+
+    # Update user fields
+    for field, value in update_data.items():
+        if hasattr(user, field):
+            setattr(user, field, value)
+            logger.debug(f"Updated {field} for user {user_id}")
+        else:
+            logger.warning(f"Attempted to update non-existent field: {field}")
+
+    db.commit()
+    db.refresh(user)
+
+    logger.info(f"User profile updated successfully: {user.username} (id={user.id})")
     return user

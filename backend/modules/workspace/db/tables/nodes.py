@@ -59,6 +59,8 @@ class Node(Base, TimestampMixin, SoftDeleteMixin):
     # Layout metadata (for UI positioning)
     # Stores: {x: float, y: float, z: int, group: str?, viewMode: str?}
     layout: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
+    # Compatibility alias for older code/tests
+    layout_metadata = synonym("layout")
 
     # Version for optimistic locking
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)

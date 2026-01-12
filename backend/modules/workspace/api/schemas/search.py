@@ -1,5 +1,5 @@
 """Search API schemas."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
 
 
 class SearchResultItem(BaseModel):
@@ -11,6 +11,18 @@ class SearchResultItem(BaseModel):
     author_id: str | None = Field(None, description="Author user ID")
     highlight: str | None = Field(None, description="Highlighted snippet with context")
     score: float | None = Field(None, description="Relevance score")
+
+    @model_serializer(mode="plain")
+    def _serialize(self) -> dict:
+        return {
+            "id": self.target_id,
+            "target_id": self.target_id,
+            "target_type": self.target_type,
+            "content": self.content,
+            "author_id": self.author_id,
+            "highlight": self.highlight,
+            "score": self.score,
+        }
 
 
 class SearchResponse(BaseModel):

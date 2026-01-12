@@ -30,7 +30,13 @@ def register_all_subscribers(bus, session) -> None:
     audit_repo = AuditLogRepository(session)
 
     register_search_indexer(
-        bus, thread_repo, reply_repo, node_repo, study_repo, variation_repo, search_repo
+        bus,
+        thread_repo,
+        reply_repo,
+        search_repo,
+        node_repo=node_repo,
+        study_repo=study_repo,
+        variation_repo=variation_repo,
     )
     bus.subscribe(
         MentionNotifier(bus, thread_repo, reply_repo, user_repo).handle_event

@@ -27,20 +27,28 @@ class EventBus:
     Future: Add WebSocket broadcasting, notification triggers, etc.
     """
 
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession | None = None) -> None:
         """
         Initialize event bus.
 
         Args:
-            session: Database session
+            session: Database session (optional for tests)
         """
         self.session = session
         self._subscribers: list[callable] = []
 
     async def publish(
         self,
-        command: CreateEventCommand,
-        event_id: str | None = None
+        command: CreateEventCommand | None = None,
+        *,
+        event_type: EventType | str | None = None,
+        actor_id: str | None = None,
+        target_id: str | None = None,
+        target_type: NodeType | str | None = None,
+        payload: dict[str, Any] | None = None,
+        version: int | None = None,
+        workspace_id: str | None = None,
+        event_id: str | None = None,
     ) -> EventTable:
         """
         Publish an event.
@@ -55,6 +63,19 @@ class EventBus:
         Returns:
             Created or existing event
         """
+        if command is None:
+            if event_type is None or actor_id is None or target_id is None:
+                raise ValueError("event_type, actor_id, and target_id are required")
+            command = CreateEventCommand(
+                type=event_type,
+                actor_id=actor_id,
+                target_id=target_id,
+                target_type=target_type,
+                version=version or 1,
+                payload=payload or {},
+                workspace_id=workspace_id,
+            )
+
         # Generate or use provided event_id
         if event_id is None:
             event_id = str(uuid.uuid4())

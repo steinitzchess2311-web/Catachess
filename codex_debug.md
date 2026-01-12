@@ -71,3 +71,7 @@ The backend test run now collects 318 tests but still fails heavily:
 - `test_discussion_privacy.py`: 7 passed.
 - `test_search_service.py`: 11 passed.
 - `test_notification_api.py`: 11 passed.
+
+## Update - Railway Health Check
+### Changes Applied
+- Relaxed config validation hard-exits in `backend/core/config.py` for Railway by allowing startup when `RAILWAY_ENVIRONMENT`, `RAILWAY_PROJECT_ID`, or `ALLOW_CONFIG_WARNINGS=1` is set.

@@ -10,6 +10,7 @@ from io import StringIO
 
 import chess
 import chess.pgn
+import re
 
 
 @dataclass
@@ -38,6 +39,7 @@ class VariationNode:
     comment: str | None = None
     children: list["VariationNode"] = field(default_factory=list)
     rank: int = 0
+    headers: dict[str, str] | None = None
 
     def __repr__(self) -> str:
         """String representation."""
@@ -162,8 +164,11 @@ def pgn_to_tree(pgn_text: str) -> VariationNode | None:
         >>> len(tree.children[0].children)
         2  # Main line (Nf3) and alternative (c5)
     """
+    # Normalize black-move notation (e.g., "1... c5" -> "1...c5") for parser tolerance.
+    normalized = re.sub(r"(\\d+)\\.\\.\\.\\s+", r"\\1...", pgn_text)
+
     # Parse PGN
-    pgn_io = StringIO(pgn_text)
+    pgn_io = StringIO(normalized)
     game = chess.pgn.read_game(pgn_io)
 
     if game is None:
@@ -178,6 +183,7 @@ def pgn_to_tree(pgn_text: str) -> VariationNode | None:
 
     # Parse the first move and its children recursively
     root = _parse_node(game.next(), board, rank=0)
+    root.headers = dict(game.headers)
 
     # Include alternative first moves as variations on the root
     if len(game.variations) > 1:

@@ -140,17 +140,27 @@ class ACLRepository:
         if acl is None:
             return False
 
-        # Check if user's permission meets requirement
         permission_hierarchy = {
-            Permission.OWNER: 5,
-            Permission.ADMIN: 4,
-            Permission.EDITOR: 3,
-            Permission.COMMENTER: 2,
-            Permission.VIEWER: 1,
+            "owner": 5,
+            "admin": 4,
+            "editor": 3,
+            "commenter": 2,
+            "viewer": 1,
         }
 
-        user_level = permission_hierarchy.get(acl.permission, 0)
-        required_level = permission_hierarchy.get(required_permission, 0)
+        permission_value = (
+            acl.permission.value
+            if isinstance(acl.permission, Permission)
+            else str(acl.permission)
+        )
+        required_value = (
+            required_permission.value
+            if isinstance(required_permission, Permission)
+            else str(required_permission)
+        )
+
+        user_level = permission_hierarchy.get(permission_value, 0)
+        required_level = permission_hierarchy.get(required_value, 0)
 
         return user_level >= required_level
 

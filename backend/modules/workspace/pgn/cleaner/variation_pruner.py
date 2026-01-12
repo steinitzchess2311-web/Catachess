@@ -247,6 +247,7 @@ def find_node_by_path(
                 if index < 1:
                     return None
                 if index == 1:
+                    parent = current
                     continue
                 steps = index - 1
                 while steps > 0:
@@ -332,6 +333,15 @@ def _select_variation_child(
     if var_rank < 1:
         return None
 
+    same_ply_children = [
+        child
+        for child in current.children
+        if child.move_number == current.move_number and child.color == current.color
+    ]
+    same_ply_children.sort(key=lambda child: child.rank)
+    if var_rank <= len(same_ply_children):
+        return same_ply_children[var_rank - 1]
+
     direct_child = next(
         (child for child in current.children if child.rank == var_rank), None
     )
@@ -349,16 +359,6 @@ def _select_variation_child(
         siblings.sort(key=lambda child: child.rank)
         if var_rank <= len(siblings):
             return siblings[var_rank - 1]
-
-    same_ply_children = [
-        child
-        for child in current.children
-        if child.move_number == current.move_number
-        and child.color == current.color
-    ]
-    same_ply_children.sort(key=lambda child: child.rank)
-    if var_rank <= len(same_ply_children):
-        return same_ply_children[var_rank - 1]
 
     return None
 

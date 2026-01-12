@@ -58,6 +58,7 @@ class ThreadService:
             command.author_id,
         )
         await self.session.commit()
+        self.session.expunge(thread)
         return thread
 
     async def update_thread(self, command: UpdateThreadCommand) -> DiscussionThread:
@@ -76,6 +77,14 @@ class ThreadService:
         )
         await self.session.commit()
         return thread
+
+    async def delete_thread(self, thread_id: str) -> None:
+        thread = await self._get_thread(thread_id)
+        await self.thread_repo.delete(thread)
+        await publish_thread_event(
+            self.event_bus, EventType.DISCUSSION_THREAD_DELETED, thread, thread.author_id
+        )
+        await self.session.commit()
 
     async def _get_thread(self, thread_id: str) -> DiscussionThread:
         thread = await self.thread_repo.get_by_id(thread_id)

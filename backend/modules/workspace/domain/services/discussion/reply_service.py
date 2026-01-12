@@ -58,6 +58,7 @@ class ReplyService:
             self.event_bus, EventType.DISCUSSION_REPLY_ADDED, reply, command.author_id
         )
         await self.session.commit()
+        self.session.expunge(reply)
         return reply
 
     async def edit_reply(self, command: EditReplyCommand) -> DiscussionReply:

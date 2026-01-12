@@ -213,10 +213,10 @@ def register_search_indexer(
     bus,
     thread_repo: DiscussionThreadRepository,
     reply_repo: DiscussionReplyRepository,
-    node_repo: NodeRepository,
-    study_repo: StudyRepository,
-    variation_repo: VariationRepository,
     search_repo: SearchIndexRepository,
+    node_repo: NodeRepository | None = None,
+    study_repo: StudyRepository | None = None,
+    variation_repo: VariationRepository | None = None,
 ) -> SearchIndexer:
     """Register the search indexer subscriber on the bus."""
     indexer = SearchIndexer(

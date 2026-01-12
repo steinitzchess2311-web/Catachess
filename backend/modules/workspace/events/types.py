@@ -83,6 +83,7 @@ class EventType(str, Enum):
 
     # ===== Discussion System (User comments, NOT exported with PGN) =====
     DISCUSSION_THREAD_CREATED = "discussion.thread.created"
+    DISCUSSION_THREAD_ADDED = "discussion.thread.added"
     DISCUSSION_THREAD_UPDATED = "discussion.thread.updated"
     DISCUSSION_THREAD_DELETED = "discussion.thread.deleted"
     DISCUSSION_THREAD_PINNED = "discussion.thread.pinned"

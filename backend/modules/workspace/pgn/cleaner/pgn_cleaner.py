@@ -74,7 +74,8 @@ def clip_pgn_from_move(
 
     # Generate PGN
     if include_headers:
-        return tree_to_pgn(clipped_tree, headers=headers)
+        resolved_headers = headers or getattr(root, "headers", None)
+        return tree_to_pgn(clipped_tree, headers=resolved_headers)
     else:
         return tree_to_movetext(clipped_tree)
 
@@ -129,7 +130,8 @@ def clip_pgn_from_node(
 
     # Generate PGN
     if include_headers:
-        return tree_to_pgn(clipped_tree, headers=headers)
+        resolved_headers = headers or getattr(root, "headers", None)
+        return tree_to_pgn(clipped_tree, headers=resolved_headers)
     else:
         return tree_to_movetext(clipped_tree)
 

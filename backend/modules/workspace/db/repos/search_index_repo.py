@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from sqlalchemy import delete, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,6 +36,7 @@ class SearchIndexRepository:
             entry.content = content
             entry.author_id = author_id
             entry.search_vector = search_vector
+            entry.updated_at = datetime.now(UTC)
             await self.session.flush()
             return entry
         entry = SearchIndex(

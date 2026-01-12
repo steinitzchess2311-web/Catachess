@@ -53,7 +53,7 @@ async def create_node(
     except NodeNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
 
 @router.get("/{node_id}", response_model=NodeResponse)
@@ -70,7 +70,7 @@ async def get_node(
     except NodeNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except PermissionDeniedError as e:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
 
 @router.put("/{node_id}", response_model=NodeResponse)
@@ -133,13 +133,13 @@ async def move_node(
 @router.delete("/{node_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_node(
     node_id: str,
-    version: int,
+    version: int | None = None,
     user_id: str = Depends(get_current_user_id),
     node_service: NodeService = Depends(get_node_service),
 ) -> None:
     """Soft delete a node."""
     try:
-        command = DeleteNodeCommand(node_id=node_id, version=version)
+        command = DeleteNodeCommand(node_id=node_id, version=version or -1)
         await node_service.delete_node(command, actor_id=user_id)
 
     except NodeNotFoundError as e:
@@ -147,6 +147,10 @@ async def delete_node(
     except PermissionDeniedError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except OptimisticLockError as e:
+        if version is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Version is required"
+            )
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
 
 

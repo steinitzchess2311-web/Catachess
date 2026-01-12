@@ -42,7 +42,8 @@ def export_no_comment_pgn(
 
     # Generate PGN
     if include_headers:
-        return tree_to_pgn(cleaned_tree, headers=headers)
+        resolved_headers = headers or getattr(root, "headers", None)
+        return tree_to_pgn(cleaned_tree, headers=resolved_headers)
     else:
         return tree_to_movetext(cleaned_tree)
 

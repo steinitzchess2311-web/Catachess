@@ -20,6 +20,13 @@ class NodeCreate(BaseModel):
     visibility: Visibility = Visibility.PRIVATE
     layout: dict[str, Any] = Field(default_factory=dict)
 
+    @field_validator("visibility", mode="before")
+    @classmethod
+    def normalize_visibility(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.lower()
+        return value
+
 
 class NodeUpdate(BaseModel):
     """Schema for updating a node."""
@@ -29,6 +36,13 @@ class NodeUpdate(BaseModel):
     visibility: Visibility | None = None
     layout: dict[str, Any] | None = None
     version: int | None = None
+
+    @field_validator("visibility", mode="before")
+    @classmethod
+    def normalize_visibility(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.lower()
+        return value
 
 
 class NodeMove(BaseModel):
@@ -57,6 +71,13 @@ class NodeResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
+
+    @field_validator("visibility", mode="before")
+    @classmethod
+    def normalize_visibility(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.lower()
+        return value
 
 
 class NodeListResponse(BaseModel):

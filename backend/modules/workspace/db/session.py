@@ -6,6 +6,21 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 from workspace.db.base import Base
+
+
+class SchemaAwareSession(AsyncSession):
+    def __init__(self, *args, **kwargs) -> None:
+        self._db_config = kwargs.pop("_db_config", None)
+        super().__init__(*args, **kwargs)
+
+    async def __aenter__(self) -> "SchemaAwareSession":
+        config = getattr(self, "_db_config", None)
+        if config and config._auto_create_schema and (config._memory_db or not config._schema_ready):
+            import workspace.db.tables  # noqa: F401
+            async with config.engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            config._schema_ready = True
+        return await super().__aenter__()
 class DatabaseConfig:
     """Database configuration."""
 
@@ -33,8 +48,9 @@ class DatabaseConfig:
         # Create session factory
         self.async_session_maker = async_sessionmaker(
             self.engine,
-            class_=AsyncSession,
+            class_=SchemaAwareSession,
             expire_on_commit=False,
+            _db_config=self,
         )
 
 # Global database config (will be initialized by application)

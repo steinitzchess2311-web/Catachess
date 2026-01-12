@@ -16,6 +16,12 @@ NOTIFICATION_RULES = {
         "description": "When a new discussion thread is created",
         "priority": "low",
     },
+    EventType.DISCUSSION_THREAD_ADDED: {
+        "enabled_by_default": False,
+        "channels": ["in_app"],
+        "description": "When a new discussion thread is added",
+        "priority": "low",
+    },
     EventType.DISCUSSION_REPLY_ADDED: {
         "enabled_by_default": True,
         "channels": ["in_app"],

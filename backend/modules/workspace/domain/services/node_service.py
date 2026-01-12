@@ -481,12 +481,17 @@ class NodeService:
 
     def _acl_to_model(self, acl: ACL):
         """Convert ORM ACL to domain model."""
+        permission = (
+            acl.permission
+            if isinstance(acl.permission, Permission)
+            else Permission(str(acl.permission))
+        )
         from workspace.domain.models.acl import ACLModel
         return ACLModel(
             id=acl.id,
             object_id=acl.object_id,
             user_id=acl.user_id,
-            permission=acl.permission,
+            permission=permission,
             inherit_to_children=acl.inherit_to_children,
             is_inherited=acl.is_inherited,
             inherited_from=acl.inherited_from,

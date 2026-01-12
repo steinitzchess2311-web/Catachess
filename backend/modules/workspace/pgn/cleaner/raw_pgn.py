@@ -42,7 +42,8 @@ def export_raw_pgn(
 
     # Generate PGN
     if include_headers:
-        return tree_to_pgn(mainline_tree, headers=headers)
+        resolved_headers = headers or getattr(root, "headers", None)
+        return tree_to_pgn(mainline_tree, headers=resolved_headers)
     else:
         return tree_to_movetext(mainline_tree)
 
@@ -94,4 +95,5 @@ def export_clean_mainline(
     mainline = extract_mainline(root)
     clean = remove_comments(mainline)
 
-    return tree_to_pgn(clean, headers=headers)
+    resolved_headers = headers or getattr(root, "headers", None)
+    return tree_to_pgn(clean, headers=resolved_headers)

@@ -79,6 +79,11 @@ from workspace.storage.r2_client import create_r2_client_from_env
 router = APIRouter(prefix="/studies", tags=["studies"])
 
 
+@router.put("/{study_id}", status_code=status.HTTP_501_NOT_IMPLEMENTED)
+async def update_study(study_id: str) -> None:
+    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not implemented")
+
+
 async def get_variation_repo(
     session: AsyncSession = Depends(get_session),
 ) -> VariationRepository:

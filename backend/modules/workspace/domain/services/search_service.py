@@ -68,11 +68,8 @@ class SearchService:
         # Calculate offset
         offset = (page - 1) * page_size
 
-        # Fetch more results than needed for permission filtering
-        # We'll fetch 3x the requested amount to account for filtered results
         fetch_limit = page_size * 3
 
-        # Search index
         index_results = await self.search_repo.search(
             query=query,
             target_type=target_type,
@@ -80,8 +77,7 @@ class SearchService:
             offset=offset,
         )
 
-        # Filter by permissions
-        filtered_results = []
+        filtered_results: list[SearchResult] = []
         for entry in index_results:
             # Check if user has permission to see this result
             if await self._can_user_see_result(user_id, entry):
@@ -96,6 +92,24 @@ class SearchService:
                 )
 
                 # Stop once we have enough results
+                if len(filtered_results) >= page_size:
+                    break
+
+        # Include metadata matches for nodes in "all" searches.
+        if target_type in (None, "workspace", "folder", "study"):
+            metadata = await self.search_metadata(
+                query=query,
+                user_id=user_id,
+                node_type=target_type,
+                page=1,
+                page_size=page_size,
+            )
+            existing = {(r.target_id, r.target_type) for r in filtered_results}
+            for result in metadata.results:
+                key = (result.target_id, result.target_type)
+                if key in existing:
+                    continue
+                filtered_results.append(result)
                 if len(filtered_results) >= page_size:
                     break
 

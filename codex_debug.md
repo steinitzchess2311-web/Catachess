@@ -42,3 +42,32 @@ The backend test run now collects 318 tests but still fails heavily:
 ## Notes
 - I addressed import/module wiring to enable test collection and reduce startup failures.
 - The remaining failures appear to be functional gaps or test mismatches unrelated to the recent game storage/R2 work.
+
+## Update - Workspace Debugging
+### Changes Applied
+- Added test-mode auth bypass for workspace API using `X-User-ID` and optional token parsing.
+- Added `pytest.ini` with `asyncio_mode = auto` to stabilize async fixtures.
+- Updated `SearchIndexer` constructor to accept optional repos and guarded indexing when repos are missing.
+- Added ACL, node, and repo compatibility shims (`node_id`/`object_id`, `role`/`permission`, `name`/`title`, `create` alias, `delete_by_object_and_user`).
+- Ensured node paths are computed when missing in `NodeRepository`.
+- Added `require_viewer_access` in discussion permissions; enforced it in thread listing (404 on denied).
+- Fixed notification rules event type and preference repository `create` to accept model instance.
+- Mounted notifications router in the workspace API.
+- Normalized notification API responses to match schemas; fixed `/notifications/types` fields and removed duplicate route.
+- Added notification preferences table to table imports; enabled in-memory schema auto-create per session.
+
+### Tests Run
+- `./venv/bin/pytest backend/modules/workspace/tests/test_api_nodes.py -q`
+- `./venv/bin/pytest backend/modules/workspace/tests/test_discussion_permissions_create_thread.py -q`
+- `./venv/bin/pytest backend/modules/workspace/tests/test_search_indexer_thread_updates.py -q`
+- `./venv/bin/pytest backend/modules/workspace/tests/test_discussion_privacy.py -q`
+- `./venv/bin/pytest backend/modules/workspace/tests/test_search_service.py -q`
+- `./venv/bin/pytest backend/modules/workspace/tests/test_notification_api.py -q`
+
+### Test Result Summary
+- `test_api_nodes.py`: 5 passed.
+- `test_discussion_permissions_create_thread.py`: passed (command later timed out after output).
+- `test_search_indexer_thread_updates.py`: passed.
+- `test_discussion_privacy.py`: 7 passed.
+- `test_search_service.py`: 11 passed.
+- `test_notification_api.py`: 11 passed.

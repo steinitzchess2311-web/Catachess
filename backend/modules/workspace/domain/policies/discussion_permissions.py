@@ -13,6 +13,12 @@ async def require_commenter_access(
     await _require_permission(node_repo, acl_repo, target_id, user_id, Permission.COMMENTER)
 
 
+async def require_viewer_access(
+    node_repo: NodeRepository, acl_repo: ACLRepository, target_id: str, user_id: str
+) -> None:
+    await _require_permission(node_repo, acl_repo, target_id, user_id, Permission.VIEWER)
+
+
 async def require_editor_access(
     node_repo: NodeRepository, acl_repo: ACLRepository, target_id: str, user_id: str
 ) -> None:

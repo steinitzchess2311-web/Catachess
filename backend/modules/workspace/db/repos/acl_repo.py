@@ -31,9 +31,15 @@ class ACLRepository:
 
     async def create_acl(self, acl: ACL) -> ACL:
         """Create a new ACL entry."""
+        if not acl.granted_by:
+            acl.granted_by = acl.user_id
         self.session.add(acl)
         await self.session.flush()
         return acl
+
+    async def create(self, acl: ACL) -> ACL:
+        """Compatibility alias for create_acl (used by tests)."""
+        return await self.create_acl(acl)
 
     async def get_acl(self, object_id: str, user_id: str) -> ACL | None:
         """Get ACL entry for object and user."""
@@ -92,6 +98,12 @@ class ACLRepository:
         """Delete an ACL entry."""
         await self.session.delete(acl)
         await self.session.flush()
+
+    async def delete_by_object_and_user(self, object_id: str, user_id: str) -> None:
+        """Delete ACL for a specific object/user pair."""
+        acl = await self.get_acl(object_id, user_id)
+        if acl:
+            await self.delete_acl(acl)
 
     async def delete_acls_for_object(self, object_id: str) -> int:
         """

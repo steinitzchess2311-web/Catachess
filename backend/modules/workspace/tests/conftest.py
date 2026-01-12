@@ -1,4 +1,5 @@
 import asyncio
+import os
 from typing import AsyncGenerator
 
 import pytest
@@ -17,6 +18,7 @@ from workspace.domain.services.share_service import ShareService
 from workspace.events.bus import EventBus
 from workspace.events.subscribers.registry import register_all_subscribers
 
+os.environ.setdefault("WORKSPACE_TEST_AUTH", "1")
 
 @pytest.fixture(scope="session")
 def event_loop():

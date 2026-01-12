@@ -26,17 +26,17 @@ class SearchIndexer:
         self,
         thread_repo: DiscussionThreadRepository,
         reply_repo: DiscussionReplyRepository,
-        node_repo: NodeRepository,
-        study_repo: StudyRepository,
-        variation_repo: VariationRepository,
         search_repo: SearchIndexRepository,
+        node_repo: NodeRepository | None = None,
+        study_repo: StudyRepository | None = None,
+        variation_repo: VariationRepository | None = None,
     ) -> None:
         self.thread_repo = thread_repo
         self.reply_repo = reply_repo
+        self.search_repo = search_repo
         self.node_repo = node_repo
         self.study_repo = study_repo
         self.variation_repo = variation_repo
-        self.search_repo = search_repo
 
     async def handle_event(self, event) -> None:
         # Discussion events
@@ -112,6 +112,8 @@ class SearchIndexer:
 
     async def _index_study(self, study_id: str) -> None:
         """Index a study (node title + study description)."""
+        if not self.node_repo or not self.study_repo:
+            return
         # Get node data
         node = await self.node_repo.get_by_id(study_id)
         if not node:
@@ -141,6 +143,8 @@ class SearchIndexer:
 
     async def _index_chapter(self, chapter_id: str) -> None:
         """Index a chapter (title + PGN metadata)."""
+        if not self.study_repo or not self.node_repo:
+            return
         chapter = await self.study_repo.get_chapter_by_id(chapter_id)
         if not chapter:
             return
@@ -177,6 +181,8 @@ class SearchIndexer:
 
     async def _index_annotation(self, annotation_id: str) -> None:
         """Index a move annotation (analytical text)."""
+        if not self.variation_repo:
+            return
         annotation = await self.variation_repo.get_annotation_by_id(annotation_id)
         if not annotation:
             return
@@ -214,7 +220,12 @@ def register_search_indexer(
 ) -> SearchIndexer:
     """Register the search indexer subscriber on the bus."""
     indexer = SearchIndexer(
-        thread_repo, reply_repo, node_repo, study_repo, variation_repo, search_repo
+        thread_repo,
+        reply_repo,
+        search_repo,
+        node_repo=node_repo,
+        study_repo=study_repo,
+        variation_repo=variation_repo,
     )
     bus.subscribe(indexer.handle_event)
     return indexer

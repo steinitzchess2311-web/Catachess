@@ -15,16 +15,19 @@ class NotificationPreferenceRepository:
         )
         return result.scalar_one_or_none()
 
-    async def create(self, user_id: str, **kwargs) -> NotificationPreference:
-        pref = NotificationPreference(
-            id=str(ULID()),
-            user_id=user_id,
-            preferences=kwargs.get("preferences", {}),
-            digest_frequency=kwargs.get("digest_frequency", "instant"),
-            quiet_hours=kwargs.get("quiet_hours", {}),
-            muted_objects=kwargs.get("muted_objects", []),
-            enabled=kwargs.get("enabled", True),
-        )
+    async def create(self, user_id: str | NotificationPreference, **kwargs) -> NotificationPreference:
+        if isinstance(user_id, NotificationPreference):
+            pref = user_id
+        else:
+            pref = NotificationPreference(
+                id=str(ULID()),
+                user_id=user_id,
+                preferences=kwargs.get("preferences", {}),
+                digest_frequency=kwargs.get("digest_frequency", "instant"),
+                quiet_hours=kwargs.get("quiet_hours", {}),
+                muted_objects=kwargs.get("muted_objects", []),
+                enabled=kwargs.get("enabled", True),
+            )
         self.session.add(pref)
         await self.session.flush()
         return pref

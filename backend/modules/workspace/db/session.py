@@ -15,6 +15,7 @@ class DatabaseConfig:
         self.echo = echo
         self._schema_ready = False
         self._auto_create_schema = "sqlite" in database_url
+        self._memory_db = ":memory:" in database_url
 
         is_sqlite = "sqlite" in database_url
         connect_args: dict[str, Any] | None = None
@@ -54,7 +55,7 @@ def get_db_config() -> DatabaseConfig:
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """Dependency injection helper for FastAPI."""
     config = get_db_config()
-    if config._auto_create_schema and not config._schema_ready:
+    if config._auto_create_schema and (config._memory_db or not config._schema_ready):
         import workspace.db.tables  # noqa: F401
         async with config.engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)

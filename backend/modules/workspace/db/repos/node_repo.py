@@ -38,6 +38,19 @@ class NodeRepository:
         Returns:
             Created node
         """
+        if not node.path:
+            if node.parent_id:
+                parent = await self.get_by_id(node.parent_id, include_deleted=True)
+                if parent:
+                    node.path = f"{parent.path}{node.id}/"
+                    node.depth = parent.depth + 1
+                else:
+                    node.path = f"/{node.id}/"
+                    node.depth = 0
+            else:
+                node.path = f"/{node.id}/"
+                node.depth = 0
+
         self.session.add(node)
         await self.session.flush()
         return node

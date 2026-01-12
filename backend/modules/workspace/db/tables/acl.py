@@ -7,7 +7,7 @@ Manages permissions and sharing for workspace objects.
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, synonym
 
 from workspace.db.base import Base, TimestampMixin
 from workspace.domain.models.types import Permission
@@ -30,12 +30,16 @@ class ACL(Base, TimestampMixin):
     object_id: Mapped[str] = mapped_column(
         String(64), ForeignKey("nodes.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    # Compatibility alias for older code/tests
+    node_id = synonym("object_id")
 
     # User being granted access
     user_id: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
 
     # Permission level
     permission: Mapped[Permission] = mapped_column(String(20), nullable=False)
+    # Compatibility alias for older code/tests
+    role = synonym("permission")
 
     # Inheritance settings
     # If True, this permission applies to all children of this object

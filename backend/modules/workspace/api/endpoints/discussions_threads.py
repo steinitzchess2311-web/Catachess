@@ -21,6 +21,7 @@ from workspace.domain.policies.discussion_permissions import (
     require_admin_access,
     require_commenter_access,
     require_editor_access,
+    require_viewer_access,
 )
 from workspace.domain.policies.limits import DiscussionLimits
 from workspace.domain.services.discussion.thread_service import (
@@ -68,10 +69,17 @@ async def create_thread(
 async def list_threads(
     target_id: str,
     target_type: str,
+    user_id: str = Depends(get_current_user_id),
+    node_repo: NodeRepository = Depends(get_node_repo),
+    acl_repo: ACLRepository = Depends(get_acl_repo),
     repo: DiscussionThreadRepository = Depends(get_thread_repo),
 ) -> list[ThreadResponse]:
-    threads = await repo.list_by_target(target_id, target_type)
-    return [ThreadResponse.model_validate(thread) for thread in threads]
+    try:
+        await require_viewer_access(node_repo, acl_repo, target_id, user_id)
+        threads = await repo.list_by_target(target_id, target_type)
+        return [ThreadResponse.model_validate(thread) for thread in threads]
+    except DiscussionPermissionError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
 @router.put("/{thread_id}", response_model=ThreadResponse)
 async def update_thread(

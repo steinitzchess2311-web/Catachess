@@ -18,9 +18,27 @@ from workspace.api.schemas.notification import (
 from workspace.db.repos.notification_preference_repo import NotificationPreferenceRepository
 from workspace.db.repos.notification_repo import NotificationRepository
 from workspace.db.tables.notification_preferences import NotificationPreference
+from workspace.db.tables.notifications import Notification
 from workspace.domain.policies.notification_rules import get_all_notification_types
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
+
+
+def _to_notification_response(notification: NotificationResponse | Notification) -> NotificationResponse:
+    payload = getattr(notification, "payload", {}) or {}
+    return NotificationResponse(
+        id=notification.id,
+        user_id=notification.user_id,
+        actor_id=payload.get("actor_id"),
+        type=notification.event_type,
+        title=payload.get("title", notification.event_type),
+        body=payload.get("body", payload.get("message", "")),
+        target_id=payload.get("target_id"),
+        target_type=payload.get("target_type"),
+        data=payload,
+        read_at=notification.read_at,
+        created_at=notification.created_at,
+    )
 
 
 def get_notification_repo(session: AsyncSession = Depends(get_session)) -> NotificationRepository:
@@ -71,7 +89,7 @@ async def list_notifications(
         total = len(all_notifications)
 
     return NotificationListResponse(
-        notifications=[NotificationResponse.model_validate(n) for n in notifications],
+        notifications=[_to_notification_response(n) for n in notifications],
         total=total,
         unread_count=unread_count,
         page=page,
@@ -203,6 +221,23 @@ async def get_preferences(
     return NotificationPreferencesResponse.model_validate(prefs)
 
 
+@router.get("/types", response_model=NotificationTypesResponse)
+async def list_notification_types() -> NotificationTypesResponse:
+    """List all available notification types."""
+    types = get_all_notification_types()
+    items = [
+        NotificationTypeInfo(
+            event_type=event_type,
+            description=meta.get("description", ""),
+            enabled_by_default=meta.get("enabled_by_default", False),
+            channels=meta.get("channels", []),
+            priority=meta.get("priority", "low"),
+        )
+        for event_type, meta in types.items()
+    ]
+    return NotificationTypesResponse(types=items)
+
+
 @router.put("/preferences", response_model=NotificationPreferencesResponse)
 async def update_preferences(
     data: NotificationPreferencesUpdate,
@@ -251,27 +286,3 @@ async def update_preferences(
     await session.refresh(prefs)
 
     return NotificationPreferencesResponse.model_validate(prefs)
-
-
-@router.get("/types", response_model=NotificationTypesResponse)
-async def list_notification_types() -> NotificationTypesResponse:
-    """
-    Get all available notification types with their settings.
-
-    Returns:
-        List of notification types
-    """
-    all_types = get_all_notification_types()
-
-    types = [
-        NotificationTypeInfo(
-            event_type=event_type,
-            enabled_by_default=settings["enabled_by_default"],
-            channels=settings["channels"],
-            description=settings["description"],
-            priority=settings["priority"],
-        )
-        for event_type, settings in all_types.items()
-    ]
-
-    return NotificationTypesResponse(types=types)

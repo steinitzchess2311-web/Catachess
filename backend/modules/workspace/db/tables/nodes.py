@@ -7,7 +7,7 @@ Nodes represent the workspace tree structure: workspace → folder → study
 from typing import Any
 
 from sqlalchemy import JSON, Boolean, ForeignKey, Index, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship, synonym
 
 from workspace.db.base import Base, SoftDeleteMixin, TimestampMixin
 from workspace.domain.models.types import NodeType, Visibility
@@ -31,6 +31,8 @@ class Node(Base, TimestampMixin, SoftDeleteMixin):
 
     # Basic metadata
     title: Mapped[str] = mapped_column(String(200), nullable=False)
+    # Compatibility alias for older code/tests
+    name = synonym("title")
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # Owner

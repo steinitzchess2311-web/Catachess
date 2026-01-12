@@ -4,6 +4,7 @@ from workspace.db.tables.acl import ACL, ShareLink
 from workspace.db.tables.activity_log import ActivityLog
 from workspace.db.tables.events import Event
 from workspace.db.tables.notifications import Notification
+from workspace.db.tables.notification_preferences import NotificationPreference
 from workspace.db.tables.nodes import Node
 from workspace.db.tables.studies import Chapter, Study
 from workspace.db.tables.variations import MoveAnnotation, Variation
@@ -28,4 +29,6 @@ __all__ = [
     "DiscussionReaction",
     "ThreadType",
     "SearchIndex",
+    "Notification",
+    "NotificationPreference",
 ]

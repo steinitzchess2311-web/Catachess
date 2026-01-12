@@ -1,6 +1,16 @@
+from workspace.db.base import Base
+from workspace.db.session import get_db_config, init_db
 from workspace.db.tables.acl import ACL
 from workspace.db.tables.nodes import Node
 from workspace.domain.models.types import NodeType, Permission, Visibility
+
+
+async def init_test_db() -> None:
+    """Initialize in-memory test database and create all tables."""
+    config = init_db("sqlite+aiosqlite:///:memory:", echo=False)
+    async with config.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    config._schema_ready = True
 
 
 async def create_study_node(session, node_id: str, owner_id: str) -> Node:

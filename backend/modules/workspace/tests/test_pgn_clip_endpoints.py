@@ -4,7 +4,7 @@ Tests for PGN clip/export endpoints.
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from workspace.api.deps import get_pgn_clip_service
 from workspace.api.router import api_router
@@ -105,7 +105,7 @@ async def test_preview_clip_endpoint(app: FastAPI):
     app.dependency_overrides[get_pgn_clip_service] = override_pgn_clip_service
 
     headers = {"Authorization": "Bearer user-1"}
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get(
             "/studies/study-1/pgn/clip/preview",
             params={"chapter_id": "chapter-1", "move_path": "main.2"},
@@ -125,7 +125,7 @@ async def test_export_no_comment_endpoint(app: FastAPI):
     app.dependency_overrides[get_pgn_clip_service] = override_pgn_clip_service
 
     headers = {"Authorization": "Bearer user-1"}
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/studies/study-1/pgn/export/no-comment",
             json={"chapter_id": "chapter-1", "for_clipboard": True},
@@ -145,7 +145,7 @@ async def test_export_raw_endpoint(app: FastAPI):
     app.dependency_overrides[get_pgn_clip_service] = override_pgn_clip_service
 
     headers = {"Authorization": "Bearer user-1"}
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/studies/study-1/pgn/export/raw",
             json={"chapter_id": "chapter-1", "for_clipboard": True},
@@ -165,7 +165,7 @@ async def test_export_clean_endpoint(app: FastAPI):
     app.dependency_overrides[get_pgn_clip_service] = override_pgn_clip_service
 
     headers = {"Authorization": "Bearer user-1"}
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/studies/study-1/pgn/export/clean",
             json={"chapter_id": "chapter-1", "for_clipboard": True},

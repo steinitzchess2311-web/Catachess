@@ -1,6 +1,6 @@
 """Discussion reply service."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from ulid import ULID
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -66,7 +66,7 @@ class ReplyService:
             raise OptimisticLockError("Version conflict")
         entry = {
             "content": reply.content,
-            "edited_at": datetime.utcnow().isoformat(),
+            "edited_at": datetime.now(UTC).isoformat(),
             "edited_by": command.actor_id,
         }
         reply.edit_history = (reply.edit_history + [entry])[-10:]

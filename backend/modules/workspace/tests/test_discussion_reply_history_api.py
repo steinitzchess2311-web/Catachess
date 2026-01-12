@@ -4,11 +4,11 @@ Discussion reply edit history API tests.
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from workspace.api.router import api_router
 from workspace.db.session import get_db_config
-from workspace.tests.helpers.discussion_setup import create_study_node
+from workspace.tests.helpers.discussion_setup import init_test_db, create_study_node
 
 
 @pytest.fixture
@@ -20,15 +20,14 @@ def app() -> FastAPI:
 
 @pytest.mark.asyncio
 async def test_reply_history_endpoint(app: FastAPI):
-    from workspace.db.session import init_db
-
-    init_db("sqlite+aiosqlite:///:memory:", echo=False)
+    
+    await init_test_db()
     headers = {"Authorization": "Bearer user123"}
     config = get_db_config()
     async with config.async_session_maker() as session:
         await create_study_node(session, "study-1", "user123")
         await session.commit()
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         thread_resp = await client.post(
             "/discussions",
             json={

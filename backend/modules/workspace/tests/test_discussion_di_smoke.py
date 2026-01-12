@@ -4,11 +4,11 @@ Discussion API DI smoke test.
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from workspace.api.router import api_router
-from workspace.db.session import get_db_config, init_db
-from workspace.tests.helpers.discussion_setup import create_study_node
+from workspace.db.session import get_db_config
+from workspace.tests.helpers.discussion_setup import init_test_db, create_study_node
 
 
 @pytest.fixture
@@ -20,14 +20,14 @@ def app() -> FastAPI:
 
 @pytest.mark.asyncio
 async def test_discussion_di_smoke(app: FastAPI):
-    init_db("sqlite+aiosqlite:///:memory:", echo=False)
+    await init_test_db()
     config = get_db_config()
     async with config.async_session_maker() as session:
         await create_study_node(session, "study-7", "user-1")
         await session.commit()
 
     headers = {"Authorization": "Bearer user-1"}
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         thread_resp = await client.post(
             "/discussions",
             json={

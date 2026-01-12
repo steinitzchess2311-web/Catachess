@@ -21,8 +21,10 @@ async def test_event_payload_envelope(event_bus):
     event = await event_bus.publish(command)
 
     payload = event.payload
-    assert payload["event_type"] == EventType.DISCUSSION_THREAD_CREATED
+    assert payload["event_type"] == str(EventType.DISCUSSION_THREAD_CREATED)
     assert payload["actor_id"] == "user-1"
     assert payload["target_id"] == "thread-1"
     assert payload["version"] == 1
     assert payload["payload"]["title"] == "Hello"
+    # Verify timestamp is serialized as string
+    assert isinstance(payload["timestamp"], str)

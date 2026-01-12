@@ -2,7 +2,7 @@
 SQLAlchemy base configuration and utilities.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import DateTime, func
@@ -53,7 +53,7 @@ class SoftDeleteMixin:
 
     def soft_delete(self) -> None:
         """Mark object as deleted."""
-        self.deleted_at = datetime.utcnow()
+        self.deleted_at = datetime.now(UTC)
 
     def restore(self) -> None:
         """Restore soft-deleted object."""

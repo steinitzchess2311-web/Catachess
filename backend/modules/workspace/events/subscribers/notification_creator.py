@@ -7,6 +7,7 @@ from workspace.db.repos.notification_repo import NotificationRepository
 from workspace.db.tables.notifications import Notification
 from workspace.events.payloads import extract_event_payload
 from workspace.events.types import EventType
+from workspace.notifications.dispatcher import NotificationDispatcher
 
 
 class NotificationCreator:
@@ -16,11 +17,13 @@ class NotificationCreator:
         thread_repo: DiscussionThreadRepository,
         reply_repo: DiscussionReplyRepository,
         reaction_repo: DiscussionReactionRepository,
+        dispatcher: NotificationDispatcher | None = None,
     ) -> None:
         self.notification_repo = notification_repo
         self.thread_repo = thread_repo
         self.reply_repo = reply_repo
         self.reaction_repo = reaction_repo
+        self.dispatcher = dispatcher
 
     async def handle_event(self, event) -> None:
         payload = extract_event_payload(event)
@@ -81,3 +84,21 @@ class NotificationCreator:
             },
         )
         await self.notification_repo.create(notification)
+
+        # Dispatch notification through channels if dispatcher is available
+        if self.dispatcher:
+            try:
+                await self.dispatcher.dispatch(
+                    user_id=user_id,
+                    event_type=event.type,
+                    payload={
+                        "target_id": event.target_id,
+                        "target_type": event.target_type,
+                        "payload": payload,
+                        "notification_id": notification.id,
+                    },
+                    target_id=event.target_id,
+                )
+            except Exception:
+                # Don't fail notification creation if dispatch fails
+                pass

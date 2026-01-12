@@ -4,7 +4,7 @@ API tests for node endpoints.
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from workspace.api.router import api_router
 from workspace.domain.models.types import NodeType
@@ -26,7 +26,7 @@ async def test_create_workspace_api(app: FastAPI, session):
     # Initialize DB for API deps
     init_db("sqlite+aiosqlite:///:memory:", echo=False)
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/nodes",
             json={
@@ -58,7 +58,7 @@ async def test_get_node_api(app: FastAPI, node_service):
         actor_id="user123",
     )
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get(
             f"/nodes/{node.id}",
             headers={"Authorization": "Bearer user123"},
@@ -84,7 +84,7 @@ async def test_update_node_api(app: FastAPI, node_service):
         actor_id="user123",
     )
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.put(
             f"/nodes/{node.id}",
             json={
@@ -114,7 +114,7 @@ async def test_delete_node_api(app: FastAPI, node_service):
         actor_id="user123",
     )
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.delete(
             f"/nodes/{node.id}?version=1",
             headers={"Authorization": "Bearer user123"},
@@ -126,7 +126,7 @@ async def test_delete_node_api(app: FastAPI, node_service):
 @pytest.mark.asyncio
 async def test_unauthorized_access(app: FastAPI):
     """Test that requests without auth are rejected."""
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/nodes/some-id")
 
     assert response.status_code == 401

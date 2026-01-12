@@ -11,7 +11,7 @@ Tests the following endpoints:
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from ulid import ULID
 
 from workspace.api.router import api_router
@@ -37,7 +37,7 @@ async def test_add_move_success(app: FastAPI, variation_repo, session):
     study_id = str(ULID())
     chapter_id = str(ULID())
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/moves",
             json={
@@ -69,7 +69,7 @@ async def test_add_move_parent_not_found(app: FastAPI, session):
     chapter_id = str(ULID())
     parent_id = str(ULID())
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/moves",
             json={
@@ -94,7 +94,7 @@ async def test_add_move_with_parent(app: FastAPI, variation_repo, session):
     chapter_id = str(ULID())
 
     # Create parent move first
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         parent_response = await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/moves",
             json={
@@ -141,7 +141,7 @@ async def test_delete_move_success(app: FastAPI, variation_repo, session):
     chapter_id = str(ULID())
 
     # Create move first
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         create_response = await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/moves",
             json={
@@ -172,7 +172,7 @@ async def test_delete_move_not_found(app: FastAPI, session):
     chapter_id = str(ULID())
     move_id = str(ULID())
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.delete(
             f"/studies/{study_id}/chapters/{chapter_id}/moves/{move_id}",
             headers={"Authorization": "Bearer user123"},
@@ -193,7 +193,7 @@ async def test_add_variation_success(app: FastAPI, variation_repo, session):
     chapter_id = str(ULID())
 
     # Create main line move first
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         parent_response = await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/moves",
             json={
@@ -237,7 +237,7 @@ async def test_add_variation_rank_zero_validation(app: FastAPI, session):
     study_id = str(ULID())
     chapter_id = str(ULID())
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/variations",
             json={
@@ -267,7 +267,7 @@ async def test_add_annotation_success(app: FastAPI, variation_repo, session):
     chapter_id = str(ULID())
 
     # Create move first
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         move_response = await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/moves",
             json={
@@ -309,7 +309,7 @@ async def test_add_annotation_move_not_found(app: FastAPI, session):
     chapter_id = str(ULID())
     move_id = str(ULID())
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/moves/{move_id}/annotations",
             json={
@@ -329,7 +329,7 @@ async def test_add_annotation_already_exists(app: FastAPI, variation_repo, sessi
     chapter_id = str(ULID())
 
     # Create move and annotation
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         move_response = await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/moves",
             json={
@@ -368,7 +368,7 @@ async def test_add_annotation_nag_only(app: FastAPI, variation_repo, session):
     chapter_id = str(ULID())
 
     # Create move first
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         move_response = await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/moves",
             json={
@@ -408,7 +408,7 @@ async def test_promote_variation_success(app: FastAPI, variation_repo, session):
     chapter_id = str(ULID())
 
     # Create main line and variation
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Create e4 (main line)
         main_response = await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/moves",
@@ -455,7 +455,7 @@ async def test_promote_variation_not_found(app: FastAPI, session):
     chapter_id = str(ULID())
     variation_id = str(ULID())
 
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.put(
             f"/studies/{study_id}/chapters/{chapter_id}/variations/{variation_id}/promote",
             json={},
@@ -472,7 +472,7 @@ async def test_promote_variation_optimistic_lock(app: FastAPI, variation_repo, s
     chapter_id = str(ULID())
 
     # Create variation
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Create main line
         await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/moves",
@@ -519,7 +519,7 @@ async def test_promote_variation_if_match_header(app: FastAPI, variation_repo, s
     chapter_id = str(ULID())
 
     # Create variation
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # Create main line
         await client.post(
             f"/studies/{study_id}/chapters/{chapter_id}/moves",

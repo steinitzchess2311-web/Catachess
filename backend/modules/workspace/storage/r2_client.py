@@ -262,6 +262,77 @@ class R2Client:
 
         return [obj["Key"] for obj in response["Contents"]]
 
+    def upload_json(
+        self,
+        key: str,
+        content: str | bytes,
+        metadata: dict[str, str] | None = None,
+    ) -> UploadResult:
+        """
+        Upload JSON content to R2 (for version snapshots).
+
+        Args:
+            key: Object key (path in bucket)
+            content: JSON content (string or bytes)
+            metadata: Optional metadata dict
+
+        Returns:
+            UploadResult with upload details
+
+        Raises:
+            ClientError: If upload fails
+        """
+        # Convert string to bytes
+        if isinstance(content, str):
+            content_bytes = content.encode("utf-8")
+        else:
+            content_bytes = content
+
+        # Calculate hash for integrity
+        content_hash = hashlib.sha256(content_bytes).hexdigest()
+        size = len(content_bytes)
+
+        # Prepare metadata
+        upload_metadata = metadata or {}
+        upload_metadata["content-hash"] = content_hash
+
+        # Upload to R2
+        response = self.s3.put_object(
+            Bucket=self.config.bucket,
+            Key=key,
+            Body=content_bytes,
+            ContentType="application/json",
+            Metadata=upload_metadata,
+        )
+
+        return UploadResult(
+            key=key,
+            etag=response["ETag"].strip('"'),
+            size=size,
+            content_hash=content_hash,
+        )
+
+    def download_json(self, key: str) -> str:
+        """
+        Download JSON content from R2.
+
+        Args:
+            key: Object key
+
+        Returns:
+            JSON content as string
+
+        Raises:
+            ClientError: If download fails
+        """
+        response = self.s3.get_object(
+            Bucket=self.config.bucket,
+            Key=key,
+        )
+
+        content_bytes = response["Body"].read()
+        return content_bytes.decode("utf-8")
+
 
 def create_r2_client_from_env() -> R2Client:
     """

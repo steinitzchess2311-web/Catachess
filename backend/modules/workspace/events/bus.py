@@ -7,7 +7,7 @@ Simplified implementation for Phase 1:
 """
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,21 +37,41 @@ class EventBus:
         self.session = session
         self._subscribers: list[callable] = []
 
-    async def publish(self, command: CreateEventCommand) -> EventTable:
+    async def publish(
+        self,
+        command: CreateEventCommand,
+        event_id: str | None = None
+    ) -> EventTable:
         """
         Publish an event.
 
         Writes event to database and notifies subscribers.
+        Supports idempotency: if event_id already exists, returns existing event.
 
         Args:
             command: Event creation command
+            event_id: Optional event ID (for idempotency). If not provided, generates UUID.
 
         Returns:
-            Created event
+            Created or existing event
         """
+        # Generate or use provided event_id
+        if event_id is None:
+            event_id = str(uuid.uuid4())
+
+        # Check if event already exists (idempotency)
+        from sqlalchemy import select
+        existing_result = await self.session.execute(
+            select(EventTable).where(EventTable.id == event_id)
+        )
+        existing_event = existing_result.scalar_one_or_none()
+
+        if existing_event is not None:
+            # Event already exists, return it (idempotent behavior)
+            return existing_event
+
         # Create event record
-        event_id = str(uuid.uuid4())
-        timestamp = datetime.utcnow()
+        timestamp = datetime.now(UTC)
         payload = build_event_envelope(
             event_id=event_id,
             event_type=str(command.type),

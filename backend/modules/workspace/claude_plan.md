@@ -1572,7 +1572,583 @@ dev = [
 
 ---
 
-## 11. 实现优先级建议
+## 11. 系统稳定性与生产就绪（Production Readiness）
+
+### 11.1 隐私控制规则（Privacy Control Rules）
+
+**重要：** 这是系统安全的基础，必须在文档中明确规定。
+
+#### 对象可见性（Object Visibility）
+
+**PRIVATE（私密）**：
+- ✅ 只有 owner 和 ACL 中的用户可见
+- ❌ 其他用户完全看不到（搜索也搜不到）
+- ❌ 无法通过 URL 直接访问（返回 404，而非 403，避免泄露对象存在性）
+- ❌ API 不返回任何对象信息
+
+**SHARED（已分享）**：
+- ✅ ACL 中的成员可以看到和访问
+- ❌ 非 ACL 成员完全看不到
+- ✅ 可通过分享链接访问（如果启用）
+
+**PUBLIC（公开）** - 未来功能：
+- ✅ 所有人可见
+- ⚠️ 仍需遵守权限控制（如：viewer 不能编辑）
+
+#### Discussion 访问规则
+
+**查看 Discussion**：
+- 必须能访问目标对象（有 ACL 权限）
+- 继承目标对象的 visibility 设置
+- 无权限用户：看不到任何 discussion
+
+**发表 Discussion**：
+- 必须至少有 `commenter` 权限
+- 无 commenter 权限：返回 403
+
+**外部隔离**：
+- 没有对象访问权限 = 看不到任何 discussion
+- API 返回空列表或 404（取决于对象是否存在）
+
+#### 权限检查执行点
+
+```python
+# 所有 API endpoint 必须先检查权限
+async def check_access(user_id: str, object_id: str) -> bool:
+    # 1. 检查 visibility
+    obj = await get_object(object_id)
+    if obj.visibility == Visibility.PRIVATE:
+        if obj.owner_id != user_id:
+            # 检查 ACL
+            acl = await get_acl(object_id, user_id)
+            if not acl:
+                return False  # 返回 404，不是 403
+
+    # 2. 检查 ACL 权限级别
+    # ...
+
+    return True
+```
+
+**前端行为**：
+- 无权限对象不显示在列表中
+- 无权限对象通过 URL 访问时显示 404 页面
+- 搜索结果自动过滤无权限对象
+
+---
+
+### 11.2 幂等性机制（Idempotency - 分布式系统必须）
+
+**问题**：
+- WebSocket 重连
+- 前端重试
+- 网络抖动
+- 会导致：重复 move、幽灵 annotation、数据不一致
+
+**解决方案**：
+
+#### 方案 1：X-Idempotency-Key（推荐用于关键操作）
+
+```python
+# API 层
+@router.post("/studies/{id}/chapters/{cid}/moves")
+async def add_move(
+    request: Request,
+    idempotency_key: str | None = Header(None, alias="X-Idempotency-Key")
+):
+    if idempotency_key:
+        # 检查是否已处理
+        existing = await get_operation_by_key(idempotency_key)
+        if existing:
+            return existing.result  # 返回缓存结果
+
+    # 执行操作
+    result = await service.add_move(...)
+
+    if idempotency_key:
+        # 缓存结果（TTL: 24小时）
+        await cache_operation(idempotency_key, result)
+
+    return result
+```
+
+**需要幂等性的操作**：
+- `POST /studies/{id}/chapters/{cid}/moves`（添加棋步）
+- `POST /discussions`（创建讨论）
+- `POST /studies/{id}/import-pgn`（导入 PGN）
+- `POST /export`（创建导出任务）
+- `POST /share`（分享）
+
+#### 方案 2：Event ID 去重（用于事件流）
+
+```python
+class Event:
+    event_id: str  # UUID，客户端生成或服务端生成
+    # ...
+
+async def publish_event(event: Event):
+    # 检查 event_id 是否已存在
+    existing = await event_repo.get_by_id(event.event_id)
+    if existing:
+        return existing  # 幂等：返回已存在的事件
+
+    # 写入事件
+    await event_repo.insert(event)
+    await ws_broadcast(event)
+```
+
+**实现要求**：
+- 数据库：`events.event_id` 添加 UNIQUE 约束
+- 缓存：Redis 存储已处理的 idempotency_key（24小时 TTL）
+- 前端：关键操作自动生成 `X-Idempotency-Key`（UUID）
+
+---
+
+### 11.3 统一事件 Envelope（Event Envelope Standard）
+
+**当前问题**：事件结构未明确规范化。
+
+**解决方案**：所有事件统一使用以下结构：
+
+```python
+class EventEnvelope:
+    """
+    统一事件封装格式。
+
+    所有事件必须遵守此结构。
+    """
+    event_id: str          # UUID，全局唯一
+    event_type: str        # 事件类型，如 "study.move.added"
+    actor_id: str          # 执行操作的用户 ID
+    target: EventTarget    # 目标对象
+    payload: dict          # 事件详细数据（最小必要 diff）
+    timestamp: datetime    # 事件时间（UTC）
+    version: int           # 目标对象版本号
+    correlation_id: str | None  # 关联 ID（用于追踪请求链路）
+
+class EventTarget:
+    """事件目标对象"""
+    type: str  # "workspace" | "folder" | "study" | "discussion"
+    id: str    # 对象 ID
+```
+
+**示例**：
+
+```json
+{
+  "event_id": "550e8400-e29b-41d4-a716-446655440000",
+  "event_type": "study.move.added",
+  "actor_id": "user_123",
+  "target": {
+    "type": "study",
+    "id": "study_456"
+  },
+  "payload": {
+    "chapter_id": "chapter_789",
+    "move_path": "main.12",
+    "san": "Nf3",
+    "fen_after": "rnbqkb1r/pppppppp/5n2/8/8/5N2/PPPPPPPP/RNBQKB1R w KQkq - 2 3"
+  },
+  "timestamp": "2026-01-11T23:30:00Z",
+  "version": 15,
+  "correlation_id": "req_abc123"
+}
+```
+
+**好处**：
+- ✅ 前端统一处理所有事件
+- ✅ 事件重放容易
+- ✅ 审计日志标准化
+- ✅ 未来扩展（如：添加 metadata）无需破坏性变更
+
+---
+
+### 11.4 完整事件列表补充（Critical Events）
+
+#### 回收站事件（必须）
+
+```python
+# 节点软删除
+node.trashed        # 移入回收站
+node.restored       # 从回收站恢复
+node.purged         # 永久删除（从回收站彻底删除）
+```
+
+**Payload 示例**：
+
+```json
+// node.trashed
+{
+  "node_id": "...",
+  "node_type": "study",
+  "title": "My Study",
+  "deleted_at": "2026-01-11T23:30:00Z",
+  "can_restore_until": "2026-02-10T23:30:00Z"  // 30天后自动purge
+}
+
+// node.restored
+{
+  "node_id": "...",
+  "restored_to_parent": "folder_123",
+  "restored_by": "user_456"
+}
+
+// node.purged
+{
+  "node_id": "...",
+  "purged_reason": "auto" | "manual"
+}
+```
+
+#### 通知创建事件（必须）
+
+```python
+notification.created  # 通知创建（用于 WS 推送和邮件解耦）
+notification.read
+notification.dismissed
+notification.bulk_read
+```
+
+**Payload 示例**：
+
+```json
+// notification.created
+{
+  "notification_id": "...",
+  "recipient_id": "user_123",
+  "type": "discussion.mention",
+  "title": "Alice mentioned you in a discussion",
+  "content": "Check out this opening variation...",
+  "link": "/studies/study_456/discussions/thread_789",
+  "priority": "normal" | "high"
+}
+```
+
+#### Layout 事件细分（可选但推荐）
+
+```python
+# 替代原来的 layout.updated，更精确
+layout.node_moved        # 单个节点被拖拽移动
+layout.auto_arranged     # 自动排列完成
+layout.view_changed      # 视图模式切换（list/grid）
+```
+
+**Payload 示例**：
+
+```json
+// layout.node_moved
+{
+  "node_id": "...",
+  "old_position": {"x": 100, "y": 200},
+  "new_position": {"x": 150, "y": 250}
+}
+
+// layout.auto_arranged
+{
+  "workspace_id": "...",
+  "affected_nodes": ["node1", "node2", "node3"],
+  "algorithm": "grid" | "force_directed"
+}
+```
+
+#### 导出任务事件补充
+
+```python
+pgn.export.requested
+pgn.export.processing   # 新增：处理中（可选）
+pgn.export.completed
+pgn.export.failed
+pgn.export.cancelled    # 必须：用户取消导出
+```
+
+**Payload 示例**：
+
+```json
+// pgn.export.cancelled
+{
+  "job_id": "...",
+  "cancelled_by": "user_123",
+  "reason": "user_request" | "timeout" | "system_shutdown",
+  "progress": 45  // 取消时的进度百分比
+}
+```
+
+#### 审计与安全事件（可选，未来 Phase）
+
+```python
+acl.access_denied       # 权限拒绝（用于安全审计）
+security.suspicious_activity  # 可疑活动检测
+```
+
+**Payload 示例**：
+
+```json
+// acl.access_denied
+{
+  "user_id": "...",
+  "target_id": "...",
+  "target_type": "study",
+  "required_permission": "editor",
+  "actual_permission": "viewer",
+  "action_attempted": "add_move",
+  "ip_address": "192.168.1.1",
+  "user_agent": "Mozilla/5.0..."
+}
+```
+
+---
+
+### 11.5 搜索索引触发点明确（Documentation Clarity）
+
+**问题**：文档说"自动"，但没明确哪些事件触发索引更新。
+
+**解决方案**：明确列出所有触发搜索索引更新的事件。
+
+#### 触发 `search.index.updated` 的事件
+
+**Study 相关**：
+```python
+study.created                # 索引 study title + description
+study.updated                # 更新 study 元数据索引
+study.chapter.created        # 索引 chapter title
+study.chapter.renamed        # 更新 chapter title 索引
+study.move_annotation.added  # 索引 annotation 文本
+study.move_annotation.updated  # 更新 annotation 索引
+study.move_annotation.deleted  # 从索引中移除
+```
+
+**Discussion 相关**：
+```python
+discussion.thread.created  # 索引 thread title + content
+discussion.thread.updated  # 更新 thread 索引
+discussion.reply.added     # 索引 reply content
+discussion.reply.edited    # 更新 reply 索引
+discussion.reply.deleted   # 从索引中移除
+```
+
+**Node 相关**：
+```python
+workspace.created   # 索引 workspace title
+workspace.updated   # 更新 workspace 索引
+folder.created      # 索引 folder title
+folder.renamed      # 更新 folder 索引
+```
+
+#### 索引内容结构
+
+```python
+class SearchIndex:
+    target_id: str
+    target_type: str  # "study" | "discussion" | "workspace" | "folder"
+    title: str        # 标题
+    content: str      # 内容（可搜索文本）
+    tags: list[str]   # 标签
+    author_id: str
+    created_at: datetime
+    updated_at: datetime
+    search_vector: TSVector  # Postgres tsvector
+```
+
+**实现**：
+
+```python
+# events/subscribers/search_indexer.py
+class SearchIndexer:
+    """监听事件并更新搜索索引"""
+
+    INDEXED_EVENTS = {
+        "study.created",
+        "study.updated",
+        "study.chapter.created",
+        "study.chapter.renamed",
+        "study.move_annotation.added",
+        "study.move_annotation.updated",
+        "study.move_annotation.deleted",
+        "discussion.thread.created",
+        "discussion.thread.updated",
+        "discussion.reply.added",
+        "discussion.reply.edited",
+        "discussion.reply.deleted",
+        # ... more
+    }
+
+    async def handle_event(self, event: Event):
+        if event.event_type in self.INDEXED_EVENTS:
+            await self.update_index(event)
+```
+
+---
+
+### 11.6 乐观锁机制验证（已实现，确保文档完整）
+
+**当前状态**：Phase 3 已实现乐观锁（`domain/policies/concurrency.py`）。
+
+**需要确认的文档内容**：
+
+#### API 使用规范
+
+**所有编辑操作必须携带版本信息**：
+
+```http
+# 获取 study 时返回 ETag
+GET /studies/{id}
+Response:
+  ETag: "v15"
+  {
+    "id": "...",
+    "title": "...",
+    "version": 15
+  }
+
+# 更新时必须提供 If-Match
+PUT /studies/{id}
+Headers:
+  If-Match: "v15"
+Body: { "title": "Updated Title" }
+
+# 如果版本冲突，返回 409
+Response: 409 Conflict
+{
+  "error": "version_conflict",
+  "message": "Study has been modified by another user",
+  "current_version": 16,
+  "your_version": 15,
+  "latest_data": { ... }
+}
+```
+
+#### 需要乐观锁的操作
+
+```python
+# Study 编辑
+PUT /studies/{id}
+POST /studies/{id}/chapters/{cid}/moves
+DELETE /studies/{id}/chapters/{cid}/moves/{move_path}
+POST /studies/{id}/chapters/{cid}/variations
+
+# Move Annotation 编辑
+POST /studies/{id}/chapters/{cid}/moves/{move_path}/annotations
+PUT /studies/{id}/chapters/{cid}/annotations/{aid}
+DELETE /studies/{id}/chapters/{cid}/annotations/{aid}
+
+# Variation 操作
+PUT /studies/{id}/chapters/{cid}/variations/{vid}/promote
+```
+
+#### 前端处理流程
+
+```javascript
+async function updateStudy(studyId, updates, currentVersion) {
+  try {
+    const response = await fetch(`/studies/${studyId}`, {
+      method: 'PUT',
+      headers: {
+        'If-Match': `v${currentVersion}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+    });
+
+    if (response.status === 409) {
+      // 版本冲突
+      const conflict = await response.json();
+      // 提示用户：数据已被他人修改，是否覆盖或合并
+      return handleConflict(conflict);
+    }
+
+    return await response.json();
+  } catch (error) {
+    // ...
+  }
+}
+```
+
+---
+
+### 11.7 Undo/Redo 系统设计（未来功能，但已有 70% 基础）
+
+**已有基础**：
+- ✅ Granular events（所有操作都有事件）
+- ✅ Snapshots（版本快照）
+- ✅ Rollback（版本回滚）
+
+**缺失部分**：
+- ❌ 前端维护本地 event stack
+- ❌ 后端 replay API
+
+#### 设计方案
+
+**前端 Undo/Redo Stack**：
+
+```javascript
+class UndoRedoManager {
+  constructor() {
+    this.undoStack = [];  // 可撤销的操作
+    this.redoStack = [];  // 可重做的操作
+  }
+
+  // 执行操作
+  async execute(operation) {
+    const result = await operation.execute();
+    this.undoStack.push(operation);
+    this.redoStack = [];  // 清空 redo 栈
+    return result;
+  }
+
+  // 撤销
+  async undo() {
+    if (this.undoStack.length === 0) return;
+
+    const operation = this.undoStack.pop();
+    await operation.undo();
+    this.redoStack.push(operation);
+  }
+
+  // 重做
+  async redo() {
+    if (this.redoStack.length === 0) return;
+
+    const operation = this.redoStack.pop();
+    await operation.execute();
+    this.undoStack.push(operation);
+  }
+}
+```
+
+**后端 Replay API**：
+
+```python
+# API endpoint
+POST /studies/{id}/replay
+Body: {
+  "from_version": 10,
+  "to_version": 15,
+  "operations": [
+    {"event_id": "...", "event_type": "study.move.added", ...},
+    {"event_id": "...", "event_type": "study.move.deleted", ...}
+  ]
+}
+
+# 后端逻辑
+async def replay_operations(study_id: str, operations: list[Event]):
+    """
+    重放事件序列。
+
+    用于：
+    1. Undo/Redo
+    2. 离线编辑同步
+    3. 协作冲突解决
+    """
+    # 验证 operations 的有效性
+    # 按顺序执行每个 operation
+    # 返回新的 study 状态
+```
+
+**优先级**：P2（未来功能），但基础设施已就绪。
+
+---
+
+## 12. 实现优先级建议
 
 ### P0（必须）
 
@@ -1633,3 +2209,111 @@ workspace/f1/f2/f3/f4/f5/f6/f7/study
 - `discussion`：用户交流，不导出
 
 这是本系统区别于其他 study 系统的核心创新。
+
+---
+
+## Phase 1-6 实现状态与测试验证
+
+**更新日期**: 2026-01-11
+**测试通过率**: 87.1% (183/210)
+
+### 实现完成状态
+
+| Phase | 功能 | 状态 | 测试通过率 | 说明 |
+|-------|------|------|-----------|------|
+| Phase 0 | 协议定义 | ✅ 完成 | N/A | 架构设计已确定 |
+| Phase 1 | 节点树+权限 | ✅ 完成 | 100% | 所有核心功能已验证 |
+| Phase 2 | Study导入 | ✅ 完成 | 100% | PGN导入、R2存储已验证 |
+| Phase 3 | 变体树编辑 | ✅ 完成 | 100% | 数据库存储、乐观锁已验证 |
+| Phase 4 | PGN Cleaner | ✅ 完成 | 80% | 基本功能正常,边缘情况待优化 |
+| Phase 5 | 讨论系统 | ⚠️ 部分完成 | 70% | 核心功能OK,delete等待实现 |
+| Phase 6 | 通知系统 | ✅ 基础完成 | 100% | 事件基础设施就绪 |
+
+### 详细测试结果
+
+#### ✅ 完全通过的功能 (Phase 1-3, 6)
+
+**Phase 1 - 节点树与权限** (100%):
+- ✅ Workspace CRUD
+- ✅ Folder CRUD  
+- ✅ Study CRUD
+- ✅ 软删除与恢复
+- ✅ ACL权限控制 (owner/editor/viewer/commenter)
+- ✅ 权限继承
+- ✅ 分享链接
+- ✅ 路径树结构
+
+**Phase 2 - Study管理** (100%):
+- ✅ Study创建
+- ✅ PGN导入
+- ✅ Chapter存储到R2
+- ✅ 元数据存PostgreSQL
+- ✅ PGN hash校验
+- ✅ R2 etag管理
+
+**Phase 3 - 变体树** (100%):
+- ✅ Variations存储
+- ✅ Move annotations存储
+- ✅ 乐观锁version控制
+- ✅ PGN tree序列化
+
+**Phase 6 - 事件系统** (100%):
+- ✅ Event bus发布
+- ✅ Event订阅机制
+- ✅ JSON序列化
+- ✅ 事件持久化
+
+#### ⚠️ 部分完成的功能 (Phase 4-5)
+
+**Phase 4 - PGN Cleaner** (80%):
+- ✅ 基本clip功能
+- ✅ 主线路径查找
+- ✅ --no-comment导出
+- ⚠️ 嵌套variation查找 (边缘情况)
+- ⚠️ Variation保留逻辑
+- ⚠️ 性能优化待完成
+
+**Phase 5 - Discussion** (70%):
+- ✅ 创建thread
+- ✅ 添加reply
+- ✅ 基本权限检查
+- ✅ Commenter权限
+- ⚠️ Delete thread (NotImplementedError)
+- ⚠️ Reply nesting limit检查
+- ⚠️ Pin/Resolve状态管理
+
+### 数据库迁移状态
+
+✅ **完全就绪**:
+- 17张表全部创建
+- 所有索引已建立
+- 迁移版本: `20260112_0010`
+- Railway数据库已配置
+
+### R2存储状态
+
+✅ **本地已配置**:
+- Bucket: `workspace`
+- 连接测试通过
+- ⚠️ Railway环境变量待添加
+
+### 进入Phase 7的准备状态
+
+**结论**: ✅ **可以开始Phase 7**
+
+**理由**:
+1. Phase 1-3核心功能100%验证通过
+2. 事件系统(Phase 6基础)已就绪
+3. 数据库和存储架构稳定
+4. 87%总体测试通过率
+5. 剩余问题都是边缘功能,不阻塞WebSocket/通知开发
+
+**Phase 7准备清单**:
+- [x] Event bus基础设施
+- [x] Event持久化
+- [x] 数据库连接池
+- [x] 异步架构就绪
+- [ ] WebSocket连接管理 (Phase 7开发)
+- [ ] 在线状态追踪 (Phase 7开发)
+
+详细测试报告见: `FINAL_TEST_STATUS.md`

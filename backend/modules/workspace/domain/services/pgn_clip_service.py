@@ -11,7 +11,7 @@ This service provides business logic for:
 import asyncio
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 from botocore.exceptions import (
     BotoCoreError,
@@ -173,7 +173,7 @@ class PgnClipService:
             move_path=move_path,
             moves_removed=preview["moves_before"],
             variations_removed=preview["variations_removed"],
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
 
     async def export_no_comments(
@@ -219,7 +219,7 @@ class PgnClipService:
         return ExportResult(
             pgn_text=pgn_text,
             export_mode="no_comment",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
 
     async def export_raw(
@@ -265,7 +265,7 @@ class PgnClipService:
         return ExportResult(
             pgn_text=pgn_text,
             export_mode="raw",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
 
     async def export_clean(
@@ -306,7 +306,7 @@ class PgnClipService:
         return ExportResult(
             pgn_text=pgn_text,
             export_mode="clean",
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
         )
 
     async def get_clip_preview(
@@ -415,7 +415,7 @@ class PgnClipService:
         headers = {
             "Event": getattr(chapter, "title", "Study Chapter"),
             "Site": "CataChess",
-            "Date": datetime.utcnow().strftime("%Y.%m.%d"),
+            "Date": datetime.now(UTC).strftime("%Y.%m.%d"),
             "Round": "?",
             "White": "?",
             "Black": "?",

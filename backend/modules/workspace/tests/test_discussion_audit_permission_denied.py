@@ -1,16 +1,16 @@
 """Audit logging for permission denials."""
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
 
 from workspace.api.router import api_router
+from workspace.db.session import get_db_config
 from workspace.db.base import Base
-from workspace.db.session import get_db_config, init_db
 from workspace.db.tables.audit_log import AuditLog
 from workspace.db.tables.discussion_threads import DiscussionThread, ThreadType
 from workspace.domain.models.types import Permission
-from workspace.tests.helpers.discussion_setup import create_study_node, grant_acl
+from workspace.tests.helpers.discussion_setup import init_test_db, create_study_node, grant_acl
 
 
 @pytest.fixture
@@ -56,10 +56,10 @@ async def _count_denials() -> int:
 
 @pytest.mark.asyncio
 async def test_create_thread_denial_logged(app: FastAPI):
-    init_db("sqlite+aiosqlite:///:memory:", echo=False)
+    await init_test_db()
     await _seed(Permission.VIEWER, False)
     headers = {"Authorization": "Bearer user-2"}
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/discussions",
             json={
@@ -77,10 +77,10 @@ async def test_create_thread_denial_logged(app: FastAPI):
 
 @pytest.mark.asyncio
 async def test_add_reply_denial_logged(app: FastAPI):
-    init_db("sqlite+aiosqlite:///:memory:", echo=False)
+    await init_test_db()
     await _seed(Permission.VIEWER, True)
     headers = {"Authorization": "Bearer user-2"}
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.post(
             "/discussions/t1/replies",
             json={"content": "Denied"},

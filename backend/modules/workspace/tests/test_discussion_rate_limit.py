@@ -4,15 +4,15 @@ Discussion rate limiting tests.
 
 import pytest
 from fastapi import FastAPI
-from httpx import AsyncClient
+from httpx import ASGITransport, AsyncClient
 
 from workspace.api.deps import get_rate_limiter
 from workspace.api.rate_limit import RateLimiter
 from workspace.api.router import api_router
-from workspace.db.session import get_db_config, init_db
+from workspace.db.session import get_db_config
 from workspace.domain.models.types import Permission
 from workspace.domain.policies.limits import DiscussionLimits
-from workspace.tests.helpers.discussion_setup import create_study_node, grant_acl
+from workspace.tests.helpers.discussion_setup import init_test_db, create_study_node, grant_acl
 
 
 @pytest.fixture
@@ -32,14 +32,14 @@ async def seed_acl(permission: Permission) -> None:
 
 @pytest.mark.asyncio
 async def test_create_thread_rate_limited(app: FastAPI, monkeypatch):
-    init_db("sqlite+aiosqlite:///:memory:", echo=False)
+    await init_test_db()
     await seed_acl(Permission.COMMENTER)
     monkeypatch.setattr(DiscussionLimits, "MAX_THREADS_PER_MINUTE", 1)
     limiter = RateLimiter()
     app.dependency_overrides[get_rate_limiter] = lambda: limiter
 
     headers = {"Authorization": "Bearer user-2"}
-    async with AsyncClient(app=app, base_url="http://test") as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         first = await client.post(
             "/discussions",
             json={

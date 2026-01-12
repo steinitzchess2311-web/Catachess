@@ -254,16 +254,16 @@ def find_node_by_path(
                         (child for child in current.children if child.rank == 0),
                         None,
                     )
-                if main_child is None:
-                    failed = True
+                    if main_child is None:
+                        failed = True
+                        break
+                    parent = current
+                    parents.append(current)
+                    current = main_child
+                    steps -= 1
+                if failed:
                     break
-                parent = current
-                parents.append(current)
-                current = main_child
-                steps -= 1
-            if failed:
-                break
-            continue
+                continue
 
             # Navigate to the move with the specified move_number (white move)
             target_move_num = index

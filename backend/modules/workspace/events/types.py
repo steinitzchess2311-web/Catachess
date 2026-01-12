@@ -41,7 +41,11 @@ class EventType(str, Enum):
     STUDY_DELETED = "study.deleted"
     STUDY_MOVED = "study.moved"
 
-    LAYOUT_UPDATED = "layout.updated"  # Drag/drop position, auto-arrange
+    # Layout events (fine-grained for better collaboration UX)
+    LAYOUT_UPDATED = "layout.updated"  # Generic layout update
+    LAYOUT_NODE_MOVED = "layout.node_moved"  # Single node drag/drop
+    LAYOUT_AUTO_ARRANGED = "layout.auto_arranged"  # Batch auto-arrange
+    LAYOUT_VIEW_CHANGED = "layout.view_changed"  # View mode switch
 
     # ===== ACL & Permissions =====
     ACL_SHARED = "acl.shared"  # Node shared with user

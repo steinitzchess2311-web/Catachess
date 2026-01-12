@@ -80,6 +80,11 @@ class Event(Base, TimestampMixin):
         )
 
     @property
+    def event_type(self) -> str:
+        """Compatibility accessor for tests expecting event_type."""
+        return str(self.type)
+
+    @property
     def is_node_event(self) -> bool:
         """Check if event is related to node operations."""
         return self.type in {

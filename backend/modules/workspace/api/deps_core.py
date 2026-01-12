@@ -8,9 +8,11 @@ from workspace.db.repos.discussion_reply_repo import DiscussionReplyRepository
 from workspace.db.repos.discussion_thread_repo import DiscussionThreadRepository
 from workspace.db.repos.event_repo import EventRepository
 from workspace.db.repos.node_repo import NodeRepository
+from workspace.db.repos.presence_repo import PresenceRepository
 from workspace.db.session import get_session
 from workspace.domain.services.discussion_service import DiscussionService
 from workspace.domain.services.node_service import NodeService
+from workspace.domain.services.presence_service import PresenceService
 from workspace.domain.services.share_service import ShareService
 from workspace.events.bus import EventBus
 from workspace.events.subscribers.registry import register_all_subscribers
@@ -80,3 +82,11 @@ async def get_discussion_service(
     reply_repo = DiscussionReplyRepository(session)
     reaction_repo = DiscussionReactionRepository(session)
     return DiscussionService(session, thread_repo, reply_repo, reaction_repo, event_bus)
+
+
+async def get_presence_service(
+    session: AsyncSession = Depends(get_session),
+    event_bus: EventBus = Depends(get_event_bus),
+) -> PresenceService:
+    presence_repo = PresenceRepository(session)
+    return PresenceService(session, presence_repo, event_bus)

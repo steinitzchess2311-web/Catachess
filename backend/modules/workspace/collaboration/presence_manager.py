@@ -10,6 +10,7 @@ from typing import List
 import logging
 
 from ..domain.models.presence import PresenceSession, PresenceStatus
+from ..domain.models.event import CreateEventCommand
 from ..events.bus import EventBus
 from ..events.types import EventType
 
@@ -159,11 +160,12 @@ class PresenceManager:
             logger.warning(f"Unknown presence status: {new_status}")
             return
 
-        await self.event_bus.publish(
-            event_type=event_type,
+        command = CreateEventCommand(
+            type=event_type,
             actor_id=session.user_id,
             target_id=session.study_id,
             target_type="study",
+            version=1,
             payload={
                 "session_id": session.id,
                 "user_id": session.user_id,
@@ -172,35 +174,40 @@ class PresenceManager:
                 "new_status": new_status.value,
                 "chapter_id": session.chapter_id,
                 "move_path": session.move_path,
-            }
+            },
         )
+        await self.event_bus.publish(command)
 
     async def _publish_cursor_move(self, session: PresenceSession) -> None:
         """Publish cursor position update event."""
-        await self.event_bus.publish(
-            event_type=EventType.PRESENCE_CURSOR_MOVED,
+        command = CreateEventCommand(
+            type=EventType.PRESENCE_CURSOR_MOVED,
             actor_id=session.user_id,
             target_id=session.study_id,
             target_type="study",
+            version=1,
             payload={
                 "session_id": session.id,
                 "user_id": session.user_id,
                 "study_id": session.study_id,
                 "chapter_id": session.chapter_id,
                 "move_path": session.move_path,
-            }
+            },
         )
+        await self.event_bus.publish(command)
 
     async def _publish_user_left(self, session: PresenceSession) -> None:
         """Publish user left event."""
-        await self.event_bus.publish(
-            event_type=EventType.PRESENCE_USER_LEFT,
+        command = CreateEventCommand(
+            type=EventType.PRESENCE_USER_LEFT,
             actor_id=session.user_id,
             target_id=session.study_id,
             target_type="study",
+            version=1,
             payload={
                 "session_id": session.id,
                 "user_id": session.user_id,
                 "study_id": session.study_id,
-            }
+            },
         )
+        await self.event_bus.publish(command)

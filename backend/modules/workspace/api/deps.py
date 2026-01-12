@@ -8,6 +8,7 @@ from workspace.api.deps_core import (
     get_event_repo,
     get_node_repo,
     get_node_service,
+    get_presence_service,
     get_rate_limiter,
     get_share_service,
 )

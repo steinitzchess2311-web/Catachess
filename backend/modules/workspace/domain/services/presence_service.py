@@ -17,6 +17,7 @@ from workspace.db.repos.presence_repo import PresenceRepository
 from workspace.db.tables.presence_sessions import PresenceSessionTable
 from workspace.domain.models.presence import PresenceSession, CursorPosition
 from workspace.domain.models.types import PresenceStatus
+from workspace.domain.models.event import CreateEventCommand
 from workspace.events.bus import EventBus
 from workspace.events.types import EventType
 
@@ -132,19 +133,21 @@ class PresenceService:
             table = await self.presence_repo.create(table)
 
             # Publish user joined event
-            await self.event_bus.publish(
-                event_type=EventType.PRESENCE_USER_JOINED,
+            command = CreateEventCommand(
+                type=EventType.PRESENCE_USER_JOINED,
                 actor_id=user_id,
                 target_id=study_id,
                 target_type="study",
+                version=1,
                 payload={
                     "session_id": session_id,
                     "user_id": user_id,
                     "study_id": study_id,
                     "chapter_id": chapter_id,
                     "move_path": move_path,
-                }
+                },
             )
+            await self.event_bus.publish(command)
 
             logger.info(f"New presence session created: user={user_id} study={study_id}")
         else:
@@ -223,19 +226,21 @@ class PresenceService:
         await self.presence_repo.update(table)
 
         # Publish cursor move event
-        await self.event_bus.publish(
-            event_type=EventType.PRESENCE_CURSOR_MOVED,
+        command = CreateEventCommand(
+            type=EventType.PRESENCE_CURSOR_MOVED,
             actor_id=user_id,
             target_id=study_id,
             target_type="study",
+            version=1,
             payload={
                 "session_id": model.id,
                 "user_id": user_id,
                 "study_id": study_id,
                 "chapter_id": chapter_id,
                 "move_path": move_path,
-            }
+            },
         )
+        await self.event_bus.publish(command)
 
         return model
 
@@ -252,17 +257,19 @@ class PresenceService:
             await self.presence_repo.delete_by_id(table.id)
 
             # Publish user left event
-            await self.event_bus.publish(
-                event_type=EventType.PRESENCE_USER_LEFT,
+            command = CreateEventCommand(
+                type=EventType.PRESENCE_USER_LEFT,
                 actor_id=user_id,
                 target_id=study_id,
                 target_type="study",
+                version=1,
                 payload={
                     "session_id": table.id,
                     "user_id": user_id,
                     "study_id": study_id,
-                }
+                },
             )
+            await self.event_bus.publish(command)
 
             logger.info(f"User left study: user={user_id} study={study_id}")
 
@@ -285,18 +292,20 @@ class PresenceService:
 
         # Publish user left events
         for table in expired_tables:
-            await self.event_bus.publish(
-                event_type=EventType.PRESENCE_USER_LEFT,
+            command = CreateEventCommand(
+                type=EventType.PRESENCE_USER_LEFT,
                 actor_id=table.user_id,
                 target_id=table.study_id,
                 target_type="study",
+                version=1,
                 payload={
                     "session_id": table.id,
                     "user_id": table.user_id,
                     "study_id": table.study_id,
                     "reason": "timeout",
-                }
+                },
             )
+            await self.event_bus.publish(command)
 
         # Delete expired sessions
         count = await self.presence_repo.delete_expired(threshold)

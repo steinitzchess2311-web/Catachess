@@ -59,16 +59,17 @@ class EventBus:
         if event_id is None:
             event_id = str(uuid.uuid4())
 
-        # Check if event already exists (idempotency)
-        from sqlalchemy import select
-        existing_result = await self.session.execute(
-            select(EventTable).where(EventTable.id == event_id)
-        )
-        existing_event = existing_result.scalar_one_or_none()
+        if self.session is not None:
+            # Check if event already exists (idempotency)
+            from sqlalchemy import select
+            existing_result = await self.session.execute(
+                select(EventTable).where(EventTable.id == event_id)
+            )
+            existing_event = existing_result.scalar_one_or_none()
 
-        if existing_event is not None:
-            # Event already exists, return it (idempotent behavior)
-            return existing_event
+            if existing_event is not None:
+                # Event already exists, return it (idempotent behavior)
+                return existing_event
 
         # Create event record
         timestamp = datetime.now(UTC)
@@ -95,13 +96,46 @@ class EventBus:
             workspace_id=command.workspace_id,
         )
 
-        self.session.add(event)
-        await self.session.flush()
+        if self.session is not None:
+            self.session.add(event)
+            await self.session.flush()
 
         # Notify subscribers (for WebSocket, notifications, etc.)
         await self._notify_subscribers(event)
 
         return event
+
+    async def get_events_for_target(
+        self,
+        target_id: str,
+        target_type: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[EventTable]:
+        """
+        Get events for a target (optional target_type filter).
+
+        Args:
+            target_id: Target object ID
+            target_type: Optional target type filter
+            limit: Max results
+            offset: Results offset
+
+        Returns:
+            List of events (newest first)
+        """
+        if self.session is None:
+            return []
+
+        from sqlalchemy import desc, select
+
+        stmt = select(EventTable).where(EventTable.target_id == target_id)
+        if target_type is not None:
+            stmt = stmt.where(EventTable.target_type == target_type)
+        stmt = stmt.order_by(desc(EventTable.created_at)).limit(limit).offset(offset)
+
+        result = await self.session.execute(stmt)
+        return list(result.scalars().all())
 
     async def _notify_subscribers(self, event: EventTable) -> None:
         """

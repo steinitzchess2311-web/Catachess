@@ -1,11 +1,11 @@
 <template id="discussion-template">
     <div class="discussion-container">
-        <div id="thread-list" class="thread-list">
+        <div id="thread-list" class="discussion-thread-list">
             <!-- Threads will be rendered here -->
         </div>
         <div class="discussion-input-area">
             <textarea id="discussion-input" placeholder="Add a comment..."></textarea>
-            <div class="input-controls">
+            <div class="discussion-input-controls">
                 <button id="post-comment-btn" class="btn-primary btn-sm">Post</button>
             </div>
         </div>
@@ -13,18 +13,18 @@
 </template>
 
 <template id="thread-item-template">
-    <div class="thread-item">
-        <div class="thread-header">
-            <span class="thread-author">{{author}}</span>
-            <span class="thread-date">{{date}}</span>
+    <div class="discussion-thread-item">
+        <div class="discussion-thread-header">
+            <span class="discussion-thread-author">{{author}}</span>
+            <span class="discussion-thread-date">{{date}}</span>
         </div>
-        <div class="thread-content">{{content}}</div>
-        <div class="thread-actions">
-            <button class="btn-text btn-xs reply-link">Reply</button>
-            <div class="reactions">
+        <div class="discussion-thread-content">{{content}}</div>
+        <div class="discussion-thread-actions">
+            <button class="btn-text btn-xs discussion-reply-link">Reply</button>
+            <div class="discussion-reactions">
                 <!-- Reactions -->
             </div>
         </div>
-        <div class="replies-container"></div>
+        <div class="discussion-replies-container"></div>
     </div>
 </template>

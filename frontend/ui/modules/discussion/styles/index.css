@@ -4,7 +4,7 @@
     height: 100%;
 }
 
-.thread-list {
+.discussion-thread-list {
     flex: 1;
     overflow-y: auto;
     display: flex;
@@ -13,34 +13,34 @@
     padding-bottom: var(--space-md);
 }
 
-.thread-item {
+.discussion-thread-item {
     border-bottom: 1px solid var(--bg-app);
     padding-bottom: var(--space-sm);
 }
 
-.thread-header {
+.discussion-thread-header {
     display: flex;
     justify-content: space-between;
     font-size: var(--font-xs);
     margin-bottom: var(--space-xs);
 }
 
-.thread-author {
+.discussion-thread-author {
     font-weight: 600;
     color: var(--text-main);
 }
 
-.thread-date {
+.discussion-thread-date {
     color: var(--text-secondary);
 }
 
-.thread-content {
+.discussion-thread-content {
     font-size: var(--font-sm);
     color: var(--text-main);
     line-height: 1.4;
 }
 
-.thread-actions {
+.discussion-thread-actions {
     margin-top: var(--space-xs);
     display: flex;
     gap: var(--space-md);
@@ -65,7 +65,7 @@
     resize: vertical;
 }
 
-.input-controls {
+.discussion-input-controls {
     display: flex;
     justify-content: flex-end;
 }

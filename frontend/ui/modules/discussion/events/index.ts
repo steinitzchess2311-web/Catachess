@@ -29,9 +29,9 @@ export function initDiscussion(container: HTMLElement, options: { targetType: st
 
         threads.forEach(thread => {
             const el = document.importNode(threadTpl.content, true);
-            el.querySelector('.thread-author')!.textContent = thread.author_id; // Should map to username
-            el.querySelector('.thread-date')!.textContent = new Date(thread.created_at).toLocaleString();
-            el.querySelector('.thread-content')!.textContent = thread.content;
+            el.querySelector('.discussion-thread-author')!.textContent = thread.author_id; // Should map to username
+            el.querySelector('.discussion-thread-date')!.textContent = new Date(thread.created_at).toLocaleString();
+            el.querySelector('.discussion-thread-content')!.textContent = thread.content;
             
             threadList.appendChild(el);
         });

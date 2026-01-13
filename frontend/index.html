@@ -74,11 +74,11 @@
 
             if (hash === '#/login') {
                 await loadLayout('./ui/modules/auth/login/layout/index.html');
-                await loadCSS('./ui/modules/auth/login/styles/login.css');
+                await loadCSS('./ui/modules/auth/login/styles/index.css');
                 initLogin(app);
             } else if (hash === '#/signup') {
                 await loadLayout('./ui/modules/auth/signup/layout/index.html');
-                await loadCSS('./ui/modules/auth/signup/styles/signup.css');
+                await loadCSS('./ui/modules/auth/signup/styles/index.css');
                 initSignup(app);
             } else if (hash === '#/workspace' || hash.startsWith('#/workspace')) {
                 const token = localStorage.getItem('token');

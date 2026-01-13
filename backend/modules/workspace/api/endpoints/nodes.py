@@ -2,7 +2,7 @@
 Node endpoints.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from modules.workspace.api.deps import get_current_user_id, get_node_service
 from modules.workspace.api.schemas.node import (
@@ -27,6 +27,29 @@ from modules.workspace.domain.services.node_service import (
 )
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
+
+
+@router.get("", response_model=NodeListResponse)
+async def list_nodes(
+    parent_id: str | None = Query(None),
+    user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
+) -> NodeListResponse:
+    """List nodes, optionally filtered by parent_id. If parent_id is 'root', returns user's root nodes."""
+    if parent_id == "root" or parent_id is None:
+        nodes = await node_service.node_repo.get_root_workspaces(owner_id=user_id)
+    else:
+        try:
+            nodes = await node_service.get_children(parent_id, actor_id=user_id)
+        except NodeNotFoundError:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Parent node not found")
+        except PermissionDeniedError:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
+
+    return NodeListResponse(
+        nodes=[NodeResponse.model_validate(n) for n in nodes],
+        total=len(nodes),
+    )
 
 
 @router.post("", response_model=NodeResponse, status_code=status.HTTP_201_CREATED)

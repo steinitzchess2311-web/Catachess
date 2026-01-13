@@ -39,8 +39,8 @@ export class ApiClient {
                 // Unauthorized - clear token and redirect
                 localStorage.removeItem('token');
                 // Only redirect if not already on login page to avoid loops
-                if (!window.location.pathname.includes('/login')) {
-                    // window.location.href = '/login'; // TODO: Implement router redirect
+                if (!window.location.hash.includes('/login')) {
+                    window.location.hash = '#/login';
                     console.warn('Unauthorized: Redirecting to login...');
                 }
                 throw new Error('Unauthorized');

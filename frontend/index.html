@@ -18,6 +18,7 @@
     <script type="module">
         import { initLogin } from './ui/modules/auth/login/events/index.ts';
         import { initSignup } from './ui/modules/auth/signup/events/index.ts';
+        import { initWorkspace } from './ui/modules/workspace/events/index.ts';
 
         const app = document.getElementById('app');
         const styleTag = document.getElementById('module-styles');
@@ -70,18 +71,19 @@
                 await loadLayout('./ui/modules/auth/signup/layout/index.html');
                 await loadCSS('./ui/modules/auth/signup/styles/signup.css');
                 initSignup(app);
-            } else if (hash === '#/workspace') {
+            } else if (hash === '#/workspace' || hash.startsWith('#/workspace')) {
                 // Check auth
                 const token = localStorage.getItem('token');
                 if (!token) {
                     window.location.hash = '#/login';
                     return;
                 }
-                app.innerHTML = '<div style="padding: 20px;"><h1>Workspace</h1><p>Welcome! You are logged in.</p><button id="logout-btn">Logout</button></div>';
-                document.getElementById('logout-btn')?.addEventListener('click', () => {
-                    localStorage.removeItem('token');
-                    window.location.hash = '#/login';
-                });
+                await loadLayout('./ui/modules/workspace/layout/index.html');
+                await loadCSS('./ui/modules/workspace/styles/index.css');
+                initWorkspace(app);
+            } else if (hash.startsWith('#/study/')) {
+                const studyId = hash.split('/')[2];
+                app.innerHTML = `<h1>Study Page (ID: ${studyId}) - Coming Soon in Stage 4</h1><button onclick="window.location.hash='#/workspace'">Back to Workspace</button>`;
             } else {
                 // Default redirect
                 const token = localStorage.getItem('token');

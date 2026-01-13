@@ -1,0 +1,92 @@
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: var(--bg-app);
+}
+
+.login-card {
+    background-color: var(--surface);
+    padding: var(--space-xl);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-1);
+    width: 100%;
+    max-width: 400px;
+}
+
+.login-title {
+    font-family: var(--font-family);
+    font-size: var(--font-xl);
+    color: var(--text-main);
+    margin-bottom: var(--space-lg);
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: var(--space-md);
+}
+
+.form-group label {
+    display: block;
+    font-family: var(--font-family);
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-xs);
+}
+
+.form-group input {
+    width: 100%;
+    padding: var(--space-sm);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family);
+    font-size: var(--font-sm);
+    box-sizing: border-box;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.btn-primary {
+    width: 100%;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-family);
+    font-size: var(--font-sm);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+}
+
+.error-message {
+    color: var(--error);
+    font-size: var(--font-sm);
+    margin-bottom: var(--space-md);
+    min-height: 20px;
+    text-align: center;
+}
+
+.login-footer {
+    margin-top: var(--space-lg);
+    text-align: center;
+    font-size: var(--font-sm);
+    color: var(--text-secondary);
+}
+
+.login-footer a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.login-footer a:hover {
+    text-decoration: underline;
+}

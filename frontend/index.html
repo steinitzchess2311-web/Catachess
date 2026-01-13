@@ -5,9 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catachess</title>
     <link rel="stylesheet" href="ui/assets/variables.css">
+    <!-- Dynamic styles will be injected here -->
+    <style id="module-styles"></style>
 </head>
 <body>
     <div id="app"></div>
-    <!-- Router/Entry logic will go here -->
+
+    <!-- Router Logic -->
+    <script type="module">
+        import { initLogin } from './ui/modules/auth/login/events/index.ts';
+        import { initSignup } from './ui/modules/auth/signup/events/index.ts';
+
+        const app = document.getElementById('app');
+        const styleTag = document.getElementById('module-styles');
+
+        // Function to load CSS dynamically
+        async function loadCSS(path) {
+            try {
+                const response = await fetch(path);
+                const css = await response.text();
+                styleTag.textContent = css;
+            } catch (error) {
+                console.error('Failed to load CSS:', error);
+            }
+        }
+
+        // Router
+        async function handleRoute() {
+            const hash = window.location.hash || '/';
+            app.innerHTML = ''; // Clear app container
+
+            if (hash === '/login') {
+                await loadCSS('/ui/modules/auth/login/styles/login.css');
+                initLogin(app);
+            } else if (hash === '/signup') {
+                await loadCSS('/ui/modules/auth/signup/styles/signup.css');
+                initSignup(app);
+            } else if (hash === '/workspace') {
+                // Check auth
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.hash = '/login';
+                    return;
+                }
+                app.innerHTML = '<h1>Workspace (Coming Soon)</h1>';
+            } else {
+                // Default redirect
+                const token = localStorage.getItem('token');
+                if (token) {
+                    window.location.hash = '/workspace';
+                } else {
+                    window.location.hash = '/login';
+                }
+            }
+        }
+
+        // Listen for hash changes
+        window.addEventListener('hashchange', handleRoute);
+        
+        // Initial load
+        window.addEventListener('load', handleRoute);
+    </script>
 </body>
 </html>

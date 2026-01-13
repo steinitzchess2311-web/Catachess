@@ -21,7 +21,7 @@ from pathlib import Path
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from core.tagger.facade import tag_position
+from backend.core.tagger.facade import tag_position
 
 
 def example_good_opening_move():

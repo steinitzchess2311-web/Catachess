@@ -16,7 +16,7 @@ Evidence:
 - piece_count: Number of pieces on board
 """
 import chess
-from core.tagger.models import TagContext, TagEvidence
+from ...models import TagContext, TagEvidence
 
 
 # Constants from legacy

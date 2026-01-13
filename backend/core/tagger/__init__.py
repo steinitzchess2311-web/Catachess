@@ -13,7 +13,7 @@ Data models:
     TagResult - Complete tagging result with all detected tags
 
 Example usage:
-    from core.tagger import tag_position
+    from .facade import tag_position
 
     result = tag_position(
         engine_path="/usr/games/stockfish",

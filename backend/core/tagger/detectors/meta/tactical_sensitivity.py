@@ -14,7 +14,7 @@ Evidence:
 - contact_ratio: Proportion of forcing moves
 - delta_tactics: Change in tactical metric
 """
-from core.tagger.models import TagContext, TagEvidence
+from ...models import TagContext, TagEvidence
 from ...config import TACTICAL_THRESHOLD
 
 

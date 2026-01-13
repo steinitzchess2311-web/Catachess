@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CataChess - Workspace Layout</title>
+  <style>
+    :root {
+      --bg-color: #f4f4f5;
+      --card-bg: #ffffff;
+      --text-color: #18181b;
+      --muted-color: #71717a;
+      --border-color: #e4e4e7;
+      --primary-color: #18181b;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #18181b;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--text-color);
+    }
+
+    .screen {
+      background-color: var(--bg-color);
+      width: 95vw;
+      max-width: 1600px;
+      aspect-ratio: 16 / 9;
+      display: flex;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+      border-radius: 16px;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background-color: var(--card-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 2rem;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary-color);
+      margin-bottom: 3rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .nav-item {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
+      color: var(--muted-color);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .nav-item:hover {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+    }
+
+    .nav-item.active {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .sidebar-spacer {
+      flex: 1;
+    }
+
+    .ad-placeholder {
+      padding: 2rem;
+      background-color: var(--bg-color);
+      border-radius: var(--radius);
+      border: 2px dashed var(--border-color);
+      color: var(--muted-color);
+      text-align: center;
+      font-size: 0.875rem;
+      margin-top: 2rem;
+    }
+
+    /* Main Content */
+    main {
+      flex: 1;
+      padding: 3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      overflow-y: auto;
+    }
+
+    .header-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      background-color: var(--primary-color);
+      color: white;
+      border-radius: var(--radius);
+      font-weight: 600;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+      border: none;
+      font-size: 1rem;
+    }
+
+    .content-area {
+      background-color: var(--card-bg);
+      border-radius: var(--radius);
+      border: 1px solid var(--border-color);
+      flex: 1;
+      box-shadow: var(--shadow);
+      padding: 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.5rem;
+      align-content: start;
+    }
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <aside class="sidebar">
+      <div class="brand">CataChess</div>
+      <nav class="nav-list">
+        <!-- Renderer: Inject Nav Items -->
+        <div class="nav-item">My Account</div>
+        <div class="nav-item">Blog</div>
+        <div class="nav-item active">Workspace</div>
+        <div class="nav-item">About Us</div>
+        <div class="nav-item">Sponsor</div>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="ad-placeholder">
+        <!-- Renderer: Ad Content -->
+        Ad Placeholder
+      </div>
+    </aside>
+
+    <main>
+      <div class="header-actions">
+        <!-- Renderer: Bind Action -->
+        <div class="btn">Add Workspace</div>
+      </div>
+      
+      <div class="content-area">
+        <!-- Renderer: Inject Workspace Cards Here -->
+        <!-- Layout: Empty Grid -->
+      </div>
+    </main>
+  </div>
+</body>
+</html>

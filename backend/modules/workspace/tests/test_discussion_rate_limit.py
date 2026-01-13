@@ -32,6 +32,7 @@ async def seed_acl(permission: Permission) -> None:
 
 @pytest.mark.asyncio
 async def test_create_thread_rate_limited(app: FastAPI, monkeypatch):
+    monkeypatch.setenv("DISABLE_RATE_LIMIT", "0")
     await init_test_db()
     await seed_acl(Permission.COMMENTER)
     monkeypatch.setattr(DiscussionLimits, "MAX_THREADS_PER_MINUTE", 1)

@@ -74,7 +74,8 @@ def _parse_node(
     rank: int = 0,
 ) -> VariationNode:
     """
-    Recursively parse a chess.pgn node into a VariationNode.
+    Recursively parse a chess.pgn node into a VariationNode,
+    but use iteration for the main line to avoid stack overflow.
 
     Args:
         node: chess.pgn node
@@ -84,56 +85,78 @@ def _parse_node(
     Returns:
         VariationNode representing this move and its children
     """
+    current_pgn_node = node
     # Make a copy of the board to avoid modifying parent
-    board = parent_board.copy()
+    current_board = parent_board.copy()
+    current_rank = rank
 
-    # Get move information
-    move = node.move
-    if move is None:
-        raise ValueError("Node has no move")
+    first_var_node: VariationNode | None = None
+    previous_var_node: VariationNode | None = None
 
-    san = board.san(move)
-    uci = move.uci()
+    while True:
+        # Get move information
+        move = current_pgn_node.move
+        if move is None:
+            break
 
-    # Determine move number and color
-    move_number = board.fullmove_number
-    color = "white" if board.turn == chess.WHITE else "black"
+        san = current_board.san(move)
+        uci = move.uci()
+        move_number = current_board.fullmove_number
+        color = "white" if current_board.turn == chess.WHITE else "black"
 
-    # Apply move to get new position
-    board.push(move)
-    fen = board.fen()
+        # Apply move to get new position
+        current_board.push(move)
+        fen = current_board.fen()
 
-    # Get NAG (annotation glyph)
-    nag = None
-    if node.nags:
-        # Take first NAG if multiple exist
-        nag_code = list(node.nags)[0]
-        nag = _nag_to_symbol(nag_code)
+        # Get NAG (annotation glyph)
+        nag = None
+        if current_pgn_node.nags:
+            # Take first NAG if multiple exist
+            nag_code = list(current_pgn_node.nags)[0]
+            nag = _nag_to_symbol(nag_code)
 
-    # Get comment
-    comment = node.comment.strip() if node.comment else None
+        # Get comment
+        comment = current_pgn_node.comment.strip() if current_pgn_node.comment else None
 
-    # Create node
-    var_node = VariationNode(
-        move_number=move_number,
-        color=color,
-        san=san,
-        uci=uci,
-        fen=fen,
-        nag=nag,
-        comment=comment,
-        rank=rank,
-    )
+        # Create node
+        var_node = VariationNode(
+            move_number=move_number,
+            color=color,
+            san=san,
+            uci=uci,
+            fen=fen,
+            nag=nag,
+            comment=comment,
+            rank=current_rank,
+        )
 
-    # Parse child variations
-    # In python-chess, node.variations contains all branches including main line
-    # variations[0] is the main line, variations[1:] are alternatives
-    if not node.is_end():
-        for child_rank, variation in enumerate(node.variations):
-            child_node = _parse_node(variation, board, rank=child_rank)
-            var_node.children.append(child_node)
+        if first_var_node is None:
+            first_var_node = var_node
 
-    return var_node
+        if previous_var_node:
+            previous_var_node.children.append(var_node)
+
+        # Parse child variations
+        if not current_pgn_node.is_end():
+            # Handle alternatives (rank > 0)
+            # node.variations contains all branches including main line
+            # variations[0] is the main line, variations[1:] are alternatives
+            if len(current_pgn_node.variations) > 1:
+                for child_rank, variation in enumerate(current_pgn_node.variations[1:], start=1):
+                    child_node = _parse_node(variation, current_board, rank=child_rank)
+                    var_node.children.append(child_node)
+            
+            # Handle main line (rank 0) iteratively
+            if current_pgn_node.variations:
+                current_pgn_node = current_pgn_node.variations[0]
+                current_rank = 0
+                previous_var_node = var_node
+            else:
+                break
+        else:
+            break
+
+    return first_var_node
 
 
 def pgn_to_tree(pgn_text: str) -> VariationNode | None:

@@ -1,6 +1,6 @@
 """Structure tag detectors - 3 detectors in 1 file."""
 import chess
-from core.tagger.models import TagContext, TagEvidence
+from ...models import TagContext, TagEvidence
 
 def detect_structural_integrity(ctx: TagContext) -> TagEvidence:
     """Structural integrity: +0.25 structure, ≤+0.1 tactics."""

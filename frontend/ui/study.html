@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CataChess - Study Layout</title>
+  <!-- 
+    Layout Note: 
+    1. Rectangle proportions (sidebar, chapters, board, pgn) can be adjusted in the grid-template-columns.
+    2. Square Board: The board container is forced to 1:1 aspect ratio.
+    3. Hide Buttons: Intended for the Event Layer to toggle visibility of sections.
+  -->
+  <style>
+    :root {
+      --bg-color: #f4f4f5;
+      --card-bg: #ffffff;
+      --text-color: #18181b;
+      --muted-color: #71717a;
+      --border-color: #e4e4e7;
+      --primary-color: #18181b;
+      --radius: 12px;
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #18181b;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--text-color);
+    }
+
+    .screen {
+      background-color: var(--bg-color);
+      width: 95vw;
+      max-width: 1600px;
+      aspect-ratio: 16 / 9;
+      display: flex;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.5);
+      border-radius: 16px;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 280px;
+      background-color: var(--card-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      padding: 2rem;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .brand-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 3rem;
+    }
+
+    .brand {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary-color);
+    }
+    
+    .hide-btn {
+        width: 24px;
+        height: 24px;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: var(--muted-color);
+    }
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .nav-item {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
+      color: var(--muted-color);
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .discussion-toggle {
+        margin-top: 2rem;
+        padding: 1rem;
+        background-color: #fef3c7;
+        color: #92400e;
+        border: 1px dashed #f59e0b;
+        border-radius: var(--radius);
+        font-size: 0.875rem;
+        cursor: pointer;
+        text-align: center;
+    }
+
+    .sidebar-spacer {
+      flex: 1;
+    }
+
+    .ad-placeholder {
+      padding: 2rem;
+      background-color: var(--bg-color);
+      border-radius: var(--radius);
+      border: 2px dashed var(--border-color);
+      color: var(--muted-color);
+      text-align: center;
+      font-size: 0.875rem;
+      margin-top: 2rem;
+    }
+
+    /* Main Content */
+    main {
+      flex: 1;
+      padding: 1.5rem;
+      display: grid;
+      /* Note: Proportions here are adjustable via CSS */
+      grid-template-columns: 240px 1fr 280px; 
+      grid-template-rows: auto 1fr;
+      gap: 1.5rem;
+      overflow: hidden;
+    }
+
+    .back-btn-container {
+        grid-column: 1 / -1;
+    }
+    
+    .back-btn {
+        display: inline-flex;
+        padding: 0.5rem 1rem;
+        background: transparent;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius);
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    .panel {
+        background-color: var(--card-bg);
+        border-radius: var(--radius);
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .panel-header {
+        padding: 1rem;
+        border-bottom: 1px solid var(--border-color);
+        font-weight: 600;
+        background-color: #fafafa;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .panel-content {
+        padding: 1rem;
+        overflow-y: auto;
+        flex: 1;
+        position: relative;
+    }
+
+    .board-area {
+        background-color: #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        aspect-ratio: 1 / 1; /* Forced Square Layout */
+        width: 100%;
+        max-height: 100%;
+        justify-self: center;
+        padding: 0;
+    }
+    
+    .comment-box {
+        margin-top: auto;
+        border-top: 1px solid var(--border-color);
+        padding: 1rem;
+        background-color: #fafafa;
+        font-size: 0.9rem;
+        color: var(--muted-color);
+        min-height: 100px;
+    }
+
+  </style>
+</head>
+<body>
+  <div class="screen">
+    <!-- Sidebar Layout -->
+    <aside class="sidebar">
+      <div class="brand-container">
+        <div class="brand">CataChess</div>
+        <!-- Hide Button for Sidebar: For Event Layer to toggle sidebar width/visibility -->
+        <div class="hide-btn">✕</div>
+      </div>
+      
+      <nav class="nav-list">
+        <!-- Renderer: Inject Nav Items -->
+        <div class="nav-item">My Account</div>
+        <div class="nav-item">Blog</div>
+        <div class="nav-item">Workspace</div>
+        <div class="nav-item">About Us</div>
+        <div class="nav-item">Sponsor</div>
+      </nav>
+      
+      <div class="discussion-toggle">
+        Discussion Toggle
+      </div>
+
+      <div class="sidebar-spacer"></div>
+      
+      <div class="ad-placeholder">
+        Ad Slot
+      </div>
+    </aside>
+
+    <!-- Main Content Layout -->
+    <main>
+      <div class="back-btn-container">
+        <div class="back-btn">← Back</div>
+      </div>
+      
+      <!-- Chapter List Container -->
+      <div class="panel">
+          <div class="panel-header">
+              Chapters
+              <!-- Hide Button: For Event Layer to collapse/hide chapters panel -->
+              <div class="hide-btn">✕</div>
+          </div>
+          <div class="panel-content">
+              <!-- Renderer: Inject Chapter List Items -->
+          </div>
+      </div>
+      
+      <!-- Board Container (Forced Square) -->
+      <div class="panel board-area">
+          <!-- Renderer: Mount Chess Board Here -->
+          <div>Board Canvas</div>
+      </div>
+      
+      <!-- PGN & Analysis Container -->
+      <div class="panel">
+          <div class="panel-header">
+              PGN & Analysis
+              <!-- Hide Button: For Event Layer to collapse/hide PGN panel -->
+              <div class="hide-btn">✕</div>
+          </div>
+          <div class="panel-content">
+              <!-- Renderer: Inject PGN Text/Moves -->
+          </div>
+          <div class="comment-box">
+              Comment Section
+          </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

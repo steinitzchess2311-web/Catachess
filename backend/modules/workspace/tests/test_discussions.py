@@ -33,7 +33,7 @@ async def test_reply_nesting_limit(session, event_bus):
     )
 
     parent_id = None
-    for _ in range(DiscussionLimits.MAX_REPLY_NESTING_LEVEL - 1):
+    for _ in range(DiscussionLimits.MAX_REPLY_NESTING_LEVEL):
         reply = await reply_service.add_reply(
             AddReplyCommand(
                 thread_id=thread.id,

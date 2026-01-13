@@ -1,6 +1,6 @@
 """Combination sacrifice detectors - 2 in 1 file."""
-from core.tagger.models import TagContext, TagEvidence
-from core.tagger.detectors.helpers.sacrifice import is_sacrifice_candidate
+from ...models import TagContext, TagEvidence
+from ...detectors.helpers.sacrifice import is_sacrifice_candidate
 
 def detect_tactical_combination_sacrifice(ctx: TagContext) -> TagEvidence:
     """Combination sacrifice."""

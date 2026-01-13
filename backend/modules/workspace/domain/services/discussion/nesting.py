@@ -19,7 +19,7 @@ async def ensure_reply_depth(
     reply_repo: DiscussionReplyRepository, parent_reply_id: str | None
 ) -> None:
     depth = await get_reply_depth(reply_repo, parent_reply_id)
-    if depth >= max(0, get_max_depth() - 1):
+    if depth >= get_max_depth():
         raise NestingDepthExceededError("Reply nesting limit reached")
 
 

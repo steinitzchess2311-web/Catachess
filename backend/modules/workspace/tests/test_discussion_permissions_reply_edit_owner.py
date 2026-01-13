@@ -38,6 +38,8 @@ async def test_author_can_edit_reply(app: FastAPI):
             },
             headers=headers,
         )
+        if thread_resp.status_code != 201:
+            print(f"Thread creation failed: {thread_resp.status_code} {thread_resp.text}")
         thread_id = thread_resp.json()["id"]
         reply_resp = await client.post(
             f"/discussions/{thread_id}/replies",

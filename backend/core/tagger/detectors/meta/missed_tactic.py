@@ -13,7 +13,7 @@ Evidence:
 - played_move: The move that was played
 - best_move: The better move that was available
 """
-from core.tagger.models import TagContext, TagEvidence
+from ...models import TagContext, TagEvidence
 from ...config import TACTICAL_MISS_LOSS
 
 

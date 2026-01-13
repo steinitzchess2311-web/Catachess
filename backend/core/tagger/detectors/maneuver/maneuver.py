@@ -1,7 +1,7 @@
 """Maneuver tag detectors - 5 detectors in 1 file."""
 import chess
-from core.tagger.models import TagContext, TagEvidence
-from core.tagger.detectors.helpers.maneuver import compute_maneuver_score
+from ...models import TagContext, TagEvidence
+from ...detectors.helpers.maneuver import compute_maneuver_score
 
 def detect_constructive_maneuver(ctx: TagContext) -> TagEvidence:
     """Constructive maneuver."""

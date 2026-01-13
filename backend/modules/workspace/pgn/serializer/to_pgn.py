@@ -48,49 +48,57 @@ def _serialize_node(
 ) -> str:
     """
     Recursively serialize a variation node to PGN text.
+    Iterative for main line to prevent recursion depth exceeded.
 
     Args:
         node: Variation node to serialize
         prev_color: Color of previous move
-        is_variation: True if this is an alternative variation
+        is_variation: True if this is an alternative variation (unused but kept for API compatibility)
 
     Returns:
         PGN movetext string
     """
-    result = []
+    full_result = []
+    
+    current_node: VariationNode | None = node
+    current_prev_color = prev_color
+    
+    while current_node:
+        # Format current move
+        move_str = _format_move_with_number(current_node, current_prev_color)
+        full_result.append(move_str)
 
-    # Format current move
-    move_str = _format_move_with_number(node, prev_color)
-    result.append(move_str)
+        # Add comment if present
+        if current_node.comment:
+            full_result.append(f"{{ {current_node.comment} }}")
 
-    # Add comment if present
-    if node.comment:
-        result.append(f"{{ {node.comment} }}")
-
-    # Process children
-    if node.children:
-        # Separate main line (rank=0) from alternatives
-        main_child = next(
-            (child for child in node.children if child.rank == 0), None
-        )
-        alternatives = [
-            child for child in node.children if child.rank > 0
-        ]
-
-        # Serialize alternatives first (they appear before main continuation)
-        for alt in sorted(alternatives, key=lambda x: x.rank):
-            # Pass None as prev_color so variation starts with full move number
-            alt_text = _serialize_node(alt, None, is_variation=True)
-            result.append(f"( {alt_text} )")
-
-        # Then serialize main line continuation
-        if main_child:
-            main_text = _serialize_node(
-                main_child, node.color, is_variation=False
+        # Process children
+        if current_node.children:
+            # Separate main line (rank=0) from alternatives
+            main_child = next(
+                (child for child in current_node.children if child.rank == 0), None
             )
-            result.append(main_text)
+            alternatives = [
+                child for child in current_node.children if child.rank > 0
+            ]
 
-    return " ".join(result)
+            # Serialize alternatives first (they appear before main continuation)
+            for alt in sorted(alternatives, key=lambda x: x.rank):
+                # Pass None as prev_color so variation starts with full move number
+                # Recursion is safe here as variation depth is typically low
+                alt_text = _serialize_node(alt, None, is_variation=True)
+                full_result.append(f"( {alt_text} )")
+
+            # Proceed to main line (iterative)
+            if main_child:
+                current_prev_color = current_node.color
+                current_node = main_child
+            else:
+                current_node = None
+        else:
+            current_node = None
+
+    return " ".join(full_result)
 
 
 def tree_to_pgn(

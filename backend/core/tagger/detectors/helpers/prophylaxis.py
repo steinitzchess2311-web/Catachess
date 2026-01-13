@@ -37,7 +37,7 @@ from .prophylaxis_modules import (
 # Legacy imports for backward compatibility (ctx-based versions)
 from typing import Dict, Any
 try:
-    from core.tagger.models import TagContext
+    from ...models import TagContext
 
     def compute_preventive_score(
         ctx: TagContext,

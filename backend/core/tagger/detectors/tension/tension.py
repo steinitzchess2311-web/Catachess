@@ -1,7 +1,7 @@
 """Tension tag detectors - 4 detectors in 1 file."""
-from core.tagger.models import TagContext, TagEvidence
-from core.tagger.detectors.helpers.tension import check_symmetry_condition
-from core.tagger.detectors.helpers.contact import contact_ratio
+from ...models import TagContext, TagEvidence
+from ...detectors.helpers.tension import check_symmetry_condition
+from ...detectors.helpers.contact import contact_ratio
 
 def detect_tension_creation(ctx: TagContext) -> TagEvidence:
     """Tension creation."""

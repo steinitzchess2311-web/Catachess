@@ -9,7 +9,7 @@ This module contains three detectors for knight-bishop exchanges with different 
 All three share similar logic but differ in thresholds.
 """
 import chess
-from core.tagger.models import TagContext, TagEvidence
+from ...models import TagContext, TagEvidence
 
 
 # Thresholds in centipawns

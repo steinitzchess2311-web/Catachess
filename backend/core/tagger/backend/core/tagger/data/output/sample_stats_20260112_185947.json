@@ -1,0 +1,24 @@
+{
+  "metadata": {
+    "pgn_file": "data/pgn/sample.pgn",
+    "timestamp": "20260112_185947",
+    "total_positions": 2,
+    "depth": 14,
+    "multipv": 6,
+    "skip_opening_moves": 0
+  },
+  "tag_counts": {
+    "first_choice": 2,
+    "opening_central_pawn_move": 2,
+    "structural_integrity": 2,
+    "tactical_sensitivity": 2,
+    "deferred_initiative": 1
+  },
+  "tag_percentages": {
+    "first_choice": 100.0,
+    "opening_central_pawn_move": 100.0,
+    "structural_integrity": 100.0,
+    "tactical_sensitivity": 100.0,
+    "deferred_initiative": 50.0
+  }
+}

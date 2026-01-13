@@ -5,8 +5,8 @@ Keep under 150 lines as per refactoring plan.
 from typing import Dict, List, Tuple, Any, Optional
 import chess
 import chess.engine
-from core.tagger.models import Candidate
-from core.tagger.config.engine import DEFAULT_STOCKFISH_PATH
+from ..models import Candidate
+from ..config.engine import DEFAULT_STOCKFISH_PATH
 
 
 class StockfishClient:

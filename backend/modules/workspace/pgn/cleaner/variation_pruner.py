@@ -233,6 +233,7 @@ def find_node_by_path(
     failed = False
 
     for seg_type, index in path.segments:
+        print(f"DEBUG: Segment {seg_type}.{index} | Current: {current} | Parent: {parent}")
         if logger.isEnabledFor(logging.DEBUG):
             logger.debug(
                 "Traversing path segment: %s.%s (current=%s, move=%s%s)",
@@ -247,7 +248,7 @@ def find_node_by_path(
                 if index < 1:
                     return None
                 if index == 1:
-                    parent = current
+                    # Stay at current node, don't update parent
                     continue
                 steps = index - 1
                 while steps > 0:
@@ -300,8 +301,12 @@ def find_node_by_path(
             if var_child is None:
                 failed = True
                 break
-            parent = current
-            parents.append(current)
+            
+            # If var_child is a direct child of current, update parent to current.
+            # If var_child is a sibling (child of parent), keep parent as is.
+            if var_child in current.children:
+                parent = current
+            
             current = var_child
             in_variation = True
 
@@ -353,6 +358,7 @@ def _select_variation_child(
             child
             for child in parent.children
             if child is not current
+            and child.rank > current.rank
             and child.move_number == current.move_number
             and child.color == current.color
         ]
@@ -446,6 +452,7 @@ def get_path_to_node(
 def copy_tree(node: VariationNode) -> VariationNode:
     """
     Create a deep copy of a variation tree.
+    Iterative implementation.
 
     Args:
         node: Root node to copy
@@ -453,8 +460,7 @@ def copy_tree(node: VariationNode) -> VariationNode:
     Returns:
         Deep copy of the tree
     """
-    # Copy current node
-    new_node = VariationNode(
+    root_copy = VariationNode(
         move_number=node.move_number,
         color=node.color,
         san=node.san,
@@ -464,11 +470,25 @@ def copy_tree(node: VariationNode) -> VariationNode:
         comment=node.comment,
         rank=node.rank,
     )
+    
+    stack = [(node, root_copy)]
+    while stack:
+        src, dst = stack.pop()
+        for child in src.children:
+            child_copy = VariationNode(
+                move_number=child.move_number,
+                color=child.color,
+                san=child.san,
+                uci=child.uci,
+                fen=child.fen,
+                nag=child.nag,
+                comment=child.comment,
+                rank=child.rank,
+            )
+            dst.children.append(child_copy)
+            stack.append((child, child_copy))
 
-    # Recursively copy children
-    new_node.children = [copy_tree(child) for child in node.children]
-
-    return new_node
+    return root_copy
 
 
 def prune_before_node(
@@ -497,12 +517,16 @@ def prune_before_node(
     def find_path_nodes(
         node: VariationNode, target_node: VariationNode
     ) -> list[VariationNode] | None:
-        if node is target_node:
-            return [node]
-        for child in node.children:
-            child_path = find_path_nodes(child, target_node)
-            if child_path:
-                return [node] + child_path
+        # Iterative path finding
+        # Stack: (node, path_so_far)
+        stack = [(node, [node])]
+        while stack:
+            curr, path = stack.pop()
+            if curr is target_node:
+                return path
+            
+            for child in curr.children:
+                stack.append((child, path + [child]))
         return None
 
     path_nodes = find_path_nodes(root, target)
@@ -512,16 +536,33 @@ def prune_before_node(
     new_root = _copy_node_with_rank(path_nodes[0], rank=0)
     current_new = new_root
 
-    for node in path_nodes[1:]:
+    # For all nodes on path except the last one (parent of target)
+    for i in range(1, len(path_nodes) - 1):
+        node = path_nodes[i]
         new_child = _copy_node_with_rank(node, rank=0)
         current_new.children = [new_child]
         current_new = new_child
 
-    target_children = sorted(target.children, key=lambda child: child.rank)
-    current_new.children = [
-        _copy_tree_with_normalized_ranks(child, rank=index)
-        for index, child in enumerate(target_children)
-    ]
+    # For the parent of target (which is path_nodes[-2] if target is not root)
+    if len(path_nodes) >= 2:
+        parent = path_nodes[-2]
+        
+        # We need to keep the target AND all its siblings (alternatives at this ply)
+        target_siblings_and_self = [
+            child for child in parent.children
+            if child.move_number == target.move_number and child.color == target.color
+        ]
+        
+        new_children = []
+        for index, child in enumerate(sorted(target_siblings_and_self, key=lambda x: x.rank)):
+            # Keep sibling/target and its full subtree
+            child_copy = _copy_tree_with_normalized_ranks(child, rank=index)
+            new_children.append(child_copy)
+        
+        current_new.children = new_children
+    else:
+        # Target is root, just return target's subtree
+        return _copy_tree_with_normalized_ranks(target, rank=0)
 
     return new_root
 
@@ -542,13 +583,20 @@ def _copy_node_with_rank(node: VariationNode, rank: int) -> VariationNode:
 def _copy_tree_with_normalized_ranks(
     node: VariationNode, rank: int
 ) -> VariationNode:
-    new_node = _copy_node_with_rank(node, rank=rank)
-    children_sorted = sorted(node.children, key=lambda child: child.rank)
-    new_node.children = [
-        _copy_tree_with_normalized_ranks(child, rank=index)
-        for index, child in enumerate(children_sorted)
-    ]
-    return new_node
+    """Iterative version of copying with rank normalization."""
+    root_copy = _copy_node_with_rank(node, rank=rank)
+    
+    # Stack: (src_node, dst_node)
+    stack = [(node, root_copy)]
+    while stack:
+        src, dst = stack.pop()
+        children_sorted = sorted(src.children, key=lambda child: child.rank)
+        for index, child in enumerate(children_sorted):
+            child_copy = _copy_node_with_rank(child, rank=index)
+            dst.children.append(child_copy)
+            stack.append((child, child_copy))
+            
+    return root_copy
 
 
 def keep_only_after_node(
@@ -574,6 +622,7 @@ def keep_only_after_node(
 def remove_comments(node: VariationNode) -> VariationNode:
     """
     Create a copy of the tree with all comments removed.
+    Iterative implementation.
 
     Args:
         node: Root node
@@ -581,7 +630,7 @@ def remove_comments(node: VariationNode) -> VariationNode:
     Returns:
         New tree without comments
     """
-    new_node = VariationNode(
+    root_copy = VariationNode(
         move_number=node.move_number,
         color=node.color,
         san=node.san,
@@ -591,16 +640,31 @@ def remove_comments(node: VariationNode) -> VariationNode:
         comment=None,  # Remove comment
         rank=node.rank,
     )
+    
+    stack = [(node, root_copy)]
+    while stack:
+        src, dst = stack.pop()
+        for child in src.children:
+            child_copy = VariationNode(
+                move_number=child.move_number,
+                color=child.color,
+                san=child.san,
+                uci=child.uci,
+                fen=child.fen,
+                nag=child.nag,
+                comment=None,
+                rank=child.rank,
+            )
+            dst.children.append(child_copy)
+            stack.append((child, child_copy))
 
-    # Recursively copy children without comments
-    new_node.children = [remove_comments(child) for child in node.children]
-
-    return new_node
+    return root_copy
 
 
 def extract_mainline(node: VariationNode) -> VariationNode:
     """
     Create a new tree containing only the main line (rank=0 moves).
+    Iterative implementation.
 
     Args:
         node: Root node
@@ -608,7 +672,7 @@ def extract_mainline(node: VariationNode) -> VariationNode:
     Returns:
         New tree with only main line moves
     """
-    new_node = VariationNode(
+    root_copy = VariationNode(
         move_number=node.move_number,
         color=node.color,
         san=node.san,
@@ -618,13 +682,29 @@ def extract_mainline(node: VariationNode) -> VariationNode:
         comment=node.comment,
         rank=0,
     )
+    
+    # Only follow rank=0 children
+    current_src = node
+    current_dst = root_copy
+    
+    while True:
+        main_child = next((c for c in current_src.children if c.rank == 0), None)
+        if not main_child:
+            break
+            
+        child_copy = VariationNode(
+            move_number=main_child.move_number,
+            color=main_child.color,
+            san=main_child.san,
+            uci=main_child.uci,
+            fen=main_child.fen,
+            nag=main_child.nag,
+            comment=main_child.comment,
+            rank=0,
+        )
+        current_dst.children.append(child_copy)
+        
+        current_src = main_child
+        current_dst = child_copy
 
-    # Find main line child only
-    main_child = next((c for c in node.children if c.rank == 0), None)
-
-    if main_child:
-        new_node.children = [extract_mainline(main_child)]
-    else:
-        new_node.children = []
-
-    return new_node
+    return root_copy

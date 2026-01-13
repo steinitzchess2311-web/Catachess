@@ -6,7 +6,7 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
-from workspace.api.deps import get_pgn_clip_service
+from workspace.api.endpoints.studies import get_pgn_clip_service
 from workspace.api.router import api_router
 from workspace.db.repos.event_repo import EventRepository
 from workspace.db.repos.study_repo import StudyRepository
@@ -87,9 +87,13 @@ async def seed_chapter() -> None:
 async def override_pgn_clip_service() -> PgnClipService:
     config = get_db_config()
     async with config.async_session_maker() as session:
+        study_repo = StudyRepository(session)
+        chap = await study_repo.get_chapter_by_id("chapter-1")
+        print(f"DEBUG: Chapter found in override? {chap}")
+        
         event_bus = EventBus(session)
         service = PgnClipService(
-            study_repo=StudyRepository(session),
+            study_repo=study_repo,
             variation_repo=VariationRepository(session),
             event_repo=EventRepository(session),
             event_bus=event_bus,

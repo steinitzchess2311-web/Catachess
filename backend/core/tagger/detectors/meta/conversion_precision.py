@@ -13,7 +13,7 @@ Evidence:
 - delta_eval: Evaluation change
 - phase: Game phase (often endgame)
 """
-from core.tagger.models import TagContext, TagEvidence
+from ...models import TagContext, TagEvidence
 
 
 def detect(ctx: TagContext) -> TagEvidence:

@@ -9,5 +9,5 @@
 [Black "Black"]
 [Result "*"]
 
-1. e4 (1... c5 2. Nf3 d6) e5 (1... e6 2. d4 d5)
-2. Nf3 (2... Nc6 3. Bb5 a6) Nc6 3. Bb5 a6 *
+1. e4 e5 (1... c5 2. Nf3 d6) (1... e6 2. d4 d5)
+2. Nf3 Nc6 (2... Nc6 3. Bb5 a6) 3. Bb5 a6 *

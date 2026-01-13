@@ -13,7 +13,7 @@ from typing import Dict, Any, Optional
 import chess
 from .contact import contact_profile
 from .phase import get_phase_bucket
-from core.tagger.config.engine import (
+from ...config.engine import (
     CONTROL_PHASE_WEIGHTS,
     CONTROL_TENSION_DELTA,
     CONTROL_TENSION_DELTA_ENDGAME,

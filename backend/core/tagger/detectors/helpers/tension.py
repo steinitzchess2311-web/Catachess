@@ -9,8 +9,8 @@ This is a simplified version of the legacy tension detection logic.
 Full complexity available in legacy core_v8.py lines 1700-1900.
 """
 from typing import Tuple
-from core.tagger.models import TagContext
-from core.tagger.config.engine import (
+from ...models import TagContext
+from ...config.engine import (
     TENSION_EVAL_MIN,
     TENSION_EVAL_MAX,
     TENSION_SYMMETRY_TOL,

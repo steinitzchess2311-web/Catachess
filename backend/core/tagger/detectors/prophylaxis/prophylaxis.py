@@ -8,8 +8,8 @@ Updated in Stage 4 to use:
 
 Matches rule_tagger2/legacy/prophylaxis.py and core.py exactly.
 """
-from core.tagger.models import TagContext, TagEvidence
-from core.tagger.detectors.helpers.prophylaxis import (
+from ...models import TagContext, TagEvidence
+from ...detectors.helpers.prophylaxis import (
     classify_prophylaxis_quality,
     compute_preventive_score,
     compute_soft_weight,

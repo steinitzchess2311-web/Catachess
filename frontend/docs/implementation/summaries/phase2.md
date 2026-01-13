@@ -396,3 +396,33 @@ window.location.hash = '#/login';
 **态度：** 严厉但赞赏 —— 代码优秀，细节致命，必须改进测试习惯
 **批准状态：** 🟡 **条件性批准 - 修复 CRITICAL Bug 后可进入 Stage 3**
 **下次审查：** Stage 2 修复验证（预期 24 小时内） 或 Stage 3 完成后
+
+---
+
+### Hash Routing 修复验证（Jan 13, 2026 1:05 AM）
+
+**修复内容：**
+- ✅ 修复了 4 处 hash 前缀错误:
+  - `frontend/ui/modules/auth/login/events/index.ts:49` - `window.location.hash = '#/workspace'`
+  - `frontend/ui/modules/auth/login/events/index.ts:60` - `window.location.hash = '#/signup'`
+  - `frontend/ui/modules/auth/signup/events/index.ts:102` - `window.location.hash = '#/login'`
+  - `frontend/ui/modules/auth/signup/events/index.ts:127` - `window.location.hash = '#/login'`
+
+**额外修复：**
+- ✅ 删除了 4 个遗留的独立 HTML 文件:
+  - `frontend/ui/workspace.html` (121 lines deleted)
+  - `frontend/ui/study.html` (175 lines deleted)
+  - `frontend/ui/folder.html` (120 lines deleted)
+  - `frontend/ui/my_account.html` (161 lines deleted)
+- **原因：** 这些是 Stage 0 应该删除的旧文件，它们使用旧的设计系统，与新的 Vertical Slice 架构冲突。在生产环境中可能导致混淆。
+
+**Commit:** 13a9e61 - "fix: Stage 2 - delete legacy HTML files and correct hash routing prefix"
+
+**测试状态：**
+- ⏳ 等待 Railway 部署完成
+- ⏳ 将在浏览器中测试完整的 Login -> Workspace 和 Signup -> Verification -> Login 流程
+
+**下一步：**
+- 部署成功后进行实际浏览器测试
+- 确认所有路由跳转正常工作
+- 如果测试通过，Stage 2 将获得最终批准

@@ -11,7 +11,7 @@ Implemented the Workspace module, enabling users to browse their file system (fo
     -   **Sidebar**: Workspace header and "New" button.
     -   **Breadcrumb**: Dynamic navigation path.
     -   **Grid View**: Visual representation of folders and studies using SVG icons.
--   **CSS**: 100% compliant with the Design System using CSS variables. Implemented responsive grid and hover effects.
+-   **CSS**: Uses CSS variables from Design System. (Note: Modal overlay initially hardcoded, fixed in review) Implemented responsive grid and hover effects.
 
 ### 2. Backend Enhancements
 -   **Endpoint Added**: Added `GET /api/v1/workspace/nodes` to `backend/modules/workspace/api/endpoints/nodes.py`.

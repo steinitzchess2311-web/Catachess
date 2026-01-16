@@ -4,8 +4,6 @@ providers = ["python"]
 nixPkgs = [
   "python311Full",
   "python311Packages.pip",
-  "python311Packages.setuptools",
-  "python311Packages.wheel",
   "gcc",
   "pkg-config",
   "postgresql"
@@ -13,10 +11,9 @@ nixPkgs = [
 
 [phases.install]
 cmds = [
-  "cd backend && pip --version",
-  "cd backend && pip install --upgrade pip setuptools wheel",
-  "cd backend && pip install -r requirements.txt"
+  "cd backend && python -m venv .venv",
+  "cd backend && . .venv/bin/activate && pip install -r requirements.txt"
 ]
 
 [start]
-cmd = "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
+cmd = "cd backend && . .venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port $PORT"

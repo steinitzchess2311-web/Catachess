@@ -16,4 +16,5 @@ cmds = [
 ]
 
 [start]
-cmd = ". .venv/bin/activate && uvicorn main:app --host 0.0.0.0 --port $PORT"
+cd backend && ../.venv/bin/python -m uvicorn main:app --host 0.0.0.0 --port $PORT
+

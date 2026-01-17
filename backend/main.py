@@ -35,6 +35,18 @@ async def startup_event():
     """Initialize database tables on startup"""
     try:
         workspace_db_url = settings.DATABASE_URL
+        if workspace_db_url:
+            redacted_url = workspace_db_url
+            if "://" in redacted_url and "@" in redacted_url:
+                scheme, rest = redacted_url.split("://", 1)
+                credentials, host = rest.split("@", 1)
+                if ":" in credentials:
+                    user, _ = credentials.split(":", 1)
+                    credentials = f"{user}:***"
+                redacted_url = f"{scheme}://{credentials}@{host}"
+            logger.info(f"Workspace DATABASE_URL resolved: {redacted_url}")
+        else:
+            logger.warning("Workspace DATABASE_URL resolved to a falsy value")
         if workspace_db_url.startswith("postgresql://"):
             workspace_db_url = workspace_db_url.replace(
                 "postgresql://",

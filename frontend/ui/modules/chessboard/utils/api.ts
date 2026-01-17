@@ -29,27 +29,106 @@ function moveToBackendFormat(move: Move) {
  * Convert backend position to frontend format
  */
 function boardPositionFromBackend(data: any): BoardPosition {
-  // Parse FEN or board state from backend
-  // This is a simplified version - actual implementation depends on backend API
+  if (data?.fen) {
+    return fenToBoardPosition(data.fen);
+  }
+  return createEmptyPosition(data);
+}
+
+function createEmptyPosition(data: any): BoardPosition {
   const squares: (Piece | null)[][] = Array(8)
     .fill(null)
     .map(() => Array(8).fill(null));
 
-  // TODO: Parse board state from backend response
-  // For now, return a placeholder
-
   return {
     squares,
-    turn: data.turn || 'white',
-    castlingRights: data.castling_rights || {
+    turn: data?.turn || 'white',
+    castlingRights: data?.castling_rights || {
       whiteKingside: true,
       whiteQueenside: true,
       blackKingside: true,
       blackQueenside: true,
     },
-    enPassantSquare: data.en_passant_square || null,
-    halfmoveClock: data.halfmove_clock || 0,
-    fullmoveNumber: data.fullmove_number || 1,
+    enPassantSquare: data?.en_passant_square || null,
+    halfmoveClock: data?.halfmove_clock || 0,
+    fullmoveNumber: data?.fullmove_number || 1,
+  };
+}
+
+export function fenToBoardPosition(fen: string): BoardPosition {
+  const parts = fen.trim().split(/\s+/);
+  if (parts.length < 4) {
+    throw new Error('Invalid FEN string');
+  }
+
+  const boardPart = parts[0];
+  const turnPart = parts[1];
+  const castlingPart = parts[2];
+  const enPassantPart = parts[3];
+  const halfmoveClock = Number(parts[4] || 0);
+  const fullmoveNumber = Number(parts[5] || 1);
+
+  const squares: (Piece | null)[][] = Array(8)
+    .fill(null)
+    .map(() => Array(8).fill(null));
+
+  const ranks = boardPart.split('/');
+  if (ranks.length !== 8) {
+    throw new Error('Invalid FEN board');
+  }
+
+  ranks.forEach((rankText, fenRankIndex) => {
+    let fileIndex = 0;
+    for (const char of rankText) {
+      if (/\d/.test(char)) {
+        fileIndex += Number(char);
+        continue;
+      }
+      const color = char === char.toUpperCase() ? 'white' : 'black';
+      const lower = char.toLowerCase();
+      const type =
+        lower === 'p'
+          ? 'pawn'
+          : lower === 'n'
+            ? 'knight'
+            : lower === 'b'
+              ? 'bishop'
+              : lower === 'r'
+                ? 'rook'
+                : lower === 'q'
+                  ? 'queen'
+                  : 'king';
+
+      const rankIndex = 7 - fenRankIndex;
+      squares[rankIndex][fileIndex] = { color, type };
+      fileIndex += 1;
+    }
+  });
+
+  const castlingRights = {
+    whiteKingside: castlingPart.includes('K'),
+    whiteQueenside: castlingPart.includes('Q'),
+    blackKingside: castlingPart.includes('k'),
+    blackQueenside: castlingPart.includes('q'),
+  };
+
+  let enPassantSquare: Square | null = null;
+  if (enPassantPart !== '-') {
+    const files = 'abcdefgh';
+    const file = files.indexOf(enPassantPart[0]);
+    const rank = Number(enPassantPart[1]) - 1;
+    if (file >= 0 && rank >= 0) {
+      enPassantSquare = { file, rank };
+    }
+  }
+
+  return {
+    squares,
+    turn: turnPart === 'b' ? 'black' : 'white',
+    castlingRights,
+    enPassantSquare,
+    halfmoveClock: Number.isNaN(halfmoveClock) ? 0 : halfmoveClock,
+    fullmoveNumber: Number.isNaN(fullmoveNumber) ? 1 : fullmoveNumber,
   };
 }
 

@@ -1,6 +1,7 @@
 import { api } from '../../../assets/api';
 import { Chessboard } from '../../chessboard';
 import { initDiscussion } from '../../discussion/events';
+import { fenToBoardPosition } from '../../chessboard/utils/api';
 
 export async function initStudy(container: HTMLElement, studyId: string) {
     // 1. Load Template
@@ -12,6 +13,7 @@ export async function initStudy(container: HTMLElement, studyId: string) {
     // 2. Select Elements
     const boardMount = container.querySelector('#board-mount') as HTMLElement;
     const chapterList = container.querySelector('#chapter-list') as HTMLElement;
+    const moveTree = container.querySelector('#move-tree') as HTMLElement;
     const discussionMount = container.querySelector('#discussion-mount') as HTMLElement;
     const tabBtns = container.querySelectorAll('.tab-btn');
     const tabContents = container.querySelectorAll('.tab-content');
@@ -21,6 +23,7 @@ export async function initStudy(container: HTMLElement, studyId: string) {
     let currentChapter: any = null;
     let board: Chessboard | null = null;
     let discussion: any = null;
+    let currentPgn: string | null = null;
 
     // 4. Initialization
     let heartbeatInterval: any = null;
@@ -59,6 +62,82 @@ export async function initStudy(container: HTMLElement, studyId: string) {
         }
     };
 
+    const loadChapterPgn = async (chapterId: string) => {
+        try {
+            const response = await api.post(`/api/v1/workspace/studies/${studyId}/pgn/export/raw`, {
+                chapter_id: chapterId,
+                for_clipboard: true,
+            });
+            currentPgn = response.pgn_text || '';
+            renderMoveTree(currentPgn);
+        } catch (error) {
+            console.error('Failed to load PGN:', error);
+            currentPgn = null;
+            moveTree.innerHTML = '<div class="move-tree-empty">PGN unavailable</div>';
+        }
+    };
+
+    const parsePgnMoves = (pgnText: string) => {
+        const lines = pgnText
+            .split('\n')
+            .filter((line) => line.trim() && !line.startsWith('['));
+        const movetext = lines.join(' ').trim();
+        if (!movetext) return [];
+
+        const tokens = movetext.split(/\s+/);
+        const moves: Array<{ ply: number; moveNumber: number; color: 'w' | 'b'; san: string }> = [];
+        let ply = 0;
+
+        for (const token of tokens) {
+            if (!token) continue;
+            if (/^\d+\.+$/.test(token) || /^\d+\.\.\.$/.test(token)) {
+                continue;
+            }
+            if (/^(1-0|0-1|1\/2-1\/2|\*)$/.test(token)) {
+                break;
+            }
+            if (token.startsWith('{') || token.startsWith('(')) {
+                continue;
+            }
+            ply += 1;
+            const moveNumber = Math.floor((ply + 1) / 2);
+            const color: 'w' | 'b' = ply % 2 === 1 ? 'w' : 'b';
+            moves.push({ ply, moveNumber, color, san: token });
+        }
+        return moves;
+    };
+
+    const renderMoveTree = (pgnText: string) => {
+        moveTree.innerHTML = '';
+        const moves = parsePgnMoves(pgnText);
+
+        if (!moves.length) {
+            moveTree.innerHTML = '<div class="move-tree-empty">No moves yet</div>';
+            return;
+        }
+
+        moves.forEach((move) => {
+            const btn = document.createElement('button');
+            btn.className = 'move-tree-item';
+            btn.type = 'button';
+            btn.textContent = `${move.moveNumber}${move.color === 'b' ? '...' : '.'} ${move.san}`;
+            btn.addEventListener('click', async () => {
+                if (!currentPgn || !board) return;
+                try {
+                    const result = await api.post('/api/games/pgn/fen', {
+                        pgn: currentPgn,
+                        ply: move.ply,
+                    });
+                    const position = fenToBoardPosition(result.fen);
+                    board.setPosition(position);
+                } catch (error) {
+                    console.error('Failed to resolve FEN:', error);
+                }
+            });
+            moveTree.appendChild(btn);
+        });
+    };
+
     const renderChapters = (chapters: any[]) => {
         chapterList.innerHTML = '';
         const tpl = document.getElementById('chapter-item-template') as HTMLTemplateElement;
@@ -91,6 +170,8 @@ export async function initStudy(container: HTMLElement, studyId: string) {
             // Update board position if needed
             // board.loadPGN(ch.pgn); // Assuming board has this
         }
+
+        loadChapterPgn(ch.id);
 
         // Initialize Discussion
         if (!discussion) {

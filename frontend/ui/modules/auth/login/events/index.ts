@@ -1,4 +1,4 @@
-import { api } from '../../../assets/api';
+import { api } from '../../../../assets/api';
 
 export function initLogin(container: HTMLElement) {
     // 1. Load Template

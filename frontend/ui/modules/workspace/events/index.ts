@@ -1,7 +1,11 @@
 import { api } from '../../../assets/api';
 import { makeDraggable } from '../../../core/drag';
 
-export async function initWorkspace(container: HTMLElement) {
+type WorkspaceOptions = {
+    onOpenStudy?: (studyId: string) => void;
+};
+
+export async function initWorkspace(container: HTMLElement, options: WorkspaceOptions = {}) {
     // 1. Load Workspace Template
     const template = document.getElementById('workspace-template') as HTMLTemplateElement;
     if (!template) return;
@@ -50,8 +54,10 @@ export async function initWorkspace(container: HTMLElement) {
             itemDiv.addEventListener('click', () => {
                 if (node.node_type === 'folder') {
                     navigateToFolder(node.id, node.title);
+                } else if (options.onOpenStudy) {
+                    options.onOpenStudy(node.id);
                 } else {
-                    window.location.hash = `#/study/${node.id}`;
+                    window.location.assign(`/workspace/${node.id}`);
                 }
             });
 

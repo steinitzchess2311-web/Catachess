@@ -43,10 +43,15 @@ export function initLogin(container: HTMLElement) {
 
             // Success
             if (response.access_token) {
-                localStorage.setItem('token', response.access_token);
-                localStorage.setItem('tokenType', response.token_type);
-                // Redirect to workspace
-                window.location.hash = '#/workspace';
+                const token = response.access_token as string;
+                localStorage.setItem('catachess_token', token);
+                localStorage.setItem('catachess_token_type', response.token_type);
+                const userId = decodeUserIdFromToken(token);
+                if (userId) {
+                    localStorage.setItem('catachess_user_id', userId);
+                }
+                // Redirect to workspace selection
+                window.location.assign('/workspace-select');
             }
         } catch (error: any) {
             console.error('Login failed:', error);
@@ -57,6 +62,19 @@ export function initLogin(container: HTMLElement) {
     // Handle signup link navigation within SPA
     signupLink.addEventListener('click', (e) => {
         e.preventDefault();
-        window.location.hash = '#/signup';
+        window.location.assign('/signup');
     });
+}
+
+function decodeUserIdFromToken(token: string) {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    try {
+        let base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (base64.length % 4) base64 += '=';
+        const payload = JSON.parse(atob(base64));
+        return typeof payload.sub === 'string' ? payload.sub : null;
+    } catch {
+        return null;
+    }
 }

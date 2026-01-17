@@ -19,7 +19,9 @@ export class ApiClient {
     }
 
     public async request(endpoint: string, options: RequestInit = {}): Promise<any> {
-        const token = localStorage.getItem('token');
+        const token =
+            localStorage.getItem('catachess_token') ||
+            sessionStorage.getItem('catachess_token');
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
             ...(options.headers as Record<string, string>),
@@ -37,10 +39,13 @@ export class ApiClient {
 
             if (response.status === 401) {
                 // Unauthorized - clear token and redirect
-                localStorage.removeItem('token');
+                localStorage.removeItem('catachess_token');
+                localStorage.removeItem('catachess_user_id');
+                sessionStorage.removeItem('catachess_token');
+                sessionStorage.removeItem('catachess_user_id');
                 // Only redirect if not already on login page to avoid loops
-                if (!window.location.hash.includes('/login')) {
-                    window.location.hash = '#/login';
+                if (!window.location.pathname.startsWith('/login')) {
+                    window.location.assign('/login');
                     console.warn('Unauthorized: Redirecting to login...');
                 }
                 throw new Error('Unauthorized');

@@ -5,118 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catachess</title>
     <link rel="stylesheet" href="./ui/assets/variables.css">
-    <!-- Dynamic styles will be injected here -->
-    <style id="module-styles"></style>
 </head>
 <body>
-    <div id="app"></div>
-
-    <!-- Templates Container (Dynamic) -->
-    <div id="templates-container" style="display: none;"></div>
-
-    <!-- Router Logic -->
-    <script type="module">
-        import { initLogin } from './ui/modules/auth/login/events/index.ts';
-        import { initSignup } from './ui/modules/auth/signup/events/index.ts';
-        import { initWorkspace } from './ui/modules/workspace/events/index.ts';
-        import { initStudy } from './ui/modules/study/events/index.ts';
-
-        const app = document.getElementById('app');
-        const styleTag = document.getElementById('module-styles');
-        const templatesContainer = document.getElementById('templates-container');
-
-        // Function to load CSS dynamically
-        async function loadCSS(path) {
-            try {
-                const response = await fetch(path);
-                if (!response.ok) throw new Error(`Style not found: ${path}`);
-                const css = await response.text();
-                // Append instead of replace to support multiple modules (e.g. Study + Discussion)
-                const styleEl = document.createElement('style');
-                styleEl.className = 'dynamic-style';
-                styleEl.textContent = css;
-                document.head.appendChild(styleEl);
-            } catch (error) {
-                console.error('Failed to load CSS:', error);
-            }
-        }
-
-        function clearStyles() {
-            document.querySelectorAll('.dynamic-style').forEach(el => el.remove());
-        }
-
-        // Function to load Layout (Templates) dynamically
-        async function loadLayout(path) {
-            try {
-                const response = await fetch(path);
-                if (!response.ok) throw new Error(`Layout not found: ${path}`);
-                const html = await response.text();
-                
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-                
-                const templates = tempDiv.querySelectorAll('template');
-                templates.forEach(tpl => {
-                    if (!document.getElementById(tpl.id)) {
-                        templatesContainer.appendChild(tpl);
-                    }
-                });
-            } catch (error) {
-                console.error('Failed to load Layout:', error);
-            }
-        }
-
-        // Router
-        async function handleRoute() {
-            const hash = window.location.hash || '#/';
-            app.innerHTML = ''; // Clear app container
-            clearStyles();
-
-            if (hash === '#/login') {
-                await loadLayout('./ui/modules/auth/login/layout/index.html');
-                await loadCSS('./ui/modules/auth/login/styles/index.css');
-                initLogin(app);
-            } else if (hash === '#/signup') {
-                await loadLayout('./ui/modules/auth/signup/layout/index.html');
-                await loadCSS('./ui/modules/auth/signup/styles/index.css');
-                initSignup(app);
-            } else if (hash === '#/workspace' || hash.startsWith('#/workspace')) {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    window.location.hash = '#/login';
-                    return;
-                }
-                await loadLayout('./ui/modules/workspace/layout/index.html');
-                await loadCSS('./ui/modules/workspace/styles/index.css');
-                initWorkspace(app);
-            } else if (hash.startsWith('#/study/')) {
-                const token = localStorage.getItem('token');
-                if (!token) {
-                    window.location.hash = '#/login';
-                    return;
-                }
-                const studyId = hash.split('/')[2];
-                // Load Study AND Discussion modules
-                await loadLayout('./ui/modules/study/layout/index.html');
-                await loadLayout('./ui/modules/discussion/layout/index.html');
-                await loadCSS('./ui/modules/study/styles/index.css');
-                await loadCSS('./ui/modules/discussion/styles/index.css');
-                initStudy(app, studyId);
-            } else {
-                const token = localStorage.getItem('token');
-                if (token) {
-                    window.location.hash = '#/workspace';
-                } else {
-                    window.location.hash = '#/login';
-                }
-            }
-        }
-
-        // Listen for hash changes
-        window.addEventListener('hashchange', handleRoute);
-        
-        // Initial load
-        window.addEventListener('load', handleRoute);
-    </script>
+    <div id="app">
+        <div style="padding: 24px;">
+            <h1 style="margin: 0 0 12px;">Catachess</h1>
+            <p style="margin: 0;">
+                This entrypoint is deprecated. Please use the React app under
+                <code>frontend/web</code>.
+            </p>
+        </div>
+    </div>
 </body>
 </html>

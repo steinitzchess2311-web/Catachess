@@ -1,7 +1,7 @@
 """Add version history tables
 
 Revision ID: 20260112_0013
-Revises: 20260112_0012
+Revises: 20260112_0012c
 Create Date: 2026-01-12 01:00:00
 """
 from alembic import op
@@ -10,7 +10,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers
 revision = '20260112_0013'
-down_revision = '20260112_0012'
+down_revision = '20260112_0012c'
 branch_labels = None
 depends_on = None
 

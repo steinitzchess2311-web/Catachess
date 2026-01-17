@@ -38,11 +38,15 @@ class DatabaseConfig:
             connect_args = {"check_same_thread": False}
 
         # Create async engine
+        engine_kwargs: dict[str, Any] = {"echo": echo}
+        if is_sqlite:
+            engine_kwargs["poolclass"] = StaticPool
+        if connect_args:
+            engine_kwargs["connect_args"] = connect_args
+
         self.engine = create_async_engine(
             database_url,
-            echo=echo,
-            poolclass=StaticPool if is_sqlite else None,
-            connect_args=connect_args,
+            **engine_kwargs,
         )
 
         # Create session factory

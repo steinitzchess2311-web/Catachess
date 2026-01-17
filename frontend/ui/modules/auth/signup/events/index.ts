@@ -99,7 +99,7 @@ export function initSignup(container: HTMLElement) {
 
             // Success - Redirect to Login
             alert('Account verified successfully! Please log in.');
-            window.location.hash = '#/login';
+            window.location.assign('/login');
         } catch (error: any) {
             console.error('Verification failed:', error);
             verificationError.textContent = error.message || 'Invalid code';
@@ -124,6 +124,6 @@ export function initSignup(container: HTMLElement) {
     // Navigate to login
     loginLink.addEventListener('click', (e) => {
         e.preventDefault();
-        window.location.hash = '#/login';
+        window.location.assign('/login');
     });
 }

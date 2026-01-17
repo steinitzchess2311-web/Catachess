@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   BrowserRouter,
+  Link,
   Navigate,
   Route,
   Routes,
@@ -9,16 +10,19 @@ import {
   useParams,
 } from "react-router-dom";
 import { api } from "@ui/assets/api";
+import { initSignup } from "@ui/modules/auth/signup/events/index";
 import { initWorkspace } from "@ui/modules/workspace/events/index";
 import { initStudy } from "@ui/modules/study/events/index";
 import "@ui/assets/variables.css";
 import "@ui/modules/auth/login/styles/index.css";
+import "@ui/modules/auth/signup/styles/index.css";
 import "@ui/modules/workspace/styles/index.css";
 import "@ui/modules/study/styles/index.css";
 import "@ui/modules/discussion/styles/index.css";
 import workspaceLayout from "@ui/modules/workspace/layout/index.html?raw";
 import studyLayout from "@ui/modules/study/layout/index.html?raw";
 import discussionLayout from "@ui/modules/discussion/layout/index.html?raw";
+import signupLayout from "@ui/modules/auth/signup/layout/index.html?raw";
 
 const TOKEN_KEY = "catachess_token";
 const USER_ID_KEY = "catachess_user_id";
@@ -158,10 +162,27 @@ function LoginPage() {
         </form>
         <div className="login-footer">
           <p>
-            Don&apos;t have an account? <a href="#">Sign up</a>
+            Don&apos;t have an account? <Link to="/signup">Sign up</Link>
           </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SignupPage() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return;
+    containerRef.current.innerHTML = "";
+    initSignup(containerRef.current);
+  }, []);
+
+  return (
+    <div>
+      <div style={{ display: "none" }} dangerouslySetInnerHTML={{ __html: signupLayout }} />
+      <div ref={containerRef} />
     </div>
   );
 }
@@ -213,6 +234,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/workspace-select" replace />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route
           path="/workspace-select"
           element={

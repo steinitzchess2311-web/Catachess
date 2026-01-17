@@ -25,7 +25,7 @@ def upgrade() -> None:
     op.create_table(
         'games',
         sa.Column('game_id', UUID(as_uuid=True), primary_key=True, nullable=False),
-        sa.Column('user_id', UUID(as_uuid=True), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True),
+        sa.Column('user_id', UUID(as_uuid=True), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False),
 
         # Game metadata (from PGN tags)
         sa.Column('player_white', sa.String(length=100), nullable=True),

@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     # For development: "http://localhost:3000,http://localhost:5173"
     # For production: "https://yourdomain.com"
     CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:5174"
+    # Optional regex for dynamic subdomains (e.g., Cloudflare Pages)
+    CORS_ORIGIN_REGEX: str = r"^https://([a-z0-9-]+\.)*(catachess\.com|pages\.dev)$"
 
     # ===== engine =====
     # SECURITY FIX: Removed hardcoded internal IP - must be set via environment variable

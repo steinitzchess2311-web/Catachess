@@ -19,6 +19,7 @@ from routers import auth, assignments, user_profile, game_storage, chess_engine
 from modules.workspace.api.router import api_router as workspace_router
 from core.log.log_api import logger
 from core.config import settings
+from modules.workspace.db.session import init_db as init_workspace_db
 
 
 # Create FastAPI application
@@ -32,6 +33,25 @@ app = FastAPI(
 @app.on_event("startup")
 async def startup_event():
     """Initialize database tables on startup"""
+    try:
+        workspace_db_url = settings.DATABASE_URL
+        if workspace_db_url.startswith("postgresql://"):
+            workspace_db_url = workspace_db_url.replace(
+                "postgresql://",
+                "postgresql+asyncpg://",
+                1,
+            )
+        elif workspace_db_url.startswith("sqlite://"):
+            workspace_db_url = workspace_db_url.replace(
+                "sqlite://",
+                "sqlite+aiosqlite://",
+                1,
+            )
+        init_workspace_db(workspace_db_url, echo=settings.DEBUG)
+        logger.info("Workspace database initialized")
+    except Exception as e:
+        logger.warning(f"Workspace database init failed: {e}")
+
     try:
         from init_verification_table import init_verification_table
         init_verification_table()

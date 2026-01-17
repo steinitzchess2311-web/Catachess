@@ -18,6 +18,7 @@ if str(backend_dir) not in sys.path:
 
 from core.config import settings
 from modules.workspace.api.router import api_router
+from modules.workspace.db.session import init_db as init_workspace_db
 from modules.workspace.db.session import engine, Base
 
 # Configure logging
@@ -63,6 +64,24 @@ app.include_router(api_router, prefix="/api/v1/workspace", tags=["workspace"])
 async def startup_event():
     """Initialize database on startup."""
     logger.info("Starting workspace API...")
+    try:
+        workspace_db_url = settings.DATABASE_URL
+        if workspace_db_url.startswith("postgresql://"):
+            workspace_db_url = workspace_db_url.replace(
+                "postgresql://",
+                "postgresql+asyncpg://",
+                1,
+            )
+        elif workspace_db_url.startswith("sqlite://"):
+            workspace_db_url = workspace_db_url.replace(
+                "sqlite://",
+                "sqlite+aiosqlite://",
+                1,
+            )
+        init_workspace_db(workspace_db_url, echo=settings.DEBUG)
+        logger.info("Workspace database initialized")
+    except Exception as exc:
+        logger.warning(f"Workspace database init failed: {exc}")
     # Note: Tables should be created via Alembic migrations
     # This is just for logging
     logger.info("Database engine initialized")

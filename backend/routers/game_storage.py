@@ -24,8 +24,11 @@ from schemas.game import (
     PGNResponse,
     GameInfoResponse,
     DeleteGameResponse,
+    PGNToFENRequest,
+    PGNToFENResponse,
 )
 from services.game_storage_service import game_storage_service
+from core.chess_basic.utils.pgn_fen import fen_from_pgn
 
 
 router = APIRouter(
@@ -240,6 +243,35 @@ async def get_pgn(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get PGN: {str(e)}"
         )
+
+
+@router.post("/pgn/fen", response_model=PGNToFENResponse)
+async def pgn_to_fen(
+    request: PGNToFENRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Convert a PGN mainline to a FEN at a requested ply or move.
+    """
+    try:
+        fen = fen_from_pgn(
+            request.pgn,
+            ply=request.ply,
+            move_number=request.move_number,
+            color=request.color,
+            san=request.san,
+        )
+        return PGNToFENResponse(
+            fen=fen,
+            ply=request.ply,
+            move_number=request.move_number,
+            color=request.color,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
 
 @router.get("/{game_id}", response_model=GameInfoResponse)

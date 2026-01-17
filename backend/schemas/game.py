@@ -54,6 +54,26 @@ class AddNAGRequest(BaseModel):
     move_id: Optional[str] = None  # If None, adds to last move
     nag: int  # 1=!, 2=?, 3=!!, 4=??, etc.
 
+class PGNToFENRequest(BaseModel):
+    """Request to resolve a FEN from a PGN mainline"""
+    pgn: str
+    ply: Optional[int] = Field(
+        None,
+        description="1-based ply index (0 returns starting position).",
+    )
+    move_number: Optional[int] = Field(
+        None,
+        description="Fullmove number (1,2,3...). Requires color.",
+    )
+    color: Optional[str] = Field(
+        None,
+        description="Move color for move_number ('w' or 'b').",
+    )
+    san: Optional[str] = Field(
+        None,
+        description="Optional SAN filter when using move_number/color.",
+    )
+
 
 # ===== Response Schemas =====
 
@@ -80,6 +100,14 @@ class PGNResponse(BaseModel):
     pgn: str
     game_id: str
     move_count: int
+
+
+class PGNToFENResponse(BaseModel):
+    """Response with FEN at requested move"""
+    fen: str
+    ply: Optional[int] = None
+    move_number: Optional[int] = None
+    color: Optional[str] = None
 
 
 class GameInfoResponse(BaseModel):

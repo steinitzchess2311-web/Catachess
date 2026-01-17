@@ -1,5 +1,5 @@
 # core/config.py
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 import os
 import sys
@@ -53,10 +53,11 @@ class Settings(BaseSettings):
     # ===== storage =====
     DATA_ROOT: Path = Path("data")
 
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
-        extra = "ignore"
+    model_config = SettingsConfigDict(
+        env_file=None if os.getenv("ENV") == "production" else ".env",
+        case_sensitive=True,
+        extra="ignore",
+    )
 
     @property
     def cors_origins_list(self) -> list[str]:

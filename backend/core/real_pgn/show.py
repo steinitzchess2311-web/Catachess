@@ -8,16 +8,16 @@ def build_show(tree: NodeTree) -> Dict[str, Any]:
     Generates a ShowDTO dictionary from a NodeTree, suitable for frontend rendering.
     """
     
-    # 1. Headers array
-    headers = [{"name": key, "value": value} for key, value in tree.meta.headers.items()]
+    # 1. Headers array with 'k' and 'v' keys
+    headers = [{"k": key, "v": value} for key, value in tree.meta.headers.items()]
     
-    # 2. Nodes dict (already in the right format in tree.nodes)
+    # 2. Nodes dict (no change needed here)
     nodes_dict = {nid: node.__dict__ for nid, node in tree.nodes.items()}
 
     # 3. Render token stream
-    render_tokens = []
+    render_stream = []
     if tree.root_id:
-        _build_tokens_recursive(tree, tree.root_id, render_tokens)
+        _build_tokens_recursive(tree, tree.root_id, render_stream, is_variation_start=False)
         
     # 4. Other metadata
     root_fen = tree.nodes[tree.root_id].fen if tree.root_id else None
@@ -25,38 +25,56 @@ def build_show(tree: NodeTree) -> Dict[str, Any]:
     return {
         "headers": headers,
         "nodes": nodes_dict,
-        "render_tokens": render_tokens,
+        "render": render_stream,
         "root_fen": root_fen,
         "result": tree.meta.result
     }
 
-def _build_tokens_recursive(tree: NodeTree, node_id: str, tokens: List[Dict[str, Any]]):
+def _build_tokens_recursive(tree: NodeTree, node_id: str, tokens: List[Dict[str, Any]], is_variation_start: bool):
     """
-    Recursively builds the render token stream.
+    Recursively builds the render token stream with the new DTO structure.
     """
     node = tree.nodes.get(node_id)
     if not node:
         return
 
-    # Skip printing the root node itself, just start with its main line
+    # Skip the root node, start recursion from its main child
     if node.san == "<root>":
         if node.main_child:
-            _build_tokens_recursive(tree, node.main_child, tokens)
+            _build_tokens_recursive(tree, node.main_child, tokens, is_variation_start=False)
         return
 
+    # --- Label Generation ---
+    label = ""
+    is_black_move = node.ply % 2 == 0
+    if node.ply % 2 == 1:  # White's move
+        label = f"{node.move_number}."
+    elif is_variation_start:  # Black's move starting a variation
+        label = f"{node.move_number}..."
+    
+    if is_variation_start:
+        label = f"({label}"
+
+    # --- Token Generation ---
+    
     # Add move token
-    tokens.append({"type": "move", "node_id": node.node_id, "san": node.san})
+    tokens.append({
+        "t": "m",
+        "node": node.node_id,
+        "label": label,
+        "san": node.san
+    })
 
     # Add comment token if it exists
     if node.comment_after:
-        tokens.append({"type": "comment", "text": node.comment_after})
+        tokens.append({"t": "c", "text": node.comment_after})
 
-    # Process side variations first
+    # Process side variations
     for var_node_id in node.variations:
-        tokens.append({"type": "variation_start"})
-        _build_tokens_recursive(tree, var_node_id, tokens)
-        tokens.append({"type": "variation_end"})
+        tokens.append({"t": "v_start"})
+        _build_tokens_recursive(tree, var_node_id, tokens, is_variation_start=True)
+        tokens.append({"t": "v_end"})
     
-    # Then continue with the main line
+    # Continue with the main line
     if node.main_child:
-        _build_tokens_recursive(tree, node.main_child, tokens)
+        _build_tokens_recursive(tree, node.main_child, tokens, is_variation_start=False)

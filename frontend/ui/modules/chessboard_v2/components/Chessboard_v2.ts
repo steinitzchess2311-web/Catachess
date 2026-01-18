@@ -263,9 +263,36 @@ export class ChessboardV2 {
   }
 
   private syncSquareSize(): void {
-    const target = this.container.parentElement || this.container;
+    const parent = this.container.parentElement;
+    const target = parent || this.container;
     const bounds = target.getBoundingClientRect();
-    const maxSize = Math.min(bounds.width, bounds.height);
+
+    let availableWidth = bounds.width;
+    let availableHeight = bounds.height;
+
+    if (parent) {
+      const styles = getComputedStyle(parent);
+      const paddingX =
+        parseFloat(styles.paddingLeft || '0') + parseFloat(styles.paddingRight || '0');
+      const paddingY =
+        parseFloat(styles.paddingTop || '0') + parseFloat(styles.paddingBottom || '0');
+      const gapValue = styles.rowGap || styles.gap || '0';
+      const gap = parseFloat(gapValue || '0') || 0;
+      const controls = parent.querySelector('.board-controls') as HTMLElement | null;
+      let controlsHeight = 0;
+      if (controls) {
+        const controlsStyles = getComputedStyle(controls);
+        const margins =
+          parseFloat(controlsStyles.marginTop || '0') +
+          parseFloat(controlsStyles.marginBottom || '0');
+        controlsHeight = controls.getBoundingClientRect().height + margins;
+      }
+
+      availableWidth = Math.max(0, availableWidth - paddingX);
+      availableHeight = Math.max(0, availableHeight - paddingY - controlsHeight - gap);
+    }
+
+    const maxSize = Math.min(availableWidth, availableHeight);
     if (maxSize > 0) {
       this.container.style.width = `${maxSize}px`;
       this.container.style.height = `${maxSize}px`;

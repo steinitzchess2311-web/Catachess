@@ -58,17 +58,16 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
                     navigateToFolder(node.id, node.title);
                     return;
                 }
-                openNodeActions(node);
+                if (options.onOpenStudy) {
+                    options.onOpenStudy(node.id);
+                } else {
+                    window.location.assign(`/workspace/${node.id}`);
+                }
             });
 
-            itemDiv.addEventListener('dblclick', () => {
-                if (node.node_type !== 'folder') {
-                    if (options.onOpenStudy) {
-                        options.onOpenStudy(node.id);
-                    } else {
-                        window.location.assign(`/workspace/${node.id}`);
-                    }
-                }
+            itemDiv.addEventListener('contextmenu', (event) => {
+                event.preventDefault();
+                openNodeActions(node);
             });
 
             itemsGrid.appendChild(item);
@@ -118,19 +117,19 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
     };
 
     const fetchFolderOptions = async () => {
-        const folders: Array<{ id: string; label: string }> = [];
+        const folders: Array<{ id: string; label: string; path: string }> = [];
         const walk = async (parentId: string, prefix: string) => {
             const response = await api.get(`/api/v1/workspace/nodes?parent_id=${parentId}`);
             const nodes = response.nodes as any[];
             const sorted = nodes.filter(n => n.node_type === 'folder');
             for (const node of sorted) {
                 const label = prefix ? `${prefix} / ${node.title}` : node.title;
-                folders.push({ id: node.id, label });
+                folders.push({ id: node.id, label, path: node.path });
                 await walk(node.id, label);
             }
         };
         await walk('root', 'Root');
-        return [{ id: 'root', label: 'Root' }, ...folders];
+        return [{ id: 'root', label: 'Root', path: '/root/' }, ...folders];
     };
 
     const openMoveModal = async (node: any) => {
@@ -139,6 +138,9 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
         const confirmBtn = overlay.querySelector('#confirm-move') as HTMLButtonElement;
         const optionsList = await fetchFolderOptions();
         optionsList.forEach(option => {
+            if (node.node_type === 'folder' && option.path.startsWith(node.path)) {
+                return;
+            }
             const opt = document.createElement('option');
             opt.value = option.id;
             opt.textContent = option.label;
@@ -179,7 +181,9 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
     const openNodeActions = (node: any) => {
         const { overlay } = mountModal('node-actions-template');
         const title = overlay.querySelector('.modal-title') as HTMLElement;
+        const eyebrow = overlay.querySelector('.modal-eyebrow') as HTMLElement;
         title.textContent = node.title;
+        eyebrow.textContent = node.node_type === 'folder' ? 'Folder' : 'Study';
         const actions = overlay.querySelectorAll('.action-btn');
         actions.forEach(btn => {
             btn.addEventListener('click', async () => {

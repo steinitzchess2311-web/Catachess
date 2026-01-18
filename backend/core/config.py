@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     SPOT_MAX_RETRIES: int = 2
     ENGINE_FALLBACK_MODE: str = "legal"  # "legal" for local rule-based fallback, "off" to disable
 
+    # ===== PGN v2 Feature Flag =====
+    PGN_V2_ENABLED: bool = False
+
     # ===== database =====
     # SECURITY FIX: Removed hardcoded credentials - must be set via environment variable
     # For Railway: DATABASE_URL is automatically provided

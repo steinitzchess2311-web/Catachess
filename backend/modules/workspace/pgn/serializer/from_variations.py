@@ -1,4 +1,7 @@
-"""Build PGN variation trees directly from DB variations + annotations."""
+"""Build PGN variation trees directly from DB variations + annotations.
+
+DEPRECATED: Use backend.core.real_pgn for new PGN processing.
+"""
 
 from collections import defaultdict
 from typing import Iterable

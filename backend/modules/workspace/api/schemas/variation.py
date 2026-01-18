@@ -10,12 +10,16 @@ from modules.workspace.db.tables.variations import VariationPriority, VariationV
 
 
 class MoveCreate(BaseModel):
-    """Schema for creating a move."""
+    """Schema for creating a move.
+
+    Note: fen is optional - if not provided, the server will compute it
+    from the parent position and UCI move.
+    """
 
     parent_id: str | None = None
     san: str = Field(..., min_length=1, max_length=20, description="Standard Algebraic Notation")
     uci: str = Field(..., min_length=4, max_length=10, description="UCI notation")
-    fen: str = Field(..., min_length=1, max_length=100, description="FEN after move")
+    fen: str | None = Field(None, max_length=100, description="FEN after move (optional, computed server-side if not provided)")
     move_number: int = Field(..., ge=1, description="Move number")
     color: str = Field(..., pattern="^(white|black)$", description="white or black")
     rank: int = Field(default=0, ge=0, description="Rank (0=main line)")

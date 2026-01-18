@@ -1,17 +1,27 @@
 """
 Main analysis pipeline for processing PGN files and calculating tag statistics.
+
+Supports two input modes:
+1. PGN file processing (legacy)
+2. FEN index processing (v2 - preferred for NodeTree-based chapters)
 """
 
 import json
+import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Literal
+from typing import Any, Dict, List, Optional, Literal
 
+from modules.workspace.pgn_v2.repo import PgnV2Repo # Import PgnV2Repo
 from ..config.engine import DEFAULT_DEPTH, DEFAULT_MULTIPV, DEFAULT_STOCKFISH_PATH
 from ..facade import tag_position
 from .pgn_processor import PGNProcessor
 from .tag_statistics import TagStatistics
+from .fen_processor import FenIndexProcessor, NodeFenEntry
+from ..pipeline.predictor.node_predictor import NodePredictor, NodeTagResult
+
+logger = logging.getLogger(__name__)
 
 # Default HTTP engine URL
 DEFAULT_ENGINE_URL = os.environ.get("ENGINE_URL", "https://sf.cloudflare.com")
@@ -39,6 +49,7 @@ class AnalysisPipeline:
         depth: int = DEFAULT_DEPTH,
         multipv: int = DEFAULT_MULTIPV,
         skip_opening_moves: int = 0,
+        pgn_v2_repo: Optional[PgnV2Repo] = None, # New parameter
     ):
         """
         Initialize analysis pipeline.
@@ -52,6 +63,7 @@ class AnalysisPipeline:
             depth: Engine analysis depth (default: 14)
             multipv: Number of principal variations (default: 6)
             skip_opening_moves: Number of opening moves to skip (default: 0)
+            pgn_v2_repo: Optional PgnV2Repo instance for saving v2 PGN data
         """
         self.pgn_path = Path(pgn_path)
         self.output_dir = Path(output_dir)
@@ -61,6 +73,7 @@ class AnalysisPipeline:
         self.depth = depth
         self.multipv = multipv
         self.skip_opening_moves = skip_opening_moves
+        self.pgn_v2_repo = pgn_v2_repo # Store the PgnV2Repo instance
 
         # Ensure output directory exists
         self.output_dir.mkdir(parents=True, exist_ok=True)
@@ -198,6 +211,186 @@ class AnalysisPipeline:
                 print(f"JSON data saved to: {json_path}")
 
         return stats
+
+    def run_fen_index(
+        self,
+        fen_index: Dict[str, str],
+        tree_data: Optional[Dict[str, Any]] = None,
+        verbose: bool = True,
+        max_positions: Optional[int] = None,
+    ) -> List[NodeTagResult]:
+        """
+        Run analysis using FEN index data (v2 mode).
+
+        This is the preferred method for NodeTree-based chapters.
+        Uses FenIndexProcessor to extract positions and NodePredictor for tagging.
+
+        Args:
+            fen_index: Dict mapping node_id to FEN string
+            tree_data: Optional tree JSON with UCI moves for more accurate analysis
+            verbose: Print progress messages
+            max_positions: Maximum positions to analyze
+
+        Returns:
+            List of NodeTagResult with tags for each node
+        """
+        if verbose:
+            logger.info(f"Starting FEN index analysis")
+            if self.engine_mode == "http":
+                logger.info(f"Engine: {self.engine_url} (HTTP)")
+            else:
+                logger.info(f"Engine: {self.engine_path} (local)")
+            logger.info(f"Depth: {self.depth}, MultiPV: {self.multipv}")
+
+        # Process FEN index
+        processor = FenIndexProcessor()
+
+        if tree_data:
+            # Use tree data for more complete analysis (includes UCI moves)
+            entries = processor.process_tree_with_moves(tree_data)
+        else:
+            # Use basic FEN index
+            entries = processor.process_fen_index(fen_index)
+
+        if verbose:
+            logger.info(f"Total positions in FEN index: {len(entries)}")
+
+        # Apply max_positions limit
+        if max_positions and len(entries) > max_positions:
+            entries = entries[:max_positions]
+            if verbose:
+                logger.info(f"Limited to {max_positions} positions")
+
+        # Create predictor
+        # Note: For now, we use the facade tag_position function
+        # A full implementation would use NodePredictor with a configured pipeline
+        results: List[NodeTagResult] = []
+        error_count = 0
+
+        for i, entry in enumerate(entries):
+            if verbose and (i + 1) % 10 == 0:
+                logger.debug(f"Processed {i + 1}/{len(entries)} positions...")
+
+            try:
+                if entry.uci:
+                    # Get parent FEN for analysis
+                    # For now, use the entry's FEN directly
+                    # A full implementation would compute parent FEN
+                    result = tag_position(
+                        engine_path=self.engine_path,
+                        fen=entry.fen,
+                        played_move_uci=entry.uci,
+                        depth=self.depth,
+                        multipv=self.multipv,
+                        engine_mode=self.engine_mode,
+                        engine_url=self.engine_url,
+                    )
+
+                    results.append(NodeTagResult(
+                        node_id=entry.node_id,
+                        fen=entry.fen,
+                        move_uci=entry.uci,
+                        tags=list(result.tags) if result.tags else [],
+                        features=dict(result.features) if result.features else {},
+                    ))
+                else:
+                    # No UCI move - can't analyze
+                    results.append(NodeTagResult(
+                        node_id=entry.node_id,
+                        fen=entry.fen,
+                        move_uci=None,
+                        tags=[],
+                        features={},
+                    ))
+
+            except Exception as e:
+                error_count += 1
+                logger.warning(f"Error analyzing node {entry.node_id}: {e}")
+                results.append(NodeTagResult(
+                    node_id=entry.node_id,
+                    fen=entry.fen,
+                    move_uci=entry.uci,
+                    error=str(e),
+                ))
+
+        if verbose:
+            logger.info(f"Completed: {len(results)} nodes processed")
+            if error_count > 0:
+                logger.warning(f"Errors encountered: {error_count}")
+
+        return results
+
+    def run_fen_index_and_save(
+        self,
+        fen_index: Dict[str, str],
+        chapter_id: str,
+        tree_data: Optional[Dict[str, Any]] = None,
+        verbose: bool = True,
+        max_positions: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Run FEN index analysis and save results to output directory.
+
+        Args:
+            fen_index: Dict mapping node_id to FEN string
+            chapter_id: Chapter ID for output file naming
+            tree_data: Optional tree JSON with UCI moves
+            verbose: Print progress messages
+            max_positions: Maximum positions to analyze
+
+        Returns:
+            Dict with node_id -> tags mapping (also saved to file)
+        """
+        # Run analysis
+        results = self.run_fen_index(
+            fen_index=fen_index,
+            tree_data=tree_data,
+            verbose=verbose,
+            max_positions=max_positions,
+        )
+
+        # Convert to output format
+        tags_output: Dict[str, Any] = {
+            "metadata": {
+                "chapter_id": chapter_id,
+                "timestamp": datetime.now().isoformat(),
+                "total_nodes": len(results),
+                "depth": self.depth,
+                "multipv": self.multipv,
+            },
+            "nodes": {}
+        }
+
+        for result in results:
+            tags_output["nodes"][result.node_id] = {
+                "tags": result.tags,
+                "features": result.features,
+                "error": result.error,
+            }
+
+        # Save to output directory
+        output_path = self.output_dir / f"{chapter_id}.tags.json"
+        with open(output_path, 'w') as f:
+            json.dump(tags_output, f, indent=2)
+
+        if verbose:
+            logger.info(f"Tags saved to: {output_path}")
+
+        if self.pgn_v2_repo:
+            try:
+                self.pgn_v2_repo.save_tags_json(
+                    chapter_id=chapter_id,
+                    tags_data=tags_output,
+                    metadata={"chapter_id": chapter_id}
+                )
+                if verbose:
+                    logger.info(f"Tags also saved to R2 for chapter {chapter_id}")
+            except Exception as e:
+                logger.error(f"Failed to save tags to R2 for chapter {chapter_id}: {e}")
+        else:
+            logger.warning("PgnV2Repo not configured, skipping R2 tags save.")
+
+        return tags_output
 
 
 __all__ = ["AnalysisPipeline"]

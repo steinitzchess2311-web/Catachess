@@ -3,6 +3,8 @@ Convert variation tree structure to PGN text.
 
 This module takes a tree representation of moves and variations
 and generates standard PGN movetext format.
+
+DEPRECATED: Use backend.core.real_pgn for new PGN processing.
 """
 
 from modules.workspace.pgn.serializer.to_tree import VariationNode

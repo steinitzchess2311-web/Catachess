@@ -6,9 +6,10 @@ Integrated with version service for automatic snapshots.
 """
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from ulid import ULID
 from sqlalchemy.ext.asyncio import AsyncSession
+import chess
 
 from modules.workspace.db.repos.variation_repo import VariationRepository
 from modules.workspace.db.tables.variations import MoveAnnotation
@@ -24,6 +25,14 @@ from modules.workspace.domain.models.move_annotation import (
 )
 from modules.workspace.events.bus import EventBus
 from modules.workspace.domain.services.pgn_sync_service import PgnSyncService
+from backend.core.tagger.analysis.pipeline import AnalysisPipeline # New Import
+from modules.workspace.pgn_v2.repo import PgnV2Repo # New Import
+from modules.workspace.storage.r2_client import create_r2_client_from_env # New Import
+
+
+class InvalidMoveError(Exception):
+    """Raised when a move is invalid for the current position."""
+    pass
 
 if TYPE_CHECKING:
     from modules.workspace.domain.services.version_service import VersionService
@@ -74,6 +83,7 @@ class StudyService:
         event_bus: EventBus,
         pgn_sync_service: PgnSyncService | None = None,
         version_service: "VersionService | None" = None,
+        analysis_pipeline: AnalysisPipeline | None = None, # New parameter
     ):
         """
         Initialize service.
@@ -83,6 +93,7 @@ class StudyService:
             variation_repo: Variation repository
             event_bus: Event bus
             version_service: Optional version service for auto-snapshots
+            analysis_pipeline: Optional AnalysisPipeline instance for tagger analysis
         """
         self.session = session
         self.variation_repo = variation_repo
@@ -91,6 +102,18 @@ class StudyService:
         self.version_service = version_service
         self._operation_count = 0  # Track operations for auto-snapshot
         self._logger = logging.getLogger(__name__)
+
+        if analysis_pipeline:
+            self.analysis_pipeline = analysis_pipeline
+        else:
+            # Instantiate if not provided (e.g., for testing or direct use)
+            r2_client = create_r2_client_from_env()
+            pgn_v2_repo = PgnV2Repo(r2_client)
+            self.analysis_pipeline = AnalysisPipeline(
+                pgn_path="",  # Dummy path
+                output_dir="/tmp",  # Dummy output dir
+                pgn_v2_repo=pgn_v2_repo,
+            )
 
     async def _sync_pgn(self, chapter_id: str) -> None:
         """
@@ -104,6 +127,31 @@ class StudyService:
             await self.pgn_sync_service.sync_chapter_pgn(chapter_id)
         except Exception as exc:
             self._logger.warning("PGN sync failed for %s: %s", chapter_id, exc)
+
+    async def _run_tagger_analysis(self, chapter_id: str) -> None:
+        """
+        Best-effort tagger analysis after edits.
+        """
+        if not self.analysis_pipeline:
+            self._logger.warning("AnalysisPipeline not configured, skipping tagger analysis for chapter %s", chapter_id)
+            return
+        try:
+            # Need to re-fetch tree and fen_index as they might have been updated by pgn_sync
+            # Create a new PgnV2Repo instance as it's not passed directly to _run_tagger_analysis
+            pgn_v2_repo = PgnV2Repo(create_r2_client_from_env())
+            
+            fen_index = pgn_v2_repo.load_fen_index(chapter_id)
+            tree_data = pgn_v2_repo.load_tree_json(chapter_id) # Need tree for UCI moves
+
+            await self.analysis_pipeline.run_fen_index_and_save(
+                fen_index=fen_index,
+                chapter_id=chapter_id,
+                tree_data=tree_data,
+                verbose=False,
+            )
+            self._logger.info("Tagger analysis completed for chapter %s", chapter_id)
+        except Exception as exc:
+            self._logger.warning("Tagger analysis failed for chapter %s: %s", chapter_id, exc)
 
     async def add_move_annotation(
         self, command: AddMoveAnnotationCommand
@@ -148,6 +196,7 @@ class StudyService:
         await self.variation_repo.create_annotation(annotation)
         await self.session.commit()
         await self._sync_pgn(move.chapter_id)
+        await self._run_tagger_analysis(move.chapter_id) # Run tagger after sync
 
         # Check for auto-snapshot (requires study_id from chapter)
         # Note: This is a placeholder - real implementation needs chapter->study mapping
@@ -200,6 +249,7 @@ class StudyService:
         variation = await self.variation_repo.get_variation_by_id(annotation.move_id)
         if variation:
             await self._sync_pgn(variation.chapter_id)
+            await self._run_tagger_analysis(variation.chapter_id) # Run tagger after sync
 
         return annotation
 
@@ -230,6 +280,7 @@ class StudyService:
         variation = await self.variation_repo.get_variation_by_id(annotation.move_id)
         if variation:
             await self._sync_pgn(variation.chapter_id)
+            await self._run_tagger_analysis(variation.chapter_id) # Run tagger after sync
 
     async def set_nag(self, command: SetNAGCommand) -> MoveAnnotation:
         """
@@ -262,6 +313,7 @@ class StudyService:
             await self.variation_repo.update_annotation(existing)
             await self.session.commit()
             await self._sync_pgn(move.chapter_id)
+            await self._run_tagger_analysis(move.chapter_id) # Run tagger after sync
             return existing
         else:
             # Create new annotation with just NAG
@@ -276,11 +328,15 @@ class StudyService:
             await self.variation_repo.create_annotation(annotation)
             await self.session.commit()
             await self._sync_pgn(move.chapter_id)
+            await self._run_tagger_analysis(move.chapter_id) # Run tagger after sync
             return annotation
 
     async def add_move(self, command: AddMoveCommand) -> Variation:
         """
         Add a move to the variation tree.
+
+        Server-side FEN calculation: If fen is not provided, it will be computed
+        from the parent position and the UCI move.
 
         Args:
             command: Add move command
@@ -290,8 +346,11 @@ class StudyService:
 
         Raises:
             MoveNotFoundError: If parent move not found (when parent_id provided)
+            InvalidMoveError: If the move is illegal for the position
         """
-        # If parent_id provided, verify parent exists
+        parent_fen: Optional[str] = None
+
+        # If parent_id provided, verify parent exists and get its FEN
         if command.parent_id:
             parent = await self.variation_repo.get_variation_by_id(
                 command.parent_id
@@ -300,6 +359,20 @@ class StudyService:
                 raise MoveNotFoundError(
                     f"Parent move {command.parent_id} not found"
                 )
+            parent_fen = parent.fen
+        else:
+            # Root move - use standard starting position
+            parent_fen = chess.STARTING_FEN
+
+        # Compute FEN if not provided
+        computed_fen = command.fen
+        if not computed_fen and command.uci and parent_fen:
+            computed_fen = self._compute_fen_after_move(parent_fen, command.uci)
+
+        if not computed_fen:
+            raise InvalidMoveError(
+                f"Cannot compute FEN: missing parent FEN or UCI move"
+            )
 
         # Create variation
         variation = Variation(
@@ -311,7 +384,7 @@ class StudyService:
             color=command.color,
             san=command.san,
             uci=command.uci,
-            fen=command.fen,
+            fen=computed_fen,
             rank=command.rank,
             priority=command.priority,
             visibility=command.visibility,
@@ -323,8 +396,38 @@ class StudyService:
         await self.variation_repo.create_variation(variation)
         await self.session.commit()
         await self._sync_pgn(command.chapter_id)
+        await self._run_tagger_analysis(command.chapter_id) # Run tagger after sync
 
         return variation
+
+    def _compute_fen_after_move(self, parent_fen: str, uci_move: str) -> str:
+        """
+        Compute the FEN after applying a UCI move to a position.
+
+        Args:
+            parent_fen: FEN of the position before the move
+            uci_move: UCI notation of the move (e.g., "e2e4")
+
+        Returns:
+            FEN after the move
+
+        Raises:
+            InvalidMoveError: If the move is illegal
+        """
+        try:
+            board = chess.Board(parent_fen)
+            move = chess.Move.from_uci(uci_move)
+
+            if move not in board.legal_moves:
+                raise InvalidMoveError(
+                    f"Illegal move {uci_move} in position {parent_fen}"
+                )
+
+            board.push(move)
+            return board.fen()
+
+        except ValueError as e:
+            raise InvalidMoveError(f"Invalid UCI move format: {uci_move}") from e
 
     async def delete_move(self, command: DeleteMoveCommand) -> None:
         """
@@ -349,6 +452,7 @@ class StudyService:
         await self._delete_variation_recursive(variation)
         await self.session.commit()
         await self._sync_pgn(variation.chapter_id)
+        await self._run_tagger_analysis(variation.chapter_id) # Run tagger after sync
 
     async def _delete_variation_recursive(self, variation: Variation) -> None:
         """

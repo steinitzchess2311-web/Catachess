@@ -69,6 +69,7 @@ from modules.workspace.domain.services.pgn_sync_service import PgnSyncService
 from modules.workspace.domain.services.study_service import (
     AnnotationAlreadyExistsError,
     AnnotationNotFoundError,
+    InvalidMoveError,
     MoveNotFoundError,
     StudyService,
 )
@@ -84,6 +85,13 @@ from modules.workspace.storage.r2_client import create_r2_client_from_env
 from modules.workspace.pgn.serializer.from_variations import build_mainline_moves
 from ulid import ULID
 from datetime import datetime, timezone
+
+# New v2 imports for /show and /fen endpoints
+from modules.workspace.pgn_v2.adapters import db_to_tree
+from modules.workspace.db.tables.variations import Variation, MoveAnnotation
+from backend.core.real_pgn.show import build_show
+from backend.core.real_pgn.fen import apply_move
+from backend.core.config import settings # New import
 
 router = APIRouter(prefix="/studies", tags=["studies"])
 
@@ -133,11 +141,12 @@ async def get_chapter_import_service(
     node_service: NodeService = Depends(get_node_service),
     node_repo: NodeRepository = Depends(get_node_repo),
     study_repo: StudyRepository = Depends(get_study_repository),
+    variation_repo: VariationRepository = Depends(get_variation_repo),
     event_bus: EventBus = Depends(get_event_bus),
 ) -> ChapterImportService:
     r2_client = create_r2_client_from_env()
     return ChapterImportService(
-        node_service, node_repo, study_repo, r2_client, event_bus
+        node_service, node_repo, study_repo, variation_repo, r2_client, event_bus
     )
 
 
@@ -708,11 +717,13 @@ async def add_move(
     """
     Add a move to the variation tree.
 
+    FEN is computed server-side from parent position + UCI move if not provided.
+
     Args:
         response: FastAPI response object
         study_id: Study ID
         chapter_id: Chapter ID
-        data: Move data
+        data: Move data (fen is optional)
         user_id: Current user ID
         study_service: Study service
 
@@ -721,7 +732,7 @@ async def add_move(
 
     Raises:
         404: Parent move not found
-        400: Invalid move data
+        400: Invalid move data or illegal move
     """
     try:
         command = AddMoveCommand(
@@ -729,10 +740,10 @@ async def add_move(
             parent_id=data.parent_id,
             san=data.san,
             uci=data.uci,
-            fen=data.fen,
             move_number=data.move_number,
             color=data.color,
             created_by=user_id,
+            fen=data.fen,  # Optional - computed server-side if None
             rank=data.rank,
             priority=data.priority,
             visibility=data.visibility,
@@ -747,6 +758,8 @@ async def add_move(
 
     except MoveNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except InvalidMoveError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -804,12 +817,13 @@ async def add_variation(
     Add a variation (alternative move) to the tree.
 
     This is an alias for add_move with rank > 0.
+    FEN is computed server-side from parent position + UCI move if not provided.
 
     Args:
         response: FastAPI response object
         study_id: Study ID
         chapter_id: Chapter ID
-        data: Variation data (rank should be > 0)
+        data: Variation data (rank should be > 0, fen is optional)
         user_id: Current user ID
         study_service: Study service
 
@@ -818,7 +832,7 @@ async def add_variation(
 
     Raises:
         404: Parent move not found
-        400: Invalid rank (must be > 0 for variations)
+        400: Invalid rank (must be > 0 for variations) or illegal move
     """
     try:
         if data.rank == 0:
@@ -832,10 +846,10 @@ async def add_variation(
             parent_id=data.parent_id,
             san=data.san,
             uci=data.uci,
-            fen=data.fen,
             move_number=data.move_number,
             color=data.color,
             created_by=user_id,
+            fen=data.fen,  # Optional - computed server-side if None
             rank=data.rank,
             priority=data.priority,
             visibility=data.visibility,
@@ -850,6 +864,8 @@ async def add_variation(
 
     except MoveNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except InvalidMoveError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
@@ -1000,4 +1016,114 @@ async def promote_variation(
     except OptimisticLockError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except InvalidOperationError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+# ============================================================================
+# Phase 4: PGN v2 Endpoints (ShowDTO and FEN)
+# ============================================================================
+
+
+@router.get(
+    "/{study_id}/chapters/{chapter_id}/show",
+    status_code=status.HTTP_200_OK,
+)
+async def get_chapter_show(
+    study_id: str,
+    chapter_id: str,
+    user_id: str = Depends(get_current_user_id),
+    variation_repo: VariationRepository = Depends(get_variation_repo),
+    study_repo: StudyRepository = Depends(get_study_repository),
+):
+    """
+    Get ShowDTO for chapter rendering.
+
+    Returns a complete rendering structure including:
+    - headers: PGN headers
+    - nodes: All nodes in the tree
+    - render: Token stream for rendering
+    - root_fen: Starting FEN position
+    - result: Game result
+
+    This is the new v2 endpoint for frontend rendering.
+    """
+    if not settings.PGN_V2_ENABLED:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PGN V2 endpoints are not enabled")
+    try:
+        chapter = await study_repo.get_chapter_by_id(chapter_id)
+        if not chapter:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Chapter {chapter_id} not found"
+            )
+
+        variations = await variation_repo.get_variations_for_chapter(chapter_id)
+        annotations = await variation_repo.get_annotations_for_chapter(chapter_id)
+
+        # Build NodeTree using v2 adapter
+        tree = db_to_tree(
+            variations=variations,
+            annotations=annotations,
+            VariationCls=Variation,
+            MoveAnnotationCls=MoveAnnotation,
+            chapter=chapter,
+        )
+
+        # Build ShowDTO
+        show_dto = build_show(tree)
+
+        return show_dto
+
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get(
+    "/{study_id}/chapters/{chapter_id}/fen/{node_id}",
+    status_code=status.HTTP_200_OK,
+)
+async def get_node_fen(
+    study_id: str,
+    chapter_id: str,
+    node_id: str,
+    user_id: str = Depends(get_current_user_id),
+    variation_repo: VariationRepository = Depends(get_variation_repo),
+):
+    """
+    Get FEN for a specific node.
+
+    Returns:
+        { "fen": "...", "node_id": "..." }
+
+    This endpoint allows the frontend to retrieve FEN for any node
+    without loading the entire tree.
+    """
+    if not settings.PGN_V2_ENABLED:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PGN V2 endpoints are not enabled")
+    try:
+        variation = await variation_repo.get_variation_by_id(node_id)
+        if not variation:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Node {node_id} not found"
+            )
+
+        if variation.chapter_id != chapter_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Node {node_id} does not belong to chapter {chapter_id}"
+            )
+
+        return {
+            "fen": variation.fen,
+            "node_id": node_id,
+            "san": variation.san,
+            "uci": variation.uci,
+            "move_number": variation.move_number,
+            "color": variation.color,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

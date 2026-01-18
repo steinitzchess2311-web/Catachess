@@ -34,18 +34,37 @@ function readStored(key: string) {
   return localStorage.getItem(key) || sessionStorage.getItem(key);
 }
 
-function decodeUserIdFromToken(token: string | null) {
+function decodeTokenPayload(token: string | null) {
   if (!token) return null;
   const parts = token.split(".");
   if (parts.length < 2) return null;
   try {
     let base64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     while (base64.length % 4) base64 += "=";
-    const payload = JSON.parse(atob(base64));
-    return typeof payload.sub === "string" ? payload.sub : null;
+    return JSON.parse(atob(base64));
   } catch {
     return null;
   }
+}
+
+function decodeUserIdFromToken(token: string | null) {
+  const payload = decodeTokenPayload(token);
+  return payload && typeof payload.sub === "string" ? payload.sub : null;
+}
+
+function clearAuth() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_ID_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(USER_ID_KEY);
+}
+
+function isTokenValid(token: string | null) {
+  if (!token) return false;
+  const payload = decodeTokenPayload(token);
+  if (!payload) return false;
+  if (typeof payload.exp !== "number") return true;
+  return payload.exp * 1000 > Date.now();
 }
 
 function ensureUserId(token: string | null) {
@@ -61,9 +80,12 @@ function ensureUserId(token: string | null) {
 
 function isAuthed() {
   const token = readStored(TOKEN_KEY);
-  if (!token) return false;
+  if (!isTokenValid(token)) {
+    clearAuth();
+    return false;
+  }
   const userId = readStored(USER_ID_KEY) || ensureUserId(token);
-  return Boolean(token && userId);
+  return Boolean(userId);
 }
 
 function Protected({ children }: { children: React.ReactNode }) {

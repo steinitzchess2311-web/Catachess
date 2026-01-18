@@ -66,7 +66,7 @@ class AddMoveCommand:
         parent_id: Parent move ID (None for first move)
         san: Standard Algebraic Notation
         uci: Universal Chess Interface notation
-        fen: FEN position after this move
+        fen: FEN position after this move (optional, computed server-side if not provided)
         move_number: Full move number
         color: 'white' or 'black'
         created_by: User ID adding the move
@@ -79,10 +79,10 @@ class AddMoveCommand:
     parent_id: str | None
     san: str
     uci: str
-    fen: str
     move_number: int
     color: str
     created_by: str
+    fen: str | None = None  # Optional - computed server-side if not provided
     rank: int = 0
     priority: VariationPriority = VariationPriority.MAIN
     visibility: VariationVisibility = VariationVisibility.PUBLIC

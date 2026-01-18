@@ -16,26 +16,27 @@
 ## 分计划（Checklist）
 
 ### A. fen_index 处理器
-- [ ] 新建 `backend/core/tagger/analysis/fen_processor.py`
-  - [ ] 输入：`chapters/{chapter_id}.fen_index.json`
-  - [ ] 输出：node_id + fen 列表
+- [x] 新建 `backend/core/tagger/analysis/fen_processor.py`
+  - [x] 输入：`chapters/{chapter_id}.fen_index.json`
+  - [x] 输出：node_id + fen 列表 (NodeFenEntry)
 
 ### B. 分析管线扩展
-- [ ] 修改 `backend/core/tagger/analysis/pipeline.py`
-  - [ ] 新增 `run_fen_index()` 分支
-  - [ ] 默认优先使用 fen_index
-  - [ ] 保留 pgn_processor 路径
+- [x] FenIndexProcessor 可从 R2 加载 fen_index（load_and_process 方法）
+  - [x] 优先使用 fen_index
+  - [x] 保留 tree_json 回退路径
 
 ### C. Predictor 扩展
-- [ ] 新建 `backend/core/tagger/pipeline/predictor/node_predictor.py`
-  - [ ] `predict_node_tags(node_id, fen, move_uci)`
-  - [ ] 内部调用 `tag_position()`
+- [x] 新建 `backend/core/tagger/pipeline/predictor/node_predictor.py`
+  - [x] `predict_node_tags(node_id, fen, move_uci)` -> NodeTagResult
+  - [x] `predict_batch(nodes)` 批量处理
+  - [x] 内部调用 TaggingPipeline.evaluate()
 
 ### D. 输出落点
-- [ ] 选择 tag 输出方式：
-  - [ ] DB 新表 `move_tags`（需要 schema 设计）
-  - [ ] R2 `chapters/{chapter_id}.tags.json`
-- [ ] 明确版本字段与兼容策略（tagger versioning）
+- [x] R2 输出方式：
+  - [x] R2 key: `chapters/{chapter_id}.tags.json`
+  - [x] PgnV2Repo.save_tags_json() 方法
+  - [x] PgnV2Repo.load_tags_json() 方法
+- [ ] 版本字段与兼容策略（待后续需求明确）
 
 ---
 

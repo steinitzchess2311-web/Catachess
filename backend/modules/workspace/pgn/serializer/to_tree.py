@@ -3,6 +3,8 @@ Convert PGN text to variation tree structure.
 
 This module parses PGN movetext (including variations in parentheses)
 and constructs a tree representation suitable for database storage.
+
+DEPRECATED: Use backend.core.real_pgn for new PGN processing.
 """
 
 from dataclasses import dataclass, field

@@ -202,6 +202,14 @@ PgnNode
 
 说明：保留现有 `chapter.r2_key` 指向 `chapters/{chapter_id}.pgn`，避免数据库迁移。
 
+### 7.4 ID 对齐校验（必须补）
+- 现状：DB 里 `chapters.r2_key` 是独立字段，未强制等于 `chapters/{chapter_id}.pgn`。  
+- 风险：如果 r2_key 与 chapter_id 不一致，前端/后端会读错 PGN。  
+- 计划：新增一致性校验与回填逻辑：  
+  - 读章节点时校验 `chapter.r2_key == R2Keys.chapter_pgn(chapter_id)`  
+  - 不一致时记录告警并回填（或仅在迁移阶段做一次性修复）  
+  - 同步 tree/fen_index 时一并修复 key  
+
 ### 7.3 导入与同步（严格走现有服务）
 - `backend/modules/workspace/domain/services/chapter_import_service.py`  
   - 导入 PGN 时，除上传原始 PGN 外，还需解析出 NodeTree。  

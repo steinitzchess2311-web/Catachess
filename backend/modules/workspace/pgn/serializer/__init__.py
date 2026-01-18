@@ -2,6 +2,8 @@
 PGN serialization utilities.
 
 Provides tools to convert between PGN text and variation tree structures.
+
+DEPRECATED: Use backend.core.real_pgn for new PGN processing.
 """
 
 from modules.workspace.pgn.serializer.to_tree import pgn_to_tree, VariationNode

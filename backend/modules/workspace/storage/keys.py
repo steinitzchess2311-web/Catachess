@@ -59,6 +59,45 @@ class R2Keys:
         return f"{R2KeyPrefix.CHAPTERS}/{chapter_id}.pgn"
 
     @staticmethod
+    def chapter_tree_json(chapter_id: str) -> str:
+        """
+        Generate key for chapter NodeTree JSON.
+
+        Args:
+            chapter_id: Unique chapter identifier
+
+        Returns:
+            Key like: chapters/chapter_abc123.tree.json
+        """
+        return f"{R2KeyPrefix.CHAPTERS}/{chapter_id}.tree.json"
+
+    @staticmethod
+    def chapter_fen_index_json(chapter_id: str) -> str:
+        """
+        Generate key for chapter FEN index JSON.
+
+        Args:
+            chapter_id: Unique chapter identifier
+
+        Returns:
+            Key like: chapters/chapter_abc123.fen_index.json
+        """
+        return f"{R2KeyPrefix.CHAPTERS}/{chapter_id}.fen_index.json"
+
+    @staticmethod
+    def chapter_tags_json(chapter_id: str) -> str:
+        """
+        Generate key for chapter tags JSON (tagger output).
+
+        Args:
+            chapter_id: Unique chapter identifier
+
+        Returns:
+            Key like: chapters/chapter_abc123.tags.json
+        """
+        return f"{R2KeyPrefix.CHAPTERS}/{chapter_id}.tags.json"
+
+    @staticmethod
     def export_artifact(job_id: str, format: Literal["pgn", "zip"]) -> str:
         """
         Generate key for export artifact.

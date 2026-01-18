@@ -15,18 +15,27 @@
 
 ## 分计划（Checklist）
 
-### A. ShowDTO 渲染
-- [ ] 修改 `frontend/ui/modules/study/events/index.ts`
-  - [ ] 调用 `/show`
-  - [ ] 渲染 render token
-  - [ ] 点击 move 直接使用 DTO 的 fen
+### A. ShowDTO API 定义
+- [x] 新增 `frontend/ui/modules/study/api/pgn.ts`:
+  - [x] ShowDTO 类型定义 (ShowDTOResponse, ShowDTONode, ShowDTORenderToken)
+  - [x] `fetchShowDTO(studyId, chapterId)` 函数
+  - [x] `fetchNodeFen(studyId, chapterId, nodeId)` 函数
 
 ### B. 回滚开关
-- [ ] 加入配置开关（环境变量或前端开关）
-  - [ ] 关闭时继续用 mainline 接口
-  - [ ] 开启时用 `/show`
+- [x] localStorage 配置开关 (`catachess_use_show_dto`)
+  - [x] `USE_SHOW_DTO` 常量
+  - [x] `toggleShowDTO()` 切换函数
+  - [x] `isShowDTOEnabled()` 检查函数
+  - [x] 默认关闭（使用 legacy mainline 接口）
+  - [ ] 灰度期仅对白名单账号开启
 
-### C. 手动验收
+### C. ShowDTO 渲染（待完成）
+- [ ] 修改 `frontend/ui/modules/study/events/index.ts`
+  - [ ] 条件调用 `/show` 或 legacy mainline
+  - [ ] 渲染 render token stream
+  - [ ] 点击 move 直接使用 DTO 的 fen
+
+### D. 手动验收
 - [ ] 复杂变例渲染正确
 - [ ] 注释显示正确
 - [ ] 走子点击跳转正确
@@ -36,4 +45,3 @@
 ## 输出物（本阶段交付）
 - 可切换的前端渲染逻辑
 - 灰度/回滚开关
-

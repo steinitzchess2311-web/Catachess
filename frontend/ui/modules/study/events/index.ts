@@ -3,6 +3,7 @@ import { createEngineAnalysis, createImitatorPanel } from '../../chessboard';
 import { initDiscussion } from '../../discussion/events';
 import { fenToBoardPosition } from '../../chessboard/utils/api';
 import { detectPGN } from '../api/pgn';
+import { api } from '../../../assets/api';
 
 export async function initStudy(container: HTMLElement, studyId: string): Promise<ChessboardV2> {
     // 1. Load Template
@@ -876,11 +877,17 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                 studyContainer?.addEventListener('click', (event) => {
                     const target = event.target as HTMLElement | null;
                     if (!target) return;
-                    if (target.closest('#add-chapter-btn')) {
+                    const addBtn = target.closest('#add-chapter-btn');
+                    if (addBtn) {
+                        event.preventDefault();
+                        event.stopPropagation();
                         createChapter();
                         return;
                     }
-                    if (target.closest('#import-pgn-btn')) {
+                    const importBtn = target.closest('#import-pgn-btn');
+                    if (importBtn) {
+                        event.preventDefault();
+                        event.stopPropagation();
                         importPgn();
                     }
                 });

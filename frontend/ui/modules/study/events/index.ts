@@ -19,6 +19,11 @@ export async function initStudy(container: HTMLElement, studyId: string) {
     const importPgnBtn = container.querySelector('#import-pgn-btn') as HTMLButtonElement;
     const pgnCommentInput = container.querySelector('#pgn-comment-input') as HTMLTextAreaElement;
     const pgnCommentBtn = container.querySelector('#pgn-comment-btn') as HTMLButtonElement;
+    const firstMoveBtn = container.querySelector('#first-move') as HTMLButtonElement;
+    const prevMoveBtn = container.querySelector('#prev-move') as HTMLButtonElement;
+    const nextMoveBtn = container.querySelector('#next-move') as HTMLButtonElement;
+    const lastMoveBtn = container.querySelector('#last-move') as HTMLButtonElement;
+    const flipBtn = container.querySelector('#flip-board') as HTMLButtonElement;
     const tabBtns = container.querySelectorAll('.tab-btn');
     const tabContents = container.querySelectorAll('.tab-content');
 
@@ -30,6 +35,8 @@ export async function initStudy(container: HTMLElement, studyId: string) {
     let currentPgn: string | null = null;
     let chapters: any[] = [];
     let lastMoveId: string | null = null;
+    let currentMoves: Array<{ ply: number; moveNumber: number; color: 'w' | 'b'; san: string }> = [];
+    let currentPly = 0;
 
     // 4. Initialization
     let heartbeatInterval: any = null;
@@ -79,6 +86,8 @@ export async function initStudy(container: HTMLElement, studyId: string) {
             });
             currentPgn = response.pgn_text || '';
             renderMoveTree(currentPgn);
+            currentPly = 0;
+            await updateBoardForPly(currentPly);
         } catch (error) {
             console.error('Failed to load PGN:', error);
             currentPgn = null;
@@ -119,6 +128,7 @@ export async function initStudy(container: HTMLElement, studyId: string) {
     const renderMoveTree = (pgnText: string) => {
         moveTree.innerHTML = '';
         const moves = parsePgnMoves(pgnText);
+        currentMoves = moves;
 
         if (!moves.length) {
             moveTree.innerHTML = '<div class="move-tree-empty">No moves yet</div>';
@@ -137,6 +147,7 @@ export async function initStudy(container: HTMLElement, studyId: string) {
                         pgn: currentPgn,
                         ply: move.ply,
                     });
+                    currentPly = move.ply;
                     const position = fenToBoardPosition(result.fen);
                     board.setPosition(position);
                 } catch (error) {
@@ -239,6 +250,20 @@ export async function initStudy(container: HTMLElement, studyId: string) {
         }
     };
 
+    const updateBoardForPly = async (ply: number) => {
+        if (!currentPgn || !board) return;
+        try {
+            const result = await api.post('/api/games/pgn/fen', {
+                pgn: currentPgn,
+                ply,
+            });
+            const position = fenToBoardPosition(result.fen);
+            board.setPosition(position);
+        } catch (error) {
+            console.error('Failed to resolve FEN:', error);
+        }
+    };
+
     const createChapter = async () => {
         const title = window.prompt('Chapter title');
         if (!title) return;
@@ -296,6 +321,27 @@ export async function initStudy(container: HTMLElement, studyId: string) {
     addChapterBtn?.addEventListener('click', createChapter);
     importPgnBtn?.addEventListener('click', importPgn);
     pgnCommentBtn?.addEventListener('click', addPgnComment);
+    firstMoveBtn?.addEventListener('click', async () => {
+        currentPly = 0;
+        await updateBoardForPly(currentPly);
+    });
+    prevMoveBtn?.addEventListener('click', async () => {
+        currentPly = Math.max(0, currentPly - 1);
+        await updateBoardForPly(currentPly);
+    });
+    nextMoveBtn?.addEventListener('click', async () => {
+        currentPly = Math.min(currentMoves.length, currentPly + 1);
+        await updateBoardForPly(currentPly);
+    });
+    lastMoveBtn?.addEventListener('click', async () => {
+        currentPly = currentMoves.length;
+        await updateBoardForPly(currentPly);
+    });
+    flipBtn?.addEventListener('click', () => {
+        if (board) {
+            board.flip();
+        }
+    });
 
     // Start
     loadStudyData();

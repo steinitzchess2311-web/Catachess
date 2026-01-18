@@ -6,7 +6,17 @@
 
 import { Move, BoardPosition, Square, Piece } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+function resolveApiBase(): string {
+  const envBase = import.meta.env.VITE_API_BASE as string | undefined;
+  if (envBase) return envBase;
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1') {
+    return 'http://localhost:8000';
+  }
+  return 'https://api.catachess.com';
+}
+
+const API_BASE_URL = resolveApiBase();
 
 /**
  * Convert frontend move to backend format
@@ -142,6 +152,19 @@ export class ChessAPI {
     this.baseURL = baseURL;
   }
 
+  private buildHeaders() {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    const token =
+      localStorage.getItem('catachess_token') ||
+      sessionStorage.getItem('catachess_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    return headers;
+  }
+
   /**
    * Validate if a move is legal
    */
@@ -149,9 +172,7 @@ export class ChessAPI {
     try {
       const response = await fetch(`${this.baseURL}/api/chess/validate-move`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.buildHeaders(),
         body: JSON.stringify({
           position: this.positionToFEN(position),
           move: moveToBackendFormat(move),
@@ -178,9 +199,7 @@ export class ChessAPI {
     try {
       const response = await fetch(`${this.baseURL}/api/chess/legal-moves`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.buildHeaders(),
         body: JSON.stringify({
           position: this.positionToFEN(position),
           square: square ? { file: square.file, rank: square.rank } : null,
@@ -206,9 +225,7 @@ export class ChessAPI {
     try {
       const response = await fetch(`${this.baseURL}/api/chess/apply-move`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.buildHeaders(),
         body: JSON.stringify({
           position: this.positionToFEN(position),
           move: moveToBackendFormat(move),
@@ -234,9 +251,7 @@ export class ChessAPI {
     try {
       const response = await fetch(`${this.baseURL}/api/chess/is-check`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.buildHeaders(),
         body: JSON.stringify({
           position: this.positionToFEN(position),
         }),
@@ -261,9 +276,7 @@ export class ChessAPI {
     try {
       const response = await fetch(`${this.baseURL}/api/chess/is-checkmate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: this.buildHeaders(),
         body: JSON.stringify({
           position: this.positionToFEN(position),
         }),

@@ -276,12 +276,17 @@ function WorkspacePage() {
 
 function Layout() {
   const [username, setUsername] = useState<string | null>(null);
+  const authed = isAuthed();
 
   useEffect(() => {
     const fetchUser = async () => {
-      if (isAuthed()) {
+      if (authed) {
         try {
           const token = readStored(TOKEN_KEY);
+          const derivedName = decodeUserIdFromToken(token) || readStored(USER_ID_KEY);
+          if (derivedName) {
+            setUsername(derivedName);
+          }
           const response = await api.request("/user/profile", {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -294,11 +299,11 @@ function Layout() {
       }
     };
     fetchUser();
-  }, []);
+  }, [authed]);
 
   return (
     <>
-      <Header username={username} />
+      <Header username={username} isAuthed={authed} />
       <main>
         <Routes>
           <Route path="/" element={<Navigate to="/workspace-select" replace />} />

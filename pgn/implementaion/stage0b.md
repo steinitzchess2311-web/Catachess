@@ -22,6 +22,26 @@
 - [ ] 变体树表：`backend/modules/workspace/db/tables/variations.py`
 - [ ] R2 key 规则：`backend/modules/workspace/storage/keys.py`
 
+### A1. 数据存储分工（必须记住）
+- [ ] Postgres 负责“目录树/Study/Chapter/Move Tree”：
+  - [ ] 表：`nodes`（workspace/folder/study 路径）
+  - [ ] 表：`studies`（study 元信息）
+  - [ ] 表：`chapters`（章节元信息 + r2_key）
+  - [ ] 表：`variations` / `move_annotations`（走法树与注释）
+- [ ] R2 负责“PGN 与衍生文件”：
+  - [ ] `chapters/{chapter_id}.pgn`
+  - [ ] `chapters/{chapter_id}.tree.json`
+  - [ ] `chapters/{chapter_id}.fen_index.json`
+  - [ ] `chapters/{chapter_id}.tags.json`
+- [ ] 关键对齐关系：
+  - [ ] `chapters.id` (Postgres) == `{chapter_id}` (R2 key)
+  - [ ] `chapters.r2_key` 必须等于 `R2Keys.chapter_pgn(chapter_id)`
+  - [ ] `nodes.path` 只表示“目录/文件夹路径”，**不直接用于 R2 key**
+
+### A2. 环境变量必读（必须看）
+- [ ] 文档：`docs/env_contract.md`
+- [ ] 目的：确认 Postgres / R2 / Engine / PGN_V2 变量配置一致
+
 ### B. 前端关键入口（必须读）
 - [ ] `frontend/ui/modules/study/events/index.ts`
 
@@ -40,4 +60,3 @@
 ## 输出物（本阶段交付）
 - 完整“系统地图”清单
 - 供新人快速定位的入口索引
-

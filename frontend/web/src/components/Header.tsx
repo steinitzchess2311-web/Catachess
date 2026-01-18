@@ -4,9 +4,12 @@ import './Header.css';
 
 interface HeaderProps {
   username: string | null;
+  isAuthed: boolean;
 }
 
-const Header: React.FC<HeaderProps> = ({ username }) => {
+const Header: React.FC<HeaderProps> = ({ username, isAuthed }) => {
+  const displayName = username?.trim() || 'Account';
+
   return (
     <header className="app-header">
       <div className="header-left">
@@ -23,8 +26,8 @@ const Header: React.FC<HeaderProps> = ({ username }) => {
         <Link to="/about" className="nav-link">About Us</Link>
       </nav>
       <div className="header-right">
-        {username ? (
-          <Link to="/account" className="username">{username}</Link>
+        {isAuthed ? (
+          <Link to="/account" className="username">{displayName}</Link>
         ) : (
           <Link to="/login" className="nav-link">Login</Link>
         )}

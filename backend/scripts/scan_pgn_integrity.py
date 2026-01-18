@@ -9,9 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 
 from backend.core.config import settings
 from modules.workspace.db.repos.study_repo import StudyRepository
+from modules.workspace.db.repos.variation_repo import VariationRepository
 from modules.workspace.db.tables.studies import Chapter
 from modules.workspace.pgn_v2.repo import PgnV2Repo, validate_chapter_r2_key, backfill_chapter_r2_key
-from modules.workspace.storage.r2_client import R2Client
+from modules.workspace.storage.r2_client import R2Client, R2Config
 from modules.workspace.domain.services.pgn_sync_service import PgnSyncService
 from modules.workspace.storage.keys import R2Keys
 
@@ -34,19 +35,22 @@ async def get_session() -> AsyncSession:
 # --- Main Scan Function ---
 async def scan_pgn_integrity():
     logger.info("Starting PGN integrity scan...")
+    logger.info(f"PGN_V2_ENABLED={settings.PGN_V2_ENABLED}")
 
-    r2_client = R2Client(
-        r2_endpoint=os.getenv("R2_ENDPOINT", ""),
-        r2_access_key_id=os.getenv("R2_ACCESS_KEY_ID", ""),
-        r2_secret_access_key=os.getenv("R2_SECRET_ACCESS_KEY", ""),
-        r2_bucket_name=os.getenv("R2_BUCKET_NAME", ""),
+    r2_config = R2Config(
+        endpoint=os.getenv("R2_ENDPOINT", ""),
+        access_key=os.getenv("R2_ACCESS_KEY_ID", ""),
+        secret_key=os.getenv("R2_SECRET_ACCESS_KEY", ""),
+        bucket=os.getenv("R2_BUCKET_NAME", ""),
     )
+    r2_client = R2Client(r2_config)
     pgn_v2_repo = PgnV2Repo(r2_client)
     
     # Initialize report data
     report: Dict[str, Any] = {
         "scan_timestamp": datetime.now().isoformat(),
         "total_chapters_scanned": 0,
+        "chapters_without_moves": [],
         "r2_key_mismatches": [],
         "r2_missing_pgn": [],
         "r2_missing_tree_json": [],
@@ -81,26 +85,32 @@ async def scan_pgn_integrity():
                 report["r2_key_mismatches"].append(chapter_id)
                 repaired_chapter = True
 
+            # Check if chapter has any moves (variations)
+            has_moves = True
+            try:
+                chapter_variations = await variation_repo.get_variations_for_chapter(chapter_id)
+                if not chapter_variations:
+                    has_moves = False
+                    report["chapters_without_moves"].append(chapter_id)
+            except Exception as e:
+                logger.error(f"Error loading variations for chapter {chapter_id}: {e}")
+
             # Rule 2 & 3: R2 404, hash/size mismatch -> resync PGN
             try:
                 pgn_exists = pgn_v2_repo.exists_pgn(chapter_id)
-                tree_exists = pgn_v2_repo.exists_tree_json(chapter_id)
-                fen_index_exists = pgn_v2_repo.exists_fen_index(chapter_id)
+                tree_exists = pgn_v2_repo.exists_tree_json(chapter_id) if has_moves else True
+                fen_index_exists = pgn_v2_repo.exists_fen_index(chapter_id) if has_moves else True
                 
                 needs_resync = False
 
                 if not pgn_exists:
                     logger.warning(f"R2 PGN missing for chapter {chapter_id}. Needs resync.")
-                    report["r2_missing_pgn"].append(chapter_id)
-                    # Mark missing logic would go here if pgn_status field existed
                     needs_resync = True
                 if not tree_exists:
                     logger.warning(f"R2 Tree JSON missing for chapter {chapter_id}. Needs resync.")
-                    report["r2_missing_tree_json"].append(chapter_id)
                     needs_resync = True
                 if not fen_index_exists:
                     logger.warning(f"R2 FEN index missing for chapter {chapter_id}. Needs resync.")
-                    report["r2_missing_fen_index"].append(chapter_id)
                     needs_resync = True
                 
                 # Check hash/size mismatch - requires loading and re-calculating, or a better sync mechanism
@@ -116,6 +126,17 @@ async def scan_pgn_integrity():
                     except Exception as sync_exc:
                         logger.error(f"Failed to resync PGN for chapter {chapter_id}: {sync_exc}")
                         report["pgn_sync_failures"].append({"chapter_id": chapter_id, "error": str(sync_exc)})
+                # Recheck R2 artifacts after resync attempt (or initial check if no resync)
+                pgn_exists = pgn_v2_repo.exists_pgn(chapter_id)
+                tree_exists = pgn_v2_repo.exists_tree_json(chapter_id) if has_moves else True
+                fen_index_exists = pgn_v2_repo.exists_fen_index(chapter_id) if has_moves else True
+
+                if not pgn_exists:
+                    report["r2_missing_pgn"].append(chapter_id)
+                if not tree_exists:
+                    report["r2_missing_tree_json"].append(chapter_id)
+                if not fen_index_exists:
+                    report["r2_missing_fen_index"].append(chapter_id)
                 elif chapter.pgn_hash is None or chapter.pgn_size is None or chapter.r2_etag is None:
                     # If metadata is missing but PGN exists, also resync to populate metadata
                     logger.warning(f"Chapter metadata (hash/size/etag) missing for {chapter_id}. Resyncing...")
@@ -142,6 +163,9 @@ async def scan_pgn_integrity():
     print("\n--- PGN Integrity Scan Report ---")
     print(f"Scan Timestamp: {report['scan_timestamp']}")
     print(f"Total Chapters Scanned: {report['total_chapters_scanned']}")
+    print(f"Chapters Without Moves: {len(report['chapters_without_moves'])}")
+    for cid in report["chapters_without_moves"]:
+        print(f"  - {cid}")
     print(f"R2 Key Mismatches: {len(report['r2_key_mismatches'])}")
     for cid in report['r2_key_mismatches']:
         print(f"  - {cid}")

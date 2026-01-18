@@ -63,7 +63,7 @@ export type ShowDTOResponse = {
 
 /**
  * Feature flag for ShowDTO (v2) rendering.
- * Set to true to use new /show endpoint, false for legacy mainline API.
+ * Defaults to true to use new /show endpoint; localStorage can override.
  */
 export const USE_SHOW_DTO = (() => {
     // Check for environment variable or localStorage flag
@@ -73,8 +73,8 @@ export const USE_SHOW_DTO = (() => {
             return localFlag === 'true';
         }
     }
-    // Default: disabled (use legacy)
-    return false;
+    // Default: enabled
+    return true;
 })();
 
 /**

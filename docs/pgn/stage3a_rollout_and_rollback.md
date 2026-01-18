@@ -2,11 +2,11 @@
 
 ## Frontend flag verification
 - File: `frontend/ui/modules/study/api/pgn.ts`
-- Default: `USE_SHOW_DTO` returns `false` when no localStorage flag is present.
+- Default: `USE_SHOW_DTO` returns `true` when no localStorage flag is present.
 - Toggle: `toggleShowDTO()` flips `localStorage.catachess_use_show_dto`.
 - Enable command (internal): `localStorage.setItem('catachess_use_show_dto', 'true')`
 - Disable command: `localStorage.setItem('catachess_use_show_dto', 'false')`
-- Runtime validation: pending (requires browser console access).
+- Runtime validation: see `docs/pgn/stage3a_runtime_validation.md` (backend endpoints validated in-process; frontend localStorage toggle still requires browser).
 
 ## Backend flag verification
 - File: `backend/core/config.py`
@@ -15,7 +15,7 @@
   - `/show` in `backend/modules/workspace/api/endpoints/studies.py`
   - `/fen` in `backend/modules/workspace/api/endpoints/studies.py`
 - Behavior: returns 404 when flag disabled.
-- Runtime validation: pending (requires running API server).
+- Runtime validation: see `docs/pgn/stage3a_runtime_validation.md`.
 
 ## Rollback checklist (validated in code)
 - Frontend rollback: remove or set `catachess_use_show_dto` to `false`.

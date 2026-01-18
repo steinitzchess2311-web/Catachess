@@ -682,6 +682,7 @@ async def export_clean_pgn_endpoint(
     "/{study_id}/chapters/{chapter_id}/moves/mainline",
     response_model=MainlineMovesResponse,
     status_code=status.HTTP_200_OK,
+    deprecated=True,
 )
 async def get_mainline_moves(
     study_id: str,
@@ -690,7 +691,7 @@ async def get_mainline_moves(
     variation_repo: VariationRepository = Depends(get_variation_repo),
 ) -> MainlineMovesResponse:
     """
-    Return mainline moves for UI rendering.
+    [DEPRECATED] Return mainline moves for UI rendering.
 
     This provides move IDs, SAN, FEN, and annotation text/version so the
     frontend can render two moves per line and edit comments reliably.

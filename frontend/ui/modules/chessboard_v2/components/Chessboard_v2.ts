@@ -189,11 +189,11 @@ export class ChessboardV2 {
 
     if (!this.state.selectedSquare) return;
 
-    const move: Move = { from: this.state.selectedSquare, to: square };
-    const success = await this.makeMove(move);
-
+    const fromSquare = this.state.selectedSquare;
     this.state.selectedSquare = null;
     this.state.legalMoves = [];
+    const move: Move = { from: fromSquare, to: square };
+    const success = await this.makeMove(move);
 
     if (success) {
       this.options.onMove(move);
@@ -229,16 +229,18 @@ export class ChessboardV2 {
     style.textContent = `
       .chessboard-v2 {
         display: grid;
-        grid-template-columns: repeat(8, 1fr);
-        grid-template-rows: repeat(8, 1fr);
         width: 100%;
         height: 100%;
         user-select: none;
         background-color: #b58863;
         gap: 0;
+        box-sizing: border-box;
+        line-height: 0;
+        font-size: 0;
       }
       .chessboard-v2 .square {
         position: relative;
+        box-sizing: border-box;
       }
       .chessboard-v2 .square.selected {
         box-shadow: inset 0 0 0 3px #173a7a;
@@ -246,6 +248,7 @@ export class ChessboardV2 {
       .chessboard-v2 .square.light { background-color: #f0d9b5; }
       .chessboard-v2 .square.dark { background-color: #b58863; }
       .chessboard-v2 .piece {
+        display: block;
         width: 100%;
         height: 100%;
         object-fit: contain;
@@ -302,13 +305,16 @@ export class ChessboardV2 {
     const gap = parseFloat(gapValue || '0') || 0;
     const availableHeight = Math.max(0, bounds.height - toolbarHeight - gap);
 
-    const maxSize = Math.min(bounds.width, availableHeight) * 0.82;
-    const clampedSize = Math.min(maxSize, 520);
+    const maxSize = Math.min(bounds.width, availableHeight) * 0.76;
+    const clampedSize = Math.min(maxSize, 480);
     const pixelSize = Math.floor(clampedSize / 8) * 8;
+    const squareSize = pixelSize / 8;
 
     if (pixelSize > 0) {
       this.boardElement.style.width = `${pixelSize}px`;
       this.boardElement.style.height = `${pixelSize}px`;
+      this.boardElement.style.gridTemplateColumns = `repeat(8, ${squareSize}px)`;
+      this.boardElement.style.gridTemplateRows = `repeat(8, ${squareSize}px)`;
     }
   }
 

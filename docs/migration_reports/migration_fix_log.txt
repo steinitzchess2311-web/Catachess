@@ -1,0 +1,3 @@
+Stage 3B fix log
+Illegal SAN fixes applied (see illegal_san_fix.md); reparented root moves to legal parents.
+Rescan completed with PGN_V2_ENABLED=true; no missing R2 artifacts for chapters with moves.

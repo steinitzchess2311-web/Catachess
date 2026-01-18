@@ -130,11 +130,23 @@ class StudyRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
+    async def get_all_chapters(self) -> Sequence[Chapter]:
+        """
+        Get all chapters across studies.
+
+        Returns:
+            List of chapters
+        """
+        stmt = select(Chapter)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
     async def update_chapter(self, chapter: Chapter) -> Chapter:
         """Update a chapter."""
+        merged = await self.session.merge(chapter)
         await self.session.flush()
-        await self.session.refresh(chapter)
-        return chapter
+        await self.session.refresh(merged)
+        return merged
 
     async def delete_chapter(self, chapter: Chapter) -> None:
         """Delete a chapter."""

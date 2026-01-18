@@ -15,6 +15,16 @@
 
 ## 分计划（Checklist）
 
+### A0. 数据来源与对齐（必须理解）
+- [ ] Postgres（目录与元数据）：
+  - [ ] `nodes.path` 表示 workspace/folder/study 目录结构
+  - [ ] `studies.id` == `nodes.id`（study 节点）
+  - [ ] `chapters.study_id` 关联 study
+  - [ ] `chapters.id` 是 **R2 key 的唯一对齐 ID**
+- [ ] R2（棋谱内容）：
+  - [ ] `chapters/{chapter_id}.pgn` 由 `chapters.id` 生成
+  - [ ] 绝不使用 `nodes.path` 拼接 R2 key
+
 ### A. 找到现有 API 入口（只读定位）
 - [ ] 打开：`backend/modules/workspace/api/endpoints/studies.py`
 - [ ] 确认已有 study/chapters API：
@@ -69,4 +79,3 @@
 - 新增 GET PGN API
 - chapter 列表返回 PGN 状态
 - 统一的读取链路（前端无需拼 R2 key）
-

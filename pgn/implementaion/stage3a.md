@@ -16,22 +16,54 @@
 ## 分计划（Checklist）
 
 ### A. 前端开关（必须）
-- [ ] 文件：`frontend/ui/modules/study/api/pgn.ts`
-- [ ] 确认 `USE_SHOW_DTO` 默认值（建议 false）
-- [ ] 确认 `toggleShowDTO()` 可启用/禁用
-- [ ] 记录灰度策略：仅内部账号/白名单可启用
+- [x] 文件：`frontend/ui/modules/study/api/pgn.ts`
+- [x] 确认 `USE_SHOW_DTO` 默认值（建议 false）
+  - **验证:** 检查 `pgn.ts` 中 `USE_SHOW_DTO` 的 `return false;` 行。
+- [x] 确认 `toggleShowDTO()` 可启用/禁用
+  - **验证:** 在浏览器控制台调用 `toggleShowDTO()` 函数，并检查 `localStorage` 中的 `catachess_use_show_dto` 键值是否切换。
+- [x] 记录灰度策略：仅内部账号/白名单可启用
+  - **策略:** 通过前端 `localStorage` (key: `catachess_use_show_dto`) 进行控制。默认禁用。
+  - **启用方式:** 内部测试人员可以在浏览器控制台中执行 `localStorage.setItem('catachess_use_show_dto', 'true')` 来手动启用 PGN v2 渲染。
+  - **禁用方式:** 执行 `localStorage.removeItem('catachess_use_show_dto')` 或 `localStorage.setItem('catachess_use_show_dto', 'false')`。
+  - **验证:** 启用后，刷新页面，查看棋谱渲染是否为新版 ShowDTO 样式。禁用后，刷新页面，查看是否回退到旧版渲染或显示错误信息。
+
 
 ### B. 后端开关（建议）
-- [ ] 新增环境变量：`PGN_V2_ENABLED`（默认 false）
-- [ ] 在 `/show` 与 `/fen` 入口检查开关
-- [ ] 如果关闭：返回 404 或 fallback
+- [x] 新增环境变量：`PGN_V2_ENABLED`（默认 false）
+  - **实现点:** `backend/core/config.py` (在 `Settings` 类中定义)
+  - **验证:** 检查 `.env` 文件或环境变量中 `PGN_V2_ENABLED` 的值。
+- [x] 在 `/show` 与 `/fen` 入口检查开关
+  - **实现点:** `backend/modules/workspace/api/endpoints/studies.py`
+    - **函数:** `get_chapter_show` (针对 `/show` 接口)
+    - **函数:** `get_node_fen` (针对 `/fen` 接口)
+  - **检查逻辑:** 在函数开头添加 `if not settings.PGN_V2_ENABLED: raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PGN V2 endpoints are not enabled")`
+- [x] 如果关闭：返回 404 或 fallback
+  - **已实现:** 当前策略是返回 404。
+
 
 ### C. 回滚方案
-- [ ] 前端回滚：关闭 `USE_SHOW_DTO`
-- [ ] 后端回滚：
-  - [ ] `pgn_sync_service` 使用 `sync_chapter_pgn_legacy()`
-  - [ ] 禁用 `/show` 接口
-- [ ] 写明“回滚验证步骤”
+- [x] 前端回滚：关闭 `USE_SHOW_DTO`
+  - **操作:** 浏览器清除 `localStorage` 中 `catachess_use_show_dto` 键，或执行 `localStorage.setItem('catachess_use_show_dto', 'false')`。
+  - **验证:** 刷新前端棋谱页面 (`/study/:study_id`)，确认渲染逻辑回退到旧版或显示 ShowDTO 未启用提示。
+- [x] 后端回滚：
+  - [x] `pgn_sync_service` 使用 `sync_chapter_pgn_legacy()`
+    - **操作:** 将 `PGN_V2_ENABLED` 环境变量设为 `false`。
+    - **实现点:** `backend/modules/workspace/domain/services/pgn_sync_service.py` 中的 `sync_chapter_pgn` 函数已包含此逻辑。
+    - **验证:** 触发章节 PGN 同步（例如，编辑棋谱），检查 R2 存储中 `chapters/{chapter_id}.pgn` 文件是否是旧版 PGN 格式 (不包含 v2 额外文件，如 `tree.json`, `fen_index.json`, `tags.json`)。
+  - [x] 禁用 `/show` 接口
+    - **操作:** 将 `PGN_V2_ENABLED` 环境变量设为 `false`。
+    - **实现点:** `backend/modules/workspace/api/endpoints/studies.py` 中的 `get_chapter_show` 和 `get_node_fen` 函数已包含此逻辑。
+    - **验证:** 访问 `/api/v1/workspace/studies/{study_id}/chapters/{chapter_id}/show` 和 `/api/v1/workspace/studies/{study_id}/chapters/{chapter_id}/fen/{node_id}` 接口，确认返回 404 错误。
+- [x] 写明“回滚验证步骤”
+  - **前端验证:**
+    - 确保 `frontend/ui/modules/study/events/index.ts` 中，棋谱显示回退到旧逻辑（如果 ShowDTO 未启用，会显示 "PGN unavailable or ShowDTO failed to load."）。
+    - 确认页面无 JS 错误。
+  - **后端验证:**
+    - 确认 `/api/v1/workspace/studies/{study_id}/chapters/{chapter_id}/show` 接口返回 404。
+    - 确认 `/api/v1/workspace/studies/{study_id}/chapters/{chapter_id}/fen/{node_id}` 接口返回 404。
+    - 确认编辑棋谱后 (例如，`add_move` 或 `add_annotation`)，PGN 同步仍能正常工作，且 R2 中生成的 PGN 文件为旧版 PGN。
+    - 检查日志中是否有异常或警告信息。
+
 
 ---
 

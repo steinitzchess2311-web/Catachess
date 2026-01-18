@@ -15,6 +15,11 @@
 
 ## 分计划（Checklist）
 
+### A0. 对齐规则（必须牢记）
+- [ ] Postgres：`chapters.id` 是唯一对齐 ID
+- [ ] R2：`chapters/{chapter_id}.pgn` 必须与 `chapters.r2_key` 一致
+- [ ] `nodes.path` 只用于目录展示，不参与 R2 key 生成
+
 ### A. 新增一致性校验函数（代码层）
 - [ ] 在 `backend/modules/workspace/pgn_v2/repo.py` 中新增：
   - [ ] `ensure_chapter_key(chapter) -> str`
@@ -52,4 +57,3 @@
 - 统一 key 校验/回填逻辑
 - PGN 同步与导入流程具备强一致性
 - API 层提供一致性状态
-

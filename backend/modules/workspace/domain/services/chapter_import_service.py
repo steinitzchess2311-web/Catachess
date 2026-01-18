@@ -444,11 +444,27 @@ class ChapterImportService:
                 )
 
                 # Process added variations (skip virtual_root)
+                inserted_variations = {}
+                deferred_next_ids = {}
                 for var in changes["added_variations"]:
                     # Fix parent_id for virtual_root (DB uses None)
                     if var.parent_id == "virtual_root":
                         var.parent_id = None
-                    await self.variation_repo.create_variation(var)
+                    # Defer next_id to avoid FK violations during bulk insert
+                    deferred_next_ids[var.id] = var.next_id
+                    var.next_id = None
+                    inserted = await self.variation_repo.create_variation(var)
+                    inserted_variations[inserted.id] = inserted
+
+                # Apply next_id after all variations are inserted
+                for var_id, next_id in deferred_next_ids.items():
+                    if not next_id:
+                        continue
+                    inserted = inserted_variations.get(var_id)
+                    if not inserted:
+                        continue
+                    inserted.next_id = next_id
+                    await self.variation_repo.update_variation(inserted)
 
                 # Process added annotations
                 for anno in changes["added_annotations"]:

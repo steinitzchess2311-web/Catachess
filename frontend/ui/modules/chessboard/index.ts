@@ -49,6 +49,7 @@ export type { GameInfo, SaveMoveOptions, GameStorageOptions } from './storage';
 // Export engine analysis
 export { EngineAnalysis, createEngineAnalysis } from './components/EngineAnalysis';
 export type { EngineAnalysisOptions } from './components/EngineAnalysis';
+export { ImitatorPanel, createImitatorPanel } from './components/ImitatorPanel';
 export type {
   EngineLine,
   EngineAnalysisResult,

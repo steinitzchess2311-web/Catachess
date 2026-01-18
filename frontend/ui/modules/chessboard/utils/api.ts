@@ -448,6 +448,44 @@ export class ChessAPI {
       throw error;
     }
   }
+
+  async predictImitator(
+    position: BoardPosition,
+    player: string,
+    depth: number = 12,
+    multipv: number = 8,
+    topN: number = 3
+  ): Promise<ImitatorResponse> {
+    const response = await fetch(`${this.baseURL}/api/imitator/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fen: this.positionToFEN(position),
+        player,
+        depth,
+        multipv,
+        top_n: topN,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  }
+
+  async getImitatorProfiles(): Promise<string[]> {
+    const response = await fetch(`${this.baseURL}/api/imitator/profiles`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.profiles || [];
+  }
 }
 
 /**
@@ -481,6 +519,18 @@ export interface EngineHealthInfo {
   status: string;
   engine_type: string;
   spots?: EngineSpotMetrics[];
+}
+
+export interface ImitatorMove {
+  move: string;
+  engine_eval: number | string;
+  similarity: number;
+  probability: number;
+}
+
+export interface ImitatorResponse {
+  player: string;
+  moves: ImitatorMove[];
 }
 
 // Global API instance

@@ -1,17 +1,11 @@
 """
-Direct tests for prophylaxis module (bypassing backend imports).
-
-Run with: python3 tests/test_prophylaxis_direct.py
+Direct tests for prophylaxis module.
 """
-import sys
-import os
-
-# Direct import without going through backend package
-prophylaxis_path = os.path.join(os.path.dirname(__file__), "..", "backend", "core", "tagger", "detectors", "helpers")
-sys.path.insert(0, prophylaxis_path)
-
-# Now load the module content directly
-exec(open(os.path.join(prophylaxis_path, "prophylaxis.py")).read(), globals())
+from backend.core.tagger.detectors.helpers.prophylaxis import (
+    ProphylaxisConfig,
+    clamp_preventive_score,
+    classify_prophylaxis_quality,
+)
 
 # Run tests
 def test_prophylaxis_config_defaults():

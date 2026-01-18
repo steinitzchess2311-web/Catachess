@@ -1,9 +1,13 @@
 """
 Tests for Stockfish engine client.
 """
+import os
 import chess
 import pytest
 from backend.core.tagger.legacy.engine.stockfish_client import StockfishClient
+
+if os.getenv("ALLOW_STOCKFISH_TESTS") != "1":
+    pytest.skip("Stockfish tests disabled (set ALLOW_STOCKFISH_TESTS=1 to run).", allow_module_level=True)
 
 
 class TestStockfishClient:

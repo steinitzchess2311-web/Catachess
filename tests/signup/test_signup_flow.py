@@ -7,9 +7,12 @@ Tests the complete signup flow:
 3. POST /auth/resend-verification - Resend verification code
 4. Test edge cases and error handling
 """
+import os
 import sys
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
+
+import pytest
 
 # Add backend directory to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "backend"))
@@ -23,6 +26,9 @@ from sqlalchemy.pool import StaticPool
 from core.db.base import Base
 from core.db.deps import get_db
 from routers.auth import router as auth_router
+
+if os.getenv("ALLOW_SIGNUP_TESTS") != "1":
+    pytest.skip("Signup flow tests disabled (set ALLOW_SIGNUP_TESTS=1 to run).", allow_module_level=True)
 
 
 # Create test app

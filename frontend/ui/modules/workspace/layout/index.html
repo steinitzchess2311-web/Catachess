@@ -76,3 +76,60 @@
         </div>
     </div>
 </template>
+
+<template id="node-actions-template">
+    <div class="modal-overlay">
+        <div class="modal-card action-card window-draggable">
+            <div class="modal-header window-focus-target">
+                <div class="modal-title-group">
+                    <span class="modal-eyebrow">Study</span>
+                    <h3 class="modal-title"></h3>
+                </div>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body action-body">
+                <button class="action-btn" data-action="move">Move</button>
+                <button class="action-btn danger" data-action="delete">Delete</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="move-node-template">
+    <div class="modal-overlay">
+        <div class="modal-card move-card window-draggable">
+            <div class="modal-header window-focus-target">
+                <h3>Move To</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Destination</label>
+                    <select id="move-destination"></select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-text modal-close">Cancel</button>
+                <button id="confirm-move" class="btn-primary">Move</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="delete-confirm-template">
+    <div class="modal-overlay">
+        <div class="modal-card confirm-card window-draggable">
+            <div class="modal-header window-focus-target">
+                <h3>Delete Study</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="confirm-text">Are you sure you want to delete?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-text modal-close">Cancel</button>
+                <button id="confirm-delete" class="btn-danger">Yes</button>
+            </div>
+        </div>
+    </div>
+</template>

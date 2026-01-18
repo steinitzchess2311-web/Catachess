@@ -26,15 +26,21 @@ from schemas.game import (
     DeleteGameResponse,
     PGNToFENRequest,
     PGNToFENResponse,
+    PGNDetectRequest,
+    PGNDetectResponse,
+    PGNGameSummary,
 )
 from services.game_storage_service import game_storage_service
 from core.chess_basic.utils.pgn_fen import fen_from_pgn
+from core.new_pgn import detect_games
 
 
 router = APIRouter(
     prefix="/api/games",
     tags=["games"],
 )
+
+
 
 
 @router.post("/save-move", response_model=SaveMoveResponse)
@@ -272,6 +278,39 @@ async def pgn_to_fen(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         ) from exc
+
+
+@router.post("/pgn/detect", response_model=PGNDetectResponse)
+async def pgn_detect(
+    request: PGNDetectRequest,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Detect individual games in a multi-game PGN string.
+
+    Returns game count and headers for each detected game.
+    Returns 400 for empty input, 200 with empty list if no headers found.
+    """
+    if not request.pgn_text or not request.pgn_text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Empty PGN input",
+        )
+
+    games = detect_games(request.pgn_text)
+    summaries = [
+        PGNGameSummary(
+            index=g.index,
+            headers=g.headers,
+            movetext=g.movetext,
+        )
+        for g in games
+    ]
+
+    return PGNDetectResponse(
+        game_count=len(summaries),
+        games=summaries,
+    )
 
 
 @router.get("/{game_id}", response_model=GameInfoResponse)

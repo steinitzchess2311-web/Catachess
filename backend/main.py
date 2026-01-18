@@ -15,7 +15,7 @@ if str(backend_dir) not in sys.path:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import auth, assignments, user_profile, game_storage, chess_engine, chess_rules
+from routers import auth, assignments, user_profile, game_storage, chess_engine, chess_rules, imitator
 from modules.workspace.api.router import api_router as workspace_router
 from core.log.log_api import logger
 from core.config import settings
@@ -103,6 +103,7 @@ app.include_router(user_profile.router)
 app.include_router(game_storage.router)
 app.include_router(chess_engine.router)
 app.include_router(chess_rules.router)
+app.include_router(imitator.router)
 app.include_router(workspace_router, prefix="/api/v1/workspace", tags=["workspace"])
 
 logger.info("Catachess API initialized")

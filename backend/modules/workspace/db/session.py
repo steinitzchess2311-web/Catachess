@@ -1,5 +1,6 @@
 """Database session management."""
 
+import asyncio
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -17,9 +18,7 @@ class SchemaAwareSession(AsyncSession):
         config = getattr(self, "_db_config", None)
         if config and config._auto_create_schema and (config._memory_db or not config._schema_ready):
             import modules.workspace.db.tables  # noqa: F401
-            async with config.engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-            config._schema_ready = True
+            await _create_schema(config)
         return await super().__aenter__()
 class DatabaseConfig:
     """Database configuration."""
@@ -77,9 +76,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     config = get_db_config()
     if config._auto_create_schema and (config._memory_db or not config._schema_ready):
         import modules.workspace.db.tables  # noqa: F401
-        async with config.engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        config._schema_ready = True
+        await _create_schema(config)
     async with config.async_session_maker() as session:
         try:
             yield session
@@ -89,3 +86,9 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
             raise
         finally:
             await session.close()
+
+
+async def _create_schema(config: DatabaseConfig) -> None:
+    """Create schema using a sync engine to avoid async DDL stalls."""
+    await asyncio.to_thread(Base.metadata.create_all, config.engine.sync_engine)
+    config._schema_ready = True

@@ -30,6 +30,17 @@
     align-items: center;
 }
 
+.panel-header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.btn-back {
+    font-size: var(--font-xs);
+    padding: var(--space-xs) var(--space-sm);
+}
+
 .panel-header h3 {
     font-size: var(--font-sm);
     margin: 0;
@@ -141,10 +152,45 @@
     flex-direction: column;
 }
 
+.analysis-module {
+    margin-bottom: var(--space-md);
+}
+
 /* Move Tree */
 .move-tree {
     font-size: var(--font-sm);
     line-height: 1.6;
+}
+
+.move-tree-row {
+    display: grid;
+    grid-template-columns: 40px 1fr 1fr;
+    align-items: center;
+    gap: var(--space-xs);
+    margin-bottom: var(--space-xs);
+}
+
+.move-tree-number {
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.move-tree-move {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-panel);
+    padding: var(--space-xxs) var(--space-xs);
+    text-align: left;
+    cursor: pointer;
+}
+
+.move-tree-move:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.move-tree-move:not(:disabled):hover {
+    background: var(--bg-app);
 }
 
 .pgn-comment {

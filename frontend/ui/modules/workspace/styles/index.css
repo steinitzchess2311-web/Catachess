@@ -194,3 +194,67 @@
 .btn-text:hover {
     color: var(--text-main);
 }
+
+.action-card,
+.move-card,
+.confirm-card {
+    max-width: 420px;
+}
+
+.modal-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.modal-eyebrow {
+    font-size: var(--font-xs);
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.modal-title {
+    margin: 0;
+}
+
+.action-body {
+    display: grid;
+    gap: var(--space-md);
+}
+
+.action-btn {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: var(--space-md);
+    border-radius: var(--radius-md);
+    font-size: var(--font-sm);
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.action-btn:hover {
+    border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-1);
+}
+
+.action-btn.danger {
+    border-color: var(--danger, #e05d5d);
+    color: var(--danger, #e05d5d);
+}
+
+.confirm-text {
+    margin: 0;
+    color: var(--text-main);
+    font-size: var(--font-sm);
+}
+
+.btn-danger {
+    background: var(--danger, #e05d5d);
+    color: #fff;
+    border: none;
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+}

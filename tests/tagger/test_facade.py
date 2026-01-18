@@ -2,9 +2,13 @@
 Integration tests for the complete tagger system.
 Tests the full flow from FEN + move to TagResult.
 """
+import os
 import chess
 import pytest
 from backend.core.tagger.facade import tag_position
+
+if os.getenv("ALLOW_NETWORK_TESTS") != "1":
+    pytest.skip("Network tagger tests disabled (set ALLOW_NETWORK_TESTS=1 to run).", allow_module_level=True)
 
 
 class TestFacadeSmokeTest:

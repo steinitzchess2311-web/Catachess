@@ -2,7 +2,10 @@
     <div class="study-container">
         <aside class="study-sidebar study-left-panel">
             <div class="panel-header">
-                <h3>Chapters</h3>
+                <div class="panel-header-left">
+                    <button id="back-btn" class="btn-icon btn-back">Back</button>
+                    <h3>Chapters</h3>
+                </div>
                 <div class="panel-actions">
                     <button id="import-pgn-btn" class="btn-icon">Import PGN</button>
                     <button id="add-chapter-btn" class="btn-icon">+</button>
@@ -42,8 +45,11 @@
                 </div>
             </div>
             <div class="tab-content" id="tab-analysis">
-                <div id="engine-mount">
+                <div id="engine-mount" class="analysis-module">
                     <!-- Engine analysis will be mounted here -->
+                </div>
+                <div id="imitator-mount" class="analysis-module">
+                    <!-- Imitator module will be mounted here -->
                 </div>
             </div>
             <div class="tab-content" id="tab-discussion">

@@ -98,7 +98,7 @@ data: info depth 15 multipv 3 score mate 3 pv f2f4 e7e5
             self.spot.analyze(fen)
             assert False, "Expected ChessEngineTimeoutError"
         except ChessEngineTimeoutError as e:
-            assert self.spot.timeout in str(e) or "30" in str(e)
+            assert str(self.spot.timeout) in str(e) or "30" in str(e)
 
         # Verify metrics updated
         assert self.spot.metrics.total_requests == 1

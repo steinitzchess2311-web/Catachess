@@ -8,12 +8,16 @@ Full threat estimation will be added in future iteration.
 """
 import sys
 import os
+import pytest
 
 # Add backend to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from backend.core.tagger.facade import tag_position
 from backend.core.tagger.config.engine import DEFAULT_STOCKFISH_PATH
+
+if os.getenv("ALLOW_NETWORK_TESTS") != "1":
+    pytest.skip("Network engine tests disabled (set ALLOW_NETWORK_TESTS=1 to run).", allow_module_level=True)
 
 
 def test_prophylaxis_basic_integration():

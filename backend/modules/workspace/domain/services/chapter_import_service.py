@@ -17,9 +17,9 @@ from modules.workspace.domain.models.study import CreateStudyCommand, ImportPGNC
 from modules.workspace.domain.models.types import NodeType, Visibility
 from modules.workspace.domain.services.node_service import NodeNotFoundError, NodeService
 from modules.workspace.events.bus import EventBus, publish_study_created, publish_chapter_imported
+from core.new_pgn import PGNGame, detect_games
 from modules.workspace.pgn.chapter_detector import detect_chapters, split_games_into_studies, suggest_study_names
 from modules.workspace.pgn.parser.normalize import normalize_pgn
-from modules.workspace.pgn.parser.split_games import PGNGame, split_games
 from modules.workspace.storage.integrity import calculate_sha256, calculate_size
 from modules.workspace.storage.keys import R2Keys
 from modules.workspace.storage.r2_client import R2Client
@@ -105,7 +105,9 @@ class ChapterImportService:
         detection = detect_chapters(normalized, fast=False)
 
         # Step 3: Split games
-        all_games = split_games(normalized)
+        all_games = detect_games(normalized)
+        if not all_games:
+            raise ChapterImportError("No games found in PGN content")
 
         if detection.is_single_study:
             # Single study workflow
@@ -139,7 +141,9 @@ class ChapterImportService:
 
         normalized = normalize_pgn(pgn_content)
         detection = detect_chapters(normalized, fast=False)
-        games = split_games(normalized)
+        games = detect_games(normalized)
+        if not games:
+            raise ChapterImportError("No games found in PGN content")
 
         if detection.requires_split:
             command = ImportPGNCommand(
@@ -374,7 +378,7 @@ class ChapterImportService:
             # Upload to R2
             upload_result = self.r2_client.upload_pgn(
                 key=r2_key,
-                content=game.raw_content,
+                content=game.raw,
                 metadata={
                     "study_id": study_id,
                     "chapter_id": chapter_id,
@@ -386,13 +390,13 @@ class ChapterImportService:
             chapter = ChapterTable(
                 id=chapter_id,
                 study_id=study_id,
-                title=game.event or f"Chapter {i + 1}",
+                title=self._header_value(game, "Event", f"Chapter {i + 1}"),
                 order=i,
-                white=game.white,
-                black=game.black,
-                event=game.event,
-                date=game.date,
-                result=game.result,
+                white=self._header_value(game, "White", "?"),
+                black=self._header_value(game, "Black", "?"),
+                event=self._header_value(game, "Event", "Unknown"),
+                date=self._header_value(game, "Date", "????.??.??"),
+                result=self._header_value(game, "Result", "*"),
                 r2_key=r2_key,
                 pgn_hash=upload_result.content_hash,
                 pgn_size=upload_result.size,
@@ -430,3 +434,7 @@ class ChapterImportService:
         if parts:
             return parts[0]
         return None
+
+    def _header_value(self, game: PGNGame, key: str, default: str) -> str:
+        """Resolve a PGN header value with a fallback."""
+        return game.headers.get(key, default)

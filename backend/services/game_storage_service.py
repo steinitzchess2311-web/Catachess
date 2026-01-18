@@ -4,7 +4,7 @@ Game Storage Service
 Handles game PGN generation with variations and R2 storage.
 
 IMPORTANT: This service handles ALL game logic:
-- PGN generation using chess_basic.pgn.vari.writer
+- PGN generation using a variation tree
 - Move validation and application
 - Variation branches
 - R2 storage
@@ -17,11 +17,13 @@ from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from core.chess_basic.types import Square, Move, BoardState, Piece
+from core.chess_basic.types import Square, Move, BoardState
 from core.chess_basic.constants import Color, PieceType
-from core.chess_basic.pgn.vari import PGNWriterVari
-from core.chess_basic.rule.api import is_legal_move, apply_move, generate_legal_moves
+from core.chess_basic.pgn.common.pgn_types import NAG_SYMBOLS
+from core.chess_basic.rule.api import is_legal_move, apply_move
+from core.chess_basic.utils.fen import board_to_fen, parse_fen, get_starting_position
 from core.chess_basic.utils.san import move_to_san  # SAN conversion
+from services.pgn_game_tree import PgnGameTree
 from storage.core.client import StorageClient
 from storage.core.config import StorageConfig
 from storage.core.errors import ObjectNotFound
@@ -30,10 +32,10 @@ from models.game import Game
 
 class GameSession:
     """
-    In-memory game session with PGN writer
+    In-memory game session with PGN tree
 
     Each active game has a session that manages:
-    - PGNWriterVari for generating PGN with variations
+    - Variation tree for generating PGN with variations
     - Current board state
     - Move history
     """
@@ -41,22 +43,28 @@ class GameSession:
     def __init__(self, game_id: str, user_id: str):
         self.game_id = game_id
         self.user_id = user_id
-        self.writer = PGNWriterVari()
-        self.state: BoardState = BoardState.initial()  # Start position
+        self.state: BoardState = get_starting_position()
+        self.start_fen = board_to_fen(self.state)
+        self.pgn_tree = PgnGameTree(self.start_fen, {})
         self.move_count = 0
-        self.in_variation = False
+        self._force_variation = False
+        self._last_node = None
 
         # Set default PGN tags
-        self.writer.set_tag("Event", "Casual Game")
-        self.writer.set_tag("Site", "Catachess")
-        self.writer.set_tag("Date", datetime.utcnow().strftime("%Y.%m.%d"))
-        self.writer.set_tag("White", "Player")
-        self.writer.set_tag("Black", "Player")
-        self.writer.set_tag("Result", "*")
+        self.pgn_tree.set_tag("Event", "Casual Game")
+        self.pgn_tree.set_tag("Site", "Catachess")
+        self.pgn_tree.set_tag("Date", datetime.utcnow().strftime("%Y.%m.%d"))
+        self.pgn_tree.set_tag("White", "Player")
+        self.pgn_tree.set_tag("Black", "Player")
+        self.pgn_tree.set_tag("Result", "*")
 
     def add_move(
         self,
         move: Move,
+        position_fen: Optional[str],
+        is_variation: bool,
+        parent_move_id: Optional[str],
+        move_id: Optional[str],
         comment: Optional[str] = None,
         nag: Optional[int] = None,
     ) -> tuple[bool, BoardState]:
@@ -67,60 +75,76 @@ class GameSession:
             (success, new_state)
         """
         # Validate move
-        if not is_legal_move(self.state, move):
+        state_before = self.state
+        if position_fen:
+            state_before = parse_fen(position_fen)
+
+        if not is_legal_move(state_before, move):
             return False, self.state
 
         # Get SAN notation before applying move
         # Detect if it's a capture for SAN formatting
-        target_piece = self.state.get_piece(move.to_square)
+        target_piece = state_before.get_piece(move.to_square)
         is_capture = target_piece is not None
-        san = move_to_san(move, self.state, is_capture=is_capture)
+        san = move_to_san(move, state_before, is_capture=is_capture)
 
         # Apply move to get new state
-        new_state = apply_move(self.state, move)
+        new_state = apply_move(state_before, move)
 
-        # Add to PGN writer
-        self.writer.add_move(move, self.state, san)
+        # Add to PGN tree
+        new_fen = board_to_fen(new_state)
+        if position_fen and position_fen != board_to_fen(self.state):
+            is_variation = True
+        if self._force_variation:
+            is_variation = True
+
+        node = self.pgn_tree.add_move(
+            position_fen=position_fen or self.start_fen,
+            new_fen=new_fen,
+            move_uci=move.to_uci(),
+            san=san,
+            move_number=state_before.fullmove_number,
+            color="white" if state_before.turn == Color.WHITE else "black",
+            move_id=move_id,
+            parent_move_id=parent_move_id,
+            comment=comment,
+            nag=nag,
+        )
+        self._last_node = node
 
         # Add comment if provided
-        if comment:
-            self.writer.add_comment(comment)
-
-        # Add NAG if provided
-        if nag:
-            self.writer.add_nag(nag)
-
-        # Update state
         self.state = new_state
-        self.move_count += 1
+        self.move_count = self.pgn_tree.mainline_count()
 
         return True, new_state
 
     def start_variation(self):
         """Start a variation branch"""
-        self.writer.start_variation()
-        self.in_variation = True
+        self._force_variation = True
 
     def end_variation(self):
         """End current variation branch"""
-        self.writer.end_variation()
-        self.in_variation = False
+        self._force_variation = False
 
     def add_comment(self, comment: str):
         """Add comment to last move"""
-        self.writer.add_comment(comment)
+        if self._last_node:
+            self._last_node.comment = comment
 
     def add_nag(self, nag: int):
         """Add NAG annotation to last move"""
-        self.writer.add_nag(nag)
+        if self._last_node:
+            symbol = NAG_SYMBOLS.get(nag)
+            if symbol:
+                self._last_node.nag = symbol
 
     def to_pgn(self) -> str:
         """Generate full PGN string"""
-        return self.writer.to_pgn_string()
+        return self.pgn_tree.to_pgn()
 
     def get_fen(self) -> str:
         """Get current position FEN"""
-        return self.state.to_fen()
+        return board_to_fen(self.state)
 
 
 class GameStorageService:
@@ -208,14 +232,20 @@ class GameStorageService:
         # Parse move from frontend format
         move = self._parse_move(move_data)
 
-        # Add move to session
-        success, new_state = session.add_move(move, comment, nag)
+        move_id = f"move_{move_number}"
+
+        success, new_state = session.add_move(
+            move=move,
+            position_fen=position_fen,
+            is_variation=is_variation,
+            parent_move_id=parent_move_id,
+            move_id=move_id,
+            comment=comment,
+            nag=nag,
+        )
 
         if not success:
             return False, "", ""
-
-        # Generate move ID
-        move_id = f"move_{move_number}"
 
         # Save to R2 and database
         self._save_to_storage(game_id, user_id, session, db)
@@ -230,7 +260,7 @@ class GameStorageService:
         """Start a variation branch"""
         session = self.get_or_create_session(game_id, user_id, db)
         session.start_variation()
-        variation_id = f"var_{len(session.writer._stack._stack)}"
+        variation_id = f"var_{session.move_count}"
         return variation_id
 
     def end_variation(self, game_id: str, user_id: str, db: Session):

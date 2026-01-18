@@ -47,6 +47,25 @@ class MoveResponse(BaseModel):
     updated_at: datetime
 
 
+class MainlineMoveResponse(BaseModel):
+    """Schema for mainline move list used by the study UI."""
+
+    id: str
+    move_number: int
+    color: str
+    san: str
+    fen: str
+    annotation_id: str | None
+    annotation_text: str | None
+    annotation_version: int | None
+
+
+class MainlineMovesResponse(BaseModel):
+    """Schema for mainline move list response."""
+
+    moves: list[MainlineMoveResponse]
+
+
 class PromoteVariationRequest(BaseModel):
     """Schema for promoting a variation."""
 

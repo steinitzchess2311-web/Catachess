@@ -37,6 +37,7 @@ from modules.workspace.api.schemas.study import (
 )
 from modules.workspace.api.schemas.variation import (
     DemoteVariationRequest,
+    MainlineMovesResponse,
     MoveCreate,
     MoveResponse,
     PromoteVariationRequest,
@@ -64,6 +65,7 @@ from modules.workspace.db.session import get_session
 from modules.workspace.domain.services.chapter_import_service import ChapterImportError, ChapterImportService, StudyFullError
 from modules.workspace.domain.services.node_service import NodeNotFoundError, NodeService, NodeServiceError, PermissionDeniedError
 from modules.workspace.domain.services.pgn_clip_service import PgnClipService
+from modules.workspace.domain.services.pgn_sync_service import PgnSyncService
 from modules.workspace.domain.services.study_service import (
     AnnotationAlreadyExistsError,
     AnnotationNotFoundError,
@@ -79,6 +81,7 @@ from modules.workspace.domain.services.variation_service import (
 from modules.workspace.events.bus import EventBus, publish_chapter_created
 from modules.workspace.storage.keys import R2Keys
 from modules.workspace.storage.r2_client import create_r2_client_from_env
+from modules.workspace.pgn.serializer.from_variations import build_mainline_moves
 from ulid import ULID
 from datetime import datetime, timezone
 
@@ -106,8 +109,16 @@ async def get_study_service(
     session: AsyncSession = Depends(get_session),
     variation_repo: VariationRepository = Depends(get_variation_repo),
     event_bus: EventBus = Depends(get_event_bus),
+    study_repo: StudyRepository = Depends(get_study_repository),
 ) -> StudyService:
-    return StudyService(session, variation_repo, event_bus)
+    r2_client = create_r2_client_from_env()
+    pgn_sync = PgnSyncService(study_repo, variation_repo, r2_client)
+    return StudyService(
+        session,
+        variation_repo,
+        event_bus,
+        pgn_sync_service=pgn_sync,
+    )
 
 
 async def get_variation_service(
@@ -658,6 +669,29 @@ async def export_clean_pgn_endpoint(
 # ============================================================================
 
 
+@router.get(
+    "/{study_id}/chapters/{chapter_id}/moves/mainline",
+    response_model=MainlineMovesResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_mainline_moves(
+    study_id: str,
+    chapter_id: str,
+    user_id: str = Depends(get_current_user_id),
+    variation_repo: VariationRepository = Depends(get_variation_repo),
+) -> MainlineMovesResponse:
+    """
+    Return mainline moves for UI rendering.
+
+    This provides move IDs, SAN, FEN, and annotation text/version so the
+    frontend can render two moves per line and edit comments reliably.
+    """
+    variations = await variation_repo.get_variations_for_chapter(chapter_id)
+    annotations = await variation_repo.get_annotations_for_chapter(chapter_id)
+    moves = build_mainline_moves(variations, annotations)
+    return MainlineMovesResponse(moves=moves)
+
+
 @router.post(
     "/{study_id}/chapters/{chapter_id}/moves",
     response_model=MoveResponse,
@@ -872,6 +906,46 @@ async def add_annotation(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except AnnotationAlreadyExistsError as e:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.put(
+    "/{study_id}/chapters/{chapter_id}/annotations/{annotation_id}",
+    response_model=AnnotationResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def update_annotation(
+    response: Response,
+    study_id: str,
+    chapter_id: str,
+    annotation_id: str,
+    data: AnnotationUpdate,
+    user_id: str = Depends(get_current_user_id),
+    study_service: StudyService = Depends(get_study_service),
+) -> AnnotationResponse:
+    """
+    Update an existing move annotation.
+
+    The UI sends the current version to prevent silent overwrites.
+    """
+    try:
+        command = UpdateMoveAnnotationCommand(
+            annotation_id=annotation_id,
+            nag=data.nag,
+            text=data.text,
+            version=data.version,
+            actor_id=user_id,
+        )
+        annotation = await study_service.edit_move_annotation(command)
+        response.headers["ETag"] = f'"{annotation.version}"'
+        return AnnotationResponse.model_validate(annotation)
+    except AnnotationNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except OptimisticLockError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
 @router.put(

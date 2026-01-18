@@ -46,6 +46,8 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
             const itemDiv = item.querySelector('.grid-item') as HTMLElement;
             itemDiv.setAttribute('data-id', node.id);
             itemDiv.setAttribute('data-type', node.node_type);
+            itemDiv.setAttribute('data-version', String(node.version));
+            itemDiv.setAttribute('data-parent-id', node.parent_id ?? '');
             itemDiv.querySelector('.item-title')!.textContent = node.title;
             
             const date = new Date(node.updated_at).toLocaleDateString();
@@ -54,10 +56,18 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
             itemDiv.addEventListener('click', () => {
                 if (node.node_type === 'folder') {
                     navigateToFolder(node.id, node.title);
-                } else if (options.onOpenStudy) {
-                    options.onOpenStudy(node.id);
-                } else {
-                    window.location.assign(`/workspace/${node.id}`);
+                    return;
+                }
+                openNodeActions(node);
+            });
+
+            itemDiv.addEventListener('dblclick', () => {
+                if (node.node_type !== 'folder') {
+                    if (options.onOpenStudy) {
+                        options.onOpenStudy(node.id);
+                    } else {
+                        window.location.assign(`/workspace/${node.id}`);
+                    }
                 }
             });
 
@@ -91,6 +101,98 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
             span.textContent = p.title;
             span.addEventListener('click', () => navigateToFolder(p.id, p.title));
             breadcrumb.appendChild(span);
+        });
+    };
+
+    const mountModal = (templateId: string) => {
+        const tpl = document.getElementById(templateId) as HTMLTemplateElement;
+        const modal = document.importNode(tpl.content, true);
+        const overlay = modal.querySelector('.modal-overlay') as HTMLElement;
+        const card = overlay.querySelector('.modal-card') as HTMLElement;
+        const closeBtns = overlay.querySelectorAll('.modal-close');
+        document.body.appendChild(overlay);
+        makeDraggable(card, { handle: '.modal-header' });
+        const close = () => overlay.remove();
+        closeBtns.forEach(btn => btn.addEventListener('click', close));
+        return { overlay, close };
+    };
+
+    const fetchFolderOptions = async () => {
+        const folders: Array<{ id: string; label: string }> = [];
+        const walk = async (parentId: string, prefix: string) => {
+            const response = await api.get(`/api/v1/workspace/nodes?parent_id=${parentId}`);
+            const nodes = response.nodes as any[];
+            const sorted = nodes.filter(n => n.node_type === 'folder');
+            for (const node of sorted) {
+                const label = prefix ? `${prefix} / ${node.title}` : node.title;
+                folders.push({ id: node.id, label });
+                await walk(node.id, label);
+            }
+        };
+        await walk('root', 'Root');
+        return [{ id: 'root', label: 'Root' }, ...folders];
+    };
+
+    const openMoveModal = async (node: any) => {
+        const { overlay, close } = mountModal('move-node-template');
+        const select = overlay.querySelector('#move-destination') as HTMLSelectElement;
+        const confirmBtn = overlay.querySelector('#confirm-move') as HTMLButtonElement;
+        const optionsList = await fetchFolderOptions();
+        optionsList.forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option.id;
+            opt.textContent = option.label;
+            select.appendChild(opt);
+        });
+
+        confirmBtn.addEventListener('click', async () => {
+            const newParentId = select.value === 'root' ? null : select.value;
+            try {
+                await api.post(`/api/v1/workspace/nodes/${node.id}/move`, {
+                    new_parent_id: newParentId,
+                    version: node.version,
+                });
+                close();
+                refreshNodes(currentParentId);
+            } catch (error) {
+                console.error('Failed to move node:', error);
+                alert('Move failed');
+            }
+        });
+    };
+
+    const openDeleteConfirm = (node: any) => {
+        const { overlay, close } = mountModal('delete-confirm-template');
+        const confirmBtn = overlay.querySelector('#confirm-delete') as HTMLButtonElement;
+        confirmBtn.addEventListener('click', async () => {
+            try {
+                await api.delete(`/api/v1/workspace/nodes/${node.id}/purge?version=${node.version}`);
+                close();
+                refreshNodes(currentParentId);
+            } catch (error) {
+                console.error('Failed to delete node:', error);
+                alert('Delete failed');
+            }
+        });
+    };
+
+    const openNodeActions = (node: any) => {
+        const { overlay } = mountModal('node-actions-template');
+        const title = overlay.querySelector('.modal-title') as HTMLElement;
+        title.textContent = node.title;
+        const actions = overlay.querySelectorAll('.action-btn');
+        actions.forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const action = (btn as HTMLButtonElement).dataset.action;
+                if (action === 'move') {
+                    overlay.remove();
+                    await openMoveModal(node);
+                }
+                if (action === 'delete') {
+                    overlay.remove();
+                    openDeleteConfirm(node);
+                }
+            });
         });
     };
 

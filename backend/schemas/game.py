@@ -54,6 +54,11 @@ class AddNAGRequest(BaseModel):
     move_id: Optional[str] = None  # If None, adds to last move
     nag: int  # 1=!, 2=?, 3=!!, 4=??, etc.
 
+class PGNDetectRequest(BaseModel):
+    """Request to detect games in a PGN string"""
+    pgn_text: str = Field(..., description="PGN text (may contain multiple games)")
+
+
 class PGNToFENRequest(BaseModel):
     """Request to resolve a FEN from a PGN mainline"""
     pgn: str
@@ -108,6 +113,19 @@ class PGNToFENResponse(BaseModel):
     ply: Optional[int] = None
     move_number: Optional[int] = None
     color: Optional[str] = None
+
+
+class PGNGameSummary(BaseModel):
+    """Summary of a detected PGN game"""
+    index: int
+    headers: dict[str, str]
+    movetext: str
+
+
+class PGNDetectResponse(BaseModel):
+    """Response with detected games from PGN"""
+    game_count: int
+    games: list[PGNGameSummary]
 
 
 class GameInfoResponse(BaseModel):

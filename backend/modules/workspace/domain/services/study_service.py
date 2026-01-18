@@ -5,6 +5,7 @@ Handles study editing operations including move annotations.
 Integrated with version service for automatic snapshots.
 """
 
+import logging
 from typing import TYPE_CHECKING
 from ulid import ULID
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,6 +23,7 @@ from modules.workspace.domain.models.move_annotation import (
     SetNAGCommand,
 )
 from modules.workspace.events.bus import EventBus
+from modules.workspace.domain.services.pgn_sync_service import PgnSyncService
 
 if TYPE_CHECKING:
     from modules.workspace.domain.services.version_service import VersionService
@@ -70,6 +72,7 @@ class StudyService:
         session: AsyncSession,
         variation_repo: VariationRepository,
         event_bus: EventBus,
+        pgn_sync_service: PgnSyncService | None = None,
         version_service: "VersionService | None" = None,
     ):
         """
@@ -84,8 +87,23 @@ class StudyService:
         self.session = session
         self.variation_repo = variation_repo
         self.event_bus = event_bus
+        self.pgn_sync_service = pgn_sync_service
         self.version_service = version_service
         self._operation_count = 0  # Track operations for auto-snapshot
+        self._logger = logging.getLogger(__name__)
+
+    async def _sync_pgn(self, chapter_id: str) -> None:
+        """
+        Best-effort PGN sync after edits.
+
+        This keeps R2 PGN up to date without blocking core write paths.
+        """
+        if not self.pgn_sync_service:
+            return
+        try:
+            await self.pgn_sync_service.sync_chapter_pgn(chapter_id)
+        except Exception as exc:
+            self._logger.warning("PGN sync failed for %s: %s", chapter_id, exc)
 
     async def add_move_annotation(
         self, command: AddMoveAnnotationCommand
@@ -129,6 +147,7 @@ class StudyService:
 
         await self.variation_repo.create_annotation(annotation)
         await self.session.commit()
+        await self._sync_pgn(move.chapter_id)
 
         # Check for auto-snapshot (requires study_id from chapter)
         # Note: This is a placeholder - real implementation needs chapter->study mapping
@@ -178,6 +197,9 @@ class StudyService:
 
         await self.variation_repo.update_annotation(annotation)
         await self.session.commit()
+        variation = await self.variation_repo.get_variation_by_id(annotation.move_id)
+        if variation:
+            await self._sync_pgn(variation.chapter_id)
 
         return annotation
 
@@ -205,6 +227,9 @@ class StudyService:
 
         await self.variation_repo.delete_annotation(annotation)
         await self.session.commit()
+        variation = await self.variation_repo.get_variation_by_id(annotation.move_id)
+        if variation:
+            await self._sync_pgn(variation.chapter_id)
 
     async def set_nag(self, command: SetNAGCommand) -> MoveAnnotation:
         """
@@ -236,6 +261,7 @@ class StudyService:
             existing.nag = command.nag
             await self.variation_repo.update_annotation(existing)
             await self.session.commit()
+            await self._sync_pgn(move.chapter_id)
             return existing
         else:
             # Create new annotation with just NAG
@@ -249,6 +275,7 @@ class StudyService:
             )
             await self.variation_repo.create_annotation(annotation)
             await self.session.commit()
+            await self._sync_pgn(move.chapter_id)
             return annotation
 
     async def add_move(self, command: AddMoveCommand) -> Variation:
@@ -295,6 +322,7 @@ class StudyService:
 
         await self.variation_repo.create_variation(variation)
         await self.session.commit()
+        await self._sync_pgn(command.chapter_id)
 
         return variation
 
@@ -320,6 +348,7 @@ class StudyService:
         # Recursively delete all descendants
         await self._delete_variation_recursive(variation)
         await self.session.commit()
+        await self._sync_pgn(variation.chapter_id)
 
     async def _delete_variation_recursive(self, variation: Variation) -> None:
         """

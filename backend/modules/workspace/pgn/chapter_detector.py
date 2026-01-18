@@ -7,7 +7,7 @@ if splitting into multiple studies is needed.
 
 from dataclasses import dataclass
 
-from .parser.split_games import count_games, split_games, PGNGame
+from core.new_pgn import PGNGame, detect_games
 
 
 # Maximum chapters per study (Lichess limit)
@@ -50,10 +50,9 @@ def detect_chapters(pgn_content: str, fast: bool = True) -> ChapterDetectionResu
     """
     # Count total chapters
     if fast:
-        total = count_games(pgn_content)
+        total = len(detect_games(pgn_content))
     else:
-        games = split_games(pgn_content)
-        total = len(games)
+        total = len(detect_games(pgn_content))
 
     # Determine if split needed
     requires_split = total > MAX_CHAPTERS_PER_STUDY

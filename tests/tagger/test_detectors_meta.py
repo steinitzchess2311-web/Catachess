@@ -16,9 +16,13 @@ class TestFirstChoiceDetector:
 
         ctx = TagContext(
             board=board,
+            board_before=board,
             fen=board.fen(),
             played_move=move,
             actor=chess.WHITE,
+            is_capture=False,
+            is_check=False,
+            move_number=1,
             candidates=[Candidate(move, 20, "dynamic")],
             best_move=move,  # Same as played
             played_kind="dynamic",
@@ -67,9 +71,13 @@ class TestFirstChoiceDetector:
 
         ctx = TagContext(
             board=board,
+            board_before=board,
             fen=board.fen(),
             played_move=played_move,
             actor=chess.WHITE,
+            is_capture=False,
+            is_check=False,
+            move_number=1,
             candidates=[
                 Candidate(best_move, 25, "dynamic"),
                 Candidate(played_move, -50, "quiet"),
@@ -121,9 +129,13 @@ class TestFirstChoiceDetector:
 
         ctx = TagContext(
             board=board,
+            board_before=board,
             fen=board.fen(),
             played_move=played_move,
             actor=chess.WHITE,
+            is_capture=False,
+            is_check=False,
+            move_number=1,
             candidates=[
                 Candidate(best_move, 25, "dynamic"),
                 Candidate(played_move, 15, "quiet"),

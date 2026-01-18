@@ -20,8 +20,12 @@ import {
   createInitialPosition,
   squareToAlgebraic,
   squaresEqual,
-  getPieceSymbol,
 } from '../types';
+import {
+  getPieceImageUrl,
+  nextPieceSet,
+  getCurrentPieceSet,
+} from '../../chess_pieces';
 import { chessAPI } from '../utils/api';
 import { PieceDragger } from './PieceDragger';
 import { GameStorage, GameStorageOptions } from '../storage';
@@ -165,10 +169,28 @@ export class Chessboard {
    * Render the chessboard
    */
   private render(): void {
+    // Main container setup
+    this.container.innerHTML = '';
+    this.container.style.position = 'relative';
+    this.container.style.width = '100%';
+    this.container.style.height = '100%';
+
+    // Create and style the "Change Pieces" button
+    const changePiecesButton = document.createElement('button');
+    changePiecesButton.textContent = `Pieces: ${getCurrentPieceSet().name}`;
+    changePiecesButton.className = 'change-pieces-btn';
+    
+    changePiecesButton.addEventListener('click', () => {
+      nextPieceSet();
+      this.render(); // Re-render to update piece set
+    });
+
+    this.container.appendChild(changePiecesButton);
+    
+    // Create and add the board element
     this.boardElement.className = 'chessboard';
     this.boardElement.innerHTML = '';
 
-    // Create board squares
     for (let rank = 7; rank >= 0; rank--) {
       for (let file = 0; file < 8; file++) {
         const displayRank = this.state.isFlipped ? 7 - rank : rank;
@@ -179,11 +201,7 @@ export class Chessboard {
       }
     }
 
-    // Add board to container
-    this.container.innerHTML = '';
     this.container.appendChild(this.boardElement);
-
-    // Apply styles
     this.applyStyles();
   }
 
@@ -240,14 +258,17 @@ export class Chessboard {
    * Create a piece element
    */
   private createPieceElement(piece: Piece, square: Square): HTMLElement {
-    const pieceElement = document.createElement('div');
+    const pieceElement = document.createElement('img');
     pieceElement.className = `piece ${piece.color} ${piece.type}`;
+    pieceElement.src = getPieceImageUrl(piece);
+    
+    // Accessibility
+    pieceElement.alt = `${piece.color} ${piece.type}`;
+    
+    // Set data attributes
     pieceElement.dataset.color = piece.color;
     pieceElement.dataset.type = piece.type;
     pieceElement.dataset.square = squareToAlgebraic(square);
-
-    // Use Unicode symbol for piece (placeholder - will be replaced with SVG later)
-    pieceElement.textContent = getPieceSymbol(piece);
 
     // Add cursor style for draggable pieces
     if (this.options.draggable && piece.color === this.state.position.turn) {
@@ -309,6 +330,78 @@ export class Chessboard {
     this.handlePieceSelection(square);
   }
 
+  private getSquareElement(square: Square): HTMLElement | null {
+    return this.boardElement.querySelector(
+      `.square[data-file='${square.file}'][data-rank='${square.rank}']`
+    );
+  }
+
+  /**
+   * Update the board UI after a move
+   */
+  private updateBoardUI(move: Move): void {
+    const fromSquareEl = this.getSquareElement(move.from);
+    const toSquareEl = this.getSquareElement(move.to);
+
+    if (!fromSquareEl || !toSquareEl) return;
+
+    // Move the piece
+    const pieceEl = fromSquareEl.querySelector('.piece');
+    if (pieceEl) {
+      // Check for capture
+      const capturedPieceEl = toSquareEl.querySelector('.piece');
+      if (capturedPieceEl) {
+        capturedPieceEl.remove();
+      }
+
+      toSquareEl.appendChild(pieceEl);
+
+      // Update piece element's data attributes
+      pieceEl.setAttribute('data-square', squareToAlgebraic(move.to));
+    }
+
+    // Update highlights
+    this.updateSelectionUI();
+  }
+
+  /**
+   * Update UI for selection changes
+   */
+  private updateSelectionUI(): void {
+    // Clear all previous highlights
+    this.boardElement
+      .querySelectorAll('.selected, .highlighted')
+      .forEach((el) => {
+        el.classList.remove('selected', 'highlighted');
+      });
+
+    // Highlight selected square
+    if (this.state.selectedSquare) {
+      const selectedSquareEl = this.getSquareElement(this.state.selectedSquare);
+      if (selectedSquareEl) {
+        selectedSquareEl.classList.add('selected');
+      }
+    }
+
+    // Highlight legal moves
+    if (this.options.showLegalMoves && this.state.legalMoves.length > 0) {
+      this.state.legalMoves.forEach((move) => {
+        const toSquareEl = this.getSquareElement(move.to);
+        if (toSquareEl) {
+          toSquareEl.classList.add('highlighted');
+        }
+      });
+    }
+
+    // Highlight last move
+    if (this.options.highlightLastMove && this.state.lastMove) {
+      const fromEl = this.getSquareElement(this.state.lastMove.from);
+      const toEl = this.getSquareElement(this.state.lastMove.to);
+      if (fromEl) fromEl.classList.add('highlighted');
+      if (toEl) toEl.classList.add('highlighted');
+    }
+  }
+
   /**
    * Handle piece selection (click-to-move mode)
    */
@@ -323,7 +416,7 @@ export class Chessboard {
       this.state.legalMoves = await chessAPI.getLegalMoves(this.state.position, square);
 
       this.options.onPieceSelect(square, piece);
-      this.render();
+      this.updateSelectionUI(); // <-- Replaced render()
       return;
     }
 
@@ -334,12 +427,15 @@ export class Chessboard {
         to: square,
       };
 
-      await this.makeMove(move);
+      const success = await this.makeMove(move);
 
       // Clear selection
       this.state.selectedSquare = null;
       this.state.legalMoves = [];
-      this.render();
+      
+      if(success) {
+        this.updateSelectionUI();
+      }
     }
   }
 
@@ -375,14 +471,8 @@ export class Chessboard {
       // Call callback
       this.options.onMove(move);
 
-      // Re-render board
-      this.render();
-
-      // Re-setup dragger with new board DOM
-      if (this.pieceDragger) {
-        this.pieceDragger.destroy();
-        this.setupPieceDragger();
-      }
+      // Update UI
+      this.updateBoardUI(move);
 
       return true;
     } catch (error) {
@@ -402,8 +492,33 @@ export class Chessboard {
    * Apply CSS styles
    */
   private applyStyles(): void {
+    const styleId = 'chessboard-styles';
+    if (document.getElementById(styleId)) {
+      // Remove old styles to apply new ones
+      document.getElementById(styleId)!.remove();
+    }
+
     const style = document.createElement('style');
+    style.id = styleId;
     style.textContent = `
+      .change-pieces-btn {
+        position: absolute;
+        top: -30px;
+        right: 0;
+        padding: 4px 8px;
+        background: #4a4a4a;
+        color: white;
+        border: 1px solid #6a6a6a;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9em;
+        z-index: 10;
+      }
+
+      .change-pieces-btn:hover {
+        background: #6a6a6a;
+      }
+      
       .chessboard {
         display: grid;
         grid-template-columns: repeat(8, 1fr);
@@ -459,7 +574,9 @@ export class Chessboard {
       }
 
       .piece {
-        font-size: 3em;
+        width: 90%;
+        height: 90%;
+        object-fit: contain;
         user-select: none;
         pointer-events: auto;
         transition: opacity 0.1s;
@@ -502,11 +619,8 @@ export class Chessboard {
         user-select: none;
       }
     `;
-
-    if (!document.getElementById('chessboard-styles')) {
-      style.id = 'chessboard-styles';
-      document.head.appendChild(style);
-    }
+    
+    document.head.appendChild(style);
   }
 
   /**

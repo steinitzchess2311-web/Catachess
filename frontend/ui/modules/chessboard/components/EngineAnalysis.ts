@@ -417,6 +417,11 @@ export class EngineAnalysis {
     this.renderControls();
   }
 
+  setMultipv(multipv: number): void {
+    this.multipv = multipv;
+    this.renderControls();
+  }
+
   /**
    * Format score for display
    */

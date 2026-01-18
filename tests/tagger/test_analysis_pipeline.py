@@ -3,6 +3,7 @@ Integration tests for the analysis pipeline.
 """
 
 import json
+import os
 import tempfile
 from pathlib import Path
 
@@ -56,14 +57,16 @@ class TestAnalysisPipeline:
         assert output_dir.exists()
 
     @pytest.mark.skipif(
-        not Path("/usr/games/stockfish").exists(),
-        reason="Stockfish not installed"
+        not Path("/usr/games/stockfish").exists()
+        or os.getenv("ALLOW_STOCKFISH_TESTS") != "1",
+        reason="Stockfish tests disabled"
     )
     def test_pipeline_run_with_max_positions(self, sample_pgn, output_dir):
         """Test running pipeline with position limit."""
         pipeline = AnalysisPipeline(
             pgn_path=sample_pgn,
             output_dir=output_dir,
+            engine_mode="local",
         )
 
         # Only analyze 2 positions
@@ -73,14 +76,16 @@ class TestAnalysisPipeline:
         assert len(stats.tag_counts) > 0
 
     @pytest.mark.skipif(
-        not Path("/usr/games/stockfish").exists(),
-        reason="Stockfish not installed"
+        not Path("/usr/games/stockfish").exists()
+        or os.getenv("ALLOW_STOCKFISH_TESTS") != "1",
+        reason="Stockfish tests disabled"
     )
     def test_pipeline_run_and_save(self, sample_pgn, output_dir):
         """Test running pipeline and saving output."""
         pipeline = AnalysisPipeline(
             pgn_path=sample_pgn,
             output_dir=output_dir,
+            engine_mode="local",
         )
 
         # Run and save with max 2 positions

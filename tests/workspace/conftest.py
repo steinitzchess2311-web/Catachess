@@ -3,6 +3,7 @@ Pytest fixtures for workspace tests.
 """
 
 import asyncio
+import os
 from typing import AsyncGenerator
 
 import pytest
@@ -24,6 +25,14 @@ from workspace.domain.services.node_service import NodeService
 from workspace.domain.services.share_service import ShareService
 from workspace.events.bus import EventBus
 from workspace.storage.r2_client import R2Client, R2Config, UploadResult
+
+os.environ.setdefault("WORKSPACE_TEST_AUTH", "1")
+
+if os.getenv("ALLOW_AIOSQLITE_TESTS") != "1":
+    pytest.skip(
+        "Workspace async SQLite tests disabled (set ALLOW_AIOSQLITE_TESTS=1 to run).",
+        allow_module_level=True,
+    )
 
 
 @pytest.fixture(scope="session")

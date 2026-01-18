@@ -9,7 +9,7 @@ import pytest
 from workspace.domain.models.node import CreateNodeCommand
 from workspace.domain.models.study import ImportPGNCommand
 from workspace.domain.models.types import NodeType, Visibility
-from workspace.domain.services.chapter_import_service import ChapterImportService
+from workspace.domain.services.chapter_import_service import ChapterImportService, ChapterImportError
 from workspace.domain.services.node_service import NodeService
 
 
@@ -45,6 +45,8 @@ SAMPLE_PGN_3_GAMES = """
 
 1. c4 c5 2. Nc3 Nc6 3. Nf3 Nf6 1/2-1/2
 """
+
+NO_HEADER_PGN = "1. e4 e5 2. Nf3 Nc6 3. Bb5 1-0"
 
 
 @pytest.mark.asyncio
@@ -500,3 +502,31 @@ async def test_import_chapter_metadata_extraction(
     assert chapter.event == "World Championship"
     assert chapter.date == "2024.12.25"
     assert chapter.result == "1/2-1/2"
+
+
+@pytest.mark.asyncio
+async def test_import_rejects_missing_headers(
+    chapter_import_service: ChapterImportService,
+    node_service: NodeService,
+):
+    """Importing PGN without headers should fail cleanly."""
+    workspace = await node_service.create_node(
+        CreateNodeCommand(
+            node_type=NodeType.WORKSPACE,
+            title="Test Workspace",
+            owner_id="user123",
+        ),
+        actor_id="user123",
+    )
+
+    command = ImportPGNCommand(
+        parent_id=workspace.id,
+        owner_id="user123",
+        pgn_content=NO_HEADER_PGN,
+        base_title="No Headers",
+        auto_split=True,
+        visibility=Visibility.PRIVATE,
+    )
+
+    with pytest.raises(ChapterImportError, match="No games found"):
+        await chapter_import_service.import_pgn(command, actor_id="user123")

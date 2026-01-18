@@ -3,6 +3,7 @@ Node endpoints.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import delete as sa_delete, select
 
 from modules.workspace.api.deps import (
     get_current_user_id,
@@ -31,8 +32,52 @@ from modules.workspace.domain.services.node_service import (
 )
 from modules.workspace.db.repos.study_repo import StudyRepository
 from modules.workspace.domain.models.types import NodeType, Visibility
+from modules.workspace.db.tables.study_versions import StudyVersionTable, VersionSnapshotTable
+from modules.workspace.storage.r2_client import create_r2_client_from_env
+from modules.workspace.domain.policies.permissions import PermissionPolicy
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
+
+async def _fetch_study_ids(node_service: NodeService, root: str) -> list[str]:
+    node = await node_service.node_repo.get_by_id(root, include_deleted=True)
+    if node is None:
+        return []
+    descendants = await node_service.node_repo.get_descendants(
+        node.path, include_deleted=True
+    )
+    nodes = [node, *descendants]
+    return list({n.id for n in nodes if n.node_type == NodeType.STUDY})
+
+async def _fetch_snapshot_keys(node_service: NodeService, study_id: str) -> list[str]:
+    result = await node_service.session.execute(
+        select(VersionSnapshotTable.r2_key).join(
+            StudyVersionTable,
+            VersionSnapshotTable.version_id == StudyVersionTable.id,
+        ).where(StudyVersionTable.study_id == study_id)
+    )
+    return [row[0] for row in result.all()]
+
+async def _delete_r2_objects(
+    node_service: NodeService,
+    study_repo: StudyRepository,
+    study_id: str,
+    r2_client,
+) -> None:
+    chapters = await study_repo.get_chapters_for_study(study_id, order_by_order=False)
+    for chapter in chapters:
+        if not chapter.r2_key:
+            continue
+        try:
+            r2_client.delete(chapter.r2_key)
+        except Exception:
+            pass
+
+    snapshot_keys = await _fetch_snapshot_keys(node_service, study_id)
+    for key in snapshot_keys:
+        try:
+            r2_client.delete(key)
+        except Exception:
+            pass
 
 
 @router.get("", response_model=NodeListResponse)
@@ -189,6 +234,50 @@ async def delete_node(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Version is required"
             )
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+
+@router.delete("/{node_id}/purge", status_code=status.HTTP_204_NO_CONTENT)
+async def purge_node(
+    node_id: str,
+    version: int | None = None,
+    user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
+) -> None:
+    """Hard delete a node and remove related study data from Postgres and R2."""
+    node = await node_service.node_repo.get_by_id(node_id, include_deleted=True)
+    if node is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Node not found")
+
+    acl = await node_service.acl_repo.get_acl(node_id, user_id)
+    if not node.owner_id == user_id:
+        if acl is None or not PermissionPolicy.can_delete(
+            node_service._node_to_model(node), user_id, node_service._acl_to_model(acl)
+        ):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission denied")
+
+    if version is not None and node.version != version:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Version conflict")
+
+    study_ids = await _fetch_study_ids(node_service, node_id)
+    study_repo = StudyRepository(node_service.session)
+
+    r2_client = None
+    try:
+        r2_client = create_r2_client_from_env()
+    except ValueError:
+        r2_client = None
+
+    if r2_client:
+        for study_id in study_ids:
+            await _delete_r2_objects(node_service, study_repo, study_id, r2_client)
+
+    if study_ids:
+        await node_service.session.execute(
+            sa_delete(StudyVersionTable).where(StudyVersionTable.study_id.in_(study_ids))
+        )
+
+    await node_service.session.delete(node)
+    await node_service.session.commit()
 
 
 @router.post("/{node_id}/restore", response_model=NodeResponse)

@@ -81,9 +81,13 @@ class TestTagContext:
 
         ctx = TagContext(
             board=board,
+            board_before=board,
             fen=board.fen(),
             played_move=played_move,
             actor=chess.BLACK,
+            is_capture=False,
+            is_check=False,
+            move_number=1,
             candidates=[
                 Candidate(best_move, 15, "quiet"),
                 Candidate(chess.Move.from_uci("g8f6"), 10, "quiet"),

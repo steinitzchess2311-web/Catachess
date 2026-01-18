@@ -1,10 +1,10 @@
-import { api } from '../../../assets/api';
-import { Chessboard, createEngineAnalysis, createImitatorPanel } from '../../chessboard';
+import { ChessboardV2 } from '../../chessboard_v2';
+import { createEngineAnalysis, createImitatorPanel } from '../../chessboard';
 import { initDiscussion } from '../../discussion/events';
 import { fenToBoardPosition } from '../../chessboard/utils/api';
 import { detectPGN } from '../api/pgn';
 
-export async function initStudy(container: HTMLElement, studyId: string): Promise<Chessboard> {
+export async function initStudy(container: HTMLElement, studyId: string): Promise<ChessboardV2> {
     // 1. Load Template
     const template = document.getElementById('study-template') as HTMLTemplateElement;
     if (!template) throw new Error('Study template not found');
@@ -37,7 +37,7 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
     // 3. State
     let currentStudy: any = null;
     let currentChapter: any = null;
-    let board: Chessboard | null = null;
+    let board: ChessboardV2 | null = null;
     let discussion: any = null;
     let currentPgn: string | null = null;
     let chapters: any[] = [];
@@ -488,7 +488,7 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
             
                     if (!board) {
             
-                        board = new Chessboard(boardMount, {
+                        board = new ChessboardV2(boardMount, {
             
                             gameId: ch.id,
             

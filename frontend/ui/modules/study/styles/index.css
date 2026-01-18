@@ -136,7 +136,6 @@
 .board-mount {
     width: 100%;
     max-width: 600px;
-    min-height: 320px;
     aspect-ratio: 1 / 1;
     background-color: var(--bg-secondary);
     box-shadow: var(--shadow-2);

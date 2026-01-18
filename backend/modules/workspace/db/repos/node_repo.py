@@ -164,22 +164,21 @@ class NodeRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def get_root_workspaces(
+    async def get_root_nodes(
         self, owner_id: str, include_deleted: bool = False
     ) -> Sequence[Node]:
         """
-        Get root workspaces (workspaces without parent).
+        Get root nodes (nodes without parent).
 
         Args:
             owner_id: Owner user ID
             include_deleted: Whether to include soft-deleted nodes
 
         Returns:
-            List of workspace nodes
+            List of root nodes
         """
         conditions = [
             Node.owner_id == owner_id,
-            Node.node_type == NodeType.WORKSPACE,
             Node.parent_id.is_(None),
         ]
 

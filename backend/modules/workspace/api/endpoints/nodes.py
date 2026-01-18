@@ -37,7 +37,7 @@ async def list_nodes(
 ) -> NodeListResponse:
     """List nodes, optionally filtered by parent_id. If parent_id is 'root', returns user's root nodes."""
     if parent_id == "root" or parent_id is None:
-        nodes = await node_service.node_repo.get_root_workspaces(owner_id=user_id)
+        nodes = await node_service.node_repo.get_root_nodes(owner_id=user_id)
     else:
         try:
             nodes = await node_service.get_children(parent_id, actor_id=user_id)

@@ -206,6 +206,10 @@ export class Chessboard {
     // Accessibility
     pieceElement.alt = '';
     pieceElement.setAttribute('aria-label', `${piece.color} ${piece.type}`);
+    pieceElement.addEventListener('error', () => {
+      pieceElement.removeAttribute('src');
+      pieceElement.style.visibility = 'hidden';
+    });
     
     // Set data attributes
     pieceElement.dataset.color = piece.color;
@@ -480,9 +484,11 @@ export class Chessboard {
         height: 90%;
         object-fit: contain;
         user-select: none;
-        pointer-events: auto;
+        pointer-events: none;
         transition: opacity 0.1s;
         -webkit-user-drag: none;
+        -webkit-user-select: none;
+        touch-action: none;
       }
 
       .rank-label, .file-label {

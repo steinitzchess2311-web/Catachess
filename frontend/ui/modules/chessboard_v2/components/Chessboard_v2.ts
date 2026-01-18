@@ -125,6 +125,10 @@ export class ChessboardV2 {
     pieceElement.draggable = false;
     pieceElement.alt = '';
     pieceElement.setAttribute('aria-label', `${piece.color} ${piece.type}`);
+    pieceElement.addEventListener('error', () => {
+      pieceElement.removeAttribute('src');
+      pieceElement.style.visibility = 'hidden';
+    });
     pieceElement.dataset.color = piece.color;
     pieceElement.dataset.type = piece.type;
     pieceElement.dataset.square = squareToAlgebraic(square);
@@ -228,6 +232,9 @@ export class ChessboardV2 {
         object-fit: contain;
         cursor: default;
         -webkit-user-drag: none;
+        -webkit-user-select: none;
+        pointer-events: none;
+        touch-action: none;
       }
       .change-pieces-btn {
         position: absolute;

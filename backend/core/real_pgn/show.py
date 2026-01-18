@@ -25,7 +25,7 @@ def build_show(tree: NodeTree) -> Dict[str, Any]:
         "render_tokens": render_tokens
     }
 
-    def _build_tokens_recursive(tree: NodeTree, node_id: str, tokens: List[Dict[str, Any]], is_mainline: bool):
+def _build_tokens_recursive(tree: NodeTree, node_id: str, tokens: List[Dict[str, Any]], is_mainline: bool):
     """
     Recursively builds the render token stream.
     """

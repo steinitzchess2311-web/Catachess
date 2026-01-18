@@ -216,12 +216,26 @@ function WorkspacePage() {
 
   useEffect(() => {
     if (!containerRef.current || !id) return;
+    let disposed = false;
+    let boardInstance: { destroy?: () => void } | null = null;
     containerRef.current.innerHTML = "";
-    const boardInstance = initStudy(containerRef.current, id);
+
+    const start = async () => {
+      try {
+        boardInstance = await initStudy(containerRef.current!, id);
+        if (disposed && boardInstance?.destroy) {
+          boardInstance.destroy();
+        }
+      } catch (error) {
+        console.error("Failed to init study:", error);
+      }
+    };
+
+    start();
 
     return () => {
-      // Cleanup function to destroy the board instance when the component unmounts
-      if (boardInstance && typeof boardInstance.destroy === 'function') {
+      disposed = true;
+      if (boardInstance?.destroy) {
         boardInstance.destroy();
       }
     };

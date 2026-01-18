@@ -68,7 +68,7 @@ def test_fen_indexer():
     nc6_node = tree.nodes[nf3_node.variations[0]]
     bb5_node_id = nc6_node.variations[0] # This is 3. Bb5
     
-    expected_fen = "r1bqkbnr/1ppp1ppp/p1n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3"
+    expected_fen = "r1bqkbnr/pppp1ppp/2n5/1B2p3/4P3/5N2/PPPP1PPP/RNBQK2R b KQkq - 3 3"
     assert fen_index[bb5_node_id] == expected_fen
 def test_show_dto_builder():
     """

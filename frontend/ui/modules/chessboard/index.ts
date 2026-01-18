@@ -1,7 +1,7 @@
 /**
  * Chessboard Module
  *
- * Complete chessboard component with drag-and-drop, move validation,
+ * Complete chessboard component with click-to-move, move validation,
  * and backend integration.
  *
  * IMPORTANT: All chess rules and move validation are handled by the backend.
@@ -10,10 +10,6 @@
 
 // Export main component
 export { Chessboard, createChessboard } from './components/Chessboard';
-
-// Export piece dragger (uses core drag system)
-export { PieceDragger } from './components/PieceDragger';
-export type { PieceDragOptions, DragState as PieceDragState } from './components/PieceDragger';
 
 // Export types
 export type {

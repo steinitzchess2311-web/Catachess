@@ -134,14 +134,27 @@
 }
 
 .board-mount {
-    width: 100%;
-    max-width: 600px;
+    width: min(100%, 70vh, 600px);
+    height: min(100%, 70vh, 600px);
     aspect-ratio: 1 / 1;
     background-color: var(--bg-secondary);
     box-shadow: var(--shadow-2);
     display: flex;
     align-items: center;
     justify-content: center;
+    flex: 0 0 auto;
+}
+
+.board-mount > .chessboard,
+.board-mount > .chessboard-v2 {
+    width: 100%;
+    height: 100%;
+    aspect-ratio: 1 / 1;
+}
+
+.board-mount .chessboard .square,
+.board-mount .chessboard-v2 .square {
+    aspect-ratio: 1 / 1;
 }
 
 .board-controls {

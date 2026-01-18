@@ -15,7 +15,6 @@ import type {
 import {
   createInitialPosition,
   squareToAlgebraic,
-  squaresEqual,
 } from '../types';
 import {
   getPieceImageUrl,
@@ -29,6 +28,7 @@ export class ChessboardV2 {
   private boardElement: HTMLElement;
   private options: Required<ChessboardOptions>;
   private state: ChessboardState;
+  private handleClickBound: ((event: MouseEvent) => void) | null = null;
 
   constructor(container: HTMLElement, options: ChessboardOptions = {}) {
     this.container = container;
@@ -119,71 +119,52 @@ export class ChessboardV2 {
     const pieceElement = document.createElement('img');
     pieceElement.className = `piece ${piece.color} ${piece.type}`;
     pieceElement.src = getPieceImageUrl(piece);
-    pieceElement.draggable = true;
     pieceElement.dataset.color = piece.color;
     pieceElement.dataset.type = piece.type;
     pieceElement.dataset.square = squareToAlgebraic(square);
+    if (this.options.selectable && piece.color === this.state.position.turn) {
+      pieceElement.style.cursor = 'pointer';
+    }
     return pieceElement;
   }
 
   private setupEventListeners(): void {
-    this.boardElement.addEventListener('dragstart', this.handleDragStart.bind(this));
-    this.boardElement.addEventListener('dragover', this.handleDragOver.bind(this));
-    this.boardElement.addEventListener('drop', this.handleDrop.bind(this));
+    this.handleClickBound = this.handleSquareClick.bind(this);
+    this.boardElement.addEventListener('click', this.handleClickBound);
   }
 
-  private handleDragStart(e: DragEvent): void {
-    const target = e.target as HTMLElement;
-    if (!target.classList.contains('piece')) return;
+  private async handleSquareClick(event: MouseEvent): Promise<void> {
+    const target = event.target as HTMLElement;
+    const squareElement = target.closest('.square') as HTMLElement;
+    if (!squareElement) return;
 
-    const square = target.parentElement as HTMLElement;
-    const from = {
-      file: parseInt(square.dataset.file!, 10),
-      rank: parseInt(square.dataset.rank!, 10),
+    const square = {
+      file: parseInt(squareElement.dataset.file || '0', 10),
+      rank: parseInt(squareElement.dataset.rank || '0', 10),
     };
 
-    e.dataTransfer!.setData('text/plain', JSON.stringify(from));
-    e.dataTransfer!.effectAllowed = 'move';
-    
-    // For visual feedback
-    setTimeout(() => {
-        target.style.opacity = '0.5';
-    }, 0);
-  }
+    this.options.onSquareClick(square);
 
-  private handleDragOver(e: DragEvent): void {
-    e.preventDefault();
-    e.dataTransfer!.dropEffect = 'move';
-  }
+    const piece = this.state.position.squares[square.rank][square.file];
 
-  private async handleDrop(e: DragEvent): Promise<void> {
-    e.preventDefault();
-    const fromSquare = JSON.parse(e.dataTransfer!.getData('text/plain'));
-    const target = e.target as HTMLElement;
-    const toSquareEl = target.closest('.square') as HTMLElement;
-
-    const fromEl = this.boardElement.querySelector(`.square[data-file='${fromSquare.file}'][data-rank='${fromSquare.rank}']`) as HTMLElement;
-    const pieceEl = fromEl.querySelector('.piece') as HTMLElement;
-    if (pieceEl) {
-        pieceEl.style.opacity = '1';
+    if (piece && piece.color === this.state.position.turn) {
+      this.state.selectedSquare = square;
+      this.state.legalMoves = await chessAPI.getLegalMoves(this.state.position, square);
+      this.options.onPieceSelect(square, piece);
+      return;
     }
 
-    if (!toSquareEl) return;
-    
-    const to = {
-      file: parseInt(toSquareEl.dataset.file!, 10),
-      rank: parseInt(toSquareEl.dataset.rank!, 10),
-    };
+    if (!this.state.selectedSquare) return;
 
-    if (squaresEqual(fromSquare, to)) return;
-
-    const move: Move = { from: fromSquare, to };
+    const move: Move = { from: this.state.selectedSquare, to: square };
     const success = await this.makeMove(move);
+
+    this.state.selectedSquare = null;
+    this.state.legalMoves = [];
 
     if (success) {
       this.options.onMove(move);
     } else {
-      // If move is not successful, snap back. The re-render will handle this.
       this.render();
     }
   }
@@ -230,16 +211,13 @@ export class ChessboardV2 {
         width: 100%;
         height: 100%;
         object-fit: contain;
-        cursor: grab;
+        cursor: default;
       }
       .change-pieces-btn {
         position: absolute;
         top: -30px;
         right: 0;
         z-index: 10;
-      }
-      .chessboard-v2 .square.drag-over {
-        background-color: rgba(255, 255, 0, 0.5);
       }
     `;
     document.head.appendChild(style);
@@ -265,6 +243,9 @@ export class ChessboardV2 {
   }
 
   public destroy(): void {
+    if (this.handleClickBound) {
+      this.boardElement.removeEventListener('click', this.handleClickBound);
+    }
     this.container.innerHTML = '';
   }
 }

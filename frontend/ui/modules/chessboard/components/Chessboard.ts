@@ -1,7 +1,7 @@
 /**
  * Chessboard Component
  *
- * Main chessboard UI component with advanced piece dragging using core system,
+ * Main chessboard UI component with click-to-move,
  * move validation via backend, and visual feedback.
  *
  * IMPORTANT: All chess rules and move validation are handled by the backend.
@@ -28,8 +28,7 @@ import {
 } from '../../chess_pieces';
 import { chessAPI } from '../utils/api';
 import { ClickToMoveController } from './ClickToMoveController';
-import { PieceDragger } from './PieceDragger';
-import { GameStorage, GameStorageOptions } from '../storage';
+import { GameStorage } from '../storage';
 
 /**
  * Chessboard class
@@ -39,7 +38,6 @@ export class Chessboard {
   private boardElement: HTMLElement;
   private options: Required<ChessboardOptions>;
   private state: ChessboardState;
-  private pieceDragger: PieceDragger | null = null;
   private clickToMove: ClickToMoveController | null = null;
   private storage: GameStorage | null = null;
   private unsubscribers: (() => void)[] = [];
@@ -87,7 +85,6 @@ export class Chessboard {
 
     this.render();
     this.setupEventListeners();
-    this.setupPieceDragger();
   }
 
   /**
@@ -104,65 +101,6 @@ export class Chessboard {
       },
       onError: (error) => {
         this.options.onStorageError(error);
-      },
-    });
-  }
-
-  /**
-   * Setup piece dragging using core drag system
-   */
-  private setupPieceDragger(): void {
-    if (!this.options.draggable) return;
-
-    this.pieceDragger = new PieceDragger(this.boardElement, {
-      onDragStart: (square, piece) => {
-        // Only allow dragging pieces of the current player
-        if (piece.color !== this.state.position.turn) {
-          return false; // Cancel drag
-        }
-
-        this.state.isDragging = true;
-        this.state.draggedPiece = { piece, from: square };
-        return true;
-      },
-
-      onDrag: (fromSquare, toSquare, piece) => {
-        // Visual feedback during drag (handled by PieceDragger)
-      },
-
-      onDrop: async (fromSquare, toSquare, piece) => {
-        // Attempt to make the move
-        const move: Move = {
-          from: fromSquare,
-          to: toSquare,
-          piece,
-        };
-
-        const success = await this.makeMove(move);
-
-        this.state.isDragging = false;
-        this.state.draggedPiece = null;
-
-        return success;
-      },
-
-      onDragCancel: () => {
-        this.state.isDragging = false;
-        this.state.draggedPiece = null;
-      },
-
-      getLegalMoves: async (square) => {
-        // Get legal moves from backend for visual feedback
-        if (this.options.showLegalMoves) {
-          return await chessAPI.getLegalMoves(this.state.position, square);
-        }
-        return [];
-      },
-
-      validateDrop: (fromSquare, toSquare) => {
-        // Basic client-side validation
-        // Real validation happens on backend
-        return true;
       },
     });
   }
@@ -272,11 +210,8 @@ export class Chessboard {
     pieceElement.dataset.type = piece.type;
     pieceElement.dataset.square = squareToAlgebraic(square);
 
-    // Add cursor style for draggable pieces
-    if (this.options.draggable && piece.color === this.state.position.turn) {
-      pieceElement.style.cursor = 'grab';
-    } else {
-      pieceElement.style.cursor = 'default';
+    if (this.options.selectable && piece.color === this.state.position.turn) {
+      pieceElement.style.cursor = 'pointer';
     }
 
     return pieceElement;
@@ -527,20 +462,6 @@ export class Chessboard {
         border-radius: 50%;
       }
 
-      .square.legal-move::after {
-        content: '';
-        position: absolute;
-        width: 25%;
-        height: 25%;
-        background: rgba(20, 85, 30, 0.5);
-        border-radius: 50%;
-        pointer-events: none;
-      }
-
-      .square.hover {
-        background: rgba(255, 255, 0, 0.3) !important;
-      }
-
       .piece {
         width: 90%;
         height: 90%;
@@ -548,14 +469,6 @@ export class Chessboard {
         user-select: none;
         pointer-events: auto;
         transition: opacity 0.1s;
-      }
-
-      .piece:active {
-        cursor: grabbing !important;
-      }
-
-      .chessboard.piece-dragging .piece {
-        pointer-events: none;
       }
 
       .rank-label, .file-label {
@@ -588,12 +501,6 @@ export class Chessboard {
   public flip(): void {
     this.state.isFlipped = !this.state.isFlipped;
     this.render();
-
-    // Re-setup dragger with new DOM
-    if (this.pieceDragger) {
-      this.pieceDragger.destroy();
-      this.setupPieceDragger();
-    }
   }
 
   /**
@@ -602,12 +509,6 @@ export class Chessboard {
   public setPosition(position: BoardPosition): void {
     this.state.position = position;
     this.render();
-
-    // Re-setup dragger
-    if (this.pieceDragger) {
-      this.pieceDragger.destroy();
-      this.setupPieceDragger();
-    }
   }
 
   /**
@@ -626,12 +527,6 @@ export class Chessboard {
     this.state.legalMoves = [];
     this.state.lastMove = null;
     this.render();
-
-    // Re-setup dragger
-    if (this.pieceDragger) {
-      this.pieceDragger.destroy();
-      this.setupPieceDragger();
-    }
   }
 
   /**
@@ -684,9 +579,6 @@ export class Chessboard {
    * Destroy and cleanup
    */
   public destroy(): void {
-    if (this.pieceDragger) {
-      this.pieceDragger.destroy();
-    }
     if (this.clickToMove) {
       this.clickToMove.destroy();
     }

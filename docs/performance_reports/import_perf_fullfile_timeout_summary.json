@@ -1,0 +1,8 @@
+{
+  "dataset_path": "1.d4 Nf6 2.c4 e6 3.Bf4 - Complete Repertoire for White - GM Davorin Kuljasevic.pgn",
+  "dataset_bytes": 102765,
+  "import_scope": "full_file",
+  "status": "timeout",
+  "timeout_seconds": 600,
+  "log_file": "docs/performance_reports/import_perf_small.log"
+}

@@ -1,0 +1,11 @@
+{
+  "dataset_path": "1.d4 Nf6 2.c4 e6 3.Bf4 - Complete Repertoire for White - GM Davorin Kuljasevic.pgn",
+  "dataset_bytes": 102765,
+  "import_scope": "first_game_only",
+  "status_code": 201,
+  "import_elapsed_seconds": 75.2828,
+  "study_id": "491d1265-9c69-48ac-95ec-16f938e879c9",
+  "chapter_id": null,
+  "error": "No chapters returned for imported study",
+  "log_file": "docs/performance_reports/import_perf_root_firstgame.log"
+}

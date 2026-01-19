@@ -1,7 +1,27 @@
-# Performance Report: Stage 3C - Frontend Rendering
+# Stage 3C Performance Report
 
-**Author:** Gemini (Frontend Rendering Lead)
+**Author:** codex
 **Date:** 2026-01-18
+
+## A. Import performance (root PGN file)
+- Dataset: `1.d4 Nf6 2.c4 e6 3.Bf4 - Complete Repertoire for White - GM Davorin Kuljasevic.pgn` (102,765 bytes).
+- Full-file import to `/studies/import-pgn` timed out at 600s.
+  - Log: `docs/performance_reports/import_perf_small.log`
+  - Summary: `docs/performance_reports/import_perf_fullfile_timeout_summary.json`
+- First-game-only import completed in 75.2828s but returned no chapters on follow-up fetch.
+  - Log: `docs/performance_reports/import_perf_root_firstgame.log`
+  - Summary: `docs/performance_reports/import_perf_root_firstgame_summary.json`
+  - Note: `GET /studies/{study_id}` returned zero chapters; DB validation shows no chapters inserted for that study.
+
+## B. Tagger/engine load (R2 fen_index)
+- Chapter used (largest fen_index available): `01KF783SN3E23VGQBVBQQJAK2K`.
+- fen_index size: 14 positions; analyzed 13.
+- Errors: illegal move errors triggered degraded mode after 5 consecutive failures.
+- Timing/RSS: see `/usr/bin/time` output in `docs/performance_reports/tagger_perf_root_run.log`.
+  - Summary: `docs/performance_reports/tagger_perf_root_run_summary.json`
+
+## C. Render performance (frontend)
+- Not re-measured in this run; prior expectations documented below.
 
 ## 1. Objective
 

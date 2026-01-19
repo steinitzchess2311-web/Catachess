@@ -387,6 +387,11 @@ export class ChessboardV2 {
         transform: scale(0.95);
         transform-origin: center;
       }
+      .chessboard-v2 .piece.white.rook,
+      .chessboard-v2 .piece.white.bishop {
+        transform: scale(0.93);
+        transform-origin: center;
+      }
       .pieces-toolbar {
         width: 100%;
         max-width: 480px;

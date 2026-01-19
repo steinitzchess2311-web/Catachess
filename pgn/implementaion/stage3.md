@@ -31,9 +31,9 @@
 
 ### C. 性能与容量
 - [ ] 评估大 PGN 导入与渲染性能
-  - 阻塞：渲染性能未实测（见 `docs/performance_reports/stage3c_performance_report.md`）。
+  - 阻塞：全文件导入超时（600s），渲染性能未实测（见 `docs/performance_reports/stage3c_performance_report.md`）。
 - [ ] 评估 tagger/engine 负载
-  - 阻塞：仅完成 1 节点测试（见 `docs/performance_reports/tagger_perf.log`）。
+  - 阻塞：最大 fen_index 仅 14 节点（见 `docs/performance_reports/tagger_perf_root_run.log`）。
 - [ ] 明确限流策略
   - 阻塞：依赖完整负载测试结论。
 

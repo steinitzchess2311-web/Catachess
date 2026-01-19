@@ -16,13 +16,14 @@
 ## 分计划（Checklist）
 
 ### A. 导入性能
-- [x] 使用大 PGN（>10MB, >500 章）导入测试
-  - 数据集：`docs/performance_reports/large_pgn_generated.pgn`
-  - 记录：`docs/performance_reports/stage3c_performance_report.md`
+- [ ] 使用大 PGN（>10MB, >500 章）导入测试
+  - 实测数据集为根目录 PGN（102,765 bytes），未达到规模要求。
+  - 全文件导入在 600s 超时（`docs/performance_reports/import_perf_small.log`）。
 - [x] 记录耗时与内存
-  - 记录：`docs/performance_reports/import_perf.log`
+  - 全文件超时记录：`docs/performance_reports/import_perf_small.log`。
+  - first-game-only 导入耗时 75.2828s（`docs/performance_reports/import_perf_root_firstgame.log`）。
 - [ ] 若超阈值：调整拆分/异步处理
-  - 阻塞：导入测试超时（>300s），尚未进入优化/拆分改造。
+  - 阻塞：全文件导入超时，且 first-game-only 返回 study 但未持久化章节。
 
 ### B. 渲染性能
 - [ ] 前端渲染复杂变例（5+ 层）
@@ -33,20 +34,21 @@
   - 阻塞：依赖前端性能实测结果。
 
 ### C. Tagger/Engine 负载
-- [ ] 使用 fen_index 做批量 tagger 分析
-  - 阻塞：仅完成 mainline 1 节点测试（见 `docs/performance_reports/tagger_perf.log`）。
-- [ ] 记录 CPU/内存
-  - 记录：`docs/performance_reports/tagger_perf.log`（positions=1）。
+- [x] 使用 fen_index 做批量 tagger 分析
+  - 实测 chapter: `01KF783SN3E23VGQBVBQQJAK2K`（positions=14）。
+  - 日志：`docs/performance_reports/tagger_perf_root_run.log`
+- [x] 记录 CPU/内存
+  - 记录：`docs/performance_reports/tagger_perf_root_run.log`
 - [ ] 必要时加入限流/队列
-  - 阻塞：需先完成批量负载测试再评估。
+  - 阻塞：fen_index 规模不足（14 positions），需更大样本再评估。
 
 ### D. 性能门槛
 - [ ] 导入单章 PGN < 2s（目标）
-  - 阻塞：当前导入测试超时（见 `docs/performance_reports/stage3c_performance_report.md`）。
+  - 阻塞：全文件导入超时（600s），first-game-only 也远超 2s。
 - [ ] 前端渲染 < 300ms（目标）
   - 阻塞：渲染性能未实测。
 - [ ] Tagger 每 100 节点 < 5s（目标）
-  - 阻塞：仅 1 节点测试，未达批量门槛。
+  - 阻塞：最大 fen_index 仅 14 节点，未达批量门槛。
 
 ---
 

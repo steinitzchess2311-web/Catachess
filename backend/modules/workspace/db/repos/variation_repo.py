@@ -4,7 +4,7 @@ Variation and MoveAnnotation repository for database operations.
 
 from typing import List, Sequence
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, select, update, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.workspace.db.tables.variations import MoveAnnotation, Variation
@@ -96,6 +96,20 @@ class VariationRepository:
         await self.session.flush()
         await self.session.refresh(variation)
         return variation
+
+    async def update_variation_next_ids_bulk(
+        self, next_id_map: dict[str, str | None]
+    ) -> None:
+        """Bulk update next_id for multiple variations."""
+        if not next_id_map:
+            return
+        stmt = (
+            update(Variation)
+            .where(Variation.id.in_(list(next_id_map.keys())))
+            .values(next_id=case(next_id_map, value=Variation.id))
+        )
+        await self.session.execute(stmt)
+        await self.session.flush()
 
     async def delete_variation(self, variation: Variation) -> None:
         """Delete a variation (cascade deletes children)."""

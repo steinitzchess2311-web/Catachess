@@ -395,12 +395,8 @@ class ChapterImportService:
                     
                     await self.variation_repo.create_variations_bulk(added_variations)
                     
-                    # Batch update next_id
-                    # A true bulk update would be better here, but this is an improvement.
-                    for var in added_variations:
-                         if deferred_next_ids.get(var.id):
-                            var.next_id = deferred_next_ids.get(var.id)
-                            await self.variation_repo.update_variation(var)
+                    # Bulk update next_id once all rows exist
+                    await self.variation_repo.update_variation_next_ids_bulk(deferred_next_ids)
 
                 if added_annotations:
                     await self.variation_repo.create_annotations_bulk(added_annotations)

@@ -363,32 +363,41 @@ async def get_study(
             deleted_at=node.deleted_at,
         )
 
-        chapter_responses = []
-        for chapter in chapters:
-            response_data = chapter.__dict__
-            db_status = response_data.get("pgn_status")
-
-            # Priority: Use DB pgn_status if set, otherwise infer from metadata
-            if db_status in ("ready", "error", "mismatch", "missing"):
-                final_status = db_status
-            elif not response_data.get("r2_key"):
-                # r2_key is NOT NULL, so this shouldn't happen
-                final_status = "missing"
-            elif not response_data.get("pgn_hash"):
-                # Empty chapter (no moves) can have r2_key but no pgn_hash
-                # This is valid - treat as ready if no explicit status
-                final_status = "ready"
-            else:
-                final_status = "ready"
-
-            response_data["pgn_status"] = final_status
-            chapter_responses.append(ChapterResponse.model_validate(response_data))
+        chapter_responses = [_build_chapter_response(chapter) for chapter in chapters]
 
         return StudyWithChaptersResponse(
             study=study_response,
             chapters=chapter_responses,
         )
 
+    except NodeNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except PermissionDeniedError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+
+
+@router.get(
+    "/{study_id}/chapters",
+    response_model=list[ChapterResponse],
+    status_code=status.HTTP_200_OK,
+)
+async def get_study_chapters(
+    study_id: str,
+    user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
+    study_repo: StudyRepository = Depends(get_study_repository),
+) -> list[ChapterResponse]:
+    """Get chapter list for a study."""
+    try:
+        node = await node_service.get_node(study_id, actor_id=user_id)
+        if node.node_type != NodeType.STUDY:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Node is not a study",
+            )
+
+        chapters = await study_repo.get_chapters_for_study(study_id, order_by_order=True)
+        return [_build_chapter_response(chapter) for chapter in chapters]
     except NodeNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except PermissionDeniedError as e:
@@ -493,6 +502,27 @@ async def create_chapter(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except PermissionDeniedError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
+
+
+def _build_chapter_response(chapter: ChapterTable) -> ChapterResponse:
+    response_data = chapter.__dict__
+    db_status = response_data.get("pgn_status")
+
+    # Priority: Use DB pgn_status if set, otherwise infer from metadata
+    if db_status in ("ready", "error", "mismatch", "missing"):
+        final_status = db_status
+    elif not response_data.get("r2_key"):
+        # r2_key is NOT NULL, so this shouldn't happen
+        final_status = "missing"
+    elif not response_data.get("pgn_hash"):
+        # Empty chapter (no moves) can have r2_key but no pgn_hash
+        # This is valid - treat as ready if no explicit status
+        final_status = "ready"
+    else:
+        final_status = "ready"
+
+    response_data["pgn_status"] = final_status
+    return ChapterResponse.model_validate(response_data)
 
 
 @router.post(

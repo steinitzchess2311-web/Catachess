@@ -31,6 +31,7 @@ class EngineOrchestrator:
         self.timeout = timeout if timeout is not None else self.DEFAULT_TIMEOUT
         self.max_retries = max_retries if max_retries is not None else self.DEFAULT_MAX_RETRIES
         self.pool = EngineSpotPool(timeout=timeout)
+        self.last_spot_id: str | None = None
 
         if spot_configs:
             self.pool.register_spots(spot_configs)
@@ -74,6 +75,7 @@ class EngineOrchestrator:
                     f"[Attempt {attempts}/{max_attempts}] Routing to spot: {spot.config.id}"
                 )
                 result = spot.analyze(fen, depth=depth, multipv=multipv)
+                self.last_spot_id = spot.config.id
                 logger.info(f"Request succeeded: {spot.config.id}")
                 return result
 
@@ -105,6 +107,7 @@ class EngineOrchestrator:
         error_summary = "; ".join(errors)
         logger.error(f"All spots failed after {attempts} attempts: {error_summary}")
         if settings.ENGINE_FALLBACK_MODE != "off":
+            self.last_spot_id = "fallback"
             return analyze_legal_moves(fen, depth, multipv)
         raise ChessEngineError(
             f"All engine spots failed ({attempts} attempts): {error_summary}"

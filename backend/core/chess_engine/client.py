@@ -26,6 +26,7 @@ class EngineClient:
     ) -> EngineResult:
         logger.info(f"Analyzing position: fen={fen[:50]}..., depth={depth}, multipv={multipv}")
         if not self.base_url:
+            self.last_spot_id = "fallback"
             return analyze_legal_moves(fen, depth, multipv)
         try:
             if "/engine" in self.base_url:
@@ -40,11 +41,12 @@ class EngineClient:
                     depth=depth,
                     multipv=multipv,
                 )
-
+            self.last_spot_id = "single"
             return self._build_result(multipv_data)
         except requests.exceptions.Timeout:
             logger.error(f"Engine timeout after {self.timeout}s")
             if settings.ENGINE_FALLBACK_MODE != "off":
+                self.last_spot_id = "fallback"
                 return analyze_legal_moves(fen, depth, multipv)
             raise ChessEngineTimeoutError(self.timeout)
         except ChessEngineError:
@@ -52,6 +54,7 @@ class EngineClient:
         except Exception as e:
             logger.error(f"Engine call failed: {e}")
             if settings.ENGINE_FALLBACK_MODE != "off":
+                self.last_spot_id = "fallback"
                 return analyze_legal_moves(fen, depth, multipv)
             raise ChessEngineError(f"Engine call failed: {str(e)}")
 

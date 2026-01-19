@@ -29,6 +29,7 @@ class AnalyzeRequest(BaseModel):
 class AnalyzeResponse(BaseModel):
     """Analysis result from engine"""
     lines: list[dict]
+    spot_id: str | None = None
 
 
 # Initialize engine client (automatically selects single-spot or multi-spot)
@@ -68,7 +69,8 @@ async def analyze_position(request: AnalyzeRequest):
         ]
 
         logger.info(f"Analysis complete: {len(lines)} lines")
-        return AnalyzeResponse(lines=lines)
+        spot_id = getattr(engine, "last_spot_id", None)
+        return AnalyzeResponse(lines=lines, spot_id=spot_id)
 
     except ChessEngineTimeoutError as e:
         logger.error(f"Engine timeout: {e}")

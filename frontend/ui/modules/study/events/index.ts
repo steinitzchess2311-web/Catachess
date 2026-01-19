@@ -228,9 +228,8 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                             }
                         }
 
-                        if (isShowDTOEnabled()) {
-                            try {
-                                const showResponse = await fetchShowDTO(studyId, currentChapter.id);
+                        try {
+                            const showResponse = await fetchShowDTO(studyId, currentChapter.id);
                                 const hasRenderableMoves = (showResponse.render || []).some((token) => token.t === 'move');
                                 if (hasRenderableMoves) {
                                     currentShowDTO = showResponse; // Store the full DTO
@@ -262,16 +261,15 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                                     console.warn('Could not find a valid root node for ShowDTO.');
                                     currentShowDTO = null; // Mark as failed to load ShowDTO
                                 }
-                            } catch (showError) {
-                                console.error('Failed to load moves using ShowDTO:', showError);
-                                currentShowDTO = null; // Clear DTO on error
-                            }
+                        } catch (showError) {
+                            console.error('Failed to load moves using ShowDTO:', showError);
+                            currentShowDTO = null; // Clear DTO on error
+                        }
 
-                            renderMoveTree();
+                        renderMoveTree();
 
-                            if (moveIdToSelect) {
-                                selectMove(moveIdToSelect);
-                            }
+                        if (moveIdToSelect && currentShowDTO) {
+                            selectMove(moveIdToSelect);
                         }
 
                     } catch (error) {

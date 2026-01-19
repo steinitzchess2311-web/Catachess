@@ -297,15 +297,11 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                         renderMoveTree();
             
                         if (moveIdToSelect) {
-            
-                            const index = currentMoves.findIndex((item) => item.id === moveIdToSelect);
-            
-                            if (index >= 0) {
-            
-                                selectMove(currentMoves[index], index);
-            
+                            if (currentShowDTO) {
+                                selectMove(moveIdToSelect);
+                            } else {
+                                selectLegacyMove(moveIdToSelect);
                             }
-            
                         }
             
                     } catch (error) {
@@ -352,6 +348,27 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                         selectedMoveElement.classList.add('active');
                     }
                 };
+
+                const selectLegacyMove = (moveId: string) => {
+                    if (!board) return;
+                    const move = currentMoves.find(item => item.id === moveId);
+                    if (!move) return;
+
+                    selectedMoveId = move.id;
+                    selectedAnnotationId = move.annotationId;
+                    selectedAnnotationVersion = move.annotationVersion;
+                    pgnCommentInput.value = move.annotationText || '';
+
+                    board.setPosition(fenToBoardPosition(move.fen));
+                    updateAnalysisPanels();
+                    currentPly = currentMoves.indexOf(move) + 1;
+
+                    moveTree.querySelectorAll('.move-token.active').forEach(el => el.classList.remove('active'));
+                    const selectedMoveElement = moveTree.querySelector(`.move-token[data-move-id="${moveId}"]`);
+                    if (selectedMoveElement) {
+                        selectedMoveElement.classList.add('active');
+                    }
+                };
                 
                 const hoverMove = (nodeId: string | null, isHovering: boolean) => {
                     if (!board || !currentShowDTO) return;
@@ -377,7 +394,25 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                 const renderMoveTree = () => {
                     moveTree.innerHTML = '';
                     if (!currentShowDTO) {
-                        moveTree.innerHTML = '<div class="move-tree-empty">PGN unavailable or ShowDTO failed to load.</div>';
+                        if (!currentMoves.length) {
+                            moveTree.innerHTML = '<div class="move-tree-empty">PGN unavailable</div>';
+                            return;
+                        }
+
+                        const list = document.createElement('div');
+                        list.className = 'pgn-legacy-list';
+                        currentMoves.forEach((move) => {
+                            const moveEl = document.createElement('button');
+                            moveEl.className = 'move-token';
+                            moveEl.type = 'button';
+                            moveEl.dataset.moveId = move.id;
+                            const label = move.color === 'white' ? `${move.moveNumber}.` : `${move.moveNumber}...`;
+                            moveEl.innerHTML = `<span class="move-label">${label}</span><span class="move-san">${move.san}</span>`;
+                            moveEl.addEventListener('click', () => selectLegacyMove(move.id));
+                            list.appendChild(moveEl);
+                            list.appendChild(document.createTextNode(' '));
+                        });
+                        moveTree.appendChild(list);
                         return;
                     }
 
@@ -1070,4 +1105,3 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                 return board;
             
             }
-

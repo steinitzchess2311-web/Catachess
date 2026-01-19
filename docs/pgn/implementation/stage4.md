@@ -45,11 +45,13 @@
 ### E. 监控与告警（产品稳定性）
 - [x] `/show` 与 `/fen` 失败日志包含 `study_id/chapter_id/r2_key/error_code`
   - 文件：`backend/modules/workspace/api/endpoints/studies.py`
-- [ ] 生产告警阈值设定（外部监控系统配置）
+- [x] 生产告警阈值设定（外部监控系统配置）
+  - 文件：`docs/pgn/ops_pgn_v2.md`
 
 ### F. 运维/对外说明
 - [x] 运维文档：`docs/pgn/ops_pgn_v2.md`
-- [ ] 对外 FAQ（如需客服话术）
+- [x] 对外 FAQ（如需客服话术）
+  - 文件：`docs/pgn/faq_pgn.md`
 ---
 ## 输出物（本阶段交付）
 - 产品级 API 检索链路

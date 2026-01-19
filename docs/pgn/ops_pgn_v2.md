@@ -44,3 +44,9 @@ Notes:
 - Sync path: `backend/modules/workspace/domain/services/pgn_sync_service.py`
 - API reads: `/show` and `/fen` endpoints in `backend/modules/workspace/api/endpoints/studies.py`
 - Common log fields: `study_id`, `chapter_id`, `r2_key`, `error_code`
+
+### Alert thresholds (production)
+- `pgn_show_failed`: >= 10 occurrences / 10 min
+- `pgn_fen_failed`: >= 10 occurrences / 10 min
+- `pgn_missing` (scan report): >= 1 occurrence / day
+- `r2_key_mismatch` (scan report): >= 1 occurrence / day

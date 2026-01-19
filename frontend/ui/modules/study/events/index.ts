@@ -43,6 +43,22 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
     const leftSplitter = container.querySelector('[data-split="left"]') as HTMLElement;
     const rightSplitter = container.querySelector('[data-split="right"]') as HTMLElement;
     const pgnRenderer = new PgnRenderer(moveTree);
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.style.cssText = [
+        'position:absolute',
+        'inset:0',
+        'display:flex',
+        'align-items:center',
+        'justify-content:center',
+        'background:rgba(8,8,8,0.65)',
+        'color:#fff',
+        'font-size:14px',
+        'z-index:5',
+        'pointer-events:all',
+    ].join(';');
+    loadingOverlay.textContent = '加载中...';
+    boardMount.style.position = 'relative';
+    boardMount.appendChild(loadingOverlay);
 
     // 3. State
     let currentStudy: any = null;
@@ -81,6 +97,13 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
     const localToServerId = new Map<string, string>();
     let saveInterval: number | null = null;
     let renderScheduled = false;
+    let isLoading = true;
+
+    const setLoadingState = (loading: boolean) => {
+        isLoading = loading;
+        loadingOverlay.style.display = loading ? 'flex' : 'none';
+        studyContainer.style.pointerEvents = loading ? 'none' : '';
+    };
 
     // 4. Initialization
     let heartbeatInterval: any = null;
@@ -164,6 +187,7 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
 
     const loadStudyData = async () => {
         try {
+            setLoadingState(true);
             const response = await api.get(`/api/v1/workspace/studies/${studyId}`);
             currentStudy = response.study;
             chapters = response.chapters || [];
@@ -180,10 +204,12 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                             renderEmptyState();
             
                         }
+                        setLoadingState(false);
             
                     } catch (error) {
             
                         console.error('Failed to load study:', error);
+                        setLoadingState(false);
             
                     }
             
@@ -612,6 +638,7 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
             
                 const selectChapter = async (ch: any) => { // Made async
 
+                    setLoadingState(true);
                     currentChapter = ch;
 
                     selectedMoveId = null;
@@ -698,6 +725,9 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
             
             
                 const enqueueMoveSave = (move: any) => {
+                    if (isLoading) {
+                        return;
+                    }
                     void handleMove(move);
                 };
 
@@ -822,6 +852,7 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                         console.error('Failed to save move:', error);
 
                     }
+                    setLoadingState(false);
 
                 };
 

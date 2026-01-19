@@ -155,11 +155,12 @@ export class PgnRenderer {
         }
         if (token.t === 'variation_end') {
             stack.pop();
+            const outer = stack[stack.length - 1] || parent;
             const closeParen = document.createElement('span');
             closeParen.className = 'variation-paren variation-end-paren';
             closeParen.textContent = ')';
-            parent.appendChild(closeParen);
-            parent.appendChild(document.createTextNode(' '));
+            outer.appendChild(closeParen);
+            outer.appendChild(document.createTextNode(' '));
             decVariation();
         }
     }

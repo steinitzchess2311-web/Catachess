@@ -333,6 +333,15 @@ export class ChessboardV2 {
     style.textContent = `
       .chessboard-v2 {
         display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(8, 1fr);
+        width: 100%;
+        height: 100%;
+        aspect-ratio: 1 / 1;
+        box-sizing: border-box;
+        background-color: #b58863;
+      }
+      .chessboard-v2 .square {
         position: relative;
         box-sizing: border-box;
       }
@@ -360,11 +369,9 @@ export class ChessboardV2 {
       }
 
       .chessboard-v2 .piece {
-        position: absolute;
-        top: 5%;
-        left: 5%;
-        width: 90%;
-        height: 90%;
+        display: block;
+        width: 100%;
+        height: 100%;
         object-fit: contain;
         cursor: default;
         -webkit-user-drag: none;

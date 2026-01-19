@@ -27,7 +27,8 @@
   - [x] `toggleShowDTO()` 切换函数
   - [x] `isShowDTOEnabled()` 检查函数
   - [x] 默认关闭（使用 legacy mainline 接口）
-  - [ ] 灰度期仅对白名单账号开启
+  - [x] 灰度期仅对白名单账号开启
+    - 见 `docs/pgn/rollout_whitelist.md`
 
 ### C. ShowDTO 渲染（待完成）
 - [ ] 修改 `frontend/ui/modules/study/events/index.ts`

@@ -7,4 +7,4 @@
 - Phase 4: Remove `/moves/mainline` endpoint after stable period.
 
 ## Dates
-- Target removal date: TBD
+- Target removal date: Jan. 18 6pm EST

@@ -18,24 +18,30 @@
 ## 分计划（Checklist）
 
 ### A. 灰度与开关
-- [ ] 确认 ShowDTO 前端开关默认值与切换策略
-- [ ] 确认后端是否需要全局开关（环境变量）
+- [x] 确认 ShowDTO 前端开关默认值与切换策略
+- [x] 确认后端是否需要全局开关（环境变量）
 - [ ] 形成灰度清单（哪些用户/工作区先开）
+  - 见 `docs/pgn/rollout_whitelist.md`。
 
 ### B. 数据迁移与一致性
-- [ ] 执行全量扫描：PGN/R2/DB 对齐
-- [ ] 修复不一致项
-- [ ] 形成迁移报告
+- [x] 执行全量扫描：PGN/R2/DB 对齐
+- [x] 修复不一致项
+- [x] 形成迁移报告
+  - 见 `docs/migration_reports/migration_acceptance.md`。
 
 ### C. 性能与容量
 - [ ] 评估大 PGN 导入与渲染性能
+  - 阻塞：渲染性能未实测（见 `docs/performance_reports/stage3c_performance_report.md`）。
 - [ ] 评估 tagger/engine 负载
+  - 阻塞：仅完成 1 节点测试（见 `docs/performance_reports/tagger_perf.log`）。
 - [ ] 明确限流策略
+  - 阻塞：依赖完整负载测试结论。
 
 ### D. Legacy 退役
-- [ ] 明确哪些 legacy 模块保留（仅回滚）
-- [ ] 明确哪些 legacy 接口停用
-- [ ] 更新文档与对外说明
+- [x] 明确哪些 legacy 模块保留（仅回滚）
+- [x] 明确哪些 legacy 接口停用
+- [x] 更新文档与对外说明
+  - 退役时间表已补充（`docs/pgn/deprecation_timeline.md`）。
 
 ---
 
@@ -44,4 +50,3 @@
 - 迁移扫描与修复报告
 - 性能基准与容量评估
 - Legacy 退役清单
-

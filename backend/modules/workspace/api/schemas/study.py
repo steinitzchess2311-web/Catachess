@@ -68,6 +68,7 @@ class ChapterResponse(BaseModel):
     r2_key: str
     pgn_hash: str | None
     pgn_size: int | None
+    pgn_status: str | None
     r2_etag: str | None
     last_synced_at: datetime | None
     created_at: datetime
@@ -111,3 +112,12 @@ class ImportResultResponse(BaseModel):
     folder_id: str | None
     was_split: bool
     single_study: bool
+
+
+class ChapterPgnResponse(BaseModel):
+    """Schema for chapter PGN response."""
+
+    pgn_text: str
+    pgn_hash: str | None
+    pgn_size: int | None
+    last_synced_at: datetime | None

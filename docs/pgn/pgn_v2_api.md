@@ -3,6 +3,10 @@
 ## Overview
 This document defines the PGN v2 endpoints used for study rendering and FEN lookup.
 
+## Standard endpoints
+- `/show` and `/fen` are the standard study rendering interfaces.
+- Legacy `/moves/mainline` is deprecated and in retirement (see `docs/pgn/legacy_pgn.md`).
+
 ## GET /api/v1/workspace/studies/{study_id}/chapters/{chapter_id}/show
 Returns the ShowDTO payload for full PGN rendering.
 

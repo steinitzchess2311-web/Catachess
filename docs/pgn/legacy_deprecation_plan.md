@@ -8,6 +8,7 @@
 - Serializer modules marked deprecated with warnings.
 - Endpoint marked deprecated in OpenAPI via `deprecated=True`.
 - `backend/core/chess_basic/pgn/*` usage limited to game/session services (no study module imports found).
+- Legacy serializer retained only for rollback until removal.
 
 ## Policy
 - New code must not depend on `backend/modules/workspace/pgn/serializer`.

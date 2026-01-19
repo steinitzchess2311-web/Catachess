@@ -11,16 +11,20 @@ from ..models import Candidate
 class HTTPStockfishClient:
     """Client for remote Stockfish engine via HTTP."""
 
-    def __init__(self, base_url: str = "https://sf.cloudflare.com", timeout: int = 60):
+    # Default timeout optimized for batch processing (100+ nodes in < 5s target)
+    # Per-request timeout: 10s allows ~500ms average with headroom for retries
+    DEFAULT_TIMEOUT = 10
+
+    def __init__(self, base_url: str = "https://sf.cloudflare.com", timeout: int = None):
         """
         Initialize HTTP client.
 
         Args:
             base_url: Remote engine service URL
-            timeout: Request timeout in seconds
+            timeout: Request timeout in seconds (default: 10s for batch optimization)
         """
         self.base_url = base_url.rstrip("/")
-        self.timeout = timeout
+        self.timeout = timeout if timeout is not None else self.DEFAULT_TIMEOUT
 
     def __enter__(self):
         """Context manager entry."""

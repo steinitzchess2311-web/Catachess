@@ -1,0 +1,24 @@
+{
+  "scan_timestamp": "2026-01-18T20:18:44.053489",
+  "operator": "catadragon",
+  "environment": "dev",
+  "scan_host": "",
+  "total_chapters_scanned": 85,
+  "chapters_without_moves": 83,
+  "r2_key_mismatches": 0,
+  "r2_missing_pgn": 0,
+  "r2_missing_tree_json": 0,
+  "r2_missing_fen_index": 0,
+  "pgn_sync_failures": 0,
+  "chapters_repaired": 0,
+  "resync_attempts": 0,
+  "resync_success": 0,
+  "resync_failures": 0,
+  "pgn_status_updates": {
+    "ready": 0,
+    "missing": 0,
+    "mismatch": 0,
+    "error": 0
+  },
+  "source_report": "docs/migration_reports/migration_scan_report.txt"
+}

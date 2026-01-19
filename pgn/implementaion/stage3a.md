@@ -17,14 +17,14 @@
 
 ### A. 前端开关（必须）
 - [x] 文件：`frontend/ui/modules/study/api/pgn.ts`
-- [x] 确认 `USE_SHOW_DTO` 默认值（建议 false）
-  - **验证:** 检查 `pgn.ts` 中 `USE_SHOW_DTO` 的 `return false;` 行。
+- [x] 确认 `USE_SHOW_DTO` 默认值（全量阶段为 true）
+  - **验证:** 检查 `pgn.ts` 中 `USE_SHOW_DTO` 的 `return true;` 行。
 - [x] 确认 `toggleShowDTO()` 可启用/禁用
   - **验证:** 在浏览器控制台调用 `toggleShowDTO()` 函数，并检查 `localStorage` 中的 `catachess_use_show_dto` 键值是否切换。
-- [x] 记录灰度策略：仅内部账号/白名单可启用
-  - **策略:** 通过前端 `localStorage` (key: `catachess_use_show_dto`) 进行控制。默认禁用。
-  - **启用方式:** 内部测试人员可以在浏览器控制台中执行 `localStorage.setItem('catachess_use_show_dto', 'true')` 来手动启用 PGN v2 渲染。
-  - **禁用方式:** 执行 `localStorage.removeItem('catachess_use_show_dto')` 或 `localStorage.setItem('catachess_use_show_dto', 'false')`。
+- [x] 记录灰度策略：灰度结束后默认启用，允许按用户回滚
+  - **策略:** 通过前端 `localStorage` (key: `catachess_use_show_dto`) 进行控制。默认启用。
+  - **禁用方式:** 执行 `localStorage.setItem('catachess_use_show_dto', 'false')` 或 `localStorage.removeItem('catachess_use_show_dto')`。
+  - **启用方式:** 执行 `localStorage.setItem('catachess_use_show_dto', 'true')`。
   - **验证:** 启用后，刷新页面，查看棋谱渲染是否为新版 ShowDTO 样式。禁用后，刷新页面，查看是否回退到旧版渲染或显示错误信息。
 
 
@@ -71,4 +71,3 @@
 - 前端/后端双开关
 - 明确灰度范围
 - 回滚流程文档
-

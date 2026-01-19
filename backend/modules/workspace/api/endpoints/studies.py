@@ -2,6 +2,8 @@
 Study endpoints.
 """
 
+import logging
+
 from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,6 +36,7 @@ from modules.workspace.api.schemas.study import (
     StudyResponse,
     StudyUpdate,
     StudyWithChaptersResponse,
+    ChapterPgnResponse,
 )
 from modules.workspace.api.schemas.variation import (
     DemoteVariationRequest,
@@ -81,7 +84,7 @@ from modules.workspace.domain.services.variation_service import (
 )
 from modules.workspace.events.bus import EventBus, publish_chapter_created
 from modules.workspace.storage.keys import R2Keys
-from modules.workspace.storage.r2_client import create_r2_client_from_env
+from modules.workspace.storage.r2_client import R2Client, create_r2_client_from_env
 from modules.workspace.pgn.serializer.from_variations import build_mainline_moves
 from ulid import ULID
 from datetime import datetime, timezone
@@ -94,6 +97,7 @@ from backend.core.real_pgn.fen import apply_move
 from backend.core.config import settings # New import
 
 router = APIRouter(prefix="/studies", tags=["studies"])
+logger = logging.getLogger(__name__)
 
 
 @router.put("/{study_id}", status_code=status.HTTP_501_NOT_IMPLEMENTED)
@@ -357,9 +361,26 @@ async def get_study(
             deleted_at=node.deleted_at,
         )
 
-        chapter_responses = [
-            ChapterResponse.model_validate(chapter) for chapter in chapters
-        ]
+        chapter_responses = []
+        for chapter in chapters:
+            response_data = chapter.__dict__
+            db_status = response_data.get("pgn_status")
+
+            # Priority: Use DB pgn_status if set, otherwise infer from metadata
+            if db_status in ("ready", "error", "mismatch", "missing"):
+                final_status = db_status
+            elif not response_data.get("r2_key"):
+                # r2_key is NOT NULL, so this shouldn't happen
+                final_status = "missing"
+            elif not response_data.get("pgn_hash"):
+                # Empty chapter (no moves) can have r2_key but no pgn_hash
+                # This is valid - treat as ready if no explicit status
+                final_status = "ready"
+            else:
+                final_status = "ready"
+
+            response_data["pgn_status"] = final_status
+            chapter_responses.append(ChapterResponse.model_validate(response_data))
 
         return StudyWithChaptersResponse(
             study=study_response,
@@ -444,6 +465,7 @@ async def create_chapter(
             r2_key=r2_key,
             pgn_hash=upload_result.content_hash,
             pgn_size=upload_result.size,
+            pgn_status="ready",
             r2_etag=upload_result.etag,
             last_synced_at=datetime.now(timezone.utc),
         )
@@ -671,6 +693,65 @@ async def export_clean_pgn_endpoint(
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+async def get_r2_client() -> R2Client:
+    return create_r2_client_from_env()
+
+
+@router.get(
+    "/{study_id}/chapters/{chapter_id}/pgn",
+    response_model=ChapterPgnResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def get_chapter_pgn(
+    study_id: str,
+    chapter_id: str,
+    user_id: str = Depends(get_current_user_id),
+    study_repo: StudyRepository = Depends(get_study_repository),
+    node_service: NodeService = Depends(get_node_service),
+    r2_client: R2Client = Depends(get_r2_client),
+) -> ChapterPgnResponse:
+    """Get PGN text and metadata for a chapter."""
+    try:
+        # Check permissions by getting the parent study node
+        await node_service.get_node(study_id, actor_id=user_id)
+
+        chapter = await study_repo.get_chapter_by_id(chapter_id)
+        if not chapter or chapter.study_id != study_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Chapter {chapter_id} not found in study {study_id}",
+            )
+
+        # Fallback key logic from plan
+        r2_key = chapter.r2_key or R2Keys.chapter_pgn(chapter_id)
+
+        if not r2_key:
+             raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"PGN key could not be determined for chapter {chapter_id}",
+            )
+
+        try:
+            # download_pgn is not async, so we don't await it
+            pgn_text = r2_client.download_pgn(r2_key)
+        except Exception: # Assuming a client error if download fails
+             raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"PGN content not found in R2 for chapter {chapter_id} with key {r2_key}",
+            )
+
+        return ChapterPgnResponse(
+            pgn_text=pgn_text,
+            pgn_hash=chapter.pgn_hash,
+            pgn_size=chapter.pgn_size,
+            last_synced_at=chapter.last_synced_at,
+        )
+    except NodeNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except PermissionDeniedError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 
 # ============================================================================
@@ -1050,6 +1131,7 @@ async def get_chapter_show(
     """
     if not settings.PGN_V2_ENABLED:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PGN V2 endpoints are not enabled")
+    r2_key = None
     try:
         chapter = await study_repo.get_chapter_by_id(chapter_id)
         if not chapter:
@@ -1057,6 +1139,7 @@ async def get_chapter_show(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Chapter {chapter_id} not found"
             )
+        r2_key = chapter.r2_key
 
         variations = await variation_repo.get_variations_for_chapter(chapter_id)
         annotations = await variation_repo.get_annotations_for_chapter(chapter_id)
@@ -1076,6 +1159,16 @@ async def get_chapter_show(
         return show_dto
 
     except Exception as e:
+        logger.error(
+            "ShowDTO failed",
+            exc_info=True,
+            extra={
+                "study_id": study_id,
+                "chapter_id": chapter_id,
+                "r2_key": r2_key,
+                "error_code": "pgn_show_failed",
+            },
+        )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
@@ -1089,6 +1182,7 @@ async def get_node_fen(
     node_id: str,
     user_id: str = Depends(get_current_user_id),
     variation_repo: VariationRepository = Depends(get_variation_repo),
+    study_repo: StudyRepository = Depends(get_study_repository),
 ):
     """
     Get FEN for a specific node.
@@ -1101,6 +1195,7 @@ async def get_node_fen(
     """
     if not settings.PGN_V2_ENABLED:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="PGN V2 endpoints are not enabled")
+    r2_key = None
     try:
         variation = await variation_repo.get_variation_by_id(node_id)
         if not variation:
@@ -1115,6 +1210,10 @@ async def get_node_fen(
                 detail=f"Node {node_id} does not belong to chapter {chapter_id}"
             )
 
+        chapter = await study_repo.get_chapter_by_id(chapter_id)
+        if chapter:
+            r2_key = chapter.r2_key
+
         return {
             "fen": variation.fen,
             "node_id": node_id,
@@ -1127,4 +1226,14 @@ async def get_node_fen(
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(
+            "FEN lookup failed",
+            exc_info=True,
+            extra={
+                "study_id": study_id,
+                "chapter_id": chapter_id,
+                "r2_key": r2_key,
+                "error_code": "pgn_fen_failed",
+            },
+        )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

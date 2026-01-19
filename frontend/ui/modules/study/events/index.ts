@@ -381,12 +381,10 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                         return;
                     }
 
-                    // New rendering logic using ShowDTO
                     const pgnOutputWrapper = document.createElement('div');
                     pgnOutputWrapper.className = 'pgn-output-wrapper';
                     moveTree.appendChild(pgnOutputWrapper);
 
-                    // Display root_fen and result (initial status)
                     const headerInfo = document.createElement('div');
                     headerInfo.className = 'pgn-header-info';
                     const rootFenSpan = document.createElement('span');
@@ -394,9 +392,14 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                     headerInfo.appendChild(rootFenSpan);
                     pgnOutputWrapper.appendChild(headerInfo);
 
+                    const tokens = currentShowDTO.render;
+                    let currentIndex = 0;
+                    const CHUNK_SIZE = 75;
+
                     const currentContainerStack: HTMLElement[] = [pgnOutputWrapper];
                     let variationLevel = 0;
 
+                    // Helper functions (createMoveElement, createCommentElement) remain the same
                     const createMoveElement = (nodeId: string, label: string, san: string): HTMLElement => {
                         const moveEl = document.createElement('button');
                         moveEl.className = 'move-token';
@@ -413,97 +416,65 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                         const commentWrapper = document.createElement('span');
                         commentWrapper.className = 'comment-wrapper';
                         commentWrapper.dataset.nodeId = nodeId;
-
-                        // Use a more robust check for sentence end (Chinese specific)
-                        const firstSentenceMatch = text.match(/^[^。！？.?!]+/);
-                        let displayInitially = text;
-                        let needsToggleButton = false;
-
-                        if (firstSentenceMatch) {
-                            const firstSentence = firstSentenceMatch[0];
-                            if (firstSentence.length < text.length) {
-                                displayInitially = firstSentence + '...';
-                                needsToggleButton = true;
-                            }
-                        } else if (text.length > 120) {
-                            displayInitially = text.substring(0, 120) + '...';
-                            needsToggleButton = true;
-                        }
-
                         const commentTextSpan = document.createElement('span');
                         commentTextSpan.className = 'comment-text';
-                        commentTextSpan.textContent = displayInitially;
-                        commentTextSpan.style.fontStyle = 'italic';
-                        commentTextSpan.style.color = 'gray';
-                        commentTextSpan.style.fontSize = '0.9em';
+                        commentTextSpan.textContent = text;
                         commentWrapper.appendChild(commentTextSpan);
-
-                        if (needsToggleButton) {
-                            const toggleButton = document.createElement('button');
-                            toggleButton.className = 'comment-toggle';
-                            toggleButton.textContent = '展开'; // "展开" for expand
-                            toggleButton.style.background = 'none';
-                            toggleButton.style.border = 'none';
-                            toggleButton.style.color = 'blue';
-                            toggleButton.style.cursor = 'pointer';
-                            toggleButton.style.marginLeft = '5px';
-                            commentWrapper.appendChild(toggleButton);
-
-                            let expanded = false;
-                            toggleButton.addEventListener('click', () => {
-                                expanded = !expanded;
-                                commentTextSpan.textContent = expanded ? text : displayInitially;
-                                toggleButton.textContent = expanded ? '收起' : '展开'; // "收起" for collapse
-                            });
-                        }
                         return commentWrapper;
                     };
 
+                    const renderChunk = () => {
+                        const fragment = document.createDocumentFragment();
+                        const end = Math.min(currentIndex + CHUNK_SIZE, tokens.length);
+                        
+                        while (currentIndex < end) {
+                            const token = tokens[currentIndex];
+                            const currentParent = currentContainerStack[currentContainerStack.length - 1];
 
-                    currentShowDTO.render.forEach(token => {
-                        const currentParent = currentContainerStack[currentContainerStack.length - 1];
-                        if (!currentParent) return;
-
-                        if (token.t === 'move') {
-                            const moveEl = createMoveElement(token.node, token.label, token.san);
-                            currentParent.appendChild(moveEl);
-                            currentParent.appendChild(document.createTextNode(' ')); // Add space between moves
-                        } else if (token.t === 'comment') {
-                            const commentEl = createCommentElement(token.node, token.text);
-                            currentParent.appendChild(commentEl);
-                            currentParent.appendChild(document.createTextNode(' '));
-                        } else if (token.t === 'variation_start') {
-                            variationLevel++;
-                            // Frontend no longer adds '(', as it's expected to be in the first move's label from the backend ShowDTO
-                            const cappedVariationLevel = Math.min(variationLevel, 5); // Cap nesting at 5 for visual consistency
-                            if (variationLevel > 5) {
-                                console.warn(`Variation nesting exceeded 5 levels. Capping visual indentation.`);
+                            if (token.t === 'move') {
+                                const moveEl = createMoveElement(token.node, token.label, token.san);
+                                currentParent.appendChild(moveEl);
+                                currentParent.appendChild(document.createTextNode(' '));
+                            } else if (token.t === 'comment') {
+                                const commentEl = createCommentElement(token.node, token.text);
+                                currentParent.appendChild(commentEl);
+                                currentParent.appendChild(document.createTextNode(' '));
+                            } else if (token.t === 'variation_start') {
+                                variationLevel++;
+                                const cappedVariationLevel = Math.min(variationLevel, 5);
+                                const variationContainer = document.createElement('span');
+                                variationContainer.className = `variation-container variation-level-${cappedVariationLevel}`;
+                                variationContainer.style.marginLeft = `${cappedVariationLevel * 10}px`;
+                                currentParent.appendChild(variationContainer);
+                                currentContainerStack.push(variationContainer);
+                            } else if (token.t === 'variation_end') {
+                                const popped = currentContainerStack.pop();
+                                if (popped) {
+                                    const closeParen = document.createElement('span');
+                                    closeParen.className = 'variation-paren variation-end-paren';
+                                    closeParen.textContent = ')';
+                                    (currentContainerStack[currentContainerStack.length - 1] || pgnOutputWrapper).appendChild(closeParen);
+                                    (currentContainerStack[currentContainerStack.length - 1] || pgnOutputWrapper).appendChild(document.createTextNode(' '));
+                                }
+                                variationLevel--;
                             }
-                            const variationContainer = document.createElement('span');
-                            variationContainer.className = `variation-container variation-level-${cappedVariationLevel}`;
-                            variationContainer.style.marginLeft = `${cappedVariationLevel * 10}px`; // Simple indent
-                            currentParent.appendChild(variationContainer);
-                            currentContainerStack.push(variationContainer);
-                        } else if (token.t === 'variation_end') {
-                            const popped = currentContainerStack.pop();
-                            if (popped) {
-                                const closeParen = document.createElement('span');
-                                closeParen.className = 'variation-paren variation-end-paren';
-                                closeParen.textContent = ')';
-                                (currentContainerStack[currentContainerStack.length - 1] || pgnOutputWrapper).appendChild(closeParen);
-                                (currentContainerStack[currentContainerStack.length - 1] || pgnOutputWrapper).appendChild(document.createTextNode(' '));
-                            }
-                            variationLevel--;
+                            currentIndex++;
                         }
-                    });
 
-                    // Display result at the end
-                    if (currentShowDTO.result) {
-                        const resultSpan = document.createElement('span');
-                        resultSpan.className = 'pgn-result';
-                        resultSpan.textContent = ` ${currentShowDTO.result}`;
-                        pgnOutputWrapper.appendChild(resultSpan);
-                    }
+                        if (currentIndex < tokens.length) {
+                            requestAnimationFrame(renderChunk);
+                        } else {
+                            // Finished rendering
+                            if (currentShowDTO.result) {
+                                const resultSpan = document.createElement('span');
+                                resultSpan.className = 'pgn-result';
+                                resultSpan.textContent = ` ${currentShowDTO.result}`;
+                                pgnOutputWrapper.appendChild(resultSpan);
+                            }
+                        }
+                    };
+
+                    requestAnimationFrame(renderChunk);
                 };
             
                 const renderChapters = (chapters: any[]) => {

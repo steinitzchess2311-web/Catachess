@@ -15,17 +15,21 @@ class EngineOrchestrator:
     Handles routing, retry, and failover.
     """
 
-    def __init__(self, spot_configs: List[SpotConfig] = None, timeout: int = 30, max_retries: int = 2):
+    # Optimized defaults for batch processing (100+ nodes in < 5s target)
+    DEFAULT_TIMEOUT = 10  # Reduced from 30s for faster fail-over
+    DEFAULT_MAX_RETRIES = 1  # Reduced from 2 for faster throughput
+
+    def __init__(self, spot_configs: List[SpotConfig] = None, timeout: int = None, max_retries: int = None):
         """
         Initialize orchestrator.
 
         Args:
             spot_configs: List of spot configurations (optional)
-            timeout: Request timeout in seconds
-            max_retries: Maximum number of retries (total attempts = max_retries + 1)
+            timeout: Request timeout in seconds (default: 10s)
+            max_retries: Maximum number of retries (default: 1, total attempts = 2)
         """
-        self.timeout = timeout
-        self.max_retries = max_retries
+        self.timeout = timeout if timeout is not None else self.DEFAULT_TIMEOUT
+        self.max_retries = max_retries if max_retries is not None else self.DEFAULT_MAX_RETRIES
         self.pool = EngineSpotPool(timeout=timeout)
 
         if spot_configs:

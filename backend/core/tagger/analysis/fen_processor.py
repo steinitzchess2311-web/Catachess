@@ -8,6 +8,7 @@ for tagging analysis.
 import json
 import logging
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
@@ -62,6 +63,20 @@ class FenIndexProcessor:
 
         logger.debug(f"Processed {len(entries)} FEN entries")
         return entries
+
+    def process_fen_index_file(self, file_path: str | Path) -> List[NodeFenEntry]:
+        """
+        Load and process a fen_index.json file from disk.
+
+        Args:
+            file_path: Path to fen_index.json
+
+        Returns:
+            List of NodeFenEntry objects
+        """
+        path = Path(file_path)
+        fen_index = json.loads(path.read_text(encoding="utf-8"))
+        return self.process_fen_index(fen_index)
 
     def process_tree_with_moves(self, tree_dict: Dict[str, Any]) -> List[NodeFenEntry]:
         """

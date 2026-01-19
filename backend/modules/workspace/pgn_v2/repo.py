@@ -312,6 +312,38 @@ class PgnV2Repo:
         }
 
 
+def ensure_chapter_key(chapter: Any) -> str:
+    """
+    Ensure chapter has a valid r2_key matching the standard format.
+
+    If r2_key is missing or doesn't match, logs warning and returns standard key.
+    Caller should update chapter.r2_key with returned value if different.
+
+    Args:
+        chapter: Chapter object with id and r2_key attributes
+
+    Returns:
+        Standard r2_key for the chapter (chapters/{chapter_id}.pgn)
+    """
+    expected = R2Keys.chapter_pgn(chapter.id)
+
+    if not chapter.r2_key:
+        logger.warning(
+            f"Chapter r2_key is empty: chapter_id={chapter.id}, "
+            f"setting to standard key={expected}"
+        )
+        return expected
+
+    if chapter.r2_key != expected:
+        logger.warning(
+            f"Chapter r2_key mismatch: chapter_id={chapter.id}, "
+            f"current_key={chapter.r2_key}, expected_key={expected}"
+        )
+        return expected
+
+    return chapter.r2_key
+
+
 def validate_chapter_r2_key(chapter: Any, expected_key: Optional[str] = None) -> bool:
     """
     Validate that chapter.r2_key matches the standard key format.

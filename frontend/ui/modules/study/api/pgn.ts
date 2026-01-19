@@ -63,18 +63,18 @@ export type ShowDTOResponse = {
 
 /**
  * Feature flag for ShowDTO (v2) rendering.
- * Defaults to true to use new /show endpoint; localStorage can override.
+ * Grey rollout default is disabled; localStorage can override.
  */
 export const USE_SHOW_DTO = (() => {
-    // Check for environment variable or localStorage flag
+    // Check for localStorage flag
     if (typeof window !== 'undefined') {
         const localFlag = localStorage.getItem('catachess_use_show_dto');
         if (localFlag !== null) {
             return localFlag === 'true';
         }
     }
-    // Default: enabled
-    return true;
+    // Default: disabled for staged rollout
+    return false;
 })();
 
 /**
@@ -133,5 +133,9 @@ export function toggleShowDTO(): boolean {
  * Check if ShowDTO is enabled.
  */
 export function isShowDTOEnabled(): boolean {
-    return localStorage.getItem('catachess_use_show_dto') === 'true';
+    const localFlag = localStorage.getItem('catachess_use_show_dto');
+    if (localFlag === null) {
+        return USE_SHOW_DTO;
+    }
+    return localFlag === 'true';
 }

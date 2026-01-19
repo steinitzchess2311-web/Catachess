@@ -28,6 +28,7 @@ class ChapterModel:
     r2_key: str
     pgn_hash: str | None
     pgn_size: int | None
+    pgn_status: str | None
     r2_etag: str | None
     last_synced_at: datetime | None
     created_at: datetime

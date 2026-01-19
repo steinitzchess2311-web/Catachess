@@ -90,6 +90,7 @@ class Chapter(Base, TimestampMixin):
     # Integrity checking
     pgn_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     pgn_size: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    pgn_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     # R2 metadata
     r2_etag: Mapped[str | None] = mapped_column(String(64), nullable=True)

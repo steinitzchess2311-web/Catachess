@@ -144,6 +144,7 @@ DATABASE_URL=postgresql://postgres:***@yamabiko.proxy.rlwy.net:20407/railway
 | 9 | 20260112_0008 | add_notifications.py | 通知表 |
 | 10 | 20260112_0009 | add_activity_log.py | 活动日志表 |
 | 11 | 20260112_0010 | add_audit_log.py | 审计日志表 |
+| 12 | 20260118_0017 | add_pgn_status.py | Chapters 增加 pgn_status |
 
 **全部成功执行！** ✅
 
@@ -232,4 +233,24 @@ alembic upgrade head
 ### 回滚一个版本
 ```bash
 alembic downgrade -1
+```
+
+---
+
+## 新增迁移说明（pgn_status）
+
+### 变更内容
+- `chapters` 表新增 `pgn_status` 字段（`String(32)`，可空）。
+- 迁移文件：`db/migrations/versions/20260118_0017_add_pgn_status.py`
+
+### 运行步骤
+```bash
+cd /home/catadragon/Code/catachess/backend/modules/workspace
+export DATABASE_URL="<asyncpg URL>"
+alembic upgrade head
+```
+
+### 验证方式
+```sql
+SELECT pgn_status FROM chapters LIMIT 1;
 ```

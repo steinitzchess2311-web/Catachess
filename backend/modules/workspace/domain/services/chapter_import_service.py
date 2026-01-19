@@ -413,6 +413,7 @@ class ChapterImportService:
                 r2_key=r2_key,
                 pgn_hash=None,
                 pgn_size=None,
+                pgn_status=None,
                 r2_etag=None,
                 last_synced_at=None,
             )
@@ -512,6 +513,7 @@ class ChapterImportService:
                 # Update chapter with R2 metadata
                 chapter.pgn_hash = upload_result.content_hash
                 chapter.pgn_size = upload_result.size
+                chapter.pgn_status = "ready"
                 chapter.r2_etag = upload_result.etag
                 chapter.last_synced_at = datetime.now(timezone.utc)
                 await self.study_repo.update_chapter(chapter)
@@ -532,6 +534,7 @@ class ChapterImportService:
                 )
                 chapter.pgn_hash = upload_result.content_hash
                 chapter.pgn_size = upload_result.size
+                chapter.pgn_status = "ready"
                 chapter.r2_etag = upload_result.etag
                 chapter.last_synced_at = datetime.now(timezone.utc)
                 await self.study_repo.update_chapter(chapter)

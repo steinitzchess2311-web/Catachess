@@ -30,60 +30,43 @@ class EngineSpot:
         )
 
         try:
-            resp = requests.get(
-                f"{self.config.url}/analyze/stream",
-                params={
-                    "fen": fen,
-                    "depth": depth,
-                    "multipv": multipv,
-                },
-                timeout=self.timeout,
-                stream=True,
-            )
-            resp.raise_for_status()
+            if "/engine" in self.config.url:
+                multipv_data = self._post_analyze(
+                    fen=fen,
+                    depth=depth,
+                    multipv=multipv,
+                )
+            else:
+                resp = requests.get(
+                    f"{self.config.url}/analyze/stream",
+                    params={
+                        "fen": fen,
+                        "depth": depth,
+                        "multipv": multipv,
+                    },
+                    timeout=self.timeout,
+                    stream=True,
+                )
+                resp.raise_for_status()
 
-            # Collect streaming response (SSE format)
-            # Parse UCI info lines to extract multipv data
-            multipv_data = {}  # {multipv_num: {score, pv, depth}}
+                # Collect streaming response (SSE format)
+                multipv_data = {}  # {multipv_num: {score, pv}}
 
-            for line in resp.iter_lines():
-                if not line:
-                    continue
+                for line in resp.iter_lines():
+                    if not line:
+                        continue
 
-                decoded_line = line.decode('utf-8') if isinstance(line, bytes) else line
+                    decoded_line = line.decode('utf-8') if isinstance(line, bytes) else line
 
-                # SSE format: lines start with "data: "
-                if decoded_line.startswith('data: '):
-                    content = decoded_line[6:]  # Remove "data: " prefix
+                    # SSE format: lines start with "data: "
+                    if decoded_line.startswith('data: '):
+                        content = decoded_line[6:]  # Remove "data: " prefix
 
-                    # Parse UCI info lines
-                    if content.startswith('info '):
-                        parts = content.split()
-                        if 'multipv' in parts and 'score' in parts and 'pv' in parts:
-                            try:
-                                multipv_idx = parts.index('multipv')
-                                score_idx = parts.index('score')
-                                pv_idx = parts.index('pv')
-
-                                multipv_num = int(parts[multipv_idx + 1])
-                                score_type = parts[score_idx + 1]  # 'cp' or 'mate'
-                                score_value = parts[score_idx + 2]
-                                pv_moves = parts[pv_idx + 1:]
-
-                                # Format score
-                                if score_type == 'mate':
-                                    score = f"mate{score_value}"
-                                else:
-                                    score = int(score_value)
-
-                                # Store the multipv line data
-                                multipv_data[multipv_num] = {
-                                    'multipv': multipv_num,
-                                    'score': score,
-                                    'pv': pv_moves
-                                }
-                            except (ValueError, IndexError):
-                                continue
+                        # Parse UCI info lines
+                        if content.startswith('info '):
+                            parsed = self._parse_uci_info(content)
+                            if parsed:
+                                multipv_data[parsed["multipv"]] = parsed
 
             # Build result from collected multipv data
             if multipv_data:
@@ -130,3 +113,54 @@ class EngineSpot:
         except Exception as e:
             logger.warning(f"[{self.config.id}] Health check: FAILED ({e})")
             return False
+
+    def _post_analyze(self, fen: str, depth: int, multipv: int) -> dict[int, dict]:
+        resp = requests.post(
+            f"{self.config.url}/analyze",
+            json={
+                "fen": fen,
+                "depth": depth,
+                "multipv": multipv,
+            },
+            timeout=self.timeout,
+        )
+        resp.raise_for_status()
+        payload = resp.json()
+        info_lines = payload.get("info", [])
+        multipv_data: dict[int, dict] = {}
+        for line in info_lines:
+            if not isinstance(line, str):
+                continue
+            if line.startswith("info "):
+                parsed = self._parse_uci_info(line)
+                if parsed:
+                    multipv_data[parsed["multipv"]] = parsed
+        return multipv_data
+
+    def _parse_uci_info(self, content: str) -> dict | None:
+        parts = content.split()
+        if 'multipv' not in parts or 'score' not in parts or 'pv' not in parts:
+            return None
+
+        try:
+            multipv_idx = parts.index('multipv')
+            score_idx = parts.index('score')
+            pv_idx = parts.index('pv')
+
+            multipv_num = int(parts[multipv_idx + 1])
+            score_type = parts[score_idx + 1]  # 'cp' or 'mate'
+            score_value = parts[score_idx + 2]
+            pv_moves = parts[pv_idx + 1:]
+
+            if score_type == 'mate':
+                score = f"mate{score_value}"
+            else:
+                score = int(score_value)
+
+            return {
+                'multipv': multipv_num,
+                'score': score,
+                'pv': pv_moves
+            }
+        except (ValueError, IndexError):
+            return None

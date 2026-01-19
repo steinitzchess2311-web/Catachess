@@ -15,7 +15,7 @@ class HTTPStockfishClient:
     # Per-request timeout: 10s allows ~500ms average with headroom for retries
     DEFAULT_TIMEOUT = 10
 
-    def __init__(self, base_url: str = "https://sf.cloudflare.com", timeout: int = None):
+    def __init__(self, base_url: str = "https://sf.catachess.com/engine", timeout: int = None):
         """
         Initialize HTTP client.
 

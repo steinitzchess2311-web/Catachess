@@ -12,7 +12,7 @@ from .engine.http_client import HTTPStockfishClient
 from .config.engine import DEFAULT_DEPTH, DEFAULT_MULTIPV, DEFAULT_STOCKFISH_PATH
 
 # Default HTTP engine URL (Cloudflare LB)
-DEFAULT_ENGINE_URL = os.environ.get("ENGINE_URL", "https://sf.cloudflare.com")
+DEFAULT_ENGINE_URL = os.environ.get("ENGINE_URL", "https://sf.catachess.com/engine")
 
 # Import shared modules
 from .detectors.helpers.metrics import evaluation_and_metrics, metrics_delta

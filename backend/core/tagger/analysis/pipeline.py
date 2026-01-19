@@ -32,7 +32,7 @@ from ..pipeline.predictor.node_predictor import NodePredictor, NodeTagResult
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_ENGINE_URL = os.environ.get("ENGINE_URL", "https://sf.cloudflare.com")
+DEFAULT_ENGINE_URL = os.environ.get("ENGINE_URL", "https://sf.catachess.com/engine")
 
 
 class AnalysisPipeline:

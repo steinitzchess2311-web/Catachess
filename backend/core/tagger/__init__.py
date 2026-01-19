@@ -20,7 +20,7 @@ Example usage (HTTP remote engine - default):
         played_move_uci="e7e5",
         depth=14,
         multipv=6,
-        engine_mode="http",  # Uses https://sf.cloudflare.com by default
+        engine_mode="http",  # Uses https://sf.catachess.com/engine by default
     )
 
 Example usage (local Stockfish):

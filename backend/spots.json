@@ -2,7 +2,7 @@
   "spots": [
     {
       "id": "cloudflare-lb",
-      "url": "https://sf.cloudflare.com",
+      "url": "https://sf.catachess.com/engine",
       "region": "cloudflare",
       "priority": 100,
       "enabled": true

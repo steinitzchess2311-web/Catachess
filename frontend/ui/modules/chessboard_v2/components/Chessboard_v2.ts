@@ -255,21 +255,21 @@ export class ChessboardV2 {
     this.options.onSquareClick(square);
     const piece = this.state.position.squares[square.rank][square.file];
 
-    // Case 1: Select a piece
+    // Case 1: Select a piece (or re-select/change selection)
     if (piece && piece.color === this.state.position.turn) {
       this.state.selectedSquare = square;
       this.state.legalMoves = [];
-      this.updateSelectionUI(); // Immediate feedback
+      this.updateSelectionUI(); // Immediate feedback for selection
       this.options.onPieceSelect(square, piece);
 
-      // Fetch legal moves async
-      this.boardElement.classList.add('loading');
-      try {
-        this.state.legalMoves = await chessAPI.getLegalMoves(this.state.position, square);
-      } finally {
-        this.boardElement.classList.remove('loading');
-        this.updateSelectionUI();
-      }
+      // Fetch legal moves async for highlighting, but don't block the UI
+      chessAPI.getLegalMoves(this.state.position, square).then(moves => {
+        // Only update highlights if the selection hasn't changed
+        if (this.state.selectedSquare && squaresEqual(this.state.selectedSquare, square)) {
+          this.state.legalMoves = moves;
+          this.updateSelectionUI();
+        }
+      });
       return;
     }
 
@@ -278,19 +278,15 @@ export class ChessboardV2 {
       const fromSquare = this.state.selectedSquare;
       const move: Move = { from: fromSquare, to: square };
       
-      // Check if the target square is a legal move
-      const isLegal = this.state.legalMoves.some(legalMove => squaresEqual(legalMove.to, square));
-
       this.state.selectedSquare = null;
       this.state.legalMoves = [];
       
-      if (isLegal) {
-          const success = await this.makeMove(move);
-          if (success) {
-              this.options.onMove(move);
-          }
+      const success = await this.makeMove(move);
+      if (success) {
+          this.options.onMove(move);
       } else {
-        // If the move is not in the legal list, just deselect
+        // If makeMove fails, the UI is reverted within it.
+        // We just call updateSelectionUI to clear any lingering highlights.
         this.updateSelectionUI();
       }
     }
@@ -337,18 +333,6 @@ export class ChessboardV2 {
     style.textContent = `
       .chessboard-v2 {
         display: grid;
-        grid-template-columns: repeat(8, 1fr);
-        grid-template-rows: repeat(8, 1fr);
-        width: 100%;
-        max-width: 480px;
-        aspect-ratio: 1 / 1;
-        user-select: none;
-        background-color: #b58863;
-        box-sizing: border-box;
-      }
-      .chessboard-v2.loading { cursor: wait; }
-
-      .chessboard-v2 .square {
         position: relative;
         box-sizing: border-box;
       }

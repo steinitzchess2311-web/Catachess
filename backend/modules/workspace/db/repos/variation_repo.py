@@ -2,7 +2,7 @@
 Variation and MoveAnnotation repository for database operations.
 """
 
-from typing import Sequence
+from typing import List, Sequence
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,6 +33,11 @@ class VariationRepository:
         self.session.add(variation)
         await self.session.flush()
         return variation
+
+    async def create_variations_bulk(self, variations: List[Variation]) -> None:
+        """Bulk create new variations."""
+        self.session.add_all(variations)
+        await self.session.flush()
 
     async def get_variation_by_id(self, variation_id: str) -> Variation | None:
         """Get variation by ID."""
@@ -135,6 +140,11 @@ class VariationRepository:
         self.session.add(annotation)
         await self.session.flush()
         return annotation
+
+    async def create_annotations_bulk(self, annotations: List[MoveAnnotation]) -> None:
+        """Bulk create new move annotations."""
+        self.session.add_all(annotations)
+        await self.session.flush()
 
     async def get_annotation_by_id(
         self, annotation_id: str

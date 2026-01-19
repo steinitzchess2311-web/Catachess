@@ -4,9 +4,11 @@ Chapter import service.
 Handles PGN import, chapter detection, auto-splitting, and R2 storage.
 """
 
+import asyncio
 import logging
 from datetime import datetime, timezone
 from ulid import ULID
+from fastapi import BackgroundTasks
 
 from modules.workspace.db.repos.node_repo import NodeRepository
 from modules.workspace.db.repos.study_repo import StudyRepository
@@ -26,15 +28,15 @@ from modules.workspace.pgn.parser.normalize import normalize_pgn
 from modules.workspace.storage.integrity import calculate_sha256, calculate_size
 from modules.workspace.storage.keys import R2Keys
 from modules.workspace.storage.r2_client import R2Client
+from modules.workspace.db.session import get_db_config
 
 # New v2 imports
 from backend.core.real_pgn.parser import parse_pgn
 from backend.core.real_pgn.builder import build_pgn
 from backend.core.real_pgn.fen import build_fen_index
 from modules.workspace.pgn_v2.adapters import tree_to_db_changes
-from modules.workspace.pgn_v2.repo import PgnV2Repo, validate_chapter_r2_key, backfill_chapter_r2_key # New Import
-from backend.core.tagger.analysis.pipeline import AnalysisPipeline # Import AnalysisPipeline
-from modules.workspace.storage.r2_client import create_r2_client_from_env # Import create_r2_client_from_env
+from modules.workspace.pgn_v2.repo import PgnV2Repo
+from backend.core.tagger.analysis.pipeline import AnalysisPipeline
 
 logger = logging.getLogger(__name__)
 
@@ -98,29 +100,10 @@ class ChapterImportService:
         )
 
     async def import_pgn(
-        self, command: ImportPGNCommand, actor_id: str
+        self, command: ImportPGNCommand, actor_id: str, background_tasks: BackgroundTasks
     ) -> ImportResult:
         """
         Import PGN content, creating studies and chapters.
-
-        Workflow:
-        1. Normalize and parse PGN
-        2. Detect chapters and determine if split needed
-        3. If <= 64: Create single study
-        4. If > 64 and auto_split: Create folder + multiple studies
-        5. Upload chapters to R2
-        6. Create chapter records in DB
-        7. Publish events
-
-        Args:
-            command: Import command
-            actor_id: User performing import
-
-        Returns:
-            ImportResult with created studies
-
-        Raises:
-            ChapterImportError: If import fails
         """
         # Step 1: Normalize PGN
         normalized = normalize_pgn(command.pgn_content)
@@ -136,7 +119,7 @@ class ChapterImportService:
         if detection.is_single_study:
             # Single study workflow
             return await self._import_single_study(
-                command, all_games, actor_id
+                command, all_games, actor_id, background_tasks
             )
         else:
             # Multi-study workflow (split)
@@ -147,17 +130,14 @@ class ChapterImportService:
                 )
 
             return await self._import_multi_study(
-                command, all_games, detection, actor_id
+                command, all_games, detection, actor_id, background_tasks
             )
 
     async def import_pgn_into_study(
-        self, study_id: str, pgn_content: str, actor_id: str
+        self, study_id: str, pgn_content: str, actor_id: str, background_tasks: BackgroundTasks
     ) -> ImportResult:
         """
         Import PGN content into an existing study as new chapters.
-
-        Returns:
-            ImportResult with created studies.
         """
         node = await self.node_repo.get_by_id(study_id, include_deleted=True)
         if not node or node.node_type != NodeType.STUDY:
@@ -178,7 +158,7 @@ class ChapterImportService:
                 auto_split=True,
                 visibility=node.visibility,
             )
-            return await self._import_multi_study(command, games, detection, actor_id)
+            return await self._import_multi_study(command, games, detection, actor_id, background_tasks)
 
         # Enforce 64 chapter limit for single-study import
         existing = await self.study_repo.get_chapters_for_study(
@@ -191,7 +171,7 @@ class ChapterImportService:
                 f"Import would exceed limit (64)."
             )
 
-        await self._add_chapters_to_study(study_id, games, actor_id)
+        await self._add_chapters_to_study(study_id, games, actor_id, background_tasks)
         return ImportResult(
             total_chapters=detection.total_chapters,
             studies_created=[study_id],
@@ -204,17 +184,10 @@ class ChapterImportService:
         command: ImportPGNCommand,
         games: list[PGNGame],
         actor_id: str,
+        background_tasks: BackgroundTasks,
     ) -> ImportResult:
         """
         Import PGN into single study.
-
-        Args:
-            command: Import command
-            games: Parsed games
-            actor_id: Actor ID
-
-        Returns:
-            ImportResult
         """
         # Create study node
         study_node = await self._create_study_node(
@@ -229,7 +202,7 @@ class ChapterImportService:
         study = await self._create_study_entity(study_node.id)
 
         # Add chapters
-        await self._add_chapters_to_study(study.id, games, actor_id)
+        await self._add_chapters_to_study(study.id, games, actor_id, background_tasks)
 
         # Publish event
         await publish_study_created(
@@ -254,20 +227,10 @@ class ChapterImportService:
         all_games: list[PGNGame],
         detection,
         actor_id: str,
+        background_tasks: BackgroundTasks,
     ) -> ImportResult:
         """
         Import PGN into multiple studies (split workflow).
-
-        Creates a folder containing multiple studies.
-
-        Args:
-            command: Import command
-            all_games: All parsed games
-            detection: Chapter detection result
-            actor_id: Actor ID
-
-        Returns:
-            ImportResult
         """
         # Create folder to hold studies
         folder_node = await self._create_folder_node(
@@ -306,7 +269,7 @@ class ChapterImportService:
             study = await self._create_study_entity(study_node.id)
 
             # Add chapters
-            await self._add_chapters_to_study(study.id, games, actor_id)
+            await self._add_chapters_to_study(study.id, games, actor_id, background_tasks)
 
             # Publish event
             await publish_study_created(
@@ -380,26 +343,14 @@ class ChapterImportService:
         return await self.study_repo.create_study(study)
 
     async def _add_chapters_to_study(
-        self, study_id: str, games: list[PGNGame], actor_id: str
+        self, study_id: str, games: list[PGNGame], actor_id: str, background_tasks: BackgroundTasks
     ) -> None:
         """
         Add chapters to study.
-
-        Parses PGN -> NodeTree, writes to DB variations, uploads to R2.
-
-        Args:
-            study_id: Study ID
-            games: List of games
-            actor_id: Actor ID
+        This is the fast part: only writes to DB. Slow I/O is in background.
         """
         for i, game in enumerate(games):
-            # Generate chapter ID
             chapter_id = str(ULID())
-
-            # Generate R2 key
-            r2_key = R2Keys.chapter_pgn(chapter_id)
-
-            # Create chapter record first
             chapter = ChapterTable(
                 id=chapter_id,
                 study_id=study_id,
@@ -410,31 +361,18 @@ class ChapterImportService:
                 event=self._header_value(game, "Event", "Unknown"),
                 date=self._header_value(game, "Date", "????.??.??"),
                 result=self._header_value(game, "Result", "*"),
-                r2_key=r2_key,
+                r2_key=R2Keys.chapter_pgn(chapter_id),
                 pgn_hash=None,
                 pgn_size=None,
-                pgn_status=None,
+                pgn_status="processing", # Set initial status
                 r2_etag=None,
                 last_synced_at=None,
             )
-
             await self.study_repo.create_chapter(chapter)
 
-            # Validate and backfill r2_key if needed
-            if not validate_chapter_r2_key(chapter):
-                chapter.r2_key = backfill_chapter_r2_key(chapter)
-                await self.study_repo.update_chapter(chapter)
-
-
-            # Parse PGN to NodeTree using v2 parser
             try:
                 tree = parse_pgn(game.raw)
-
-                # Set ChapterId in tree meta for DB operations
                 tree.meta.headers["ChapterId"] = chapter_id
-
-                # Write variations to DB using tree_to_db_changes
-                # Since this is a new chapter, current_variations is empty
                 changes = tree_to_db_changes(
                     tree=tree,
                     current_variations=[],
@@ -443,120 +381,262 @@ class ChapterImportService:
                     MoveAnnotationCls=MoveAnnotation,
                     actor_id=actor_id,
                 )
+                
+                added_variations = changes["added_variations"]
+                added_annotations = changes["added_annotations"]
 
-                # Process added variations (skip virtual_root)
-                inserted_variations = {}
-                deferred_next_ids = {}
-                for var in changes["added_variations"]:
-                    # Fix parent_id for virtual_root (DB uses None)
-                    if var.parent_id == "virtual_root":
-                        var.parent_id = None
-                    # Defer next_id to avoid FK violations during bulk insert
-                    deferred_next_ids[var.id] = var.next_id
-                    var.next_id = None
-                    inserted = await self.variation_repo.create_variation(var)
-                    inserted_variations[inserted.id] = inserted
+                if added_variations:
+                    deferred_next_ids = {}
+                    for var in added_variations:
+                        if var.parent_id == "virtual_root":
+                            var.parent_id = None
+                        deferred_next_ids[var.id] = var.next_id
+                        var.next_id = None
+                    
+                    await self.variation_repo.create_variations_bulk(added_variations)
+                    
+                    # Batch update next_id
+                    # A true bulk update would be better here, but this is an improvement.
+                    for var in added_variations:
+                         if deferred_next_ids.get(var.id):
+                            var.next_id = deferred_next_ids.get(var.id)
+                            await self.variation_repo.update_variation(var)
 
-                # Apply next_id after all variations are inserted
-                for var_id, next_id in deferred_next_ids.items():
-                    if not next_id:
-                        continue
-                    inserted = inserted_variations.get(var_id)
-                    if not inserted:
-                        continue
-                    inserted.next_id = next_id
-                    await self.variation_repo.update_variation(inserted)
+                if added_annotations:
+                    await self.variation_repo.create_annotations_bulk(added_annotations)
 
-                # Process added annotations
-                for anno in changes["added_annotations"]:
-                    await self.variation_repo.create_annotation(anno)
-
-                # Build PGN and FEN index for R2
-                pgn_text = build_pgn(tree)
-                fen_index = build_fen_index(tree)
-
-                # Upload all artifacts to R2
-                upload_result = self.pgn_v2_repo.save_snapshot_pgn(
+                # Dispatch slow I/O tasks to the background
+                background_tasks.add_task(
+                    self._schedule_post_import_processing,
                     chapter_id=chapter_id,
-                    pgn_text=pgn_text,
-                    metadata={
-                        "study_id": study_id,
-                        "chapter_id": chapter_id,
-                        "order": str(i),
-                    },
+                    study_id=study_id,
+                    actor_id=actor_id,
+                    game_raw=game.raw,
+                    order=i,
                 )
-
-                self.pgn_v2_repo.save_tree_json(
-                    chapter_id=chapter_id,
-                    tree=tree,
-                    metadata={"chapter_id": chapter_id},
-                )
-
-                self.pgn_v2_repo.save_fen_index(
-                    chapter_id=chapter_id,
-                    fen_index=fen_index,
-                    metadata={"chapter_id": chapter_id},
-                )
-
-                # Run tagger analysis and save tags to R2
-                try:
-                    await self.analysis_pipeline.run_fen_index_and_save(
-                        fen_index=fen_index,
-                        chapter_id=chapter_id,
-                        tree_data=tree.to_dict(), # Pass tree data for UCI moves
-                        verbose=False, # Suppress verbose output in service
-                    )
-                    logger.info(f"Tagger analysis completed for chapter {chapter_id}")
-                except Exception as tagger_e:
-                    logger.error(f"Tagger analysis failed for chapter {chapter_id}: {tagger_e}")
-
-                # Update chapter with R2 metadata
-                chapter.pgn_hash = upload_result.content_hash
-                chapter.pgn_size = upload_result.size
-                chapter.pgn_status = "ready"
-                chapter.r2_etag = upload_result.etag
-                chapter.last_synced_at = datetime.now(timezone.utc)
-                await self.study_repo.update_chapter(chapter)
-
-                logger.info(f"Imported chapter {chapter_id}: {len(changes['added_variations'])} moves")
-
             except Exception as e:
-                # Fallback: upload raw PGN without parsing to variations
-                logger.warning(f"Failed to parse PGN for chapter {chapter_id}, using fallback: {e}")
-                upload_result = self.r2_client.upload_pgn(
-                    key=r2_key,
-                    content=game.raw,
-                    metadata={
-                        "study_id": study_id,
-                        "chapter_id": chapter_id,
-                        "order": str(i),
-                    },
-                )
-                chapter.pgn_hash = upload_result.content_hash
-                chapter.pgn_size = upload_result.size
-                chapter.pgn_status = "ready"
-                chapter.r2_etag = upload_result.etag
-                chapter.last_synced_at = datetime.now(timezone.utc)
+                logger.error(f"Failed to process chapter {chapter_id} for DB insertion: {e}")
+                chapter.pgn_status = "error"
                 await self.study_repo.update_chapter(chapter)
+                background_tasks.add_task(
+                    self._schedule_post_import_raw,
+                    chapter_id=chapter_id,
+                    study_id=study_id,
+                    actor_id=actor_id,
+                    game_raw=game.raw,
+                    order=i,
+                )
 
-            # Publish event
-            await publish_chapter_imported(
-                self.event_bus,
-                actor_id=actor_id,
-                study_id=study_id,
-                chapter_id=chapter_id,
-                title=chapter.title,
-                order=i,
-                r2_key=r2_key,
-                workspace_id=await self._get_workspace_id_for_study(study_id),
+
+        # Update study chapter count immediately
+        await self.study_repo.update_chapter_count(study_id)
+
+    def _schedule_post_import_processing(
+        self,
+        chapter_id: str,
+        study_id: str,
+        actor_id: str,
+        game_raw: str,
+        order: int,
+    ) -> None:
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(
+                self._post_import_processing(
+                    chapter_id=chapter_id,
+                    study_id=study_id,
+                    actor_id=actor_id,
+                    game_raw=game_raw,
+                    order=order,
+                )
+            )
+        except RuntimeError:
+            asyncio.run(
+                self._post_import_processing(
+                    chapter_id=chapter_id,
+                    study_id=study_id,
+                    actor_id=actor_id,
+                    game_raw=game_raw,
+                    order=order,
+                )
             )
 
-        # Update study chapter count
-        await self.study_repo.update_chapter_count(study_id)
+    def _schedule_post_import_raw(
+        self,
+        chapter_id: str,
+        study_id: str,
+        actor_id: str,
+        game_raw: str,
+        order: int,
+    ) -> None:
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(
+                self._post_import_raw_pgn(
+                    chapter_id=chapter_id,
+                    study_id=study_id,
+                    actor_id=actor_id,
+                    game_raw=game_raw,
+                    order=order,
+                )
+            )
+        except RuntimeError:
+            asyncio.run(
+                self._post_import_raw_pgn(
+                    chapter_id=chapter_id,
+                    study_id=study_id,
+                    actor_id=actor_id,
+                    game_raw=game_raw,
+                    order=order,
+                )
+            )
+
+    async def _post_import_processing(self, chapter_id: str, study_id: str, actor_id: str, game_raw: str, order: int):
+        """
+        Handles slow I/O operations for a chapter import in the background.
+        """
+        try:
+            logger.info(f"Starting post-import processing for chapter {chapter_id}")
+            try:
+                tree = parse_pgn(game_raw)
+                tree.meta.headers["ChapterId"] = chapter_id
+            except Exception as parse_exc:
+                logger.error(f"Post-import parse failed for chapter {chapter_id}: {parse_exc}")
+                await self._post_import_raw_pgn(
+                    chapter_id=chapter_id,
+                    study_id=study_id,
+                    actor_id=actor_id,
+                    game_raw=game_raw,
+                    order=order,
+                )
+                return
+
+            # Build PGN and FEN index for R2
+            pgn_text = build_pgn(tree)
+            fen_index = build_fen_index(tree)
+
+            # Upload all artifacts to R2
+            upload_result = self.pgn_v2_repo.save_snapshot_pgn(
+                chapter_id=chapter_id,
+                pgn_text=pgn_text,
+                metadata={
+                    "study_id": study_id,
+                    "chapter_id": chapter_id,
+                    "order": str(order),
+                },
+            )
+
+            self.pgn_v2_repo.save_tree_json(
+                chapter_id=chapter_id,
+                tree=tree,
+                metadata={"chapter_id": chapter_id},
+            )
+
+            self.pgn_v2_repo.save_fen_index(
+                chapter_id=chapter_id,
+                fen_index=fen_index,
+                metadata={"chapter_id": chapter_id},
+            )
+
+            # Run tagger analysis and save tags to R2
+            try:
+                tree_data = self.pgn_v2_repo._tree_to_dict(tree)
+                await self.analysis_pipeline.run_fen_index_and_save(
+                    fen_index=fen_index,
+                    chapter_id=chapter_id,
+                    tree_data=tree_data,
+                    verbose=False,
+                )
+                logger.info(f"Tagger analysis completed for chapter {chapter_id}")
+            except Exception as tagger_e:
+                logger.error(f"Tagger analysis failed for chapter {chapter_id}: {tagger_e}")
+
+            # Final chapter update with R2 metadata
+            config = get_db_config()
+            async with config.async_session_maker() as session:
+                study_repo = StudyRepository(session)
+                node_repo = NodeRepository(session)
+                event_bus = EventBus(session)
+                chapter = await study_repo.get_chapter_by_id(chapter_id)
+                if chapter:
+                    chapter.pgn_hash = upload_result.content_hash
+                    chapter.pgn_size = upload_result.size
+                    chapter.pgn_status = "ready"
+                    chapter.r2_etag = upload_result.etag
+                    chapter.last_synced_at = datetime.now(timezone.utc)
+                    await study_repo.update_chapter(chapter)
+                    await session.commit()
+                    logger.info(f"Finished post-import processing for chapter {chapter_id}")
+
+                    # Publish event now that chapter is fully processed
+                    await publish_chapter_imported(
+                        event_bus,
+                        actor_id=actor_id,
+                        study_id=study_id,
+                        chapter_id=chapter_id,
+                        title=chapter.title,
+                        order=order,
+                        r2_key=chapter.r2_key,
+                        workspace_id=await self._get_workspace_id_for_study_with_repo(node_repo, study_id),
+                    )
+
+        except Exception as e:
+            logger.error(f"Post-import processing failed for chapter {chapter_id}: {e}", exc_info=True)
+            config = get_db_config()
+            async with config.async_session_maker() as session:
+                study_repo = StudyRepository(session)
+                chapter = await study_repo.get_chapter_by_id(chapter_id)
+                if chapter:
+                    chapter.pgn_status = "error"
+                    await study_repo.update_chapter(chapter)
+                    await session.commit()
+
+    async def _post_import_raw_pgn(
+        self,
+        chapter_id: str,
+        study_id: str,
+        actor_id: str,
+        game_raw: str,
+        order: int,
+    ) -> None:
+        logger.info(f"Uploading raw PGN for chapter {chapter_id} after parse failure.")
+        try:
+            upload_result = self.r2_client.upload_pgn(
+                key=R2Keys.chapter_pgn(chapter_id),
+                content=game_raw,
+                metadata={
+                    "study_id": study_id,
+                    "chapter_id": chapter_id,
+                    "order": str(order),
+                },
+            )
+            config = get_db_config()
+            async with config.async_session_maker() as session:
+                study_repo = StudyRepository(session)
+                chapter = await study_repo.get_chapter_by_id(chapter_id)
+                if chapter:
+                    chapter.pgn_hash = upload_result.content_hash
+                    chapter.pgn_size = upload_result.size
+                    chapter.pgn_status = "error"
+                    chapter.r2_etag = upload_result.etag
+                    chapter.last_synced_at = datetime.now(timezone.utc)
+                    await study_repo.update_chapter(chapter)
+                    await session.commit()
+        except Exception as raw_exc:
+            logger.error(f"Raw PGN upload failed for chapter {chapter_id}: {raw_exc}")
 
     async def _get_workspace_id_for_study(self, study_id: str) -> str | None:
         """Get workspace ID for a study."""
         node = await self.node_repo.get_by_id(study_id)
+        if node:
+            return self._get_workspace_id(node.path)
+        return None
+
+    async def _get_workspace_id_for_study_with_repo(
+        self, node_repo: NodeRepository, study_id: str
+    ) -> str | None:
+        """Get workspace ID for a study using a specific repository."""
+        node = await node_repo.get_by_id(study_id)
         if node:
             return self._get_workspace_id(node.path)
         return None

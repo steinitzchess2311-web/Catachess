@@ -4,7 +4,7 @@ Study endpoints.
 
 import logging
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.workspace.api.deps import (
@@ -223,9 +223,10 @@ async def create_study(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.post("/import-pgn", response_model=ImportResultResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/import-pgn", response_model=ImportResultResponse, status_code=status.HTTP_202_ACCEPTED)
 async def import_pgn(
     data: StudyImportPGN,
+    background_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user_id),
     import_service: ChapterImportService = Depends(get_chapter_import_service),
 ) -> ImportResultResponse:
@@ -245,7 +246,7 @@ async def import_pgn(
             visibility=data.visibility,
         )
 
-        result = await import_service.import_pgn(command, actor_id=user_id)
+        result = await import_service.import_pgn(command, actor_id=user_id, background_tasks=background_tasks)
 
         return ImportResultResponse(
             total_chapters=result.total_chapters,
@@ -266,11 +267,12 @@ async def import_pgn(
 @router.post(
     "/{study_id}/chapters/import-pgn",
     response_model=ImportResultResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=status.HTTP_202_ACCEPTED,
 )
 async def import_pgn_into_study(
     study_id: str,
     data: ChapterImportPGN,
+    background_tasks: BackgroundTasks,
     user_id: str = Depends(get_current_user_id),
     node_service: NodeService = Depends(get_node_service),
     study_repo: StudyRepository = Depends(get_study_repository),
@@ -293,7 +295,7 @@ async def import_pgn_into_study(
         )
 
         result = await import_service.import_pgn_into_study(
-            study_id, data.pgn_content, actor_id=user_id
+            study_id, data.pgn_content, actor_id=user_id, background_tasks=background_tasks
         )
         return ImportResultResponse(
             total_chapters=result.total_chapters,

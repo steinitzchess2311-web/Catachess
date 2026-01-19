@@ -97,10 +97,13 @@ class FenIndexProcessor:
             # Skip virtual root
             if node_id == "virtual_root" or node_data.get("san") == "<root>":
                 continue
+            parent_id = node_data.get("parent_id")
+            parent_fen = nodes.get(parent_id, {}).get("fen") if parent_id else None
+            fen_before_move = parent_fen or node_data.get("fen", "")
 
             entries.append(NodeFenEntry(
                 node_id=node_id,
-                fen=node_data.get("fen", ""),
+                fen=fen_before_move,
                 uci=node_data.get("uci"),
                 san=node_data.get("san"),
             ))

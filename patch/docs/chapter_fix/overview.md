@@ -21,6 +21,16 @@ Strategy
 - Use returned chapterId to load tree.json via patch API.
 - If tree.json missing, create empty tree.json via patch API.
 
+Chapter selection rules
+- Sort by `order` asc.
+- If `order` missing, fall back to `created_at` asc.
+- If both missing, fall back to `id` asc.
+- If chapters list missing or invalid, surface LOAD_ERROR (no silent fallback).
+
+API response expectations
+- Primary: `response.chapters`
+- Fallbacks: `response.study.chapters`, `response.data.chapters`
+
 Success Criteria
 - Patch entry always has a valid chapterId.
 - No duplicate default chapters from concurrent entry.

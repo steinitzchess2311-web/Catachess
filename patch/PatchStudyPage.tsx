@@ -22,8 +22,53 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
 
     const resolveChapterAndTree = async () => {
       try {
+        const extractChapters = (response: any) =>
+          response?.chapters || response?.study?.chapters || response?.data?.chapters;
+
+        const getSortValue = (ch: any, key: string) => {
+          const value = ch?.[key];
+          if (typeof value === 'number') return value;
+          if (typeof value === 'string') {
+            const parsed = Date.parse(value);
+            if (!Number.isNaN(parsed)) return parsed;
+            return value;
+          }
+          return null;
+        };
+
+        const sortChapters = (items: any[]) => {
+          return [...items].sort((a, b) => {
+            const orderA = getSortValue(a, 'order');
+            const orderB = getSortValue(b, 'order');
+            if (orderA !== null || orderB !== null) {
+              if (orderA === null) return 1;
+              if (orderB === null) return -1;
+              return orderA < orderB ? -1 : orderA > orderB ? 1 : 0;
+            }
+
+            console.warn('[patch] Chapter order missing, falling back to created_at/id.');
+            const createdA = getSortValue(a, 'created_at');
+            const createdB = getSortValue(b, 'created_at');
+            if (createdA !== null || createdB !== null) {
+              if (createdA === null) return 1;
+              if (createdB === null) return -1;
+              return createdA < createdB ? -1 : createdA > createdB ? 1 : 0;
+            }
+
+            const idA = `${a?.id ?? ''}`;
+            const idB = `${b?.id ?? ''}`;
+            return idA.localeCompare(idB);
+          });
+        };
+
         const studyResponse = await api.get(`/api/v1/workspace/studies/${id}`);
-        let chapters = studyResponse?.chapters || [];
+        const responseChapters = extractChapters(studyResponse);
+        if (!Array.isArray(responseChapters)) {
+          throw new Error('API response unexpected: chapters list missing');
+        }
+
+        let chapters = sortChapters(responseChapters);
+
         let chapter = chapters[0];
 
         if (!chapter) {
@@ -33,7 +78,13 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
             });
           } catch (createError) {
             const retryResponse = await api.get(`/api/v1/workspace/studies/${id}`);
-            chapters = retryResponse?.chapters || [];
+            const retryChapters = extractChapters(retryResponse);
+
+            if (!Array.isArray(retryChapters)) {
+              throw createError;
+            }
+
+            chapters = sortChapters(retryChapters);
             chapter = chapters[0];
             if (!chapter) {
               throw createError;

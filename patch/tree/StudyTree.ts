@@ -160,7 +160,7 @@ export class StudyTree {
   addMove(parentId: string, san: string): StudyNode {
     const parent = this.data.nodes[parentId];
     if (!parent) {
-      throw new Error(\`Parent node \${parentId} not found\`);
+      throw new Error(`Parent node ${parentId} not found`);
     }
 
     // Check for existing move (transposition/duplicate)

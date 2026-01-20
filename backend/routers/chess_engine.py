@@ -1,14 +1,13 @@
 """
 Chess Engine Router
 
-Exposes Stockfish engine analysis to frontend.
-Uses the multi-spot engine orchestrator with automatic failover.
+Exposes Analysis (Cloud Eval) to frontend.
+Stage 11: Switched to Lichess Cloud Eval API.
 """
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel
 
-from core.chess_engine import get_engine
-from core.chess_engine.schemas import EngineResult
+from core.chess_engine.client import EngineClient
 from core.errors import ChessEngineError, ChessEngineTimeoutError
 from core.log.log_chess_engine import logger
 
@@ -29,30 +28,26 @@ class AnalyzeRequest(BaseModel):
 class AnalyzeResponse(BaseModel):
     """Analysis result from engine"""
     lines: list[dict]
-    spot_id: str | None = None
+    source: str = "cloud-eval"
 
 
-# Initialize engine client (automatically selects single-spot or multi-spot)
-engine = get_engine()
+# Initialize engine client
+# Note: We replaced the complex get_engine() factory with direct EngineClient usage
+engine = EngineClient()
 
 
 @router.post("/analyze", response_model=AnalyzeResponse)
 async def analyze_position(request: AnalyzeRequest):
     """
-    Analyze a chess position using Stockfish engine
-
-    The engine client automatically handles:
-    - Multi-spot routing with failover
-    - Priority-based spot selection
-    - Timeout and retry logic
+    Analyze a chess position using Lichess Cloud Eval.
 
     Returns:
-        AnalyzeResponse with multiple principal variations
+        AnalyzeResponse with principal variations
     """
     try:
         logger.info(f"Analyzing position: depth={request.depth}, multipv={request.multipv}")
 
-        result: EngineResult = engine.analyze(
+        result = engine.analyze(
             fen=request.fen,
             depth=request.depth,
             multipv=request.multipv,
@@ -69,8 +64,7 @@ async def analyze_position(request: AnalyzeRequest):
         ]
 
         logger.info(f"Analysis complete: {len(lines)} lines")
-        spot_id = getattr(engine, "last_spot_id", None)
-        return AnalyzeResponse(lines=lines, spot_id=spot_id)
+        return AnalyzeResponse(lines=lines)
 
     except ChessEngineTimeoutError as e:
         logger.error(f"Engine timeout: {e}")
@@ -82,7 +76,7 @@ async def analyze_position(request: AnalyzeRequest):
         logger.error(f"Engine error: {e}")
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Chess engine unavailable: {str(e)}"
+            detail=f"Analysis unavailable: {str(e)}"
         )
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
@@ -95,43 +89,9 @@ async def analyze_position(request: AnalyzeRequest):
 @router.get("/health")
 async def engine_health():
     """
-    Check engine health and get spot metrics
-
-    Returns information about all configured engine spots
+    Check engine health.
     """
-    try:
-        # Get spot metrics if using multi-spot orchestrator
-        if hasattr(engine, 'get_spot_metrics'):
-            metrics = engine.get_spot_metrics()
-            spots_info = [
-                {
-                    "id": config.id,
-                    "url": config.url,
-                    "region": config.region,
-                    "priority": config.priority,
-                    "enabled": config.enabled,
-                    "status": metrics.status.value,
-                    "avg_latency_ms": metrics.avg_latency_ms,
-                    "success_rate": metrics.success_rate,
-                    "total_requests": metrics.total_requests,
-                    "failure_count": metrics.failure_count,
-                }
-                for config, metrics in metrics
-            ]
-            return {
-                "status": "healthy",
-                "engine_type": "multi-spot",
-                "spots": spots_info,
-            }
-        else:
-            # Single-spot mode
-            return {
-                "status": "healthy",
-                "engine_type": "single-spot",
-            }
-    except Exception as e:
-        logger.error(f"Health check failed: {e}")
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Engine health check failed: {str(e)}"
-        )
+    return {
+        "status": "healthy",
+        "service": "lichess-cloud-eval",
+    }

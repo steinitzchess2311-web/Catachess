@@ -140,8 +140,14 @@ class StudyService:
             # Create a new PgnV2Repo instance as it's not passed directly to _run_tagger_analysis
             pgn_v2_repo = PgnV2Repo(create_r2_client_from_env())
             
-            fen_index = pgn_v2_repo.load_fen_index(chapter_id)
-            tree_data = pgn_v2_repo.load_tree_json(chapter_id) # Need tree for UCI moves
+            try:
+                fen_index = pgn_v2_repo.load_fen_index(chapter_id)
+            except Exception as exc:
+                self._logger.warning("FEN index missing for chapter %s: %s", chapter_id, exc)
+                return
+            tree_data = pgn_v2_repo.load_tree_json(chapter_id)
+            if not _tree_data_has_fen(tree_data):
+                tree_data = None
 
             await self.analysis_pipeline.run_fen_index_and_save(
                 fen_index=fen_index,
@@ -544,3 +550,11 @@ class StudyService:
             logger.warning(
                 f"Failed to create auto-snapshot for study {study_id}: {e}"
             )
+
+
+def _tree_data_has_fen(tree_data: dict) -> bool:
+    nodes = tree_data.get("nodes", {})
+    for node in nodes.values():
+        if isinstance(node, dict) and "fen" in node:
+            return True
+    return False

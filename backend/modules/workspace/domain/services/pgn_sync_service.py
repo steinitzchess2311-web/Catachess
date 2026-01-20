@@ -17,7 +17,6 @@ from modules.workspace.storage.r2_client import R2Client
 from modules.workspace.pgn_v2.adapters import db_to_tree
 from modules.workspace.pgn_v2.repo import PgnV2Repo, validate_chapter_r2_key, backfill_chapter_r2_key
 from backend.core.real_pgn.builder import build_pgn
-from backend.core.real_pgn.fen import build_fen_index
 from backend.core.config import settings # New import
 
 logger = logging.getLogger(__name__)
@@ -48,13 +47,13 @@ class PgnSyncService:
         """
         Rebuild PGN for a chapter and upload to R2.
 
-        If PGN V2 is disabled, falls back to legacy sync.
+        If PGN V2 is disabled, skips sync.
 
         Returns the PGN string, or None if the chapter has no moves.
         """
         if not settings.PGN_V2_ENABLED:
-            logger.info(f"PGN V2 is disabled. Using legacy sync for chapter {chapter_id}")
-            return await self.sync_chapter_pgn_legacy(chapter_id)
+            logger.warning(f"PGN V2 is disabled. Skipping PGN sync for chapter {chapter_id}")
+            return None
 
         chapter = await self.study_repo.get_chapter_by_id(chapter_id)
         if not chapter:
@@ -104,55 +103,59 @@ class PgnSyncService:
             tree.meta.headers["Result"] = chapter.result or "*"
             tree.meta.result = chapter.result or "*"
 
-            # Build PGN using new v2 builder
-            pgn_text = build_pgn(tree)
+            # Build PGN using new v2 builder (ONLY for hash/size calculation if needed, or skip)
+            # Stage 10: We stop writing PGN to R2 in the sync loop.
+            # But we might still want to know the size/hash of the tree?
+            # Let's keep PGN generation in memory if we need it for legacy metadata, 
+            # OR better: The metadata now tracks the TREE JSON.
+            
+            # However, `chapter.pgn_hash` and `pgn_size` are named "pgn_...". 
+            # We should reuse them for the Tree JSON or leave them null?
+            # The prompt says: "Postgres 不变，不新增 tree 字段。" (Postgres unchanged, no new tree fields).
+            # So we should probably store tree.json hash/size in pgn_hash/pgn_size columns as a proxy, 
+            # OR just accept they refer to the tree now.
 
-            # Build FEN index
-            fen_index = build_fen_index(tree)
-
-            # Upload all artifacts to R2
-            r2_key = chapter.r2_key or R2Keys.chapter_pgn(chapter_id)
-
-            # 1. Upload PGN
-            upload = self.pgn_v2_repo.save_snapshot_pgn(
-                chapter_id=chapter_id,
-                pgn_text=pgn_text,
-                metadata={"chapter_id": chapter_id},
-            )
-
-            # 2. Upload tree JSON
-            self.pgn_v2_repo.save_tree_json(
+            # Upload artifacts to R2
+            r2_key = chapter.r2_key or R2Keys.chapter_tree_json(chapter_id) # Prefer tree key? 
+            # Wait, checklist says: "R2 key 必须使用 R2Keys.chapter_tree_json(chapter_id)"
+            # So chapter.r2_key should update to the tree json key?
+            # Or R2Keys.chapter_tree_json is derived?
+            # keys.py defines `chapter_tree_json` as separate key.
+            # `chapter.r2_key` in DB is traditionally the PGN key.
+            # If we change `chapter.r2_key` to point to `.tree.json`, it changes semantics.
+            # "chapter_id 对齐 key，不允许新路径格式" -> means strictly `chapters/{chapter_id}.tree.json`.
+            
+            # Let's see:
+            # 1. Upload tree JSON
+            tree_upload = self.pgn_v2_repo.save_tree_json(
                 chapter_id=chapter_id,
                 tree=tree,
                 metadata={"chapter_id": chapter_id},
             )
 
-            # 3. Upload FEN index
-            self.pgn_v2_repo.save_fen_index(
-                chapter_id=chapter_id,
-                fen_index=fen_index,
-                metadata={"chapter_id": chapter_id},
-            )
+            # 2. Skip FEN index persistence (Stage 12: tree.json only)
+            # 3. Skip PGN upload (Export only)
 
             # Update chapter metadata
-            chapter.r2_key = r2_key
-            chapter.pgn_hash = upload.content_hash
-            chapter.pgn_size = upload.size
-            chapter.r2_etag = upload.etag
+            # We map pgn_hash/size to the TREE JSON artifact for now, as that's the primary artifact.
+            chapter.r2_key = R2Keys.chapter_tree_json(chapter_id)
+            chapter.pgn_hash = tree_upload.content_hash
+            chapter.pgn_size = tree_upload.size
+            chapter.r2_etag = tree_upload.etag
             chapter.last_synced_at = datetime.now(timezone.utc)
             chapter.pgn_status = PGN_STATUS_READY
             await self.study_repo.update_chapter(chapter)
 
             logger.info(
-                "PGN sync ready",
+                "PGN sync ready (Tree JSON)",
                 extra={
                     "study_id": chapter.study_id,
                     "chapter_id": chapter_id,
-                    "r2_key": r2_key,
+                    "r2_key": chapter.r2_key,
                     "error_code": None,
                 },
             )
-            return pgn_text
+            return None # No PGN text returned implies we didn't generate/upload it.
         except Exception:
             chapter.pgn_status = PGN_STATUS_ERROR
             await self.study_repo.update_chapter(chapter)

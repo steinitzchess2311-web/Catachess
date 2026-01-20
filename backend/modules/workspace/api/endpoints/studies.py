@@ -2,6 +2,7 @@
 Study endpoints.
 """
 
+import json
 import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Response, status
@@ -85,6 +86,8 @@ from modules.workspace.domain.services.variation_service import (
 from modules.workspace.events.bus import EventBus, publish_chapter_created
 from modules.workspace.storage.keys import R2Keys
 from modules.workspace.storage.r2_client import R2Client, create_r2_client_from_env
+from backend.core.real_pgn.parser import parse_pgn
+from patch.backend.study.converter import convert_nodetree_to_dto
 from modules.workspace.pgn.serializer.from_variations import build_mainline_moves
 from ulid import ULID
 from datetime import datetime, timezone
@@ -96,7 +99,10 @@ from backend.core.real_pgn.show import build_show
 from backend.core.real_pgn.fen import apply_move
 from backend.core.config import settings # New import
 
+from patch.backend.study.api import router as study_patch_router
+
 router = APIRouter(prefix="/studies", tags=["studies"])
+router.include_router(study_patch_router)
 logger = logging.getLogger(__name__)
 
 
@@ -439,23 +445,29 @@ async def create_chapter(
         order = len(existing)
 
         chapter_id = str(ULID())
-        r2_key = R2Keys.chapter_pgn(chapter_id)
-        pgn_content = (
-            f"[Event \"{data.title}\"]\n"
-            "[Site \"?\"]\n"
-            "[Date \"????.??.??\"]\n"
-            "[Round \"?\"]\n"
-            "[White \"?\"]\n"
-            "[Black \"?\"]\n"
-            "[Result \"*\"]\n"
-            "\n"
-            "*\n"
-        )
+        r2_key = R2Keys.chapter_tree_json(chapter_id)
+        tree_content = {
+            "version": "v1",
+            "rootId": "root",
+            "nodes": {
+                "root": {
+                    "id": "root",
+                    "parentId": None,
+                    "san": "",
+                    "children": [],
+                    "comment": None,
+                    "nags": [],
+                },
+            },
+            "meta": {
+                "result": "*",
+            },
+        }
 
         r2_client = create_r2_client_from_env()
-        upload_result = r2_client.upload_pgn(
+        upload_result = r2_client.upload_json(
             key=r2_key,
-            content=pgn_content,
+            content=json.dumps(tree_content),
             metadata={
                 "study_id": study_id,
                 "chapter_id": chapter_id,
@@ -756,22 +768,55 @@ async def get_chapter_pgn(
                 detail=f"Chapter {chapter_id} not found in study {study_id}",
             )
 
-        # Fallback key logic from plan
-        r2_key = chapter.r2_key or R2Keys.chapter_pgn(chapter_id)
+        tree_key = R2Keys.chapter_tree_json(chapter_id)
+        r2_key = chapter.r2_key or tree_key
 
         if not r2_key:
-             raise HTTPException(
+            raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"PGN key could not be determined for chapter {chapter_id}",
             )
 
+        pgn_text = ""
         try:
-            # download_pgn is not async, so we don't await it
-            pgn_text = r2_client.download_pgn(r2_key)
-        except Exception: # Assuming a client error if download fails
-             raise HTTPException(
+            # Stage 10+: Tree JSON is the canonical storage.
+            if r2_key.endswith(".pgn"):
+                # Lazy migrate legacy PGN -> tree.json
+                pgn_text = r2_client.download_pgn(r2_key)
+                node_tree = parse_pgn(pgn_text)
+                tree_dto = convert_nodetree_to_dto(node_tree)
+                upload = r2_client.upload_json(
+                    key=tree_key,
+                    content=tree_dto.model_dump_json(),
+                    metadata={"chapter_id": chapter_id},
+                )
+                chapter.r2_key = tree_key
+                chapter.pgn_hash = upload.content_hash
+                chapter.pgn_size = upload.size
+                chapter.r2_etag = upload.etag
+                chapter.last_synced_at = datetime.now(timezone.utc)
+                await study_repo.update_chapter(chapter)
+                r2_key = tree_key
+
+            if not r2_key.endswith(".json"):
+                raise ValueError(f"Unsupported r2_key format: {r2_key}")
+
+            if not r2_client.exists(r2_key):
+                raise ValueError(f"Tree not found in R2 for chapter {chapter_id}")
+
+            from patch.backend.study.models import StudyTreeDTO
+            from patch.backend.study.api import _tree_to_pgn
+
+            json_content = r2_client.download_json(r2_key)
+            tree_data = json.loads(json_content)
+            tree_dto = StudyTreeDTO(**tree_data)
+            pgn_text = _tree_to_pgn(tree_dto, chapter)
+                
+        except Exception as e:  # Assuming a client error if download fails
+            logger.error(f"Failed to retrieve PGN for chapter {chapter_id}: {e}")
+            raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"PGN content not found in R2 for chapter {chapter_id} with key {r2_key}",
+                detail=f"Content not found or invalid in R2 for chapter {chapter_id} with key {r2_key}",
             )
 
         return ChapterPgnResponse(

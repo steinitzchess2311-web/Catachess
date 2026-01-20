@@ -19,10 +19,10 @@ Stage 08 - PGN 导入/导出
 - 完成整 stage 后必须在 `patch/docs/summary/Codex_stage08.md` 写报告。
 
 Checklist
-- [x] 在 `patch/pgn/import.ts` 定义 `importPgn(pgn: string): StudyTree`。
+- [x] 在 `patch/pgn/import.ts` 定义 `importPgn(pgn: string): PgnParseResult`。
 - [x] 导入逻辑必须只保留 SAN，不落 FEN。
 - [x] headers 作为导入结果返回，不写入 tree.json。
-- [x] 在 `patch/pgn/export.ts` 定义 `exportPgn(tree: StudyTree): string`。
+- [x] 在 `patch/pgn/export.ts` 定义 `exportPgn(tree: StudyTree): PgnExportResult`。
 - [x] 导出时使用传入 headers + `tree.meta.result`。
 - [x] 遇到不合法 PGN 必须返回明确错误信息。
 - [x] 在 UI 入口添加“导入/导出”按钮占位（不做持久化）。

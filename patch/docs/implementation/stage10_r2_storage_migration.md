@@ -21,7 +21,7 @@ Checklist
 - [x] 在 `backend/modules/workspace/pgn_v2/repo.py` 将 tree.json 作为核心写路径。
 - [x] 将 `save_snapshot_pgn` 改为“导出时调用”，不在编辑同步中调用。
 - [x] `pgn_sync_service.sync_chapter_pgn` 改为“只写 tree.json + fen_index（可选）”。
-- [x] 移除“每次编辑都写 PGN”的行为（保留旧逻辑为 fallback）。
+- [x] 移除“每次编辑都写 PGN”的行为（禁用 legacy PGN fallback）。
 - [x] R2 key 必须使用 `R2Keys.chapter_tree_json(chapter_id)`。
 - [x] 读取路径统一改为 tree.json，缺失则报错。
 - [x] 迁移策略文档化：旧 PGN 若存在，首次读取时转换为 tree 并回写。

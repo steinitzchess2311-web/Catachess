@@ -32,7 +32,6 @@ from modules.workspace.db.session import get_db_config
 
 # New v2 imports
 from backend.core.real_pgn.parser import parse_pgn
-from backend.core.real_pgn.builder import build_pgn
 from backend.core.real_pgn.fen import build_fen_index
 from modules.workspace.pgn_v2.adapters import tree_to_db_changes
 from modules.workspace.pgn_v2.repo import PgnV2Repo
@@ -361,7 +360,7 @@ class ChapterImportService:
                 event=self._header_value(game, "Event", "Unknown"),
                 date=self._header_value(game, "Date", "????.??.??"),
                 result=self._header_value(game, "Result", "*"),
-                r2_key=R2Keys.chapter_pgn(chapter_id),
+                r2_key=R2Keys.chapter_tree_json(chapter_id),
                 pgn_hash=None,
                 pgn_size=None,
                 pgn_status="processing", # Set initial status
@@ -507,32 +506,16 @@ class ChapterImportService:
                 )
                 return
 
-            # Build PGN and FEN index for R2
-            pgn_text = build_pgn(tree)
+            # Build FEN index for analysis (not persisted)
             fen_index = build_fen_index(tree)
 
-            # Upload all artifacts to R2
-            upload_result = self.pgn_v2_repo.save_snapshot_pgn(
-                chapter_id=chapter_id,
-                pgn_text=pgn_text,
-                metadata={
-                    "study_id": study_id,
-                    "chapter_id": chapter_id,
-                    "order": str(order),
-                },
-            )
-
-            self.pgn_v2_repo.save_tree_json(
+            tree_upload = self.pgn_v2_repo.save_tree_json(
                 chapter_id=chapter_id,
                 tree=tree,
                 metadata={"chapter_id": chapter_id},
             )
 
-            self.pgn_v2_repo.save_fen_index(
-                chapter_id=chapter_id,
-                fen_index=fen_index,
-                metadata={"chapter_id": chapter_id},
-            )
+            # Stage 12: tree.json is the only persisted structure; do not persist fen_index.
 
             # Run tagger analysis and save tags to R2
             try:
@@ -555,10 +538,11 @@ class ChapterImportService:
                 event_bus = EventBus(session)
                 chapter = await study_repo.get_chapter_by_id(chapter_id)
                 if chapter:
-                    chapter.pgn_hash = upload_result.content_hash
-                    chapter.pgn_size = upload_result.size
+                    chapter.r2_key = R2Keys.chapter_tree_json(chapter_id)
+                    chapter.pgn_hash = tree_upload.content_hash
+                    chapter.pgn_size = tree_upload.size
                     chapter.pgn_status = "ready"
-                    chapter.r2_etag = upload_result.etag
+                    chapter.r2_etag = tree_upload.etag
                     chapter.last_synced_at = datetime.now(timezone.utc)
                     await study_repo.update_chapter(chapter)
                     await session.commit()
@@ -595,31 +579,20 @@ class ChapterImportService:
         game_raw: str,
         order: int,
     ) -> None:
-        logger.info(f"Uploading raw PGN for chapter {chapter_id} after parse failure.")
+        logger.info(f"Skipping raw PGN upload for chapter {chapter_id} after parse failure.")
         try:
-            upload_result = self.r2_client.upload_pgn(
-                key=R2Keys.chapter_pgn(chapter_id),
-                content=game_raw,
-                metadata={
-                    "study_id": study_id,
-                    "chapter_id": chapter_id,
-                    "order": str(order),
-                },
-            )
             config = get_db_config()
             async with config.async_session_maker() as session:
                 study_repo = StudyRepository(session)
                 chapter = await study_repo.get_chapter_by_id(chapter_id)
                 if chapter:
-                    chapter.pgn_hash = upload_result.content_hash
-                    chapter.pgn_size = upload_result.size
+                    chapter.r2_key = R2Keys.chapter_tree_json(chapter_id)
                     chapter.pgn_status = "error"
-                    chapter.r2_etag = upload_result.etag
                     chapter.last_synced_at = datetime.now(timezone.utc)
                     await study_repo.update_chapter(chapter)
                     await session.commit()
         except Exception as raw_exc:
-            logger.error(f"Raw PGN upload failed for chapter {chapter_id}: {raw_exc}")
+            logger.error(f"Post-import error update failed for chapter {chapter_id}: {raw_exc}")
 
     async def _get_workspace_id_for_study(self, study_id: str) -> str | None:
         """Get workspace ID for a study."""

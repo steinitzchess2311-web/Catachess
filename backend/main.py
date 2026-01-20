@@ -9,8 +9,11 @@ from pathlib import Path
 
 # Add backend directory to Python path for Railway deployment
 backend_dir = Path(__file__).parent
+project_root = backend_dir.parent
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
+if str(project_root) not in sys.path:
+    sys.path.insert(1, str(project_root))
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

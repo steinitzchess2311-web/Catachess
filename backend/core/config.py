@@ -24,6 +24,9 @@ class Settings(BaseSettings):
     # SECURITY FIX: Removed hardcoded internal IP - must be set via environment variable
     ENGINE_URL: str = ""  # Set via ENGINE_URL environment variable
     ENGINE_TIMEOUT: int = 60
+    
+    # Lichess Cloud Eval
+    LICHESS_CLOUD_EVAL_URL: str = "https://lichess.org/api/cloud-eval"
 
     # ===== multi-spot engine =====
     ENABLE_MULTI_SPOT: bool = False

@@ -26,6 +26,11 @@ import signupLayout from "@ui/modules/auth/signup/layout/index.html?raw";
 import Header from "./components/Header";
 import AboutPage from "./components/AboutPage";
 import AccountPage from "../AccountPage";
+import { PatchStudyPage } from "@patch/PatchStudyPage";
+import "@patch/styles/index.css";
+
+// Entry switch configuration: set VITE_USE_PATCH_STUDY=true to use new patch-based study
+const USE_PATCH_STUDY = import.meta.env.VITE_USE_PATCH_STUDY === "true";
 
 const TOKEN_KEY = "catachess_token";
 const USER_ID_KEY = "catachess_user_id";
@@ -220,7 +225,11 @@ function WorkspaceSelect() {
     if (!containerRef.current) return;
     containerRef.current.innerHTML = "";
     initWorkspace(containerRef.current, {
-      onOpenStudy: (studyId) => navigate(`/workspace/${studyId}`),
+      onOpenStudy: (studyId) => {
+        // Use patch route if VITE_USE_PATCH_STUDY is enabled
+        const basePath = USE_PATCH_STUDY ? "/patch/workspace" : "/workspace";
+        navigate(`${basePath}/${studyId}`);
+      },
     });
   }, [navigate]);
 
@@ -322,7 +331,16 @@ function Layout() {
             path="/workspace/:id"
             element={
               <Protected>
-                <WorkspacePage />
+                {USE_PATCH_STUDY ? <PatchStudyPage /> : <WorkspacePage />}
+              </Protected>
+            }
+          />
+          {/* Patch-based study route - explicit route for new implementation */}
+          <Route
+            path="/patch/workspace/:id"
+            element={
+              <Protected>
+                <PatchStudyPage />
               </Protected>
             }
           />

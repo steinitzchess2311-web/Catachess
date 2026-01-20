@@ -9,6 +9,7 @@ This service provides business logic for:
 """
 
 import asyncio
+import json
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -42,6 +43,7 @@ from modules.workspace.pgn.cleaner.raw_pgn import (
 )
 from modules.workspace.pgn.serializer.to_tree import VariationNode, pgn_to_tree
 from modules.workspace.pgn.serializer.from_variations import variations_to_tree
+from modules.workspace.storage.keys import R2Keys
 from modules.workspace.storage.r2_client import R2Client
 
 
@@ -355,23 +357,33 @@ class PgnClipService:
             self._tree_cache.pop(chapter_id, None)
 
         chapter = await self.study_repo.get_chapter_by_id(chapter_id)
-        if not chapter or not chapter.r2_key:
+        if not chapter:
             return None
 
-        pgn_text = None
+        tree = None
+        tree_key = R2Keys.chapter_tree_json(chapter_id)
+
         for attempt in range(1, self._max_retries + 1):
             try:
-                pgn_text = self.r2_client.download_pgn(chapter.r2_key)
+                if not self.r2_client.exists(tree_key):
+                    raise ValueError(f"Tree not found for chapter {chapter_id}")
+                json_content = self.r2_client.download_json(tree_key)
+                tree_data = json.loads(json_content)
+                from patch.backend.study.models import StudyTreeDTO
+                from patch.backend.study.api import _tree_to_pgn
+                tree_dto = StudyTreeDTO(**tree_data)
+                pgn_text = _tree_to_pgn(tree_dto, chapter)
+                tree = pgn_to_tree(pgn_text)
                 break
             except ClientError as exc:
                 error_code = exc.response.get("Error", {}).get("Code")
                 if error_code in {"404", "NoSuchKey"}:
                     raise ValueError(
-                        f"PGN not found for chapter {chapter_id}"
+                        f"Tree not found for chapter {chapter_id}"
                     ) from exc
                 if attempt >= self._max_retries:
                     raise ValueError(
-                        "Failed to load PGN from storage"
+                        "Failed to load tree.json from storage"
                     ) from exc
             except (
                 EndpointConnectionError,
@@ -380,29 +392,15 @@ class PgnClipService:
             ) as exc:
                 if attempt >= self._max_retries:
                     raise ValueError(
-                        "Failed to load PGN from storage"
+                        "Failed to load tree.json from storage"
                     ) from exc
             if attempt < self._max_retries and self._backoff_base_seconds > 0:
                 await asyncio.sleep(
                     self._backoff_base_seconds * (2 ** (attempt - 1))
                 )
 
-        if pgn_text is None:
-            tree = await self._build_tree_from_db(chapter_id)
-            if tree is None:
-                raise ValueError("Failed to load PGN from storage")
-            if self._cache_ttl_seconds > 0:
-                self._tree_cache[chapter_id] = (
-                    time.monotonic() + self._cache_ttl_seconds,
-                    tree,
-                )
-            return tree
-
-        tree = pgn_to_tree(pgn_text)
         if tree is None:
-            tree = await self._build_tree_from_db(chapter_id)
-        if tree is None:
-            raise ValueError("Invalid PGN content")
+            raise ValueError("Failed to load tree data")
 
         if self._cache_ttl_seconds > 0:
             self._tree_cache[chapter_id] = (

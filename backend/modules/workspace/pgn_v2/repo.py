@@ -15,6 +15,8 @@ from typing import Any, Dict, Optional
 from backend.modules.workspace.storage.keys import R2Keys, R2Config as KeysConfig
 from backend.modules.workspace.storage.r2_client import R2Client, UploadResult
 from backend.core.real_pgn.models import NodeTree
+from patch.backend.study.converter import convert_nodetree_to_dto
+from patch.backend.study.models import StudyTreeDTO
 
 logger = logging.getLogger(__name__)
 
@@ -71,15 +73,15 @@ class PgnV2Repo:
     def save_tree_json(
         self,
         chapter_id: str,
-        tree: NodeTree,
+        tree: NodeTree | StudyTreeDTO,
         metadata: Optional[Dict[str, str]] = None,
     ) -> UploadResult:
         """
-        Save NodeTree as JSON to R2.
+        Save StudyTree JSON to R2.
 
         Args:
             chapter_id: Chapter identifier
-            tree: NodeTree to serialize
+            tree: StudyTreeDTO or NodeTree (will be converted)
             metadata: Optional metadata dict
 
         Returns:
@@ -88,9 +90,11 @@ class PgnV2Repo:
         key = R2Keys.chapter_tree_json(chapter_id)
         logger.debug(f"Saving tree JSON to {key}")
 
-        # Serialize NodeTree to JSON
-        tree_dict = self._tree_to_dict(tree)
-        tree_json = json.dumps(tree_dict, ensure_ascii=False, indent=2)
+        if isinstance(tree, StudyTreeDTO):
+            tree_json = tree.model_dump_json()
+        else:
+            tree_dto = convert_nodetree_to_dto(tree)
+            tree_json = tree_dto.model_dump_json()
 
         result = self.r2_client.upload_json(
             key=key,

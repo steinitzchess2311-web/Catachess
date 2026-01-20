@@ -5,6 +5,7 @@ import { StudyBoard } from './board/studyBoard';
 import { MoveTree } from './sidebar/movetree';
 import { api } from '@ui/assets/api';
 import { createEmptyTree } from './tree/StudyTree';
+import { TREE_SCHEMA_VERSION } from './tree/type';
 
 export interface PatchStudyPageProps {
   className?: string;
@@ -22,13 +23,22 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     const resolveChapterAndTree = async () => {
       try {
         const studyResponse = await api.get(`/api/v1/workspace/studies/${id}`);
-        const chapters = studyResponse?.chapters || [];
+        let chapters = studyResponse?.chapters || [];
         let chapter = chapters[0];
 
         if (!chapter) {
-          chapter = await api.post(`/api/v1/workspace/studies/${id}/chapters`, {
-            title: 'Chapter 1',
-          });
+          try {
+            chapter = await api.post(`/api/v1/workspace/studies/${id}/chapters`, {
+              title: 'Chapter 1',
+            });
+          } catch (createError) {
+            const retryResponse = await api.get(`/api/v1/workspace/studies/${id}`);
+            chapters = retryResponse?.chapters || [];
+            chapter = chapters[0];
+            if (!chapter) {
+              throw createError;
+            }
+          }
         }
 
         if (cancelled) return;
@@ -38,11 +48,18 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         try {
           const treeResponse = await api.get(`/study-patch/chapter/${chapter.id}/tree`);
           if (treeResponse?.success && treeResponse.tree) {
+            if (!treeResponse.tree.version) {
+              console.warn(`[patch] Tree missing version for chapter ${chapter.id}, will re-save.`);
+              const upgradedTree = { ...treeResponse.tree, version: TREE_SCHEMA_VERSION };
+              await api.put(`/study-patch/chapter/${chapter.id}/tree`, upgradedTree);
+              loadTree(upgradedTree);
+              return;
+            }
             loadTree(treeResponse.tree);
             return;
           }
         } catch (e) {
-          // Fall through to initialize an empty tree.
+          console.warn(`[patch] Tree load failed for chapter ${chapter.id}, initializing empty tree.`);
         }
 
         const emptyTree = createEmptyTree();

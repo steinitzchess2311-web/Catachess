@@ -6,6 +6,7 @@
 - Move the inline CSS in `skeleton/skeleton.html` into a shared stylesheet (or add a `styles/` folder) so the runtime entry and skeleton stay in sync without duplicating layout rules.
 - Add a single `ids.ts` (or similar) to declare and reuse region IDs across renderers/events, reducing drift when IDs change.
 
+1
 # Potential Issues
 
 - `frontend/ui/modules/games/modules/ui/renderer.ts` writes connection state to `#games-root`, but the skeleton only defines `#app-frame`, so the dataset update never applies.

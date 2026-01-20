@@ -29,8 +29,8 @@ import AccountPage from "../AccountPage";
 import { PatchStudyPage } from "@patch/PatchStudyPage";
 import "@patch/styles/index.css";
 
-// Entry switch configuration: set VITE_USE_PATCH_STUDY=true to use new patch-based study
-const USE_PATCH_STUDY = import.meta.env.VITE_USE_PATCH_STUDY === "true";
+// Entry switch configuration: default to patch unless explicitly disabled
+const USE_PATCH_STUDY = import.meta.env.VITE_USE_PATCH_STUDY !== "false";
 
 const TOKEN_KEY = "catachess_token";
 const USER_ID_KEY = "catachess_user_id";

@@ -37,6 +37,7 @@
   border: 1px solid #000;
   border-radius: 6px;
   padding: 12px;
+  min-height: 0;
 }
 
 .patch-study-sidebar {
@@ -47,6 +48,7 @@
   gap: 12px;
   border-right: 1px solid #000;
   padding-right: 12px;
+  min-height: 0;
 }
 
 .patch-study-main {
@@ -55,6 +57,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  min-height: 0;
 }
 
 .patch-study-rightbar {
@@ -64,6 +67,7 @@
   flex-direction: column;
   border-left: 1px solid #000;
   padding-left: 12px;
+  min-height: 0;
 }
 
 /* Study Board Container */
@@ -85,10 +89,11 @@
 /* Move Tree Container */
 .move-tree-container {
   width: 100%;
-  height: 100%;
   background: #1a1a1a;
   border-radius: 4px;
   padding: 16px;
+  flex: 1;
+  min-height: 0;
 }
 
 .move-tree-placeholder {

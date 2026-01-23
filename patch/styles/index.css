@@ -34,6 +34,9 @@
   display: flex;
   flex: 1;
   gap: 16px;
+  border: 1px solid #000;
+  border-radius: 6px;
+  padding: 12px;
 }
 
 .patch-study-sidebar {

@@ -21,9 +21,11 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const savedTime = state.lastSavedAt ? new Date(state.lastSavedAt).toLocaleTimeString() : null;
   const savedLabel = state.isSaving
     ? 'Saving...'
-    : savedTime
-      ? `Saved at ${savedTime}`
-      : 'Unsaved changes';
+    : state.isDirty
+      ? 'Unsaved changes'
+      : savedTime
+        ? `Saved at ${savedTime}`
+        : 'Unsaved changes';
 
   const patchBase = '/api/v1/workspace/studies/study-patch';
 

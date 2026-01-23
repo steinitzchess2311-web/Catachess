@@ -22,7 +22,8 @@
 }
 
 .patch-study-header h2 {
-  margin: 0 0 8px 0;
+  margin: 8px 0 8px 0;
+  font-size: 40px;
   grid-area: title;
   justify-self: start;
   text-align: left;

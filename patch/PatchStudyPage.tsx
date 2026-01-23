@@ -23,30 +23,27 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const patchBase = '/api/v1/workspace/studies/study-patch';
 
   const resolveDisplayPath = useCallback(
-    async (path: string, fallbackTitle: string, studyId?: string) => {
-      let resolvedPath = path || '';
-      if (!resolvedPath && studyId) {
-        const node = await api.get(`/api/v1/workspace/nodes/${studyId}`).catch(() => null);
-        resolvedPath = node?.path || '';
+    async (_path: string, fallbackTitle: string, studyId?: string) => {
+      if (!studyId) return `root/${fallbackTitle || 'Study'}`;
+      const titles: string[] = [];
+      let currentId: string | null = studyId;
+      let safety = 0;
+
+      while (currentId && safety < 20) {
+        safety += 1;
+        const node = await api.get(`/api/v1/workspace/nodes/${currentId}`).catch(() => null);
+        if (!node) break;
+        if (typeof node.title === 'string' && node.title.length > 0) {
+          titles.push(node.title);
+        }
+        currentId = node.parent_id || null;
       }
 
-      const ids = resolvedPath.split('/').filter(Boolean);
-      if (ids.length === 0) {
-        return 'root';
-      }
-
-      const idsToResolve = ids.slice(1);
-      if (idsToResolve.length === 0) {
+      if (titles.length === 0) {
         return `root/${fallbackTitle || 'Study'}`;
       }
 
-      const results = await Promise.all(
-        idsToResolve.map((nodeId) =>
-          api.get(`/api/v1/workspace/nodes/${nodeId}`).catch(() => null)
-        )
-      );
-      const titles = results.map((node, index) => node?.title || idsToResolve[index]);
-      return `root/${titles.join('/')}`;
+      return `root/${titles.reverse().join('/')}`;
     },
     []
   );
@@ -152,9 +149,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         const resolvedTitle =
           studyResponse?.study?.title || studyResponse?.title || 'Study';
         setStudyTitle(resolvedTitle);
-        const resolvedPath =
-          studyResponse?.study?.path || studyResponse?.path || '';
-        const resolvedDisplayPath = await resolveDisplayPath(resolvedPath, resolvedTitle, id);
+        const resolvedDisplayPath = await resolveDisplayPath('', resolvedTitle, id);
         setDisplayPath(resolvedDisplayPath);
         const responseChapters = extractChapters(studyResponse);
         if (!Array.isArray(responseChapters)) {
@@ -176,9 +171,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         const retryTitle =
           retryResponse?.study?.title || retryResponse?.title || 'Study';
         setStudyTitle(retryTitle);
-        const retryPath =
-          retryResponse?.study?.path || retryResponse?.path || '';
-        const retryDisplayPath = await resolveDisplayPath(retryPath, retryTitle, id);
+        const retryDisplayPath = await resolveDisplayPath('', retryTitle, id);
         setDisplayPath(retryDisplayPath);
         const retryChapters = extractChapters(retryResponse);
 

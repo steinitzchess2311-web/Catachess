@@ -14,11 +14,16 @@ export interface PatchStudyPageProps {
 
 function StudyPageContent({ className }: PatchStudyPageProps) {
   const { id } = useParams<{ id: string }>();
-  const { state, clearError, setError, selectChapter, loadTree } = useStudy();
+  const { state, clearError, setError, selectChapter, loadTree, saveTree } = useStudy();
   const [chapters, setChapters] = useState<any[]>([]);
   const [studyTitle, setStudyTitle] = useState<string>('');
   const [displayPath, setDisplayPath] = useState<string>('root');
   const savedTime = state.lastSavedAt ? new Date(state.lastSavedAt).toLocaleTimeString() : null;
+  const savedLabel = state.isSaving
+    ? 'Saving...'
+    : savedTime
+      ? `Saved at ${savedTime}`
+      : 'Unsaved changes';
 
   const patchBase = '/api/v1/workspace/studies/study-patch';
 
@@ -232,10 +237,16 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         <p className="patch-study-notice">
           {displayPath}
         </p>
-        <div className="patch-study-save-status">
-          {state.isSaving && <span>Saving...</span>}
-          {!state.isSaving && state.isDirty && <span>Unsaved changes</span>}
-          {!state.isSaving && !state.isDirty && savedTime && <span>Saved at {savedTime}</span>}
+        <div className="patch-study-actions">
+          <button
+            type="button"
+            className="patch-study-save-button"
+            onClick={saveTree}
+            disabled={state.isSaving || !state.isDirty}
+          >
+            {state.isSaving ? 'Saving...' : (state.isDirty ? 'Save' : 'Saved')}
+          </button>
+          <div className="patch-study-save-status">{savedLabel}</div>
         </div>
       </div>
       <div className="patch-study-layout">

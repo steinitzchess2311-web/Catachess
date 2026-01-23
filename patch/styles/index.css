@@ -16,7 +16,7 @@
   grid-template-columns: 1fr auto;
   grid-template-areas:
     "title ."
-    ". notice"
+    ". actions"
     "status status";
   align-items: center;
 }
@@ -39,12 +39,34 @@
 }
 
 .patch-study-save-status {
-  margin-top: 6px;
+  margin-top: 0;
   color: #666;
   font-size: 16px;
-  grid-area: notice;
+}
+
+.patch-study-actions {
+  grid-area: actions;
   justify-self: end;
   align-self: end;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.patch-study-save-button {
+  background: #2e6bff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.patch-study-save-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .patch-study-layout {

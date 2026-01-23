@@ -97,9 +97,6 @@ export function MoveTree({ className }: MoveTreeProps) {
       <div className="move-tree-title" style={{ fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #ddd', paddingBottom: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>Move Tree</span>
         <div className="tree-controls" style={{ fontSize: '0.8em' }}>
-          <button onClick={saveTree} disabled={!state.isDirty || state.isSaving} style={{ marginRight: '5px' }}>
-            {state.isSaving ? 'Saving...' : (state.isDirty ? 'Save' : 'Saved')}
-          </button>
           <button onClick={handleImportClick} style={{ marginRight: '5px' }}>Import</button>
           <button onClick={() => console.log('Export PGN clicked')}>Export</button>
         </div>

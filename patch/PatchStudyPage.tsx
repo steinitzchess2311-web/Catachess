@@ -17,10 +17,43 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const { state, clearError, setError, selectChapter, loadTree } = useStudy();
   const [chapters, setChapters] = useState<any[]>([]);
   const [studyTitle, setStudyTitle] = useState<string>('');
-  const [studyPath, setStudyPath] = useState<string>('');
+  const [displayPath, setDisplayPath] = useState<string>('root');
   const savedTime = state.lastSavedAt ? new Date(state.lastSavedAt).toLocaleTimeString() : null;
 
   const patchBase = '/api/v1/workspace/studies/study-patch';
+
+  const resolveDisplayPath = useCallback(
+    async (path: string, fallbackTitle: string) => {
+      const ids = (path || '').split('/').filter(Boolean);
+      if (ids.length === 0) {
+        const fallback = fallbackTitle || 'Study';
+        return `root/${fallback}`;
+      }
+
+      const idsToResolve = ids.slice(1);
+      if (idsToResolve.length === 0) {
+        const fallback = fallbackTitle || 'Study';
+        return `root/${fallback}`;
+      }
+
+      const results = await Promise.all(
+        idsToResolve.map((nodeId) =>
+          api.get(`/api/v1/workspace/nodes/${nodeId}`).catch(() => null)
+        )
+      );
+      const titles = results
+        .map((node) => node?.title)
+        .filter((title) => typeof title === 'string' && title.length > 0);
+
+      if (titles.length === 0) {
+        const fallback = fallbackTitle || 'Study';
+        return `root/${fallback}`;
+      }
+
+      return `root/${titles.join('/')}`;
+    },
+    []
+  );
 
   const extractChapters = useCallback((response: any) => {
     return response?.chapters || response?.study?.chapters || response?.data?.chapters;
@@ -125,7 +158,8 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         setStudyTitle(resolvedTitle);
         const resolvedPath =
           studyResponse?.study?.path || studyResponse?.path || '';
-        setStudyPath(resolvedPath || 'root');
+        const resolvedDisplayPath = await resolveDisplayPath(resolvedPath, resolvedTitle);
+        setDisplayPath(resolvedDisplayPath);
         const responseChapters = extractChapters(studyResponse);
         if (!Array.isArray(responseChapters)) {
           throw new Error('API response unexpected: chapters list missing');
@@ -148,7 +182,8 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         setStudyTitle(retryTitle);
         const retryPath =
           retryResponse?.study?.path || retryResponse?.path || '';
-        setStudyPath(retryPath || 'root');
+        const retryDisplayPath = await resolveDisplayPath(retryPath, retryTitle);
+        setDisplayPath(retryDisplayPath);
         const retryChapters = extractChapters(retryResponse);
 
             if (!Array.isArray(retryChapters)) {
@@ -177,7 +212,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     return () => {
       cancelled = true;
     };
-  }, [extractChapters, id, loadChapterTree, setError, sortChapters]);
+  }, [extractChapters, id, loadChapterTree, resolveDisplayPath, setError, sortChapters]);
 
   return (
     <div className={`patch-study-page ${className || ''}`}>
@@ -206,7 +241,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
       <div className="patch-study-header">
         <h2>{studyTitle || 'Study'}</h2>
         <p className="patch-study-notice">
-          {studyPath || 'root'}
+          {displayPath}
         </p>
         <div className="patch-study-save-status">
           {state.isSaving && <span>Saving...</span>}

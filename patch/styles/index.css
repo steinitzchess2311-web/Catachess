@@ -15,15 +15,17 @@
   display: grid;
   grid-template-columns: 1fr auto;
   grid-template-areas:
-    "title notice"
+    "title ."
+    ". notice"
     "status status";
-  align-items: end;
+  align-items: center;
 }
 
 .patch-study-header h2 {
   margin: 0 0 8px 0;
   grid-area: title;
-  justify-self: center;
+  justify-self: start;
+  text-align: left;
 }
 
 .patch-study-notice {

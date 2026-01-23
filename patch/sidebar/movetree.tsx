@@ -92,7 +92,6 @@ export function MoveTree({ className }: MoveTreeProps) {
       padding: '10px', 
       fontFamily: 'sans-serif',
       fontSize: '14px',
-      backgroundColor: '#f5f5f5',
       overflowY: 'auto'
     }}>
       <div className="move-tree-title" style={{ fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #ddd', paddingBottom: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

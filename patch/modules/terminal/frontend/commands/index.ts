@@ -25,6 +25,9 @@ import {
   scandiskCommand,
   defragCommand,
 } from './retro';
+import { mkdirCommand } from './mkdir';
+import { touchCommand } from './touch';
+import { rmCommand, rmdirCommand } from './rm';
 
 // Re-export history ref setter
 export { setCommandHistoryRef };
@@ -51,6 +54,10 @@ registerCommand(pwdCommand);
 registerCommand(catCommand);
 registerCommand(typeCommand);
 registerCommand(treeCommand);
+registerCommand(mkdirCommand);
+registerCommand(touchCommand);
+registerCommand(rmCommand);
+registerCommand(rmdirCommand);
 
 // Information commands
 registerCommand(echoCommand);
@@ -116,6 +123,8 @@ const helpCommand: Command = {
       lines.push('║  FILE OPERATIONS                                         ║');
       lines.push('║    CD        Change directory       DIR       List files ║');
       lines.push('║    TYPE      View file contents     TREE      Dir tree   ║');
+      lines.push('║    MKDIR     Create directory       DEL       Delete     ║');
+      lines.push('║    TOUCH     Create .study file     RMDIR     Remove dir ║');
       lines.push('║                                                          ║');
       lines.push('║  SYSTEM INFORMATION                                      ║');
       lines.push('║    VER       System version         MEM       Memory     ║');
@@ -140,7 +149,8 @@ const helpCommand: Command = {
       lines.push('│  File Operations:                                        │');
       lines.push('│    cd        Change directory       ls        List files │');
       lines.push('│    pwd       Print working dir      cat       View file  │');
-      lines.push('│    tree      Directory tree                              │');
+      lines.push('│    tree      Directory tree         mkdir     Create dir │');
+      lines.push('│    touch     Create .study file     rm        Delete     │');
       lines.push('│                                                          │');
       lines.push('│  System Information:                                     │');
       lines.push('│    uname     System info            whoami    Username   │');

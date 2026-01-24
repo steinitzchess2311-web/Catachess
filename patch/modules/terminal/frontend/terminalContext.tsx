@@ -1,16 +1,37 @@
-import React, { createContext, useContext, useReducer, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, ReactNode, useRef } from 'react';
 import type { TerminalState, TerminalLine, SystemType, WindowState } from './types';
 import { getSystem } from './systems';
 import { executeCommand } from './commands';
 import { virtualFS } from './filesystem';
+import {
+  createFolder,
+  createStudy,
+  deleteNode,
+  getNodeChildren,
+  getRootNodes,
+  resolvePathToNode,
+  invalidatePathCache,
+  type WorkspaceNode,
+} from './api';
 
 // =============================================================================
 // State Types
 // =============================================================================
 
+interface PendingConfirmation {
+  type: 'delete';
+  target: string;
+  nodeId?: string;
+  message: string;
+}
+
 interface FullTerminalState {
   terminal: TerminalState;
   window: WindowState;
+  pendingConfirmation: PendingConfirmation | null;
+  isProcessing: boolean;
+  currentNodeId: string | null; // Current directory node ID
+  nodeCache: Map<string, WorkspaceNode>; // Path -> Node cache
 }
 
 // =============================================================================
@@ -29,7 +50,11 @@ type TerminalAction =
   | { type: 'SET_WINDOW_SIZE'; width: number; height: number }
   | { type: 'TOGGLE_MAXIMIZE' }
   | { type: 'TOGGLE_MINIMIZE' }
-  | { type: 'SET_VISIBLE'; isVisible: boolean };
+  | { type: 'SET_VISIBLE'; isVisible: boolean }
+  | { type: 'SET_PENDING_CONFIRMATION'; confirmation: PendingConfirmation | null }
+  | { type: 'SET_PROCESSING'; isProcessing: boolean }
+  | { type: 'SET_CURRENT_NODE'; nodeId: string | null }
+  | { type: 'SET_CWD'; cwd: string };
 
 // =============================================================================
 // Initial State
@@ -47,7 +72,7 @@ function createInitialState(system: SystemType = 'dos'): FullTerminalState {
   return {
     terminal: {
       system,
-      cwd: config.homePath,
+      cwd: '/',
       username: 'user',
       hostname: 'localhost',
       history: startupLines,
@@ -67,6 +92,10 @@ function createInitialState(system: SystemType = 'dos'): FullTerminalState {
       isMinimized: false,
       isVisible: true,
     },
+    pendingConfirmation: null,
+    isProcessing: false,
+    currentNodeId: null,
+    nodeCache: new Map(),
   };
 }
 
@@ -94,11 +123,12 @@ function terminalReducer(state: FullTerminalState, action: TerminalAction): Full
         terminal: {
           ...state.terminal,
           system: action.system,
-          cwd: config.homePath,
+          cwd: '/',
           history: startupLines,
           commandHistory: [],
           commandHistoryIndex: -1,
         },
+        currentNodeId: null,
       };
     }
 
@@ -108,7 +138,6 @@ function terminalReducer(state: FullTerminalState, action: TerminalAction): Full
       const config = getSystem(terminal.system);
       const prompt = config.prompt(terminal.cwd, terminal.username);
 
-      // Add the input line to history
       const inputLine: TerminalLine = {
         id: generateId(),
         type: 'input',
@@ -117,10 +146,8 @@ function terminalReducer(state: FullTerminalState, action: TerminalAction): Full
         timestamp: Date.now(),
       };
 
-      // Execute the command
       const result = executeCommand(input, terminal.cwd, terminal.system, virtualFS);
 
-      // Handle clear command
       if (result.output.length === 1 && result.output[0] === '__CLEAR__') {
         return {
           ...state,
@@ -133,7 +160,6 @@ function terminalReducer(state: FullTerminalState, action: TerminalAction): Full
         };
       }
 
-      // Build output lines
       const outputLines: TerminalLine[] = [];
 
       if (result.error) {
@@ -285,6 +311,37 @@ function terminalReducer(state: FullTerminalState, action: TerminalAction): Full
       };
     }
 
+    case 'SET_PENDING_CONFIRMATION': {
+      return {
+        ...state,
+        pendingConfirmation: action.confirmation,
+      };
+    }
+
+    case 'SET_PROCESSING': {
+      return {
+        ...state,
+        isProcessing: action.isProcessing,
+      };
+    }
+
+    case 'SET_CURRENT_NODE': {
+      return {
+        ...state,
+        currentNodeId: action.nodeId,
+      };
+    }
+
+    case 'SET_CWD': {
+      return {
+        ...state,
+        terminal: {
+          ...state.terminal,
+          cwd: action.cwd,
+        },
+      };
+    }
+
     default:
       return state;
   }
@@ -307,6 +364,7 @@ interface TerminalContextValue {
   toggleMinimize: () => void;
   setVisible: (isVisible: boolean) => void;
   getHistoryCommand: () => string | null;
+  confirmAction: (confirmed: boolean) => void;
 }
 
 const TerminalContext = createContext<TerminalContextValue | null>(null);
@@ -322,10 +380,261 @@ interface TerminalProviderProps {
 
 export function TerminalProvider({ children, initialSystem = 'dos' }: TerminalProviderProps) {
   const [state, dispatch] = useReducer(terminalReducer, createInitialState(initialSystem));
+  const pendingActionRef = useRef<{ target: string; nodeId?: string } | null>(null);
 
-  const execCommand = useCallback((input: string) => {
-    dispatch({ type: 'EXECUTE_COMMAND', input });
+  const addOutput = useCallback((lines: TerminalLine[]) => {
+    dispatch({ type: 'ADD_OUTPUT', lines });
   }, []);
+
+  const addLine = useCallback((content: string, type: 'output' | 'error' | 'system' = 'output') => {
+    addOutput([{
+      id: generateId(),
+      type,
+      content,
+      timestamp: Date.now(),
+    }]);
+  }, [addOutput]);
+
+  // Handle async mkdir
+  const handleMkdir = useCallback(async (dirName: string) => {
+    dispatch({ type: 'SET_PROCESSING', isProcessing: true });
+
+    try {
+      const parentNodeId = state.currentNodeId;
+      const result = await createFolder(dirName, parentNodeId || undefined);
+
+      if (result) {
+        addLine(`Directory created: ${dirName}`);
+        invalidatePathCache(state.terminal.cwd);
+      } else {
+        addLine(`Failed to create directory: ${dirName}`, 'error');
+      }
+    } catch (e: any) {
+      addLine(`Error: ${e.message || 'Failed to create directory'}`, 'error');
+    } finally {
+      dispatch({ type: 'SET_PROCESSING', isProcessing: false });
+    }
+  }, [state.currentNodeId, state.terminal.cwd, addLine]);
+
+  // Handle async touch (create study)
+  const handleTouch = useCallback(async (fileName: string) => {
+    dispatch({ type: 'SET_PROCESSING', isProcessing: true });
+
+    try {
+      const title = fileName.replace(/\.study$/i, '');
+      const parentNodeId = state.currentNodeId;
+      const result = await createStudy(title, parentNodeId || undefined);
+
+      if (result) {
+        addLine(`Study created: ${fileName}`);
+        invalidatePathCache(state.terminal.cwd);
+      } else {
+        addLine(`Failed to create study: ${fileName}`, 'error');
+      }
+    } catch (e: any) {
+      addLine(`Error: ${e.message || 'Failed to create study'}`, 'error');
+    } finally {
+      dispatch({ type: 'SET_PROCESSING', isProcessing: false });
+    }
+  }, [state.currentNodeId, state.terminal.cwd, addLine]);
+
+  // Handle delete with confirmation
+  const handleDeleteConfirm = useCallback(async (target: string) => {
+    const isDos = state.terminal.system === 'dos' || state.terminal.system === 'win95';
+
+    // Find the node to delete
+    const targetPath = target.startsWith('/')
+      ? target
+      : `${state.terminal.cwd}/${target}`.replace(/\/+/g, '/');
+
+    const node = await resolvePathToNode(targetPath);
+
+    if (!node) {
+      addLine(isDos
+        ? 'File Not Found'
+        : `rm: cannot remove '${target}': No such file or directory`,
+        'error'
+      );
+      return;
+    }
+
+    // Store pending action and show confirmation
+    pendingActionRef.current = { target, nodeId: node.id };
+
+    const typeLabel = node.node_type === 'folder' ? 'directory' : 'study';
+
+    dispatch({
+      type: 'SET_PENDING_CONFIRMATION',
+      confirmation: {
+        type: 'delete',
+        target,
+        nodeId: node.id,
+        message: isDos
+          ? `Delete ${typeLabel} "${target}"? (Y/N)`
+          : `rm: remove ${typeLabel} '${target}'? (y/n)`,
+      },
+    });
+
+    addLine(isDos
+      ? `Delete ${typeLabel} "${target}"? (Y/N)`
+      : `rm: remove ${typeLabel} '${target}'? (y/n)`,
+      'system'
+    );
+  }, [state.terminal.system, state.terminal.cwd, addLine]);
+
+  // Handle delete force (no confirmation)
+  const handleDeleteForce = useCallback(async (target: string) => {
+    dispatch({ type: 'SET_PROCESSING', isProcessing: true });
+
+    try {
+      const targetPath = target.startsWith('/')
+        ? target
+        : `${state.terminal.cwd}/${target}`.replace(/\/+/g, '/');
+
+      const node = await resolvePathToNode(targetPath);
+
+      if (!node) {
+        addLine(`rm: cannot remove '${target}': No such file or directory`, 'error');
+        return;
+      }
+
+      await deleteNode(node.id, node.version);
+      addLine(`Deleted: ${target}`);
+      invalidatePathCache(state.terminal.cwd);
+    } catch (e: any) {
+      addLine(`Error: ${e.message || 'Failed to delete'}`, 'error');
+    } finally {
+      dispatch({ type: 'SET_PROCESSING', isProcessing: false });
+    }
+  }, [state.terminal.cwd, addLine]);
+
+  // Confirm or cancel pending action
+  const confirmAction = useCallback(async (confirmed: boolean) => {
+    const pending = state.pendingConfirmation;
+    if (!pending) return;
+
+    dispatch({ type: 'SET_PENDING_CONFIRMATION', confirmation: null });
+
+    if (!confirmed) {
+      addLine('Cancelled.');
+      pendingActionRef.current = null;
+      return;
+    }
+
+    if (pending.type === 'delete' && pending.nodeId) {
+      dispatch({ type: 'SET_PROCESSING', isProcessing: true });
+
+      try {
+        await deleteNode(pending.nodeId);
+        addLine(`Deleted: ${pending.target}`);
+        invalidatePathCache(state.terminal.cwd);
+      } catch (e: any) {
+        addLine(`Error: ${e.message || 'Failed to delete'}`, 'error');
+      } finally {
+        dispatch({ type: 'SET_PROCESSING', isProcessing: false });
+        pendingActionRef.current = null;
+      }
+    }
+  }, [state.pendingConfirmation, state.terminal.cwd, addLine]);
+
+  // Main command executor
+  const execCommand = useCallback(async (input: string) => {
+    // If there's a pending confirmation, handle y/n
+    if (state.pendingConfirmation) {
+      const answer = input.trim().toLowerCase();
+      if (answer === 'y' || answer === 'yes') {
+        confirmAction(true);
+      } else {
+        confirmAction(false);
+      }
+      return;
+    }
+
+    const { terminal } = state;
+    const config = getSystem(terminal.system);
+    const prompt = config.prompt(terminal.cwd, terminal.username);
+
+    // Add input line
+    addOutput([{
+      id: generateId(),
+      type: 'input',
+      content: input,
+      prompt,
+      timestamp: Date.now(),
+    }]);
+
+    // Execute the command
+    const result = executeCommand(input, terminal.cwd, terminal.system, virtualFS);
+
+    // Handle special async commands
+    if (result.output.length === 1) {
+      const output = result.output[0];
+
+      if (output === '__CLEAR__') {
+        dispatch({ type: 'CLEAR' });
+        dispatch({
+          type: 'SET_CWD',
+          cwd: terminal.cwd,
+        });
+        return;
+      }
+
+      if (output.startsWith('__ASYNC_MKDIR__:')) {
+        const dirName = output.replace('__ASYNC_MKDIR__:', '');
+        await handleMkdir(dirName);
+        return;
+      }
+
+      if (output.startsWith('__ASYNC_TOUCH__:')) {
+        const fileName = output.replace('__ASYNC_TOUCH__:', '');
+        await handleTouch(fileName);
+        return;
+      }
+
+      if (output.startsWith('__CONFIRM_RM__:')) {
+        const target = output.replace('__CONFIRM_RM__:', '');
+        await handleDeleteConfirm(target);
+        return;
+      }
+
+      if (output.startsWith('__ASYNC_RM_FORCE__:')) {
+        const target = output.replace('__ASYNC_RM_FORCE__:', '');
+        await handleDeleteForce(target);
+        return;
+      }
+    }
+
+    // Normal output
+    if (result.error) {
+      addLine(result.error, 'error');
+    } else {
+      for (const line of result.output) {
+        addLine(line, 'output');
+      }
+    }
+
+    // Update cwd if changed
+    if (result.newCwd) {
+      dispatch({ type: 'SET_CWD', cwd: result.newCwd });
+    }
+
+    // Update command history
+    if (input.trim()) {
+      dispatch({
+        type: 'NAVIGATE_HISTORY',
+        direction: 'down', // Reset index
+      });
+    }
+  }, [
+    state,
+    addOutput,
+    addLine,
+    handleMkdir,
+    handleTouch,
+    handleDeleteConfirm,
+    handleDeleteForce,
+    confirmAction,
+  ]);
 
   const setSystem = useCallback((system: SystemType) => {
     dispatch({ type: 'SET_SYSTEM', system });
@@ -384,6 +693,7 @@ export function TerminalProvider({ children, initialSystem = 'dos' }: TerminalPr
     toggleMinimize,
     setVisible,
     getHistoryCommand,
+    confirmAction,
   };
 
   return (

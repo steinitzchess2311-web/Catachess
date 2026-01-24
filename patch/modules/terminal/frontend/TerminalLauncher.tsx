@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { TerminalProvider } from './terminalContext';
 import { TerminalWindow } from './TerminalWindow';
 import type { SystemType } from './types';
@@ -48,7 +49,7 @@ export function TerminalLauncher({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [hotkey, toggleTerminal]);
 
-  return (
+  const launcher = (
     <>
       {/* Fixed trigger button */}
       <button
@@ -59,6 +60,22 @@ export function TerminalLauncher({
         onMouseLeave={() => setIsHovered(false)}
         title="Open Terminal (F12)"
         aria-label="Open Terminal"
+        style={{
+          position: 'fixed',
+          right: 20,
+          bottom: 20,
+          width: 48,
+          height: 48,
+          borderRadius: 8,
+          border: 'none',
+          cursor: 'pointer',
+          background: '#1a1a1a',
+          color: '#00ff00',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
       >
         <span className="terminal-launcher-icon">
           {'>_'}
@@ -73,6 +90,11 @@ export function TerminalLauncher({
       )}
     </>
   );
+
+  if (typeof document !== 'undefined' && document.body) {
+    return createPortal(launcher, document.body);
+  }
+  return launcher;
 }
 
 export default TerminalLauncher;

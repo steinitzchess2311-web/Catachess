@@ -15,6 +15,7 @@ class EngineClient:
     
     def __init__(self, timeout: int | None = None):
         self.base_url = settings.LICHESS_CLOUD_EVAL_URL
+        self.sf_url = settings.ENGINE_URL or "https://sf.catachess.com/engine/analyze"
         self.timeout = timeout or settings.ENGINE_TIMEOUT
         logger.info(f"EngineClient initialized with Lichess Cloud Eval: {self.base_url}")
 
@@ -51,9 +52,13 @@ class EngineClient:
             if resp.status_code == 404:
                 # Not found (no cloud eval available for this position)
                 logger.info("Cloud eval not found (404)")
-                if settings.ENGINE_FALLBACK_MODE != "off":
-                    return analyze_legal_moves(fen, depth, multipv)
-                raise ChessEngineError("Analysis not found in cloud")
+                try:
+                    return self._analyze_sf(fen, depth, multipv)
+                except Exception as sf_exc:
+                    logger.error(f"sf.catachess fallback failed: {sf_exc}")
+                    if settings.ENGINE_FALLBACK_MODE != "off":
+                        return analyze_legal_moves(fen, depth, multipv)
+                    raise ChessEngineError("Analysis not found in cloud")
                 
             resp.raise_for_status()
             
@@ -71,6 +76,17 @@ class EngineClient:
             if settings.ENGINE_FALLBACK_MODE != "off":
                 return analyze_legal_moves(fen, depth, multipv)
             raise ChessEngineError(f"Engine call failed: {str(e)}")
+
+    def _analyze_sf(self, fen: str, depth: int, multipv: int) -> EngineResult:
+        logger.info(f"Analyzing (sf.catachess): fen={fen[:50]}..., multipv={multipv}")
+        resp = requests.post(
+            self.sf_url,
+            json={"fen": fen, "depth": depth, "multipv": multipv},
+            timeout=self.timeout,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        return self._parse_sf_response(data)
 
     def _parse_cloud_eval(self, data: dict) -> EngineResult:
         """
@@ -113,4 +129,67 @@ class EngineClient:
                 pv=uci_moves
             ))
             
+        return EngineResult(lines=lines)
+
+    def _parse_sf_response(self, data: dict) -> EngineResult:
+        if "info" not in data or not isinstance(data["info"], list):
+            raise ChessEngineError("Invalid sf.catachess response format")
+
+        entries = []
+        for line in data["info"]:
+            if not isinstance(line, str) or not line.startswith("info"):
+                continue
+            tokens = line.strip().split()
+            try:
+                depth_idx = tokens.index("depth")
+                multipv_idx = tokens.index("multipv")
+                score_idx = tokens.index("score")
+                pv_idx = tokens.index("pv")
+            except ValueError:
+                continue
+
+            try:
+                depth = int(tokens[depth_idx + 1])
+                multipv = int(tokens[multipv_idx + 1])
+            except (ValueError, IndexError):
+                continue
+
+            score_type = tokens[score_idx + 1] if score_idx + 1 < len(tokens) else None
+            score_val = tokens[score_idx + 2] if score_idx + 2 < len(tokens) else None
+            pv_moves = tokens[pv_idx + 1 :] if pv_idx + 1 < len(tokens) else []
+            if not pv_moves:
+                continue
+
+            score = 0
+            if score_type == "cp" and score_val is not None:
+                try:
+                    score = int(score_val)
+                except ValueError:
+                    score = 0
+            elif score_type == "mate" and score_val is not None:
+                score = f"mate{score_val}"
+
+            entries.append((depth, multipv, score, pv_moves))
+
+        if not entries:
+            raise ChessEngineError("No usable analysis lines from sf.catachess")
+
+        max_depth = max(d for d, _, _, _ in entries)
+        per_multipv: dict[int, tuple[int, int | str, list[str]]] = {}
+        for depth, multipv, score, pv_moves in entries:
+            if depth != max_depth:
+                continue
+            per_multipv[multipv] = (depth, score, pv_moves)
+
+        if not per_multipv:
+            for depth, multipv, score, pv_moves in entries:
+                prev = per_multipv.get(multipv)
+                if not prev or depth > prev[0]:
+                    per_multipv[multipv] = (depth, score, pv_moves)
+
+        lines = []
+        for multipv in sorted(per_multipv.keys()):
+            _, score, pv_moves = per_multipv[multipv]
+            lines.append(EngineLine(multipv=multipv, score=score, pv=pv_moves))
+
         return EngineResult(lines=lines)

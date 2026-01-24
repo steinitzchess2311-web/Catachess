@@ -48,7 +48,8 @@ const BASE_URL = '/api/v1/workspace';
 export async function getRootNodes(): Promise<WorkspaceNode[]> {
   try {
     const response = await api.get(`${BASE_URL}/nodes`);
-    return response?.nodes || response || [];
+    // API returns { nodes: [...], total: number }
+    return response?.nodes || [];
   } catch (e) {
     console.error('[terminal-api] Failed to get root nodes:', e);
     return [];
@@ -61,7 +62,8 @@ export async function getRootNodes(): Promise<WorkspaceNode[]> {
 export async function getNodeChildren(nodeId: string): Promise<WorkspaceNode[]> {
   try {
     const response = await api.get(`${BASE_URL}/nodes/${nodeId}/children`);
-    return response?.children || response || [];
+    // API returns { nodes: [...], total: number }
+    return response?.nodes || [];
   } catch (e) {
     console.error('[terminal-api] Failed to get children:', e);
     return [];

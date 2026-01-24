@@ -85,6 +85,14 @@ export function StudyBoard({ className, boardWidth = 500 }: StudyBoardProps) {
         <button type="button" onClick={moveToNext} style={{ width: '40px' }}>&gt;</button>
         <button type="button" onClick={moveToEnd} style={{ width: '40px' }}>&gt;|</button>
       </div>
+      <div
+        className="study-board-footer-box"
+        style={{
+          width: boardWidth,
+          height: 200,
+          border: '1px solid #000',
+        }}
+      />
     </div>
   );
 }

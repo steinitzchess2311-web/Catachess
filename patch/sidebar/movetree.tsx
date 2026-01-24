@@ -446,7 +446,9 @@ function MoveItem({ nodeId, nodes, cursorNodeId, onSelect, isMainline, prefix = 
         onSelect(nodeId);
       }}
       style={{
-        display: 'inline-block',
+        display: 'block',
+        width: '100%',
+        textAlign: 'left',
         padding: '2px 6px',
         margin: '2px',
         borderRadius: '3px',

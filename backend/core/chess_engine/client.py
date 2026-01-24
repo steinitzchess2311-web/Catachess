@@ -17,6 +17,8 @@ class EngineClient:
         self.base_url = settings.LICHESS_CLOUD_EVAL_URL
         self.sf_url = settings.ENGINE_URL or "https://sf.catachess.com/engine/analyze"
         self.timeout = timeout or settings.ENGINE_TIMEOUT
+        self._cloud_404_count = 0
+        self._cloud_disabled = False
         logger.info(f"EngineClient initialized with Lichess Cloud Eval: {self.base_url}")
 
     def analyze(
@@ -25,6 +27,9 @@ class EngineClient:
         depth: int = 15,
         multipv: int = 3,
     ) -> EngineResult:
+        if self._cloud_disabled:
+            return self._analyze_sf(fen, depth, multipv)
+
         logger.info(f"Analyzing (Cloud Eval): fen={fen[:50]}..., multipv={multipv}")
         
         try:
@@ -52,6 +57,10 @@ class EngineClient:
             if resp.status_code == 404:
                 # Not found (no cloud eval available for this position)
                 logger.info("Cloud eval not found (404)")
+                self._cloud_404_count += 1
+                if self._cloud_404_count >= 5:
+                    self._cloud_disabled = True
+                    logger.warning("Disabling Cloud Eval after 5 consecutive 404s")
                 try:
                     return self._analyze_sf(fen, depth, multipv)
                 except Exception as sf_exc:
@@ -61,7 +70,8 @@ class EngineClient:
                     raise ChessEngineError("Analysis not found in cloud")
                 
             resp.raise_for_status()
-            
+            self._cloud_404_count = 0
+
             data = resp.json()
             return self._parse_cloud_eval(data)
             

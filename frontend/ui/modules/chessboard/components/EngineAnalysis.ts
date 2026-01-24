@@ -370,6 +370,7 @@ export class EngineAnalysis {
 
     this.isAnalyzing = true;
     this.renderControls();
+    this.renderLoading();
 
     try {
       const result = await chessAPI.analyzePosition(
@@ -394,6 +395,19 @@ export class EngineAnalysis {
       this.isAnalyzing = false;
       this.renderControls();
     }
+  }
+
+  private renderLoading(): void {
+    this.analysisContainer.innerHTML = `
+      <div style="
+        color: #888;
+        text-align: center;
+        padding: 20px;
+        font-size: 12px;
+      ">
+        Analyzing...
+      </div>
+    `;
   }
 
   /**

@@ -31,11 +31,13 @@ class EngineSpot:
         )
 
         try:
+            turn = self._fen_turn(fen)
             if "/engine" in self.base_url:
                 multipv_data = self._post_analyze(
                     fen=fen,
                     depth=depth,
                     multipv=multipv,
+                    turn=turn,
                 )
             else:
                 resp = requests.get(
@@ -65,7 +67,7 @@ class EngineSpot:
 
                         # Parse UCI info lines
                         if content.startswith('info '):
-                            parsed = self._parse_uci_info(content)
+                            parsed = self._parse_uci_info(content, turn)
                             if parsed:
                                 multipv_data[parsed["multipv"]] = parsed
 
@@ -115,7 +117,7 @@ class EngineSpot:
             logger.warning(f"[{self.config.id}] Health check: FAILED ({e})")
             return False
 
-    def _post_analyze(self, fen: str, depth: int, multipv: int) -> dict[int, dict]:
+    def _post_analyze(self, fen: str, depth: int, multipv: int, turn: str) -> dict[int, dict]:
         resp = requests.post(
             f"{self.base_url}/analyze",
             json={
@@ -133,12 +135,12 @@ class EngineSpot:
             if not isinstance(line, str):
                 continue
             if line.startswith("info "):
-                parsed = self._parse_uci_info(line)
+                parsed = self._parse_uci_info(line, turn)
                 if parsed:
                     multipv_data[parsed["multipv"]] = parsed
         return multipv_data
 
-    def _parse_uci_info(self, content: str) -> dict | None:
+    def _parse_uci_info(self, content: str, turn: str) -> dict | None:
         parts = content.split()
         if 'multipv' not in parts or 'score' not in parts or 'pv' not in parts:
             return None
@@ -160,7 +162,7 @@ class EngineSpot:
 
             return {
                 'multipv': multipv_num,
-                'score': score,
+                'score': self._normalize_score_for_white(score, turn),
                 'pv': pv_moves
             }
         except (ValueError, IndexError):
@@ -176,3 +178,24 @@ class EngineSpot:
         if url.endswith("/analyze"):
             url = url[: -len("/analyze")]
         return url
+
+    @staticmethod
+    def _fen_turn(fen: str) -> str:
+        parts = fen.split()
+        if len(parts) > 1 and parts[1] in ("w", "b"):
+            return parts[1]
+        return "w"
+
+    @staticmethod
+    def _normalize_score_for_white(score: int | str, turn: str) -> int | str:
+        if turn != "b":
+            return score
+        if isinstance(score, int):
+            return -score
+        if isinstance(score, str) and score.startswith("mate"):
+            try:
+                val = int(score[4:])
+            except ValueError:
+                return score
+            return f"mate{-val}"
+        return score

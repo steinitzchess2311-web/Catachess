@@ -94,10 +94,10 @@ class EngineClient:
                 resp.url,
                 dict(resp.headers),
                 body,
-            )
+        )
         resp.raise_for_status()
         data = resp.json()
-        return self._parse_sf_response(data)
+        return self._parse_sf_response(data, self._fen_turn(fen))
 
     def _parse_cloud_eval(self, data: dict) -> EngineResult:
         """
@@ -142,7 +142,7 @@ class EngineClient:
             
         return EngineResult(lines=lines)
 
-    def _parse_sf_response(self, data: dict) -> EngineResult:
+    def _parse_sf_response(self, data: dict, turn: str) -> EngineResult:
         if "info" not in data or not isinstance(data["info"], list):
             raise ChessEngineError("Invalid sf.catachess response format")
 
@@ -180,6 +180,7 @@ class EngineClient:
             elif score_type == "mate" and score_val is not None:
                 score = f"mate{score_val}"
 
+            score = self._normalize_score_for_white(score, turn)
             entries.append((depth, multipv, score, pv_moves))
 
         if not entries:
@@ -204,3 +205,24 @@ class EngineClient:
             lines.append(EngineLine(multipv=multipv, score=score, pv=pv_moves))
 
         return EngineResult(lines=lines)
+
+    @staticmethod
+    def _fen_turn(fen: str) -> str:
+        parts = fen.split()
+        if len(parts) > 1 and parts[1] in ("w", "b"):
+            return parts[1]
+        return "w"
+
+    @staticmethod
+    def _normalize_score_for_white(score: int | str, turn: str) -> int | str:
+        if turn != "b":
+            return score
+        if isinstance(score, int):
+            return -score
+        if isinstance(score, str) and score.startswith("mate"):
+            try:
+                val = int(score[4:])
+            except ValueError:
+                return score
+            return f"mate{-val}"
+        return score

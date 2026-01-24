@@ -13,6 +13,7 @@ export interface MoveTreeProps {
  */
 export function MoveTree({ className }: MoveTreeProps) {
   const { state, selectNode, selectChapter, loadTreeFromServer, loadTree, setError, clearError, saveTree } = useStudy();
+  const [collapsedVariations, setCollapsedVariations] = React.useState<Set<string>>(new Set());
   const { tree, cursorNodeId } = state;
 
   const handleReload = () => {
@@ -72,6 +73,18 @@ export function MoveTree({ className }: MoveTreeProps) {
     selectNode(nodeId);
   };
 
+  const toggleVariation = (nodeId: string) => {
+    setCollapsedVariations((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+      return next;
+    });
+  };
+
   const handleImportClick = () => {
     const pgnContent = window.prompt('Paste PGN to import');
     if (!pgnContent) return;
@@ -111,6 +124,8 @@ export function MoveTree({ className }: MoveTreeProps) {
             depth={0}
             startPly={1}
             isMainline={true}
+            collapsedVariations={collapsedVariations}
+            onToggleVariation={toggleVariation}
           />
         )}
       </div>
@@ -126,12 +141,24 @@ interface MoveBranchProps {
   startNodeId: string;
   startPly: number;
   isMainline: boolean;
+  collapsedVariations: Set<string>;
+  onToggleVariation: (nodeId: string) => void;
 }
 
 /**
  * Renders a branch of moves (mainline + variations)
  */
-function MoveBranch({ startNodeId, nodes, cursorNodeId, onSelect, depth, startPly, isMainline }: MoveBranchProps) {
+function MoveBranch({
+  startNodeId,
+  nodes,
+  cursorNodeId,
+  onSelect,
+  depth,
+  startPly,
+  isMainline,
+  collapsedVariations,
+  onToggleVariation,
+}: MoveBranchProps) {
   if (!startNodeId) return null;
 
   const renderVariations = (nodeId: string, ply: number) => {
@@ -150,16 +177,33 @@ function MoveBranch({ startNodeId, nodes, cursorNodeId, onSelect, depth, startPl
       }}>
         {variationsIds.map((vId) => (
           <div key={vId} className="variation-wrapper" style={{ marginBottom: '4px' }}>
+            <button
+              type="button"
+              onClick={() => onToggleVariation(vId)}
+              style={{
+                marginRight: '6px',
+                padding: '0 6px',
+                border: '1px solid #ccc',
+                background: '#fff',
+                cursor: 'pointer',
+              }}
+            >
+              {collapsedVariations.has(vId) ? '+' : '-'}
+            </button>
             <span style={{ color: '#888', marginRight: '4px' }}>(variation)</span>
-            <MoveBranch
-              startNodeId={vId}
-              nodes={nodes}
-              cursorNodeId={cursorNodeId}
-              onSelect={onSelect}
-              depth={depth + 1}
-              startPly={ply}
-              isMainline={false}
-            />
+            {!collapsedVariations.has(vId) && (
+              <MoveBranch
+                startNodeId={vId}
+                nodes={nodes}
+                cursorNodeId={cursorNodeId}
+                onSelect={onSelect}
+                depth={depth + 1}
+                startPly={ply}
+                isMainline={false}
+                collapsedVariations={collapsedVariations}
+                onToggleVariation={onToggleVariation}
+              />
+            )}
           </div>
         ))}
       </div>

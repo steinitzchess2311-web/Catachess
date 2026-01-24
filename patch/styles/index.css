@@ -201,6 +201,15 @@
   flex: 1;
 }
 
+.patch-analysis-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
 .patch-sidebar-tabs {
   display: flex;
   gap: 6px;
@@ -252,9 +261,8 @@
   border-radius: 6px;
   display: flex;
   flex-direction: column;
-  height: 170px;
   min-height: 0;
-  flex: 1;
+  flex: 0 0 auto;
   padding: 8px;
   gap: 8px;
 }
@@ -311,9 +319,9 @@
 }
 
 .patch-analysis-lines {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
-  overflow-y: auto;
+  overflow: visible;
   font-family: "Courier New", Courier, monospace;
   font-size: 12px;
   line-height: 16px;

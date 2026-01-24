@@ -208,7 +208,7 @@ export function StudySidebar({
       )}
 
       {activeTab === 'analysis' && (
-        <>
+        <div className="patch-analysis-scroll">
           <div className="patch-analysis-settings">
             <label>
               Depth
@@ -236,7 +236,7 @@ export function StudySidebar({
             </label>
           </div>
           {renderAnalysis()}
-        </>
+        </div>
       )}
     </div>
   );

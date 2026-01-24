@@ -84,6 +84,17 @@ class EngineClient:
             json={"fen": fen, "depth": depth, "multipv": multipv},
             timeout=self.timeout,
         )
+        if not resp.ok:
+            body = (resp.text or "").strip()
+            if len(body) > 1000:
+                body = body[:1000] + "...(truncated)"
+            logger.error(
+                "sf.catachess error: status=%s url=%s headers=%s body=%s",
+                resp.status_code,
+                resp.url,
+                dict(resp.headers),
+                body,
+            )
         resp.raise_for_status()
         data = resp.json()
         return self._parse_sf_response(data)

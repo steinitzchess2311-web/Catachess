@@ -252,6 +252,7 @@
   border-radius: 6px;
   display: flex;
   flex-direction: column;
+  height: 170px;
   min-height: 0;
   flex: 1;
   padding: 8px;
@@ -263,6 +264,7 @@
   gap: 8px;
   align-items: center;
   font-size: 12px;
+  line-height: 16px;
   color: #242424;
 }
 
@@ -305,6 +307,7 @@
 .patch-analysis-error {
   color: #b91c1c;
   font-size: 12px;
+  line-height: 16px;
 }
 
 .patch-analysis-lines {
@@ -313,6 +316,7 @@
   overflow-y: auto;
   font-family: "Courier New", Courier, monospace;
   font-size: 12px;
+  line-height: 16px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -323,6 +327,7 @@
   grid-template-columns: 50px 1fr;
   gap: 8px;
   align-items: start;
+  line-height: 16px;
 }
 
 .patch-analysis-score {

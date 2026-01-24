@@ -164,10 +164,10 @@ function MoveBranch({
 }: MoveBranchProps) {
   if (!startNodeId) return null;
 
-  const renderVariations = (nodeId: string, ply: number) => {
+  const renderVariations = (nodeId: string, ply: number, overrideIds?: string[]) => {
     const node = nodes[nodeId];
-    if (!node || node.children.length < 2) return null;
-    const variationsIds = node.children.slice(1);
+    const variationsIds = overrideIds || node?.children.slice(1) || [];
+    if (!node || variationsIds.length === 0) return null;
     return (
       <div className="variations" style={{ 
         fontSize: '0.9em', 
@@ -203,6 +203,7 @@ function MoveBranch({
                 depth={depth + 1}
                 startPly={ply}
                 isMainline={false}
+                rootId={undefined}
                 collapsedVariations={collapsedVariations}
                 onToggleVariation={onToggleVariation}
               />
@@ -223,35 +224,152 @@ function MoveBranch({
 
     const isWhite = ply % 2 === 1;
     const moveNumber = Math.floor((ply + 1) / 2);
-    const whitePrefix = isWhite ? `${moveNumber}.` : '';
-    const blackPrefix = !isWhite ? `${moveNumber}...` : '';
 
-    lines.push(
-      <div key={`line-${currentId}`} className="move-line" style={{ 
-        display: 'flex',
-        gap: '6px',
-        marginBottom: '4px',
-        alignItems: 'center'
-      }}>
-        <MoveItem
-          nodeId={currentNode.id}
-          nodes={nodes}
-          cursorNodeId={cursorNodeId}
-          onSelect={onSelect}
-          isMainline={isMainline}
-          prefix={isWhite ? whitePrefix : blackPrefix}
-        />
-      </div>
-    );
+    if (isWhite) {
+      const whiteNode = currentNode;
+      const blackId = whiteNode.children[0] || null;
+      const blackNode = blackId ? nodes[blackId] : null;
+      const rootNode = rootId ? nodes[rootId] : null;
+      const hasRootVariations =
+        isMainline &&
+        depth === 0 &&
+        rootId &&
+        currentId === startNodeId &&
+        ply === startPly &&
+        (rootNode?.children.length || 0) > 1;
 
-    if (isMainline && depth === 0 && rootId && currentId === startNodeId && ply === startPly) {
-      lines.push(renderVariations(rootId, 1));
+      if (hasRootVariations) {
+        lines.push(
+          <div key={`line-white-${currentId}`} className="move-line" style={{ 
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '6px',
+            marginBottom: '4px',
+            alignItems: 'center'
+          }}>
+            <MoveItem
+              nodeId={whiteNode.id}
+              nodes={nodes}
+              cursorNodeId={cursorNodeId}
+              onSelect={onSelect}
+              isMainline={isMainline}
+              prefix={`${moveNumber}.`}
+            />
+            <div />
+          </div>
+        );
+        lines.push(renderVariations(rootId!, 1, rootNode!.children.slice(1)));
+      } else if (blackNode) {
+        lines.push(
+          <div key={`line-pair-${currentId}`} className="move-line" style={{ 
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '6px',
+            marginBottom: '4px',
+            alignItems: 'center'
+          }}>
+            <MoveItem
+              nodeId={whiteNode.id}
+              nodes={nodes}
+              cursorNodeId={cursorNodeId}
+              onSelect={onSelect}
+              isMainline={isMainline}
+              prefix={`${moveNumber}.`}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <MoveItem
+                nodeId={blackNode.id}
+                nodes={nodes}
+                cursorNodeId={cursorNodeId}
+                onSelect={onSelect}
+                isMainline={isMainline}
+                prefix={`${moveNumber}...`}
+              />
+            </div>
+          </div>
+        );
+      } else {
+        lines.push(
+          <div key={`line-white-${currentId}`} className="move-line" style={{ 
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: '6px',
+            marginBottom: '4px',
+            alignItems: 'center'
+          }}>
+            <MoveItem
+              nodeId={whiteNode.id}
+              nodes={nodes}
+              cursorNodeId={cursorNodeId}
+              onSelect={onSelect}
+              isMainline={isMainline}
+              prefix={`${moveNumber}.`}
+            />
+            <div />
+          </div>
+        );
+      }
+
+      if (blackNode) {
+        if (hasRootVariations) {
+          lines.push(
+            <div key={`line-black-${blackNode.id}`} className="move-line" style={{ 
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '6px',
+              marginBottom: '4px',
+              alignItems: 'center'
+            }}>
+            <div />
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <MoveItem
+                nodeId={blackNode.id}
+                nodes={nodes}
+                cursorNodeId={cursorNodeId}
+                onSelect={onSelect}
+                isMainline={isMainline}
+                prefix={`${moveNumber}...`}
+              />
+            </div>
+          </div>
+        );
+        }
+
+        lines.push(renderVariations(whiteNode.id, ply + 1));
+        lines.push(renderVariations(blackNode.id, ply + 2));
+
+        currentId = blackNode.children[0] || null;
+        ply += 2;
+      } else {
+        currentId = null;
+      }
+    } else {
+      const blackNode = currentNode;
+      lines.push(
+        <div key={`line-black-${currentId}`} className="move-line" style={{ 
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '6px',
+          marginBottom: '4px',
+          alignItems: 'center'
+        }}>
+          <div />
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <MoveItem
+              nodeId={blackNode.id}
+              nodes={nodes}
+              cursorNodeId={cursorNodeId}
+              onSelect={onSelect}
+              isMainline={isMainline}
+              prefix={`${moveNumber}...`}
+            />
+          </div>
+        </div>
+      );
+      lines.push(renderVariations(blackNode.id, ply + 1));
+      currentId = blackNode.children[0] || null;
+      ply += 1;
     }
-
-    lines.push(renderVariations(currentNode.id, ply + 1));
-
-    currentId = currentNode.children[0] || null;
-    ply += 1;
   }
 
   return (

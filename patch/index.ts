@@ -85,6 +85,9 @@ export type { FenFromPathResult, FenParts, FenValidationResult } from './chessJS
 export { MoveTree } from './sidebar/movetree';
 export type { MoveTreeProps } from './sidebar/movetree';
 
+// Terminal
+export { TerminalLauncher } from './modules/terminal';
+
 // Pages
 export { PatchStudyPage } from './PatchStudyPage';
 export type { PatchStudyPageProps } from './PatchStudyPage';

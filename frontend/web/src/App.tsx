@@ -27,6 +27,7 @@ import Header from "./components/Header";
 import AboutPage from "./components/AboutPage";
 import AccountPage from "../AccountPage";
 import { PatchStudyPage } from "@patch/PatchStudyPage";
+import { TerminalLauncher } from "@patch/modules/terminal";
 import "@patch/styles/index.css";
 
 // Entry switch configuration: default to patch unless explicitly disabled
@@ -356,6 +357,7 @@ function Layout() {
           <Route path="*" element={<div>404</div>} />
         </Routes>
       </main>
+      <TerminalLauncher />
     </>
   );
 }

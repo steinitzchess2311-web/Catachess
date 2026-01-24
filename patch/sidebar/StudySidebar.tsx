@@ -15,6 +15,8 @@ type EngineLine = {
   pv: string[];
 };
 
+const LICHESS_CLOUD_EVAL = 'https://lichess.org/api/cloud-eval';
+
 export function StudySidebar({
   chapters,
   currentChapterId,
@@ -34,48 +36,49 @@ export function StudySidebar({
   const [health, setHealth] = useState<'unknown' | 'ok' | 'down'>('unknown');
   const inFlightRef = useRef(false);
   const pollRef = useRef<number | null>(null);
+  const nextAllowedRef = useRef<number>(0);
 
   const analyzePosition = async (fen: string) => {
     if (!fen || inFlightRef.current) return;
+    const now = Date.now();
+    if (now < nextAllowedRef.current) return;
     inFlightRef.current = true;
     setStatus('running');
     setError(null);
     try {
-      const response = await fetch('/api/engine/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fen, depth, multipv }),
+      const params = new URLSearchParams({
+        fen,
+        multiPv: String(multipv),
       });
+      const response = await fetch(`${LICHESS_CLOUD_EVAL}?${params.toString()}`);
+      if (response.status === 429) {
+        nextAllowedRef.current = Date.now() + 10000;
+        throw new Error('Rate limited (429). Backing off for 10s.');
+      }
       if (!response.ok) {
         const text = await response.text();
         throw new Error(text || `Engine error (${response.status})`);
       }
       const data = await response.json();
-      setLines(Array.isArray(data.lines) ? data.lines : []);
+      const parsedLines: EngineLine[] = Array.isArray(data.pvs)
+        ? data.pvs.map((pv: any, index: number) => ({
+            multipv: index + 1,
+            score: pv.mate != null ? `mate${pv.mate}` : pv.cp ?? 0,
+            pv: typeof pv.moves === 'string' ? pv.moves.split(' ') : [],
+          }))
+        : [];
+      setLines(parsedLines);
       setStatus('ready');
       setLastUpdated(Date.now());
+      setHealth('ok');
     } catch (e: any) {
       setStatus('error');
       setError(e?.message || 'Engine request failed');
+      setHealth('down');
     } finally {
       inFlightRef.current = false;
     }
   };
-
-  const checkHealth = async () => {
-    try {
-      const response = await fetch('/api/engine/health');
-      if (!response.ok) throw new Error('Health check failed');
-      setHealth('ok');
-    } catch {
-      setHealth('down');
-    }
-  };
-
-  useEffect(() => {
-    if (activeTab !== 'analysis') return;
-    checkHealth();
-  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab !== 'analysis' || !autoAnalyze) return;

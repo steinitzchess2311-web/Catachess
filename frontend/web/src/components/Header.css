@@ -48,3 +48,9 @@
     color: #1a73e8;
     text-decoration: none;
 }
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}

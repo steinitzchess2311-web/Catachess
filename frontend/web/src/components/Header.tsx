@@ -22,10 +22,9 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed }) => {
           <span className="app-name">Catachess</span>
         </Link>
       </div>
-      <nav className="header-center">
-        <Link to="/about" className="nav-link">About Us</Link>
-      </nav>
+      <nav className="header-center" />
       <div className="header-right">
+        <Link to="/about" className="nav-link">About Us</Link>
         {isAuthed ? (
           <Link to="/account" className="username">{displayName}</Link>
         ) : (

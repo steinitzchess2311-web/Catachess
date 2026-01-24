@@ -6,7 +6,7 @@
   height: 100vh;
   padding: 16px;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .patch-study-header {

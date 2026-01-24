@@ -2,7 +2,7 @@
 
 This file defines the minimum environment variables required to run
 PGN v2 end-to-end (Postgres + R2 + Engine). It also lists the code
-paths that read each variable.
+paths that read each variable./
 
 ## 1) Postgres (workspace data)
 

@@ -224,6 +224,50 @@ function MoveBranch({
 
     const isWhite = ply % 2 === 1;
     const moveNumber = Math.floor((ply + 1) / 2);
+    const forceSingleLine = depth >= 2;
+
+    if (forceSingleLine) {
+      lines.push(
+        <div key={`line-single-${currentId}`} className="move-line" style={{ 
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr',
+          gap: '6px',
+          marginBottom: '4px',
+          alignItems: 'center'
+        }}>
+          {isWhite ? (
+            <MoveItem
+              nodeId={currentNode.id}
+              nodes={nodes}
+              cursorNodeId={cursorNodeId}
+              onSelect={onSelect}
+              isMainline={isMainline}
+              prefix={`${moveNumber}.`}
+            />
+          ) : (
+            <div />
+          )}
+          {!isWhite ? (
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <MoveItem
+                nodeId={currentNode.id}
+                nodes={nodes}
+                cursorNodeId={cursorNodeId}
+                onSelect={onSelect}
+                isMainline={isMainline}
+                prefix={`${moveNumber}...`}
+              />
+            </div>
+          ) : (
+            <div />
+          )}
+        </div>
+      );
+      lines.push(renderVariations(currentNode.id, ply + 1));
+      currentId = currentNode.children[0] || null;
+      ply += 1;
+      continue;
+    }
 
     if (isWhite) {
       const whiteNode = currentNode;

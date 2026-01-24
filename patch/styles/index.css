@@ -396,6 +396,18 @@
   border-radius: 4px;
 }
 
+.study-board-nav {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.study-board-nav-button {
+  width: 56px;
+  height: 32px;
+}
+
 .study-board-placeholder {
   color: #666;
   font-size: 16px;

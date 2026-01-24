@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { useStudy } from '../studyContext';
 import { getMoveSan } from '../chessJS/replay';
@@ -11,6 +11,7 @@ export interface StudyBoardProps {
 
 export function StudyBoard({ className, boardWidth = 500 }: StudyBoardProps) {
   const { state, addMove, setError, selectNode } = useStudy();
+  const [orientation, setOrientation] = useState<'white' | 'black'>('white');
 
   const moveToStart = useCallback(() => {
     selectNode(state.tree.rootId);
@@ -67,23 +68,34 @@ export function StudyBoard({ className, boardWidth = 500 }: StudyBoardProps) {
   );
 
   return (
-    <div className={`study-board-container ${className || ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: 'fit-content' }}>
+    <div
+      className={`study-board-container ${className || ''}`}
+      style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: boardWidth }}
+    >
       <div className="study-board-wrapper" style={{ width: boardWidth, height: boardWidth }}>
         <Chessboard
           id="study-board"
           position={state.currentFen}
           onPieceDrop={onPieceDrop}
           boardWidth={boardWidth}
+          boardOrientation={orientation}
           customDarkSquareStyle={{ backgroundColor: '#779954' }}
           customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
           animationDuration={200}
         />
       </div>
-      <div className="study-board-nav" style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-        <button type="button" onClick={moveToStart} style={{ width: '40px' }}>|&lt;</button>
-        <button type="button" onClick={moveToPrev} style={{ width: '40px' }}>&lt;</button>
-        <button type="button" onClick={moveToNext} style={{ width: '40px' }}>&gt;</button>
-        <button type="button" onClick={moveToEnd} style={{ width: '40px' }}>&gt;|</button>
+      <div className="study-board-nav">
+        <button type="button" className="study-board-nav-button" onClick={moveToStart}>|&lt;</button>
+        <button type="button" className="study-board-nav-button" onClick={moveToPrev}>&lt;</button>
+        <button type="button" className="study-board-nav-button" onClick={moveToNext}>&gt;</button>
+        <button type="button" className="study-board-nav-button" onClick={moveToEnd}>&gt;|</button>
+        <button
+          type="button"
+          className="study-board-nav-button"
+          onClick={() => setOrientation((prev) => (prev === 'white' ? 'black' : 'white'))}
+        >
+          Flip
+        </button>
       </div>
     </div>
   );

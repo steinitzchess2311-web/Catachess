@@ -298,6 +298,10 @@
   color: #666;
 }
 
+.patch-analysis-source {
+  color: #666;
+}
+
 .patch-analysis-error {
   color: #b91c1c;
   font-size: 12px;

@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useStudy } from '../studyContext';
 import { uciLineToSan } from '../chessJS/uci';
 import { getFullmoveNumber, getTurn } from '../chessJS/fen';
+import { analyzeWithFallback } from '../engine/client';
+import type { EngineLine, EngineSource } from '../engine/types';
 import { ChapterList } from './ChapterList';
 
 export interface StudySidebarProps {
@@ -11,13 +13,7 @@ export interface StudySidebarProps {
   onCreateChapter: () => void;
 }
 
-type EngineLine = {
-  multipv: number;
-  score: number | string;
-  pv: string[];
-};
-
-const LICHESS_CLOUD_EVAL = 'https://lichess.org/api/cloud-eval';
+const FALLBACK_BACKOFF_MS = 10000;
 
 function formatScore(raw: number | string): string {
   if (typeof raw === 'string') {
@@ -66,6 +62,7 @@ export function StudySidebar({
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [health, setHealth] = useState<'unknown' | 'ok' | 'down'>('unknown');
+  const [source, setSource] = useState<EngineSource | null>(null);
   const inFlightRef = useRef(false);
   const pollRef = useRef<number | null>(null);
   const nextAllowedRef = useRef<number>(0);
@@ -78,32 +75,16 @@ export function StudySidebar({
     setStatus('running');
     setError(null);
     try {
-      const params = new URLSearchParams({
-        fen,
-        multiPv: String(multipv),
-      });
-      const response = await fetch(`${LICHESS_CLOUD_EVAL}?${params.toString()}`);
-      if (response.status === 429) {
-        nextAllowedRef.current = Date.now() + 10000;
-        throw new Error('Rate limited (429). Backing off for 10s.');
-      }
-      if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `Engine error (${response.status})`);
-      }
-      const data = await response.json();
-      const parsedLines: EngineLine[] = Array.isArray(data.pvs)
-        ? data.pvs.map((pv: any, index: number) => ({
-            multipv: index + 1,
-            score: pv.mate != null ? `mate${pv.mate}` : pv.cp ?? 0,
-            pv: typeof pv.moves === 'string' ? pv.moves.split(' ') : [],
-          }))
-        : [];
-      setLines(parsedLines);
+      const result = await analyzeWithFallback(fen, depth, multipv);
+      setLines(result.lines);
+      setSource(result.source);
       setStatus('ready');
       setLastUpdated(Date.now());
       setHealth('ok');
     } catch (e: any) {
+      if (e?.message?.includes('429')) {
+        nextAllowedRef.current = Date.now() + FALLBACK_BACKOFF_MS;
+      }
       setStatus('error');
       setError(e?.message || 'Engine request failed');
       setHealth('down');
@@ -140,6 +121,7 @@ export function StudySidebar({
     setLines([]);
     setError(null);
     setLastUpdated(null);
+    setSource(null);
   }, [engineEnabled]);
 
   useEffect(() => {
@@ -147,6 +129,7 @@ export function StudySidebar({
     setLines([]);
     setStatus('idle');
     setError(null);
+    setSource(null);
   }, [activeTab, engineEnabled, state.currentFen, depth, multipv]);
 
   const renderAnalysis = () => (
@@ -162,6 +145,7 @@ export function StudySidebar({
                 ? 'Engine Down'
                 : 'Engine Unknown'}
         </span>
+        {source && <span className="patch-analysis-source">{source}</span>}
         {lastUpdated && (
           <span className="patch-analysis-updated">
             {new Date(lastUpdated).toLocaleTimeString()}

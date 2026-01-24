@@ -230,7 +230,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
           <div className="patch-study-save-status">{savedLabel}</div>
         </div>
       </div>
-      <div className="patch-study-layout">
+      <div className="patch-study-layout" style={{ height: '900px' }}>
         <div className="patch-study-sidebar">
           <ChapterList
             chapters={chapters}

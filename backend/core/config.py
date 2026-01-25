@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     # Comma-separated list of allowed origins
     # For development: "http://localhost:3000,http://localhost:5173"
     # For production: "https://yourdomain.com"
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:5174"
+    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:5173,http://localhost:5174,https://catachess.com,https://www.catachess.com"
     # Optional regex for dynamic subdomains (e.g., Cloudflare Pages)
     # Default allows any https origin; tighten in production via env.
     CORS_ORIGIN_REGEX: str = r"^https?://.*$"

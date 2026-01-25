@@ -8,7 +8,7 @@ from difflib import SequenceMatcher
 from typing import List, Optional
 
 from models.tagger import PlayerProfile
-from modules.tagger.service import normalize_name
+from modules.tagger.utils import normalize_name
 
 
 @dataclass

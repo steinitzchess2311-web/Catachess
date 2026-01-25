@@ -7,7 +7,8 @@ Tagger Module - Pipeline 与存储调度
 """
 from modules.tagger.errors import TaggerErrorCode, UploadStatus
 from modules.tagger.storage import TaggerStorage, TaggerStorageConfig, TaggerKeyBuilder
-from modules.tagger.service import TaggerService, normalize_name
+from modules.tagger.service import TaggerService
+from modules.tagger.utils import normalize_name
 
 __all__ = [
     "TaggerErrorCode",

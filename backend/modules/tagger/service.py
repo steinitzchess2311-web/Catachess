@@ -8,7 +8,6 @@ Tagger Service - Pipeline 与存储调度
 - 返回进度与状态
 """
 import uuid
-import unicodedata
 from datetime import datetime
 from typing import Optional
 
@@ -19,12 +18,7 @@ from models.tagger import PlayerProfile, PgnUpload, PgnGame, FailedGame, TagStat
 from modules.tagger.errors import UploadStatus
 from modules.tagger.storage import TaggerStorage
 from modules.tagger.pipeline.pipeline import TaggerPipeline
-
-
-def normalize_name(name: str) -> str:
-    """规范化棋手名称"""
-    normalized = unicodedata.normalize("NFKC", name.lower().strip())
-    return "".join(c for c in normalized if c.isalnum() or c.isspace()).strip()
+from modules.tagger.utils import normalize_name
 
 
 class TaggerService:

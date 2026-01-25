@@ -6,7 +6,7 @@ from __future__ import annotations
 import hashlib
 from typing import Dict, Iterable
 
-from modules.tagger.service import normalize_name
+from modules.tagger.utils import normalize_name
 
 
 def compute_game_hash(headers: Dict[str, str], moves_uci: Iterable[str]) -> str:

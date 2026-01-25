@@ -1,5 +1,6 @@
 # core/chess_engine/client.py
 import requests
+import time
 from core.config import settings
 from core.chess_engine.schemas import EngineResult, EngineLine
 from core.chess_engine.fallback import analyze_legal_moves
@@ -99,25 +100,58 @@ class EngineClient:
 
     def _analyze_sf(self, fen: str, depth: int, multipv: int) -> EngineResult:
         logger.info(f"Analyzing (sf.catachess): fen={fen[:50]}..., multipv={multipv}")
-        resp = requests.post(
-            self.sf_url,
-            json={"fen": fen, "depth": depth, "multipv": multipv},
-            timeout=self.timeout,
-        )
-        if not resp.ok:
-            body = (resp.text or "").strip()
-            if len(body) > 1000:
-                body = body[:1000] + "...(truncated)"
-            logger.error(
-                "sf.catachess error: status=%s url=%s headers=%s body=%s",
-                resp.status_code,
-                resp.url,
-                dict(resp.headers),
-                body,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        return self._parse_sf_response(data, self._fen_turn(fen))
+        payload = {"fen": fen, "depth": depth, "multipv": multipv}
+        headers = {
+            "User-Agent": "catachess-engine/1.0",
+            "Accept": "application/json",
+        }
+        last_exc: Exception | None = None
+        # Retry transient upstream errors to avoid brief CF/origin blips.
+        for attempt in range(3):
+            try:
+                resp = requests.post(
+                    self.sf_url,
+                    json=payload,
+                    timeout=self.timeout,
+                    headers=headers,
+                )
+                if resp.status_code in (502, 503, 504) and attempt < 2:
+                    logger.warning(
+                        "sf.catachess transient error: status=%s url=%s (attempt %s)",
+                        resp.status_code,
+                        resp.url,
+                        attempt + 1,
+                    )
+                    time.sleep(0.2 * (2 ** attempt))
+                    continue
+                if not resp.ok:
+                    body = (resp.text or "").strip()
+                    if len(body) > 1000:
+                        body = body[:1000] + "...(truncated)"
+                    logger.error(
+                        "sf.catachess error: status=%s url=%s headers=%s body=%s",
+                        resp.status_code,
+                        resp.url,
+                        dict(resp.headers),
+                        body,
+                    )
+                resp.raise_for_status()
+                data = resp.json()
+                return self._parse_sf_response(data, self._fen_turn(fen))
+            except requests.RequestException as exc:
+                last_exc = exc
+                if attempt < 2:
+                    logger.warning(
+                        "sf.catachess request error: %s (attempt %s)",
+                        exc,
+                        attempt + 1,
+                    )
+                    time.sleep(0.2 * (2 ** attempt))
+                    continue
+                raise ChessEngineError(f"sf.catachess request failed: {exc}") from exc
+        if last_exc is not None:
+            raise ChessEngineError(f"sf.catachess request failed: {last_exc}") from last_exc
+        raise ChessEngineError("sf.catachess request failed: unknown error")
 
     def _parse_cloud_eval(self, data: dict) -> EngineResult:
         """

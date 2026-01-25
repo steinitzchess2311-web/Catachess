@@ -72,6 +72,6 @@
 - failed_games: index(player_id, upload_id)
 
 ## Checklist
-- [ ] 表结构字段确认
-- [ ] 约束与索引确认
-- [ ] 统计口径字段 total_positions 明确为“该棋手走子总步数”
+- [x] 表结构字段确认
+- [x] 约束与索引确认
+- [x] 统计口径字段 total_positions 明确为"该棋手走子总步数"

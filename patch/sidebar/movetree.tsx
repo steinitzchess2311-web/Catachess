@@ -91,6 +91,10 @@ export function MoveTree({ className }: MoveTreeProps) {
     selectNode(nodeId);
   };
 
+  const handleContainerContextMenu = (event: React.MouseEvent) => {
+    event.preventDefault();
+  };
+
   const handleContextMenu = (nodeId: string, event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
@@ -151,12 +155,16 @@ export function MoveTree({ className }: MoveTreeProps) {
   };
 
   return (
-    <div className={`move-tree-container ${className || ''}`} style={{ 
-      padding: '10px', 
-      fontFamily: 'sans-serif',
-      fontSize: '14px',
-      overflowY: 'auto'
-    }}>
+    <div
+      className={`move-tree-container ${className || ''}`}
+      onContextMenu={handleContainerContextMenu}
+      style={{ 
+        padding: '10px', 
+        fontFamily: 'sans-serif',
+        fontSize: '14px',
+        overflowY: 'auto'
+      }}
+    >
       <div className="move-tree-title" style={{ fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #ddd', paddingBottom: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>Move Tree</span>
         <div className="tree-controls" style={{ fontSize: '0.8em' }}>

@@ -130,16 +130,9 @@ function LoginPage() {
     setLoading(true);
 
     try {
-      const formData = new URLSearchParams();
-      formData.append("username", email);
-      formData.append("password", password);
-
-      const response = await api.request("/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: formData.toString(),
+      const response = await api.post("/auth/login/json", {
+        identifier: email,
+        password,
       });
 
       if (response?.access_token) {

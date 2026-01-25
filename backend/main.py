@@ -15,7 +15,7 @@ if str(backend_dir) not in sys.path:
 if str(project_root) not in sys.path:
     sys.path.insert(1, str(project_root))
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from routers import auth, assignments, user_profile, game_storage, chess_engine, chess_rules, imitator, tagger_router
@@ -100,6 +100,41 @@ if "*" in origins:
 if not origins and not origin_regex:
     origins = ["*"]
     allow_credentials = False
+
+def _tagger_cors_headers(request: Request) -> dict[str, str]:
+    origin = request.headers.get("origin")
+    if not origin:
+        return {}
+    allowed = origin in origins
+    if not allowed and origin_regex:
+        try:
+            allowed = re.match(origin_regex, origin) is not None
+        except re.error:
+            allowed = False
+    if not allowed:
+        return {}
+    return {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+        "Access-Control-Allow-Headers": "Authorization,Content-Type",
+        "Vary": "Origin",
+    }
+
+
+@app.middleware("http")
+async def tagger_cors_failsafe(request: Request, call_next):
+    # Only affects /api/tagger/* to avoid impacting other routes.
+    if request.url.path.startswith("/api/tagger/"):
+        if request.method == "OPTIONS":
+            return Response(status_code=204, headers=_tagger_cors_headers(request))
+        response = await call_next(request)
+        headers = _tagger_cors_headers(request)
+        if headers:
+            response.headers.update(headers)
+        return response
+    return await call_next(request)
+
 
 app.add_middleware(
     CORSMiddleware,

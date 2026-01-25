@@ -52,10 +52,5 @@ async def tagger_cors_preflight(path: str, request: Request):
     return Response(status_code=204, headers=_cors_headers_for_request(request))
 
 
-@router.middleware("http")
-async def tagger_cors_middleware(request: Request, call_next):
-    response = await call_next(request)
-    headers = _cors_headers_for_request(request)
-    if headers:
-        response.headers.update(headers)
-    return response
+ # NOTE: APIRouter does not support middleware.
+ # Tagger routes rely on the global CORSMiddleware in backend/main.py.

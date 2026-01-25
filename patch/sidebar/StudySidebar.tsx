@@ -57,7 +57,7 @@ export function StudySidebar({
   const [depth, setDepth] = useState(14);
   const [multipv, setMultipv] = useState(3);
   const [engineEnabled, setEngineEnabled] = useState(false);
-  const [engineMode, setEngineMode] = useState<'cloud' | 'sf'>('cloud');
+  const [engineMode, setEngineMode] = useState<'cloud' | 'sf'>('sf');
   const [cloudBlocked, setCloudBlocked] = useState(false);
   const [engineNotice, setEngineNotice] = useState<string | null>(null);
   const [lines, setLines] = useState<EngineLine[]>([]);
@@ -69,12 +69,27 @@ export function StudySidebar({
   const inFlightRef = useRef(false);
   const pollRef = useRef<number | null>(null);
   const nextAllowedRef = useRef<number>(0);
+  const cacheRef = useRef<
+    Map<string, { lines: EngineLine[]; source: EngineSource; updated: number }>
+  >(new Map());
+
+  const getCacheKey = (fen: string) => `${engineMode}:${depth}:${multipv}:${fen}`;
 
   const analyzePosition = async (fen: string) => {
     if (!fen || inFlightRef.current) return;
     if (engineMode === 'cloud' && cloudBlocked) return;
     const now = Date.now();
     if (now < nextAllowedRef.current) return;
+    const cacheKey = getCacheKey(fen);
+    const cached = cacheRef.current.get(cacheKey);
+    if (cached) {
+      setLines(cached.lines);
+      setSource(cached.source);
+      setStatus('ready');
+      setLastUpdated(cached.updated);
+      setHealth('ok');
+      return;
+    }
     inFlightRef.current = true;
     setStatus('running');
     setError(null);
@@ -83,8 +98,14 @@ export function StudySidebar({
       setLines(result.lines);
       setSource(result.source);
       setStatus('ready');
-      setLastUpdated(Date.now());
+      const updated = Date.now();
+      setLastUpdated(updated);
       setHealth('ok');
+      cacheRef.current.set(cacheKey, {
+        lines: result.lines,
+        source: result.source,
+        updated,
+      });
     } catch (e: any) {
       if (e?.message?.includes('429')) {
         nextAllowedRef.current = Date.now() + FALLBACK_BACKOFF_MS;
@@ -110,9 +131,11 @@ export function StudySidebar({
 
     analyzePosition(state.currentFen);
     if (pollRef.current) window.clearInterval(pollRef.current);
-    pollRef.current = window.setInterval(() => {
-      analyzePosition(state.currentFen);
-    }, 2000);
+    if (engineMode === 'sf') {
+      pollRef.current = window.setInterval(() => {
+        analyzePosition(state.currentFen);
+      }, 2000);
+    }
 
     return () => {
       if (pollRef.current) {
@@ -252,7 +275,9 @@ export function StudySidebar({
                     const enabled = e.target.checked;
                     setEngineEnabled(enabled);
                     if (enabled) {
-                      setEngineMode('cloud');
+                      setEngineMode('sf');
+                      setCloudBlocked(false);
+                      setEngineNotice(null);
                     }
                   }}
                   aria-label="Engine"

@@ -401,7 +401,8 @@ export class ChessAPI {
   async analyzePosition(
     position: BoardPosition,
     depth: number = 15,
-    multipv: number = 3
+    multipv: number = 3,
+    engine?: string
   ): Promise<EngineAnalysisResult> {
     try {
       const response = await fetch(`${this.baseURL}/api/engine/analyze`, {
@@ -413,6 +414,7 @@ export class ChessAPI {
           fen: this.positionToFEN(position),
           depth: depth,
           multipv: multipv,
+          engine: engine,
         }),
       });
 

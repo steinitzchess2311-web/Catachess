@@ -33,6 +33,9 @@ export class EngineAnalysis {
   private currentPosition: BoardPosition | null = null;
   private isAnalyzing: boolean = false;
   private metricsInterval: number | null = null;
+  private engineMode: 'cloud' | 'sf' = 'cloud';
+  private cloudBlocked: boolean = false;
+  private engineNotice: string | null = null;
 
   // Analysis settings
   private depth: number = 15;
@@ -175,6 +178,29 @@ export class EngineAnalysis {
     };
     settingsRow.appendChild(multipvLabel);
 
+    // Engine control
+    const engineLabel = document.createElement('label');
+    engineLabel.style.cssText = 'flex: 1; font-size: 13px;';
+    engineLabel.innerHTML = `
+      <div style="margin-bottom: 4px;">Engine</div>
+      <select style="width: 100%; padding: 4px;">
+        <option value="cloud">Lichess Cloud</option>
+        <option value="sf">SFCata</option>
+      </select>
+    `;
+    const engineSelect = engineLabel.querySelector('select') as HTMLSelectElement;
+    engineSelect.value = this.engineMode;
+    engineSelect.onchange = () => {
+      this.engineMode = engineSelect.value as 'cloud' | 'sf';
+      this.cloudBlocked = false;
+      this.engineNotice = null;
+      this.renderControls();
+      if (this.currentPosition && !this.isAnalyzing) {
+        this.analyze();
+      }
+    };
+    settingsRow.appendChild(engineLabel);
+
     this.controlsContainer.appendChild(settingsRow);
   }
 
@@ -183,20 +209,35 @@ export class EngineAnalysis {
    */
   private renderAnalysis(result: EngineAnalysisResult | null): void {
     if (!result || result.lines.length === 0) {
+      const message =
+        this.engineNotice ||
+        (this.currentPosition ? 'Click "Analyze Position" to start' : 'Make a move to analyze');
+      const color = this.engineNotice ? '#ff9800' : '#888';
       this.analysisContainer.innerHTML = `
         <div style="
-          color: #888;
+          color: ${color};
           text-align: center;
           padding: 40px 20px;
           font-size: 14px;
         ">
-          ${this.currentPosition ? 'Click "Analyze Position" to start' : 'Make a move to analyze'}
+          ${message}
         </div>
       `;
       return;
     }
 
     this.analysisContainer.innerHTML = '';
+
+    if (this.engineNotice) {
+      const noticeEl = document.createElement('div');
+      noticeEl.style.cssText = `
+        color: #ff9800;
+        font-size: 12px;
+        margin-bottom: 6px;
+      `;
+      noticeEl.textContent = this.engineNotice;
+      this.analysisContainer.appendChild(noticeEl);
+    }
 
     if (result.source) {
       const sourceInfo = document.createElement('div');
@@ -378,6 +419,11 @@ export class EngineAnalysis {
    */
   async analyze(): Promise<void> {
     if (!this.currentPosition || this.isAnalyzing) return;
+    if (this.engineMode === 'cloud' && this.cloudBlocked) {
+      this.engineNotice = 'Cloud Eval unavailable. Please select SFCata engine.';
+      this.renderAnalysis(null);
+      return;
+    }
 
     this.isAnalyzing = true;
     this.renderControls();
@@ -387,21 +433,32 @@ export class EngineAnalysis {
       const result = await chessAPI.analyzePosition(
         this.currentPosition,
         this.depth,
-        this.multipv
+        this.multipv,
+        this.engineMode
       );
+      if (this.engineMode === 'cloud' && result.source && result.source !== 'CloudEval') {
+        this.cloudBlocked = true;
+        this.engineNotice = 'Cloud Eval unavailable. Please select SFCata engine.';
+      }
       this.renderAnalysis(result);
     } catch (error) {
       console.error('Analysis failed:', error);
-      this.analysisContainer.innerHTML = `
-        <div style="
-          color: #f44336;
-          text-align: center;
-          padding: 20px;
-          font-size: 14px;
-        ">
-          Analysis failed. Please try again.
-        </div>
-      `;
+      if (this.engineMode === 'cloud') {
+        this.cloudBlocked = true;
+        this.engineNotice = 'Cloud Eval unavailable. Please select SFCata engine.';
+        this.renderAnalysis(null);
+      } else {
+        this.analysisContainer.innerHTML = `
+          <div style="
+            color: #f44336;
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+          ">
+            Analysis failed. Please try again.
+          </div>
+        `;
+      }
     } finally {
       this.isAnalyzing = false;
       this.renderControls();

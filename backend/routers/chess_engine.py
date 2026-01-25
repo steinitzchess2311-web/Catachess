@@ -23,6 +23,7 @@ class AnalyzeRequest(BaseModel):
     fen: str
     depth: int = 15
     multipv: int = 3
+    engine: str | None = None
 
 
 class AnalyzeResponse(BaseModel):
@@ -51,6 +52,7 @@ async def analyze_position(request: AnalyzeRequest):
             fen=request.fen,
             depth=request.depth,
             multipv=request.multipv,
+            engine=request.engine,
         )
 
         # Convert to response format

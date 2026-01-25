@@ -194,6 +194,7 @@ export function MoveTree({ className }: MoveTreeProps) {
         <div
           className="patch-context-menu"
           style={{ top: menuState.y, left: menuState.x }}
+          onMouseLeave={() => setMenuState(null)}
         >
           <button
             type="button"
@@ -298,7 +299,12 @@ function MoveBranch({
         marginLeft: '12px'
       }}>
         {variationsIds.map((vId) => (
-          <div key={vId} className="variation-wrapper" style={{ marginBottom: '4px' }}>
+          <div
+            key={vId}
+            className="variation-wrapper"
+            style={{ marginBottom: '4px' }}
+            onContextMenu={(event) => onContextMenu(vId, event)}
+          >
             <button
               type="button"
               onClick={() => onToggleVariation(vId)}

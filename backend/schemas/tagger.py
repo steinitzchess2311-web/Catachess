@@ -62,6 +62,12 @@ class UploadStatusResponse(BaseModel):
     last_updated: datetime
 
 
+class UploadListResponse(BaseModel):
+    """上传列表响应"""
+    uploads: list[UploadResponse]
+    total: int
+
+
 # === Stats Schemas ===
 
 class TagStatItem(BaseModel):

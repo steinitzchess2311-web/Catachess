@@ -8,4 +8,4 @@ class EngineLine(BaseModel):
 
 class EngineResult(BaseModel):
     lines: List[EngineLine]
-
+    source: str | None = None

@@ -151,7 +151,7 @@ class EngineClient:
                 pv=uci_moves
             ))
             
-        return EngineResult(lines=lines)
+        return EngineResult(lines=lines, source="CloudEval")
 
     def _parse_sf_response(self, data: dict, turn: str) -> EngineResult:
         if "info" not in data or not isinstance(data["info"], list):
@@ -215,7 +215,7 @@ class EngineClient:
             _, score, pv_moves = per_multipv[multipv]
             lines.append(EngineLine(multipv=multipv, score=score, pv=pv_moves))
 
-        return EngineResult(lines=lines)
+        return EngineResult(lines=lines, source="SFCata")
 
     @staticmethod
     def _fen_turn(fen: str) -> str:

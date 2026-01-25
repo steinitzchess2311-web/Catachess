@@ -425,6 +425,7 @@ export class ChessAPI {
         lines: data.lines || [],
         depth: depth,
         spotId: data.spot_id || undefined,
+        source: data.source || undefined,
       };
     } catch (error) {
       console.error('Failed to analyze position:', error);
@@ -508,6 +509,7 @@ export interface EngineAnalysisResult {
   lines: EngineLine[];
   depth: number;
   spotId?: string;
+  source?: string;
 }
 
 export interface EngineSpotMetrics {

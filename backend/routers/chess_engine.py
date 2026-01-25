@@ -28,7 +28,7 @@ class AnalyzeRequest(BaseModel):
 class AnalyzeResponse(BaseModel):
     """Analysis result from engine"""
     lines: list[dict]
-    source: str = "cloud-eval"
+    source: str | None = None
 
 
 # Initialize engine client
@@ -64,7 +64,7 @@ async def analyze_position(request: AnalyzeRequest):
         ]
 
         logger.info(f"Analysis complete: {len(lines)} lines")
-        return AnalyzeResponse(lines=lines)
+        return AnalyzeResponse(lines=lines, source=result.source)
 
     except ChessEngineTimeoutError as e:
         logger.error(f"Engine timeout: {e}")

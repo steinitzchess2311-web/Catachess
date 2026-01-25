@@ -18,10 +18,10 @@ def analyze_legal_moves(fen: str, depth: int, multipv: int) -> EngineResult:
         legal_moves = generate_legal_moves(state)
     except Exception as exc:
         logger.error(f"Fallback engine failed to parse FEN: {exc}")
-        return EngineResult(lines=[])
+        return EngineResult(lines=[], source="Fallback")
 
     if not legal_moves:
-        return EngineResult(lines=[])
+        return EngineResult(lines=[], source="Fallback")
 
     lines: list[EngineLine] = []
     for idx, move in enumerate(legal_moves[: max(1, multipv)]):
@@ -38,4 +38,4 @@ def analyze_legal_moves(fen: str, depth: int, multipv: int) -> EngineResult:
         depth,
         multipv,
     )
-    return EngineResult(lines=lines)
+    return EngineResult(lines=lines, source="Fallback")

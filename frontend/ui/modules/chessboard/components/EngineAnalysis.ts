@@ -198,6 +198,17 @@ export class EngineAnalysis {
 
     this.analysisContainer.innerHTML = '';
 
+    if (result.source) {
+      const sourceInfo = document.createElement('div');
+      sourceInfo.style.cssText = `
+        color: #999;
+        font-size: 12px;
+        margin-bottom: 6px;
+      `;
+      sourceInfo.textContent = `Engine: ${result.source}`;
+      this.analysisContainer.appendChild(sourceInfo);
+    }
+
     if (result.spotId) {
       const spotInfo = document.createElement('div');
       spotInfo.style.cssText = `

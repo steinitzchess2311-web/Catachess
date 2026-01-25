@@ -77,7 +77,7 @@ class EngineSpot:
                     EngineLine(**data)
                     for data in sorted(multipv_data.values(), key=lambda x: x['multipv'])
                 ]
-                result = EngineResult(lines=lines)
+                result = EngineResult(lines=lines, source="SFCata")
 
                 # On success: update metrics
                 latency_ms = (time.time() - start_time) * 1000

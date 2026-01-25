@@ -36,6 +36,7 @@
 - 输入：PGN 文件 + 用户输入棋手名。
 - 名称处理：
   - 规范化：去标点/空格/大小写/重音。
+  - 匹配优先级：aliases > display_name > 模糊匹配（PGN White/Black）。
   - 模糊匹配 PGN headers 里的 White/Black。
   - 若匹配不唯一 → 弹出确认选择，选择结果写入别名。
 - 走子筛选：
@@ -46,6 +47,9 @@
   - 记录 tag 命中。
 - 统计：
   - 白方统计、黑方统计、总统计同步累加。
+
+### 1.3 统计口径（必须统一）
+- 百分比分母 = 该棋手走子总步数。\n- 白/黑统计各自独立分母，总统计为两者之和。\n- 保证白/黑/总三套统计口径一致、可比较。
 
 ---
 
@@ -69,9 +73,10 @@
   - 保证不重复计入
 
 ### 2.3 去重与增量
-- 每盘棋生成 `game_hash`（headers + 主线走子）
-- `game_hash` 与 player_id 绑定存表
-- 再次上传时跳过已处理的 game_hash
+- 每盘棋生成 `game_hash`（规范化后的 headers + 主线走子）。\n- `game_hash` 与 player_id 绑定存表。\n- 再次上传时跳过已处理的 game_hash。\n- 规范化规则：\n  - headers 仅保留识别对局所需字段（White/Black/Date/Event/Result），忽略站点/时间戳等不稳定字段。\n  - 主线走子统一为标准 UCI（或 SAN）后再 hash。
+
+### 2.4 失败处理策略（明确规则）
+- 单盘失败不影响整次上传。\n- 失败盘记录 headers + 原因，前端可查看“失败清单”。\n- 上传整体状态可为 completed_with_errors。
 
 ---
 
@@ -97,7 +102,7 @@
 - player_id
 - r2_key_raw
 - checksum
-- status (pending/processing/done/failed)
+- status (pending/processing/done/failed/completed_with_errors)
 - created_at / updated_at
 
 **3) pgn_games**
@@ -115,7 +120,7 @@
 - scope (white/black/total)
 - tag_name
 - tag_count
-- total_positions
+- total_positions（该棋手走子总步数）
 - updated_at
 
 **5) tag_runs（审计可选）**
@@ -192,7 +197,7 @@
 ### 5.3 Player 详情页
 - 顶部：
   - 棋手名 + 别名
-  - 状态（Idle / Processing / Error）
+  - 状态（Idle / Processing / Error / CompletedWithErrors）
 - 上传区：
   - 拖拽上传 + Import PGN 按钮
   - 进度条 + 解析日志

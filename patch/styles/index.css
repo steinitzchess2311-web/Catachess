@@ -235,8 +235,9 @@
 }
 
 .patch-analysis-settings {
-  display: flex;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
   align-items: center;
   border: 1px solid #242424;
   border-radius: 6px;
@@ -244,15 +245,82 @@
   background: #fff;
 }
 
-.patch-analysis-settings label {
+.patch-analysis-field {
   display: flex;
-  gap: 6px;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
   font-size: 12px;
 }
 
-.patch-analysis-settings select {
+.patch-analysis-label {
+  color: #242424;
   font-size: 12px;
+}
+
+.patch-analysis-field select {
+  font-size: 12px;
+  width: 100%;
+}
+
+.patch-analysis-field select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.patch-analysis-toggle {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.patch-toggle {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.patch-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.patch-toggle-track {
+  width: 36px;
+  height: 20px;
+  background: #d1d1d1;
+  border-radius: 999px;
+  position: relative;
+  border: 1px solid #bfbfbf;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.patch-toggle-track::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  left: 1px;
+  top: 1px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s;
+}
+
+.patch-toggle input:checked + .patch-toggle-track {
+  background: #242424;
+  border-color: #242424;
+}
+
+.patch-toggle input:checked + .patch-toggle-track::after {
+  transform: translateX(16px);
+}
+
+.patch-toggle input:focus-visible + .patch-toggle-track {
+  outline: 2px solid #242424;
+  outline-offset: 2px;
 }
 
 .patch-analysis-panel {

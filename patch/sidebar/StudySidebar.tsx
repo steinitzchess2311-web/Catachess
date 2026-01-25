@@ -227,26 +227,44 @@ export function StudySidebar({
       {activeTab === 'analysis' && (
         <div className="patch-analysis-scroll">
           <div className="patch-analysis-settings">
-            <label>
-              Depth
+            <div className="patch-analysis-field">
+              <span className="patch-analysis-label">Depth</span>
               <select value={depth} onChange={(e) => setDepth(Number(e.target.value))}>
                 {[8, 10, 12, 14, 16, 18, 20].map((d) => (
                   <option key={d} value={d}>{d}</option>
                 ))}
               </select>
-            </label>
-            <label>
-              Lines
+            </div>
+            <div className="patch-analysis-field">
+              <span className="patch-analysis-label">Lines</span>
               <select value={multipv} onChange={(e) => setMultipv(Number(e.target.value))}>
                 {[1, 2, 3, 4, 5].map((m) => (
                   <option key={m} value={m}>{m}</option>
                 ))}
               </select>
-            </label>
-            <label>
-              Engine
+            </div>
+            <div className="patch-analysis-toggle">
+              <label className="patch-toggle">
+                <input
+                  type="checkbox"
+                  checked={engineEnabled}
+                  onChange={(e) => {
+                    const enabled = e.target.checked;
+                    setEngineEnabled(enabled);
+                    if (enabled) {
+                      setEngineMode('cloud');
+                    }
+                  }}
+                  aria-label="Engine"
+                />
+                <span className="patch-toggle-track" />
+              </label>
+            </div>
+            <div className="patch-analysis-field">
+              <span className="patch-analysis-label">Engine</span>
               <select
                 value={engineMode}
+                disabled={!engineEnabled}
                 onChange={(e) => {
                   setEngineMode(e.target.value as 'cloud' | 'sf');
                   setCloudBlocked(false);
@@ -256,15 +274,7 @@ export function StudySidebar({
                 <option value="cloud">Lichess Cloud</option>
                 <option value="sf">SFCata</option>
               </select>
-            </label>
-            <label>
-              Enabled
-              <input
-                type="checkbox"
-                checked={engineEnabled}
-                onChange={(e) => setEngineEnabled(e.target.checked)}
-              />
-            </label>
+            </div>
           </div>
           {renderAnalysis()}
         </div>

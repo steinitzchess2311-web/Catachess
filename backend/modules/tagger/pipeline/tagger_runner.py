@@ -58,6 +58,10 @@ def _tag_move_blackbox_http(fen: str, move_uci: str) -> list[str]:
     if not base_url:
         raise RuntimeError("Blackbox tagger URL is not configured.")
     url = _normalize_blackbox_url(base_url)
+    headers = {}
+    token = os.getenv("TAGGER_API_TOKEN", "")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     resp = requests.post(
         url,
         json={
@@ -68,6 +72,7 @@ def _tag_move_blackbox_http(fen: str, move_uci: str) -> list[str]:
             "multipv": DEFAULT_MULTIPV,
         },
         timeout=15,
+        headers=headers,
     )
     resp.raise_for_status()
     payload = resp.json()

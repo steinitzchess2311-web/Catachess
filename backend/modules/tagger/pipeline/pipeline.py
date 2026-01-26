@@ -22,6 +22,7 @@ from modules.tagger.pipeline.player_matcher import match_player_color
 from modules.tagger.pipeline.dedupe import compute_game_hash
 from modules.tagger.pipeline.tagger_runner import tag_move
 from modules.tagger.pipeline.stats_aggregator import StatsAccumulator
+from modules.tagger.logs import append_upload_log
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +43,14 @@ class TaggerPipeline:
         logger.info("Tagger upload started: upload_id=%s player_id=%s", upload.id, player.id)
         upload.status = UploadStatus.PROCESSING.value
         self._db.commit()
+        append_upload_log(self._db, upload, "Analysis started.")
 
         content = self._storage.get_pgn(player.id, upload.id)
+        append_upload_log(self._db, upload, "PGN loaded from R2.", extra={"bytes": len(content)})
         games = list(parse_pgn(content))
         if not games:
             self._mark_upload_failed(upload, TaggerErrorCode.INVALID_PGN)
+            append_upload_log(self._db, upload, "PGN parse failed: no games found.", level="error")
             return
 
         stats = StatsAccumulator()
@@ -65,6 +69,7 @@ class TaggerPipeline:
             "last_game_color": None,
         })
         logger.info("PGN parsed: total_games=%s upload_id=%s", total_games, upload.id)
+        append_upload_log(self._db, upload, "PGN parsed.", extra={"total_games": total_games})
 
         for idx, game in enumerate(games, start=1):
             headers = game.headers
@@ -104,6 +109,12 @@ class TaggerPipeline:
                     error_code.value,
                     upload.id,
                 )
+                append_upload_log(
+                    self._db,
+                    upload,
+                    f"Game {idx} failed: {error_code.value}.",
+                    level="error",
+                )
                 continue
 
             moves_uci = [m.uci() for m in game.moves]
@@ -123,6 +134,7 @@ class TaggerPipeline:
                     "last_game_color": match.color,
                 })
                 logger.info("Game %s skipped (duplicate) upload_id=%s", idx, upload.id)
+                append_upload_log(self._db, upload, f"Game {idx} skipped (duplicate).")
                 continue
 
             try:
@@ -149,6 +161,7 @@ class TaggerPipeline:
                     "last_game_color": match.color,
                 })
                 logger.info("Game %s failed: illegal_move upload_id=%s", idx, upload.id)
+                append_upload_log(self._db, upload, f"Game {idx} failed: illegal_move.", level="error")
                 continue
             except requests.Timeout as exc:
                 had_errors = True
@@ -172,6 +185,7 @@ class TaggerPipeline:
                     "last_game_color": match.color,
                 })
                 logger.info("Game %s failed: engine_timeout upload_id=%s", idx, upload.id)
+                append_upload_log(self._db, upload, f"Game {idx} failed: engine_timeout.", level="error")
                 continue
             except requests.RequestException as exc:
                 had_errors = True
@@ -195,6 +209,7 @@ class TaggerPipeline:
                     "last_game_color": match.color,
                 })
                 logger.info("Game %s failed: engine_503 upload_id=%s", idx, upload.id)
+                append_upload_log(self._db, upload, f"Game {idx} failed: engine_503.", level="error")
                 continue
             except Exception as exc:
                 had_errors = True
@@ -218,6 +233,7 @@ class TaggerPipeline:
                     "last_game_color": match.color,
                 })
                 logger.info("Game %s failed: unknown_error upload_id=%s", idx, upload.id)
+                append_upload_log(self._db, upload, f"Game {idx} failed: unknown_error.", level="error")
                 continue
 
             pgn_game = PgnGame(
@@ -247,6 +263,12 @@ class TaggerPipeline:
                 match.color,
                 upload.id,
             )
+            append_upload_log(
+                self._db,
+                upload,
+                f"Game {idx} analyzed.",
+                extra={"moves": move_count, "color": match.color},
+            )
 
         if candidates:
             state = upload.checkpoint_state or {}
@@ -269,6 +291,7 @@ class TaggerPipeline:
         upload.updated_at = datetime.utcnow()
         self._db.commit()
         logger.info("Tagger upload completed: upload_id=%s status=%s", upload.id, upload.status)
+        append_upload_log(self._db, upload, "Upload completed.", extra={"status": upload.status})
 
     def _process_game_moves(self, board: chess.Board, moves: list[chess.Move], color: str, stats: StatsAccumulator) -> int:
         player_is_white = color == "white"
@@ -361,3 +384,10 @@ class TaggerPipeline:
         upload.status = UploadStatus.FAILED.value
         upload.updated_at = datetime.utcnow()
         self._db.commit()
+        append_upload_log(
+            self._db,
+            upload,
+            "Upload failed.",
+            level="error",
+            extra={"error_code": error_code.value},
+        )

@@ -15,8 +15,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select, func
 
 from models.tagger import PlayerProfile, PgnUpload, PgnGame, FailedGame, TagStat
+from modules.tagger.delete import delete_player_records
 from modules.tagger.errors import UploadStatus
 from modules.tagger.storage import TaggerStorage
+from modules.tagger.logs import append_upload_log
 from modules.tagger.pipeline.pipeline import TaggerPipeline
 from modules.tagger.utils import normalize_name
 
@@ -52,16 +54,7 @@ class TaggerService:
         return list(players), total or 0
 
     def delete_player(self, player_id: uuid.UUID) -> bool:
-        player = self.get_player(player_id)
-        if not player:
-            return False
-        self.db.query(FailedGame).filter(FailedGame.player_id == player_id).delete(synchronize_session=False)
-        self.db.query(PgnGame).filter(PgnGame.player_id == player_id).delete(synchronize_session=False)
-        self.db.query(PgnUpload).filter(PgnUpload.player_id == player_id).delete(synchronize_session=False)
-        self.db.query(TagStat).filter(TagStat.player_id == player_id).delete(synchronize_session=False)
-        self.db.delete(player)
-        self.db.commit()
-        return True
+        return delete_player_records(self.db, player_id)
 
     def recompute_player(self, player_id: uuid.UUID) -> list[PgnUpload]:
         player = self.get_player(player_id)
@@ -107,6 +100,9 @@ class TaggerService:
         self.db.add(upload)
         self.db.commit()
         self.db.refresh(upload)
+        append_upload_log(self.db, upload, "Upload received.")
+        append_upload_log(self.db, upload, "PGN stored in R2.")
+        append_upload_log(self.db, upload, "Upload record created.")
 
         # 触发 pipeline（异步，Stage 06 实现）
         self._trigger_pipeline(upload)
@@ -116,11 +112,13 @@ class TaggerService:
         """触发解析 pipeline（Stage 06 实现具体逻辑）"""
         upload.status = UploadStatus.PROCESSING.value
         self.db.commit()
+        append_upload_log(self.db, upload, "Analysis queued.")
         pipeline = TaggerPipeline(self.db, self._storage)
         player = self.get_player(upload.player_id)
         if not player:
             upload.status = UploadStatus.FAILED.value
             self.db.commit()
+            append_upload_log(self.db, upload, "Upload failed: player not found.", level="error")
             return
         pipeline.process_upload(upload, player)
 

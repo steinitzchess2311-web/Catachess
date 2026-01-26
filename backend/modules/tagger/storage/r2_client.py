@@ -133,6 +133,10 @@ class TaggerStorage:
         content = self._client.get_object(self._keys.meta_json(player_id, upload_id))
         return json.loads(content.decode())
 
+    def delete_key(self, key: str) -> None:
+        """删除 R2 对象"""
+        self._client.delete_object(key)
+
     @staticmethod
     def compute_checksum(content: bytes) -> str:
         return hashlib.sha256(content).hexdigest()

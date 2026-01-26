@@ -161,7 +161,13 @@ class TaggerPipeline:
                     "last_game_color": match.color,
                 })
                 logger.info("Game %s failed: illegal_move upload_id=%s", idx, upload.id)
-                append_upload_log(self._db, upload, f"Game {idx} failed: illegal_move.", level="error")
+                append_upload_log(
+                    self._db,
+                    upload,
+                    f"Game {idx} failed: illegal_move.",
+                    level="error",
+                    extra={"error_type": type(exc).__name__, "error_message": str(exc)},
+                )
                 continue
             except requests.Timeout as exc:
                 had_errors = True
@@ -185,7 +191,13 @@ class TaggerPipeline:
                     "last_game_color": match.color,
                 })
                 logger.info("Game %s failed: engine_timeout upload_id=%s", idx, upload.id)
-                append_upload_log(self._db, upload, f"Game {idx} failed: engine_timeout.", level="error")
+                append_upload_log(
+                    self._db,
+                    upload,
+                    f"Game {idx} failed: engine_timeout.",
+                    level="error",
+                    extra={"error_type": type(exc).__name__, "error_message": str(exc)},
+                )
                 continue
             except requests.RequestException as exc:
                 had_errors = True
@@ -209,7 +221,13 @@ class TaggerPipeline:
                     "last_game_color": match.color,
                 })
                 logger.info("Game %s failed: engine_503 upload_id=%s", idx, upload.id)
-                append_upload_log(self._db, upload, f"Game {idx} failed: engine_503.", level="error")
+                append_upload_log(
+                    self._db,
+                    upload,
+                    f"Game {idx} failed: engine_503.",
+                    level="error",
+                    extra={"error_type": type(exc).__name__, "error_message": str(exc)},
+                )
                 continue
             except Exception as exc:
                 had_errors = True
@@ -233,7 +251,13 @@ class TaggerPipeline:
                     "last_game_color": match.color,
                 })
                 logger.info("Game %s failed: unknown_error upload_id=%s", idx, upload.id)
-                append_upload_log(self._db, upload, f"Game {idx} failed: unknown_error.", level="error")
+                append_upload_log(
+                    self._db,
+                    upload,
+                    f"Game {idx} failed: unknown_error.",
+                    level="error",
+                    extra={"error_type": type(exc).__name__, "error_message": str(exc)},
+                )
                 continue
 
             pgn_game = PgnGame(

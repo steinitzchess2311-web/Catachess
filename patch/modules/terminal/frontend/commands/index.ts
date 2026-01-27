@@ -28,6 +28,7 @@ import {
 import { mkdirCommand } from './mkdir';
 import { touchCommand } from './touch';
 import { rmCommand, rmdirCommand } from './rm';
+import { cataMazeCommand } from './catamaze';
 
 // Re-export history ref setter
 export { setCommandHistoryRef };
@@ -85,6 +86,9 @@ registerCommand(pingCommand);
 registerCommand(memCommand);
 registerCommand(scandiskCommand);
 registerCommand(defragCommand);
+
+// Games
+registerCommand(cataMazeCommand);
 
 // Help command
 const helpCommand: Command = {

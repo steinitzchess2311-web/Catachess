@@ -57,6 +57,9 @@ class Settings(BaseSettings):
     # ===== internal worker auth =====
     WORKER_API_TOKEN: str = ""
 
+    # ===== background jobs =====
+    ENABLE_PRESENCE_CLEANUP: bool = False
+
     # ===== email (Resend) =====
     RESEND_API_KEY: str = ""
     RESEND_FROM_EMAIL: str = "noreply@catachess.com"

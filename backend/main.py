@@ -4,8 +4,11 @@ Catachess Backend - Main FastAPI Application
 This is the entry point for the Catachess backend API.
 It registers all routers and configures the FastAPI application.
 """
+import asyncio
+import re
 import sys
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 # Add backend directory to Python path for Railway deployment
 backend_dir = Path(__file__).parent
@@ -25,16 +28,7 @@ from core.config import settings
 from modules.workspace.db.session import init_db as init_workspace_db
 
 
-# Create FastAPI application
-app = FastAPI(
-    title="Catachess API",
-    description="Chess Education Platform Backend",
-    version="1.0.0",
-)
-
-
-@app.on_event("startup")
-async def startup_event():
+async def _init_workspace_db() -> None:
     """Initialize database tables on startup"""
     try:
         workspace_db_url = settings.DATABASE_URL
@@ -75,6 +69,64 @@ async def startup_event():
         init_game_tables()
     except Exception as e:
         logger.warning(f"Could not initialize verification table: {e}")
+
+async def _presence_cleanup_loop() -> None:
+    import os
+
+    from modules.workspace.db.repos.presence_repo import PresenceRepository
+    from modules.workspace.domain.services.presence_service import PresenceService
+    from modules.workspace.events.bus import EventBus
+    from modules.workspace.db.session import get_session
+
+    interval_seconds = int(os.getenv("PRESENCE_CLEANUP_INTERVAL_SECONDS", "300"))
+    timeout_minutes = int(os.getenv("PRESENCE_CLEANUP_TIMEOUT_MINUTES", "10"))
+
+    while True:
+        try:
+            async for session in get_session():
+                presence_repo = PresenceRepository(session)
+                event_bus = EventBus(session)
+                service = PresenceService(
+                    session=session,
+                    presence_repo=presence_repo,
+                    event_bus=event_bus,
+                )
+                await service.cleanup_expired_sessions(timeout_minutes=timeout_minutes)
+                break
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            logger.error(f"Presence cleanup loop error: {exc}", exc_info=True)
+        await asyncio.sleep(interval_seconds)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await _init_workspace_db()
+    tasks: list[asyncio.Task] = []
+    if settings.DEBUG:
+        logger.info("Starting background tasks (non-blocking)")
+    if settings.ENABLE_PRESENCE_CLEANUP:
+        tasks.append(asyncio.create_task(_presence_cleanup_loop()))
+    try:
+        yield
+    finally:
+        for task in tasks:
+            task.cancel()
+        for task in tasks:
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
+
+
+# Create FastAPI application
+app = FastAPI(
+    title="Catachess API",
+    description="Chess Education Platform Backend",
+    version="1.0.0",
+    lifespan=lifespan,
+)
 
 # Configure CORS
 # SECURITY FIX: Cannot use allow_origins=["*"] with allow_credentials=True

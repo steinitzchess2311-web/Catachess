@@ -335,6 +335,131 @@
   gap: 8px;
 }
 
+.patch-imitator-panel {
+  background: #fff;
+}
+
+.patch-imitator-settings {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 12px;
+  align-items: end;
+  border: 1px solid #242424;
+  border-radius: 6px;
+  padding: 8px;
+  background: #fff;
+}
+
+.patch-imitator-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.patch-imitator-field select {
+  font-size: 12px;
+  width: 100%;
+}
+
+.patch-imitator-add {
+  border: 1px solid #242424;
+  background: #242424;
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  height: 28px;
+}
+
+.patch-imitator-add:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.patch-imitator-card {
+  border: 1px solid #242424;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f9f9f9;
+}
+
+.patch-imitator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.patch-imitator-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+}
+
+.patch-imitator-meta {
+  font-size: 11px;
+  color: #666;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.patch-imitator-updated {
+  color: #999;
+}
+
+.patch-imitator-remove {
+  border: 1px solid #242424;
+  background: #fff;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.patch-imitator-status {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.patch-imitator-moves {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: "Courier New", Courier, monospace;
+  font-size: 12px;
+}
+
+.patch-imitator-row {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+.patch-imitator-prob {
+  text-align: right;
+  color: #111;
+}
+
+.patch-imitator-move {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: #333;
+}
+
+.patch-imitator-tags {
+  color: #777;
+  font-size: 11px;
+}
+
 .patch-analysis-status {
   display: flex;
   gap: 8px;

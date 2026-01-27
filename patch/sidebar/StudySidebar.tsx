@@ -218,6 +218,7 @@ export function StudySidebar({
         setCoachStatus('ready');
         if (!selectedCoach && players.length > 0) setSelectedCoach(players[0]);
       } catch (e: any) {
+        console.error('[imitator] load coaches failed', e);
         setCoachStatus('error');
         setCoachError(e?.message || 'Failed to load coaches');
       }
@@ -237,6 +238,7 @@ export function StudySidebar({
         setPlayerStatus('ready');
         if (!selectedPlayer && players.length > 0) setSelectedPlayer(players[0].id);
       } catch (e: any) {
+        console.error('[imitator] load players failed', e);
         setPlayerStatus('error');
         setPlayerError(e?.message || 'Failed to load players');
       }
@@ -275,6 +277,7 @@ export function StudySidebar({
         };
         if (target.playerId) payload.player_id = target.playerId;
         if (target.player) payload.player = target.player;
+        console.log('[imitator] request', { target: target.label, payload });
         const resp = await fetch(`${TAGGER_BASE}/tagger/imitator`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -284,7 +287,16 @@ export function StudySidebar({
           const text = await resp.text();
           throw new Error(text || `Imitator error (${resp.status})`);
         }
-        return resp.json();
+        const text = await resp.text();
+        if (!text) {
+          throw new Error('Imitator returned empty response');
+        }
+        try {
+          return JSON.parse(text);
+        } catch (error) {
+          console.error('[imitator] json parse failed', { text });
+          throw new Error('Imitator returned invalid JSON');
+        }
       });
 
       const results = await Promise.allSettled(tasks);
@@ -303,6 +315,7 @@ export function StudySidebar({
               error: null,
             };
           } else {
+            console.error('[imitator] analyze failed', result.reason);
             next[target.id] = {
               status: 'error',
               moves: [],
@@ -401,6 +414,7 @@ export function StudySidebar({
       )}
       {imitatorTargets.map((target) => {
         const result = imitatorResults[target.id] || { status: 'idle', moves: [] };
+        const moves = Array.isArray(result.moves) ? result.moves : [];
         return (
           <div key={target.id} className="patch-imitator-card">
             <div className="patch-imitator-header">
@@ -438,10 +452,10 @@ export function StudySidebar({
               {result.status === 'running' && (
                 <div className="patch-analysis-empty">Analyzing...</div>
               )}
-              {result.status !== 'running' && result.moves.length === 0 && (
+              {result.status !== 'running' && moves.length === 0 && (
                 <div className="patch-analysis-empty">No moves yet.</div>
               )}
-              {result.moves.map((move, idx) => (
+              {moves.map((move, idx) => (
                 <div key={`${target.id}-${idx}`} className="patch-imitator-row">
                   <div className="patch-imitator-prob">{formatProbability(move.probability)}</div>
                   <div className="patch-imitator-move">

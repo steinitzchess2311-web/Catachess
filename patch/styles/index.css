@@ -774,13 +774,20 @@
   padding: 16px;
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .move-tree-placeholder {
   color: #666;
   font-size: 14px;
+}
+
+.move-tree-content {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 .move-tree-title {

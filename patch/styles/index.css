@@ -938,6 +938,17 @@
   line-height: 1.2;
 }
 
+.patch-chapter-list__title-input {
+  flex: 1;
+  border: 1px solid #2a2a2a;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 13px;
+  line-height: 1.2;
+  background: #fff;
+  color: #000;
+}
+
 .patch-chapter-list__empty {
   padding: 16px;
   text-align: center;

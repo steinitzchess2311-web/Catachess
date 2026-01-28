@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.workspace.api.deps import (
     get_current_user_id,
-    get_event_bus,
     get_event_repo,
     get_node_repo,
     get_node_service,
@@ -29,6 +28,7 @@ from modules.workspace.api.schemas.pgn_clip import (
 )
 from modules.workspace.api.schemas.study import (
     ChapterCreate,
+    ChapterUpdate,
     ChapterImportPGN,
     ChapterResponse,
     ImportResultResponse,
@@ -421,7 +421,6 @@ async def create_chapter(
     user_id: str = Depends(get_current_user_id),
     node_service: NodeService = Depends(get_node_service),
     study_repo: StudyRepository = Depends(get_study_repository),
-    event_bus: EventBus = Depends(get_event_bus),
 ) -> ChapterResponse:
     """Create a new chapter with an empty PGN."""
     try:
@@ -515,6 +514,47 @@ async def create_chapter(
     except PermissionDeniedError as e:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
+
+@router.put(
+    "/{study_id}/chapters/{chapter_id}",
+    response_model=ChapterResponse,
+    status_code=status.HTTP_200_OK,
+)
+async def update_chapter(
+    study_id: str,
+    chapter_id: str,
+    data: ChapterUpdate,
+    user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
+    study_repo: StudyRepository = Depends(get_study_repository),
+    event_bus: EventBus = Depends(get_event_bus),
+) -> ChapterResponse:
+    """Update chapter metadata (title)."""
+    try:
+        node = await node_service.get_node(study_id, actor_id=user_id)
+        if node.node_type != NodeType.STUDY:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Node is not a study",
+            )
+
+        chapter = await study_repo.get_chapter_by_id(chapter_id)
+        if not chapter or chapter.study_id != study_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Chapter {chapter_id} not found in study {study_id}",
+            )
+
+        chapter.title = data.title
+        chapter.event = data.title
+        updated = await study_repo.update_chapter(chapter)
+
+        return ChapterResponse.model_validate(updated)
+
+    except NodeNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except PermissionDeniedError as e:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
 
 def _build_chapter_response(chapter: ChapterTable) -> ChapterResponse:
     response_data = chapter.__dict__

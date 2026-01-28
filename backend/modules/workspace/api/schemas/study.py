@@ -45,6 +45,12 @@ class ChapterCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
 
 
+class ChapterUpdate(BaseModel):
+    """Schema for updating a chapter."""
+
+    title: str = Field(..., min_length=1, max_length=200)
+
+
 class ChapterImportPGN(BaseModel):
     """Schema for importing PGN into an existing study."""
 

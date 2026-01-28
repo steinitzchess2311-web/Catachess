@@ -185,6 +185,22 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     }
   }, [chapters, id, loadChapterTree, setError, sortChapters]);
 
+  const handleRenameChapter = useCallback(async (chapterId: string, title: string) => {
+    if (!id) return;
+    try {
+      const updated = await api.put(`/api/v1/workspace/studies/${id}/chapters/${chapterId}`, { title });
+      setChapters((prev) => {
+        const next = prev.map((chapter) =>
+          chapter.id === chapterId ? { ...chapter, title: updated?.title || title } : chapter
+        );
+        return sortChapters(next);
+      });
+    } catch (e) {
+      setError('LOAD_ERROR', e instanceof Error ? e.message : 'Failed to rename chapter');
+      throw e;
+    }
+  }, [id, setError, sortChapters]);
+
   const openCreateModal = useCallback(() => {
     setCreateError(null);
     setIsCreateModalOpen(true);
@@ -299,6 +315,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
             currentChapterId={state.chapterId}
             onSelectChapter={handleSelectChapter}
             onCreateChapter={openCreateModal}
+            onRenameChapter={handleRenameChapter}
           />
         </div>
         <div className="patch-study-main">

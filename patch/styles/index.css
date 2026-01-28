@@ -872,14 +872,28 @@
 }
 
 .patch-chapter-list__scroll {
-  overflow-y: auto;
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
   max-height: none;
   flex: 1;
   min-height: 0;
-  padding: 8px;
+  padding: 8px 12px 8px 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+.patch-chapter-list__scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.patch-chapter-list__scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 999px;
+}
+
+.patch-chapter-list__scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .patch-chapter-list__item {

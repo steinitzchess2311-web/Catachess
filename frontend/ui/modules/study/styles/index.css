@@ -212,6 +212,10 @@
     flex-direction: column;
 }
 
+.tab-content#tab-pgn {
+    overflow: hidden;
+}
+
 .analysis-module {
     margin-bottom: var(--space-md);
 }
@@ -220,6 +224,10 @@
 .move-tree {
     font-size: var(--font-sm);
     line-height: 1.6;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
 }
 
 .move-tree-row {
@@ -258,6 +266,37 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
+    flex-shrink: 0;
+}
+
+.pgn-comment-tabs {
+    display: flex;
+    gap: var(--space-xs);
+    align-items: center;
+}
+
+.pgn-tab-btn {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--bg-panel);
+    padding: 4px 10px;
+    font-size: var(--font-xs);
+    cursor: pointer;
+}
+
+.pgn-tab-btn.active {
+    background: var(--text-primary);
+    color: var(--bg-app);
+}
+
+.pgn-comment-panel {
+    display: none;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.pgn-comment-panel.active {
+    display: flex;
 }
 
 #pgn-comment-input {
@@ -267,6 +306,17 @@
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-family: var(--font-family);
+    font-size: var(--font-sm);
+    resize: vertical;
+}
+
+#pgn-fen-display {
+    width: 100%;
+    min-height: 70px;
+    padding: var(--space-sm);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: var(--font-sm);
     resize: vertical;
 }

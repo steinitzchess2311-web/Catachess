@@ -44,8 +44,18 @@
                     <!-- PGN move tree will be rendered here -->
                 </div>
                 <div class="pgn-comment">
-                    <textarea id="pgn-comment-input" placeholder="Add PGN comment for the last move..."></textarea>
-                    <button id="pgn-comment-btn" class="btn-primary btn-sm">Add Comment</button>
+                    <div class="pgn-comment-tabs">
+                        <button class="pgn-tab-btn active" data-comment-tab="comment">Comment</button>
+                        <button class="pgn-tab-btn" data-comment-tab="info">Info</button>
+                    </div>
+                    <div class="pgn-comment-panel active" data-comment-panel="comment">
+                        <textarea id="pgn-comment-input" placeholder="Add PGN comment for the last move..."></textarea>
+                        <button id="pgn-comment-btn" class="btn-primary btn-sm">Add Comment</button>
+                    </div>
+                    <div class="pgn-comment-panel" data-comment-panel="info">
+                        <textarea id="pgn-fen-display" readonly></textarea>
+                        <button id="pgn-fen-copy-btn" class="btn-primary btn-sm">Copy FEN</button>
+                    </div>
                 </div>
             </div>
             <div class="tab-content" id="tab-analysis">

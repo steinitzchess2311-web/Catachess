@@ -30,6 +30,10 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
     const backBtn = container.querySelector('#back-btn') as HTMLButtonElement;
     const pgnCommentInput = container.querySelector('#pgn-comment-input') as HTMLTextAreaElement;
     const pgnCommentBtn = container.querySelector('#pgn-comment-btn') as HTMLButtonElement;
+    const pgnFenDisplay = container.querySelector('#pgn-fen-display') as HTMLTextAreaElement;
+    const pgnFenCopyBtn = container.querySelector('#pgn-fen-copy-btn') as HTMLButtonElement;
+    const commentTabButtons = Array.from(container.querySelectorAll('[data-comment-tab]')) as HTMLButtonElement[];
+    const commentPanels = Array.from(container.querySelectorAll('[data-comment-panel]')) as HTMLElement[];
     const firstMoveBtn = container.querySelector('#first-move') as HTMLButtonElement;
     const prevMoveBtn = container.querySelector('#prev-move') as HTMLButtonElement;
     const nextMoveBtn = container.querySelector('#next-move') as HTMLButtonElement;
@@ -98,12 +102,41 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
     let saveInterval: number | null = null;
     let renderScheduled = false;
     let isLoading = true;
+    const defaultStartFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
     const setLoadingState = (loading: boolean) => {
         isLoading = loading;
         loadingOverlay.style.display = loading ? 'flex' : 'none';
         studyContainer.style.pointerEvents = loading ? 'none' : '';
     };
+
+    const setCommentTab = (tab: 'comment' | 'info') => {
+        commentTabButtons.forEach((btn) => {
+            btn.classList.toggle('active', btn.dataset.commentTab === tab);
+        });
+        commentPanels.forEach((panel) => {
+            panel.classList.toggle('active', panel.dataset.commentPanel === tab);
+        });
+    };
+
+    const getRootFen = () => {
+        if (currentShowDTO?.root_fen) {
+            return currentShowDTO.root_fen;
+        }
+        if (localTree?.rootId) {
+            const rootNode = localTree.nodes[localTree.rootId];
+            if (rootNode?.fen) return rootNode.fen;
+        }
+        return defaultStartFen;
+    };
+
+    const updateFenDisplay = (fen: string | null) => {
+        if (!pgnFenDisplay) return;
+        pgnFenDisplay.value = fen || getRootFen();
+    };
+
+    setCommentTab('comment');
+    updateFenDisplay(getRootFen());
 
     // 4. Initialization
     let heartbeatInterval: any = null;
@@ -261,6 +294,8 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                             renderMoveTree();
                             if (moveIdToSelect) {
                                 selectLegacyMove(moveIdToSelect);
+                            } else {
+                                updateFenDisplay(getRootFen());
                             }
                         }
 
@@ -292,6 +327,9 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                                         } else {
                                             break;
                                         }
+                                    }
+                                    if (!moveIdToSelect) {
+                                        updateFenDisplay(getRootFen());
                                     }
                                 } else {
                                     console.warn('Could not find a valid root node for ShowDTO.');
@@ -344,6 +382,7 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                     pgnCommentInput.value = meta?.annotationText || node.comment_after || node.comment_before || ''; 
                     
                     board.setPosition(fenToBoardPosition(node.fen));
+                    updateFenDisplay(node.fen);
                     updateAnalysisPanels();
                     // Update currentPly based on the selected node's ply
                     // This will need adjustment if we want to navigate through currentMoves for history
@@ -369,6 +408,7 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                     pgnCommentInput.value = move.annotationText || '';
 
                     board.setPosition(fenToBoardPosition(move.fen));
+                    updateFenDisplay(move.fen);
                     updateAnalysisPanels();
                     currentPly = currentMoves.indexOf(move) + 1;
 
@@ -1031,6 +1071,7 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                         selectedAnnotationId = null;
                         selectedAnnotationVersion = null;
                         pgnCommentInput.value = '';
+                        updateFenDisplay(getRootFen());
 
                         return;
 
@@ -1042,6 +1083,7 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
 
                     board.setPosition(fenToBoardPosition(move.fen));
 
+                    updateFenDisplay(move.fen);
                     updateAnalysisPanels();
 
                     selectedMoveId = move.id;
@@ -1252,6 +1294,31 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
                     }
                 });
             
+                commentTabButtons.forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const tab = (btn.dataset.commentTab || 'comment') as 'comment' | 'info';
+                        setCommentTab(tab);
+                    });
+                });
+
+                pgnFenCopyBtn?.addEventListener('click', async () => {
+                    if (!pgnFenDisplay?.value) return;
+                    try {
+                        if (navigator?.clipboard?.writeText) {
+                            await navigator.clipboard.writeText(pgnFenDisplay.value);
+                        } else {
+                            pgnFenDisplay.select();
+                            document.execCommand('copy');
+                        }
+                        pgnFenCopyBtn.textContent = 'Copied';
+                        window.setTimeout(() => {
+                            pgnFenCopyBtn.textContent = 'Copy FEN';
+                        }, 1500);
+                    } catch (error) {
+                        console.error('Failed to copy FEN:', error);
+                    }
+                });
+
                 pgnCommentBtn?.addEventListener('click', addPgnComment);
             
                 firstMoveBtn?.addEventListener('click', async () => {

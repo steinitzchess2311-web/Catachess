@@ -384,6 +384,7 @@ function MoveBranch({
               onSelect={onSelect}
               isMainline={isMainline}
               prefix={`${moveNumber}.`}
+              onContextMenu={onContextMenu}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <MoveItem

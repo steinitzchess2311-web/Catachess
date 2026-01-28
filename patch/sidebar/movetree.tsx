@@ -289,7 +289,7 @@ function MoveBranch({
     if (!node || variationsIds.length === 0) return null;
     return (
       <div className="variations" style={{ 
-        fontSize: '0.9em', 
+        fontSize: '12.6px', 
         color: '#555', 
         marginTop: '4px',
         marginBottom: '4px',

@@ -25,11 +25,15 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const [createError, setCreateError] = useState<string | null>(null);
   const [rightbarWidth, setRightbarWidth] = useState<number>(280);
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+  const lastSavedAtRef = useRef<number | null>(state.lastSavedAt);
   const layoutRef = useRef<HTMLDivElement | null>(null);
+  const hasPendingDeletes = pendingDeleteIds.length > 0;
+  const hasUnsavedChanges = state.isDirty || hasPendingDeletes;
   const savedTime = state.lastSavedAt ? new Date(state.lastSavedAt).toLocaleTimeString() : null;
   const savedLabel = state.isSaving
     ? 'Saving...'
-    : state.isDirty
+    : hasUnsavedChanges
       ? 'Unsaved changes'
       : savedTime
         ? `Saved at ${savedTime}`
@@ -201,13 +205,28 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     }
   }, [id, setError, sortChapters]);
 
+  const processPendingDeletes = useCallback(async (deleteIds: string[]) => {
+    if (!id || deleteIds.length === 0) return;
+    try {
+      await Promise.all(
+        deleteIds.map((chapterId) =>
+          api.delete(`/api/v1/workspace/studies/${id}/chapters/${chapterId}`)
+        )
+      );
+      setPendingDeleteIds((prev) => prev.filter((chapterId) => !deleteIds.includes(chapterId)));
+    } catch (e) {
+      setError('LOAD_ERROR', e instanceof Error ? e.message : 'Failed to delete chapter');
+      throw e;
+    }
+  }, [id, setError]);
+
   const handleDeleteChapter = useCallback(async (chapterId: string) => {
     if (!id) return;
     try {
-      await api.delete(`/api/v1/workspace/studies/${id}/chapters/${chapterId}`);
-      setChapters((prev) => prev.filter((chapter) => chapter.id !== chapterId));
+      const remaining = chapters.filter((chapter) => chapter.id !== chapterId);
+      setPendingDeleteIds((prev) => (prev.includes(chapterId) ? prev : [...prev, chapterId]));
+      setChapters(remaining);
       if (state.chapterId === chapterId) {
-        const remaining = chapters.filter((chapter) => chapter.id !== chapterId);
         const nextChapter = remaining[0];
         if (nextChapter) {
           await loadChapterTree(nextChapter.id);
@@ -307,6 +326,41 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     };
   }, [extractChapters, id, loadChapterTree, resolveDisplayPath, setError, sortChapters]);
 
+  const saveAll = useCallback(async () => {
+    if (state.isSaving) return;
+    if (!hasUnsavedChanges) return;
+    try {
+      const processImmediately = !state.isDirty;
+      await saveTree();
+      if (processImmediately && pendingDeleteIds.length > 0) {
+        await processPendingDeletes(pendingDeleteIds);
+      }
+    } catch (e) {
+      setError('SAVE_ERROR', e instanceof Error ? e.message : 'Failed to save changes');
+    }
+  }, [hasUnsavedChanges, pendingDeleteIds, processPendingDeletes, saveTree, setError, state.isDirty, state.isSaving]);
+
+  useEffect(() => {
+    if (!hasPendingDeletes || state.isSaving) return;
+    const timeoutId = window.setTimeout(() => {
+      saveAll();
+    }, 30000);
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [hasPendingDeletes, saveAll, state.isSaving]);
+
+  useEffect(() => {
+    if (!hasPendingDeletes) {
+      lastSavedAtRef.current = state.lastSavedAt;
+      return;
+    }
+    if (state.lastSavedAt && state.lastSavedAt !== lastSavedAtRef.current) {
+      lastSavedAtRef.current = state.lastSavedAt;
+      processPendingDeletes(pendingDeleteIds);
+    }
+  }, [hasPendingDeletes, pendingDeleteIds, processPendingDeletes, state.lastSavedAt]);
+
   return (
     <div className={`patch-study-page ${className || ''}`}>
       <div className="patch-study-header">
@@ -318,10 +372,10 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
           <button
             type="button"
             className="patch-study-save-button"
-            onClick={saveTree}
-            disabled={state.isSaving || !state.isDirty}
+            onClick={saveAll}
+            disabled={state.isSaving || !hasUnsavedChanges}
           >
-            {state.isSaving ? 'Saving...' : (state.isDirty ? 'Save' : 'Saved')}
+            {state.isSaving ? 'Saving...' : (hasUnsavedChanges ? 'Save' : 'Saved')}
           </button>
         </div>
         <div className="patch-study-save-status">{savedLabel}</div>

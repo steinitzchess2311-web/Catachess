@@ -87,7 +87,7 @@ export function ChapterList({
         {chapters.map((chapter, index) => {
           const isActive = chapter.id === currentChapterId;
           const label = chapter.title || `Chapter ${index + 1}`;
-          const order = typeof chapter.order === 'number' ? chapter.order + 1 : index + 1;
+          const order = index + 1;
           const isEditing = editingId === chapter.id;
           const isSaving = savingId === chapter.id;
           return (
@@ -164,7 +164,7 @@ export function ChapterList({
           <div className="patch-action-card">
             <div className="patch-action-title">Delete Chapter</div>
             <div className="patch-action-body">
-              <div>Are you sure you want to delete</div>
+              <div>Are you sure you want to delete the chapter</div>
               <div className="patch-action-emphasis">{confirmDelete.label}?</div>
             </div>
             <div className="patch-action-buttons">

@@ -142,7 +142,7 @@ function LoginPage() {
         if (userId) {
           localStorage.setItem(USER_ID_KEY, userId);
         }
-        navigate(redirect, { replace: true });
+        window.location.replace(redirect);
       } else {
         setError("Invalid login response.");
       }

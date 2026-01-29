@@ -20,6 +20,7 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
     const newStudyBtn = container.querySelector('#new-study-btn') as HTMLButtonElement;
     const pathInput = container.querySelector('#path-input') as HTMLInputElement;
     const searchInput = container.querySelector('#workspace-search-input') as HTMLInputElement;
+    const searchClearBtn = container.querySelector('#workspace-search-clear') as HTMLButtonElement;
 
     // State
     let currentParentId = 'root';
@@ -109,6 +110,21 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
             span.addEventListener('click', () => navigateToFolder(p.id, p.title));
             breadcrumb.appendChild(span);
         });
+        updatePathInputDisplay();
+    };
+
+    const getPathPrefix = () => {
+        const segments = breadcrumbPath
+            .map((item) => item.title)
+            .filter((_, idx) => idx > 0);
+        if (segments.length === 0) return 'root/';
+        return `root/${segments.join('/')}/`;
+    };
+
+    const updatePathInputDisplay = () => {
+        if (!pathInput) return;
+        const prefix = getPathPrefix();
+        pathInput.value = `${prefix}...`;
     };
 
     const fetchAllNodes = async () => {
@@ -208,11 +224,21 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
     };
 
     const resolvePath = async (rawPath: string) => {
-        const cleaned = rawPath.trim().replace(/\/+/g, '/');
+        let cleaned = rawPath.trim().replace(/\/+/g, '/');
+        if (cleaned.endsWith('/...')) {
+            cleaned = cleaned.slice(0, -4);
+        }
+        if (cleaned.endsWith('/') && cleaned !== 'root/') {
+            cleaned = cleaned.slice(0, -1);
+        }
         if (!cleaned) return;
         const parts = cleaned.split('/').filter(Boolean);
         if (parts.length === 0 || parts[0] !== 'root') {
             shakePathInput();
+            return;
+        }
+        if (parts.length === 1) {
+            navigateToFolder('root', 'Root');
             return;
         }
 
@@ -434,10 +460,38 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
         event.preventDefault();
         resolvePath(pathInput.value).catch(() => shakePathInput());
     });
+    pathInput?.addEventListener('focus', () => {
+        const prefix = getPathPrefix();
+        if (pathInput.value.endsWith('/...')) {
+            pathInput.value = prefix;
+        }
+    });
+    pathInput?.addEventListener('blur', () => {
+        const prefix = getPathPrefix();
+        if (pathInput.value === prefix) {
+            pathInput.value = `${prefix}...`;
+        }
+    });
+    pathInput?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Backspace') return;
+        const start = pathInput.selectionStart ?? 0;
+        if (start <= 5) {
+            event.preventDefault();
+        }
+    });
+    pathInput?.addEventListener('input', () => {
+        if (!pathInput.value.startsWith('root/')) {
+            pathInput.value = `root/${pathInput.value.replace(/^\/+/, '')}`;
+        }
+    });
     searchInput?.addEventListener('keydown', (event) => {
         if (event.key !== 'Enter') return;
         event.preventDefault();
         runSearch(searchInput.value).catch(() => {});
+    });
+    searchClearBtn?.addEventListener('click', () => {
+        searchInput.value = '';
+        window.location.reload();
     });
 
     // Initial load

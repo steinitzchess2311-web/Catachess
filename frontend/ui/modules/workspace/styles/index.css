@@ -39,9 +39,15 @@
     font-size: var(--font-md);
 }
 
+.workspace-search-row {
+    width: 200px;
+    align-self: center;
+    position: relative;
+}
+
 #workspace-search-input {
     width: 100%;
-    padding: 6px 10px;
+    padding: 6px 28px 6px 10px;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-size: var(--font-sm);
@@ -51,6 +57,26 @@
 #workspace-search-input:focus {
     outline: none;
     border-color: var(--primary);
+}
+
+#workspace-search-clear {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: none;
+    background: #e0e0e0;
+    color: #333;
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+#workspace-search-clear:hover {
+    background: #d0d0d0;
 }
 
 .form-error {

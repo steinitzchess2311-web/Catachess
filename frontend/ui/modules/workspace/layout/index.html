@@ -4,7 +4,10 @@
             <div class="sidebar-header">
                 <button id="new-folder-btn" class="btn-primary btn-sm">+ New Folder</button>
                 <button id="new-study-btn" class="btn-primary btn-sm">+ New Study</button>
-                <input id="workspace-search-input" type="text" placeholder="Search folders / studies">
+                <div class="workspace-search-row">
+                    <input id="workspace-search-input" type="text" placeholder="Search folders / studies">
+                    <button id="workspace-search-clear" type="button" aria-label="Clear search">×</button>
+                </div>
             </div>
             <nav id="folder-tree" class="folder-tree">
                 <!-- Recursive folder tree will be injected here -->

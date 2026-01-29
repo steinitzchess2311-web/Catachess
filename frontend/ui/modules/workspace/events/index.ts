@@ -19,10 +19,12 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
     const newFolderBtn = container.querySelector('#new-folder-btn') as HTMLButtonElement;
     const newStudyBtn = container.querySelector('#new-study-btn') as HTMLButtonElement;
     const pathInput = container.querySelector('#path-input') as HTMLInputElement;
+    const searchInput = container.querySelector('#workspace-search-input') as HTMLInputElement;
 
     // State
     let currentParentId = 'root';
     let breadcrumbPath: Array<{id: string, title: string}> = [{id: 'root', title: 'Root'}];
+    let allNodesCache: any[] | null = null;
 
     // 3. Helper Functions
 
@@ -107,6 +109,94 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
             span.addEventListener('click', () => navigateToFolder(p.id, p.title));
             breadcrumb.appendChild(span);
         });
+    };
+
+    const fetchAllNodes = async () => {
+        if (allNodesCache) return allNodesCache;
+        const collected: any[] = [];
+        const queue: string[] = ['root'];
+        while (queue.length) {
+            const parentId = queue.shift() as string;
+            const response = await api.get(`/api/v1/workspace/nodes?parent_id=${parentId}`);
+            const nodes = (response?.nodes || []) as any[];
+            collected.push(...nodes);
+            nodes.forEach((node) => {
+                if (node.node_type === 'folder') {
+                    queue.push(node.id);
+                }
+            });
+        }
+        allNodesCache = collected;
+        return collected;
+    };
+
+    const parseSearch = (value: string) => {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        const lower = trimmed.toLowerCase();
+        if (lower.startsWith('folder/')) {
+            return { type: 'folder' as const, query: trimmed.slice(7).trim() };
+        }
+        if (lower.startsWith('study/')) {
+            return { type: 'study' as const, query: trimmed.slice(6).trim() };
+        }
+        return { type: null, query: trimmed };
+    };
+
+    const levenshtein = (a: string, b: string) => {
+        const m = a.length;
+        const n = b.length;
+        const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+        for (let i = 0; i <= m; i += 1) dp[i][0] = i;
+        for (let j = 0; j <= n; j += 1) dp[0][j] = j;
+        for (let i = 1; i <= m; i += 1) {
+            for (let j = 1; j <= n; j += 1) {
+                const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                dp[i][j] = Math.min(
+                    dp[i - 1][j] + 1,
+                    dp[i][j - 1] + 1,
+                    dp[i - 1][j - 1] + cost,
+                );
+            }
+        }
+        return dp[m][n];
+    };
+
+    const scoreMatch = (title: string, query: string) => {
+        const t = title.toLowerCase();
+        const q = query.toLowerCase();
+        if (t === q) return 0;
+        if (t.startsWith(q)) return 1;
+        const idx = t.indexOf(q);
+        if (idx >= 0) return 2 + idx / 100;
+        const dist = levenshtein(t, q);
+        const norm = dist / Math.max(t.length, q.length, 1);
+        return 5 + norm;
+    };
+
+    const runSearch = async (raw: string) => {
+        const parsed = parseSearch(raw);
+        if (!parsed) {
+            await refreshNodes(currentParentId);
+            return;
+        }
+        if (!parsed.query) {
+            await refreshNodes(currentParentId);
+            return;
+        }
+        const nodes = await fetchAllNodes();
+        const filtered = nodes.filter((node) => {
+            if (parsed.type && node.node_type !== parsed.type) return false;
+            return true;
+        });
+        const ranked = filtered
+            .map((node) => ({
+                node,
+                score: scoreMatch(node.title || '', parsed.query),
+            }))
+            .sort((a, b) => a.score - b.score)
+            .map((entry) => entry.node);
+        renderItems(ranked);
     };
 
     const shakePathInput = () => {
@@ -283,6 +373,7 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
         const confirmBtn = overlay.querySelector('#confirm-create') as HTMLButtonElement;
         const typeSelect = overlay.querySelector('#new-type') as HTMLSelectElement;
         const titleInput = overlay.querySelector('#new-title') as HTMLInputElement;
+        const titleError = overlay.querySelector('#new-title-error') as HTMLElement;
 
         document.body.appendChild(overlay);
 
@@ -297,10 +388,25 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
             typeSelect.disabled = true;
         }
 
+        const validateTitle = () => {
+            const value = titleInput.value;
+            if (value.includes('/')) {
+                titleError.textContent = 'No "/" in study or folder name';
+                confirmBtn.disabled = true;
+                return false;
+            }
+            titleError.textContent = '';
+            confirmBtn.disabled = false;
+            return true;
+        };
+
+        titleInput.addEventListener('input', validateTitle);
+
         confirmBtn.addEventListener('click', async () => {
             const title = titleInput.value;
             const type = typeSelect.value;
             if (!title) return;
+            if (!validateTitle()) return;
 
             try {
                 // POST /api/v1/workspace/nodes
@@ -311,6 +417,7 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
                     visibility: 'private'
                 });
                 close();
+                allNodesCache = null;
                 refreshNodes(currentParentId);
             } catch (error) {
                 console.error('Failed to create node:', error);
@@ -326,6 +433,11 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
         if (event.key !== 'Enter') return;
         event.preventDefault();
         resolvePath(pathInput.value).catch(() => shakePathInput());
+    });
+    searchInput?.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        runSearch(searchInput.value).catch(() => {});
     });
 
     // Initial load

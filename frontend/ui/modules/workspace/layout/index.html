@@ -4,6 +4,7 @@
             <div class="sidebar-header">
                 <button id="new-folder-btn" class="btn-primary btn-sm">+ New Folder</button>
                 <button id="new-study-btn" class="btn-primary btn-sm">+ New Study</button>
+                <input id="workspace-search-input" type="text" placeholder="Search folders / studies">
             </div>
             <nav id="folder-tree" class="folder-tree">
                 <!-- Recursive folder tree will be injected here -->
@@ -70,6 +71,7 @@
                 <div class="form-group">
                     <label>Title</label>
                     <input type="text" id="new-title" placeholder="Enter title" required>
+                    <div id="new-title-error" class="form-error"></div>
                 </div>
             </div>
             <div class="modal-footer">

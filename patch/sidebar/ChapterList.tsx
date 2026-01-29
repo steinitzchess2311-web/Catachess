@@ -20,6 +20,7 @@ export function ChapterList({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draftTitle, setDraftTitle] = useState<string>('');
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [errorId, setErrorId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -37,10 +38,15 @@ export function ChapterList({
   const cancelEditing = () => {
     setEditingId(null);
     setDraftTitle('');
+    setErrorId(null);
   };
 
   const commitEditing = async (chapterId: string, label: string) => {
     const nextTitle = draftTitle.trim();
+    if (nextTitle.includes('/')) {
+      setErrorId(chapterId);
+      return;
+    }
     if (!nextTitle || nextTitle === label) {
       cancelEditing();
       return;
@@ -99,7 +105,13 @@ export function ChapterList({
                   ref={inputRef}
                   className="patch-chapter-list__title-input"
                   value={draftTitle}
-                  onChange={(event) => setDraftTitle(event.target.value)}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setDraftTitle(nextValue);
+                    if (!nextValue.includes('/')) {
+                      setErrorId(null);
+                    }
+                  }}
                   onClick={(event) => event.stopPropagation()}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') {
@@ -113,6 +125,9 @@ export function ChapterList({
                   }}
                   onBlur={() => commitEditing(chapter.id, label)}
                 />
+                {errorId === chapter.id && (
+                  <span className="patch-chapter-list__error">No "/" in study or folder name</span>
+                )}
               ) : (
                 <span
                   className="patch-chapter-list__title"

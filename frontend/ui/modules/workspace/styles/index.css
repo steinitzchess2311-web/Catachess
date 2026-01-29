@@ -39,6 +39,27 @@
     font-size: var(--font-md);
 }
 
+#workspace-search-input {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-sm);
+    font-family: var(--font-family);
+}
+
+#workspace-search-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.form-error {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--error);
+    min-height: 14px;
+}
+
 /* Main Area */
 .workspace-main {
     display: flex;

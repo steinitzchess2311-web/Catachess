@@ -422,6 +422,7 @@ async def create_chapter(
     user_id: str = Depends(get_current_user_id),
     node_service: NodeService = Depends(get_node_service),
     study_repo: StudyRepository = Depends(get_study_repository),
+    event_bus: EventBus = Depends(get_event_bus),
 ) -> ChapterResponse:
     """Create a new chapter with an empty PGN."""
     try:

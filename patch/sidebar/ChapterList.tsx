@@ -21,6 +21,7 @@ export function ChapterList({
   const [draftTitle, setDraftTitle] = useState<string>('');
   const [savingId, setSavingId] = useState<string | null>(null);
   const [errorId, setErrorId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; label: string } | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -60,10 +61,8 @@ export function ChapterList({
     }
   };
 
-  const handleDelete = async (chapterId: string, label: string) => {
-    const confirmed = window.confirm(`Delete "${label}"? This cannot be undone.`);
-    if (!confirmed) return;
-    await onDeleteChapter(chapterId);
+  const handleDelete = (chapterId: string, label: string) => {
+    setConfirmDelete({ id: chapterId, label });
   };
 
   return (
@@ -152,12 +151,44 @@ export function ChapterList({
                 title="Delete chapter"
                 disabled={isSaving}
               >
-                🗑
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z" />
+                </svg>
               </button>
             </button>
           );
         })}
       </div>
+      {confirmDelete && (
+        <div className="patch-action-overlay" role="dialog" aria-modal="true">
+          <div className="patch-action-card">
+            <div className="patch-action-title">Delete Chapter</div>
+            <div className="patch-action-body">
+              <div>Are you sure you want to delete</div>
+              <div className="patch-action-emphasis">{confirmDelete.label}?</div>
+            </div>
+            <div className="patch-action-buttons">
+              <button
+                type="button"
+                className="patch-action-btn"
+                onClick={() => setConfirmDelete(null)}
+              >
+                No
+              </button>
+              <button
+                type="button"
+                className="patch-action-btn is-danger"
+                onClick={async () => {
+                  await onDeleteChapter(confirmDelete.id);
+                  setConfirmDelete(null);
+                }}
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

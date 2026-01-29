@@ -23,6 +23,12 @@
     gap: var(--space-sm);
 }
 
+.sidebar-header .btn-primary {
+    width: 200px;
+    align-self: center;
+    border-radius: var(--radius-sm);
+}
+
 .sidebar-header h2 {
     font-size: var(--font-md);
     color: var(--text-main);

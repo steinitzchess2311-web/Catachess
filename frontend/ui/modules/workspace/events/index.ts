@@ -226,6 +226,7 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
 
         if (prefillType) {
             typeSelect.value = prefillType;
+            typeSelect.disabled = true;
         }
 
         confirmBtn.addEventListener('click', async () => {

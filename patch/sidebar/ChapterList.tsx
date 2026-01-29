@@ -86,8 +86,9 @@ export function ChapterList({
         )}
         {chapters.map((chapter, index) => {
           const isActive = chapter.id === currentChapterId;
-          const label = chapter.title || `Chapter ${index + 1}`;
-          const order = index + 1;
+          const orderValue = typeof chapter.order === 'number' ? chapter.order + 1 : index + 1;
+          const label = chapter.title || `Chapter ${orderValue}`;
+          const order = orderValue;
           const isEditing = editingId === chapter.id;
           const isSaving = savingId === chapter.id;
           return (

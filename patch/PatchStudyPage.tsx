@@ -23,9 +23,13 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isCreatingChapter, setIsCreatingChapter] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [createTitle, setCreateTitle] = useState<string>('');
+  const [createTitleError, setCreateTitleError] = useState<string | null>(null);
   const [rightbarWidth, setRightbarWidth] = useState<number>(280);
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
+  const [pendingDeleteChapters, setPendingDeleteChapters] = useState<Array<{ id: string; order?: number }>>([]);
+  const createTitleInputRef = useRef<HTMLInputElement | null>(null);
   const lastSavedAtRef = useRef<number | null>(state.lastSavedAt);
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const hasPendingDeletes = pendingDeleteIds.length > 0;
@@ -138,6 +142,15 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     });
   }, [getSortValue]);
 
+  const getNextChapterIndex = useCallback(() => {
+    const orders = [
+      ...chapters.map((chapter) => (typeof chapter.order === 'number' ? chapter.order : null)),
+      ...pendingDeleteChapters.map((chapter) => (typeof chapter.order === 'number' ? chapter.order : null)),
+    ].filter((value): value is number => typeof value === 'number');
+    const maxOrder = orders.length > 0 ? Math.max(...orders) : -1;
+    return maxOrder + 2;
+  }, [chapters, pendingDeleteChapters]);
+
   const loadChapterTree = useCallback(async (chapterId: string) => {
     selectChapter(chapterId);
 
@@ -174,10 +187,9 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     }
   }, [loadChapterTree, setError]);
 
-  const handleCreateChapter = useCallback(async () => {
+  const handleCreateChapter = useCallback(async (title: string) => {
     if (!id) return;
     try {
-      const title = `Chapter ${chapters.length + 1}`;
       const chapter = await api.post(`/api/v1/workspace/studies/${id}/chapters`, { title });
       const nextChapters = sortChapters([...chapters, chapter]);
       setChapters(nextChapters);
@@ -214,6 +226,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         )
       );
       setPendingDeleteIds((prev) => prev.filter((chapterId) => !deleteIds.includes(chapterId)));
+      setPendingDeleteChapters((prev) => prev.filter((chapter) => !deleteIds.includes(chapter.id)));
     } catch (e) {
       setError('LOAD_ERROR', e instanceof Error ? e.message : 'Failed to delete chapter');
       throw e;
@@ -223,11 +236,15 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const handleDeleteChapter = useCallback(async (chapterId: string) => {
     if (!id) return;
     try {
+      const deletedChapter = chapters.find((chapter) => chapter.id === chapterId);
       const remaining = chapters.filter((chapter) => chapter.id !== chapterId);
       setPendingDeleteIds((prev) => (prev.includes(chapterId) ? prev : [...prev, chapterId]));
-      setChapters(remaining);
+      if (deletedChapter) {
+        setPendingDeleteChapters((prev) => (prev.some((item) => item.id === chapterId) ? prev : [...prev, deletedChapter]));
+      }
+      setChapters(sortChapters(remaining));
       if (state.chapterId === chapterId) {
-        const nextChapter = remaining[0];
+        const nextChapter = sortChapters(remaining)[0];
         if (nextChapter) {
           await loadChapterTree(nextChapter.id);
         }
@@ -240,8 +257,11 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
 
   const openCreateModal = useCallback(() => {
     setCreateError(null);
+    setCreateTitleError(null);
+    const nextIndex = getNextChapterIndex();
+    setCreateTitle(`Chapter ${nextIndex}`);
     setIsCreateModalOpen(true);
-  }, []);
+  }, [getNextChapterIndex]);
 
   const closeCreateModal = useCallback(() => {
     if (isCreatingChapter) return;
@@ -250,17 +270,30 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
 
   const confirmCreateChapter = useCallback(async () => {
     if (isCreatingChapter) return;
-    setIsCreatingChapter(true);
     setCreateError(null);
+    const fallbackTitle = `Chapter ${getNextChapterIndex()}`;
+    const nextTitle = createTitle.trim() || fallbackTitle;
+    if (nextTitle.includes('/')) {
+      setCreateTitleError('No "/" in study or folder name');
+      return;
+    }
+    setIsCreatingChapter(true);
     try {
-      await handleCreateChapter();
+      await handleCreateChapter(nextTitle);
       setIsCreateModalOpen(false);
     } catch (e) {
       setCreateError(e instanceof Error ? e.message : 'Failed to create chapter');
     } finally {
       setIsCreatingChapter(false);
     }
-  }, [handleCreateChapter, isCreatingChapter]);
+  }, [createTitle, getNextChapterIndex, handleCreateChapter, isCreatingChapter]);
+
+  useEffect(() => {
+    if (isCreateModalOpen && createTitleInputRef.current) {
+      createTitleInputRef.current.focus();
+      createTitleInputRef.current.select();
+    }
+  }, [isCreateModalOpen]);
 
   useEffect(() => {
     if (!id) return;
@@ -419,6 +452,22 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
           <div className="patch-modal">
             <h3>Create new chapter?</h3>
             <p>This will add a new chapter to the current study.</p>
+            <input
+              ref={createTitleInputRef}
+              className="patch-modal-input"
+              value={createTitle}
+              onChange={(event) => {
+                const nextValue = event.target.value;
+                setCreateTitle(nextValue);
+                if (!nextValue.includes('/')) {
+                  setCreateTitleError(null);
+                }
+              }}
+              onFocus={(event) => {
+                event.target.select();
+              }}
+            />
+            {createTitleError && <div className="patch-modal-error">{createTitleError}</div>}
             {createError && <div className="patch-modal-error">{createError}</div>}
             <div className="patch-modal-actions">
               <button

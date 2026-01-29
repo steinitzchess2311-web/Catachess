@@ -442,7 +442,11 @@ async def create_chapter(
         existing = await study_repo.get_chapters_for_study(
             study_id, order_by_order=True
         )
-        order = len(existing)
+        max_order = max(
+            (chapter.order for chapter in existing if chapter.order is not None),
+            default=-1,
+        )
+        order = max_order + 1
 
         chapter_id = str(ULID())
         r2_key = R2Keys.chapter_tree_json(chapter_id)

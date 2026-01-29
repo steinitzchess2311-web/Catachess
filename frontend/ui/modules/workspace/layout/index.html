@@ -39,6 +39,7 @@
         </div>
         <div class="item-info">
             <span class="item-title">{{title}}</span>
+            <span class="item-error"></span>
             <span class="item-meta">{{updated_at}}</span>
         </div>
     </div>
@@ -51,6 +52,7 @@
         </div>
         <div class="item-info">
             <span class="item-title">{{title}}</span>
+            <span class="item-error"></span>
             <span class="item-meta">{{updated_at}}</span>
         </div>
     </div>
@@ -97,7 +99,30 @@
             </div>
             <div class="modal-body action-body">
                 <button class="action-btn" data-action="move">Move</button>
+                <button class="action-btn" data-action="rename">Rename</button>
                 <button class="action-btn danger" data-action="delete">Delete</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="rename-node-template">
+    <div class="modal-overlay">
+        <div class="modal-card window-draggable">
+            <div class="modal-header window-focus-target">
+                <h3>Rename</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="rename-title" placeholder="Enter title" required>
+                    <div id="rename-title-error" class="form-error"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-text modal-close">Cancel</button>
+                <button id="confirm-rename" class="btn-primary">Save</button>
             </div>
         </div>
     </div>

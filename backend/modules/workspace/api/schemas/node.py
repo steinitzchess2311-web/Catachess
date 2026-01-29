@@ -27,6 +27,13 @@ class NodeCreate(BaseModel):
             return value.lower()
         return value
 
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        if "/" in value:
+            raise ValueError('No "/" in study or folder name')
+        return value
+
 
 class NodeUpdate(BaseModel):
     """Schema for updating a node."""
@@ -42,6 +49,15 @@ class NodeUpdate(BaseModel):
     def normalize_visibility(cls, value: Any) -> Any:
         if isinstance(value, str):
             return value.lower()
+        return value
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        if "/" in value:
+            raise ValueError('No "/" in study or folder name')
         return value
 
 

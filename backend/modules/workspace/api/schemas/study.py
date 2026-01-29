@@ -4,7 +4,7 @@ Study API schemas.
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from modules.workspace.domain.models.types import Visibility
 
@@ -44,11 +44,25 @@ class ChapterCreate(BaseModel):
 
     title: str = Field(..., min_length=1, max_length=200)
 
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        if "/" in value:
+            raise ValueError('No "/" in study or folder name')
+        return value
+
 
 class ChapterUpdate(BaseModel):
     """Schema for updating a chapter."""
 
     title: str = Field(..., min_length=1, max_length=200)
+
+    @field_validator("title")
+    @classmethod
+    def validate_title(cls, value: str) -> str:
+        if "/" in value:
+            raise ValueError('No "/" in study or folder name')
+        return value
 
 
 class ChapterImportPGN(BaseModel):

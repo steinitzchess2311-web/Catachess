@@ -54,12 +54,16 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
             itemDiv.setAttribute('data-version', String(node.version));
             itemDiv.setAttribute('data-parent-id', node.parent_id ?? '');
             itemDiv.querySelector('.item-title')!.textContent = node.title;
+            const errorEl = itemDiv.querySelector('.item-error') as HTMLElement;
             
             const date = new Date(node.updated_at).toLocaleDateString();
             itemDiv.querySelector('.item-meta')!.textContent = date;
 
             itemDiv.addEventListener('click', (event) => {
                 if (event.button !== 0) {
+                    return;
+                }
+                if (event.detail > 1) {
                     return;
                 }
                 if (node.node_type === 'folder') {
@@ -77,6 +81,62 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
                 event.preventDefault();
                 event.stopPropagation();
                 openNodeActions(node);
+            });
+
+            const startInlineRename = () => {
+                const titleSpan = itemDiv.querySelector('.item-title') as HTMLElement;
+                if (!titleSpan) return;
+                titleSpan.style.display = 'none';
+                const input = document.createElement('input');
+                input.className = 'item-title-input';
+                input.value = node.title || '';
+                titleSpan.parentElement?.insertBefore(input, titleSpan.nextSibling);
+                input.focus();
+                input.select();
+                input.addEventListener('click', (event) => event.stopPropagation());
+
+                const cleanup = () => {
+                    input.remove();
+                    titleSpan.style.display = '';
+                    errorEl.textContent = '';
+                };
+
+                input.addEventListener('keydown', async (event) => {
+                    if (event.key === 'Escape') {
+                        event.preventDefault();
+                        cleanup();
+                        return;
+                    }
+                    if (event.key === 'Enter') {
+                        event.preventDefault();
+                        const nextTitle = input.value.trim();
+                        if (!nextTitle) {
+                            cleanup();
+                            return;
+                        }
+                        if (nextTitle.includes('/')) {
+                            errorEl.textContent = 'No "/" in study or folder name';
+                            return;
+                        }
+                        try {
+                            await renameNode(node, nextTitle);
+                            titleSpan.textContent = node.title;
+                            cleanup();
+                        } catch (error) {
+                            console.error('Failed to rename node:', error);
+                            alert('Rename failed');
+                            cleanup();
+                        }
+                    }
+                });
+
+                input.addEventListener('blur', () => cleanup());
+            };
+
+            itemDiv.addEventListener('dblclick', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                startInlineRename();
             });
 
             itemsGrid.appendChild(item);
@@ -359,10 +419,59 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
             try {
                 await api.delete(`/api/v1/workspace/nodes/${node.id}/purge?version=${node.version}`);
                 close();
+                allNodesCache = null;
                 refreshNodes(currentParentId);
             } catch (error) {
                 console.error('Failed to delete node:', error);
                 alert('Delete failed');
+            }
+        });
+    };
+
+    const renameNode = async (node: any, title: string) => {
+        const trimmed = title.trim();
+        if (!trimmed) return false;
+        if (trimmed.includes('/')) return false;
+        const response = await api.put(`/api/v1/workspace/nodes/${node.id}`, {
+            title: trimmed,
+            version: node.version,
+        });
+        node.title = response.title;
+        node.version = response.version;
+        allNodesCache = null;
+        return true;
+    };
+
+    const openRenameModal = (node: any) => {
+        const { overlay, close } = mountModal('rename-node-template');
+        const titleInput = overlay.querySelector('#rename-title') as HTMLInputElement;
+        const errorEl = overlay.querySelector('#rename-title-error') as HTMLElement;
+        const confirmBtn = overlay.querySelector('#confirm-rename') as HTMLButtonElement;
+        titleInput.value = node.title || '';
+
+        const validate = () => {
+            if (titleInput.value.includes('/')) {
+                errorEl.textContent = 'No "/" in study or folder name';
+                confirmBtn.disabled = true;
+                return false;
+            }
+            errorEl.textContent = '';
+            confirmBtn.disabled = false;
+            return true;
+        };
+
+        titleInput.addEventListener('input', validate);
+
+        confirmBtn.addEventListener('click', async () => {
+            if (!validate()) return;
+            try {
+                const ok = await renameNode(node, titleInput.value);
+                if (!ok) return;
+                close();
+                refreshNodes(currentParentId);
+            } catch (error) {
+                console.error('Failed to rename node:', error);
+                alert('Rename failed');
             }
         });
     };
@@ -384,6 +493,10 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
                 if (action === 'delete') {
                     overlay.remove();
                     openDeleteConfirm(node);
+                }
+                if (action === 'rename') {
+                    overlay.remove();
+                    openRenameModal(node);
                 }
             });
         });

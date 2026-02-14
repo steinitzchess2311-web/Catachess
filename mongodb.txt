@@ -1,0 +1,10 @@
+Below is url for mongodb (chess engine results storage) 
+
+MONGO_INITDB_ROOT_PASSWORD=tlYvyUQbBvOTNqsDiphcspBjeCfdpLoe
+MONGO_INITDB_ROOT_USERNAME=mongo
+MONGO_PUBLIC_URL=mongodb://mongo:tlYvyUQbBvOTNqsDiphcspBjeCfdpLoe@turntable.proxy.rlwy.net:49945
+MONGO_URL=mongodb://mongo:tlYvyUQbBvOTNqsDiphcspBjeCfdpLoe@mongodb.railway.internal:27017
+MONGOHOST=mongodb.railway.internal
+MONGOPASSWORD=tlYvyUQbBvOTNqsDiphcspBjeCfdpLoe
+MONGOPORT=27017
+MONGOUSER=mongo

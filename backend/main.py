@@ -282,6 +282,114 @@ async def _init_blog_db() -> None:
         logger.warning("Blog module may not function correctly")
 
 
+# ============================================================================
+# ⚠️⚠️⚠️ TEMPORARY MIGRATION CODE - REMOVE AFTER DEPLOYMENT ⚠️⚠️⚠️
+# ============================================================================
+# This migration adds the `starting_fen` column to the `chapters` table
+# to support importing chess positions from FEN (Forsyth-Edwards Notation).
+#
+# Migration: Add starting_fen to chapters table
+# Date: 2025-02-15
+# Feature: FEN Import (fen_import.md Phase 1)
+#
+# What this does:
+# 1. Adds `starting_fen` VARCHAR(100) column to chapters table
+# 2. Creates index on `starting_fen` for query performance
+# 3. NULL = standard starting position (default for existing chapters)
+# 4. Non-NULL = custom starting position (for FEN imports)
+#
+# This code should be REMOVED after Railway deployment confirms success.
+# ============================================================================
+
+async def _migrate_chapters_add_starting_fen() -> None:
+    """
+    ⚠️ TEMPORARY MIGRATION CODE ⚠️
+    Add starting_fen column to chapters table.
+
+    This migration is idempotent and safe to run multiple times.
+    """
+    import os
+    from sqlalchemy import create_engine, text, inspect
+
+    try:
+        # Use workspace database URL
+        workspace_db_url = settings.DATABASE_URL
+        if not workspace_db_url:
+            logger.warning("DATABASE_URL not set. Skipping chapters migration.")
+            return
+
+        logger.info("=" * 80)
+        logger.info("⚠️ RUNNING TEMPORARY MIGRATION: Add starting_fen to chapters")
+        logger.info("=" * 80)
+
+        # Convert to sync engine for migration
+        sync_db_url = workspace_db_url
+        if sync_db_url.startswith("postgresql+asyncpg://"):
+            sync_db_url = sync_db_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+        elif sync_db_url.startswith("sqlite+aiosqlite://"):
+            sync_db_url = sync_db_url.replace("sqlite+aiosqlite://", "sqlite://", 1)
+
+        engine = create_engine(sync_db_url)
+        inspector = inspect(engine)
+
+        # Check if migration is needed
+        tables = inspector.get_table_names()
+
+        if 'chapters' not in tables:
+            logger.warning("chapters table does not exist. Skipping migration.")
+            return
+
+        # Check if starting_fen column already exists
+        columns = inspector.get_columns('chapters')
+        col_names = [col['name'] for col in columns]
+
+        if 'starting_fen' in col_names:
+            logger.info("✅ starting_fen column already exists. Migration not needed.")
+            return
+
+        # Run migration
+        logger.info("🚀 Adding starting_fen column to chapters table...")
+
+        with engine.begin() as conn:
+            # Step 1: Add starting_fen column
+            logger.info("  Adding starting_fen column...")
+            conn.execute(text("""
+                ALTER TABLE chapters
+                ADD COLUMN starting_fen VARCHAR(100) DEFAULT NULL;
+            """))
+
+            # Step 2: Create index on starting_fen
+            logger.info("  Creating index on starting_fen...")
+            conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS ix_chapters_starting_fen
+                ON chapters(starting_fen);
+            """))
+
+            logger.info("✅ Migration completed successfully!")
+            logger.info("")
+            logger.info("  ✓ Added column: chapters.starting_fen VARCHAR(100)")
+            logger.info("  ✓ Created index: ix_chapters_starting_fen")
+            logger.info("  ✓ Default value: NULL (standard starting position)")
+            logger.info("")
+            logger.info("Next steps:")
+            logger.info("  1. Verify migration in Railway dashboard")
+            logger.info("  2. Test FEN import functionality")
+            logger.info("  3. Remove this migration code from main.py")
+
+        logger.info("=" * 80)
+
+    except Exception as e:
+        logger.error("=" * 80)
+        logger.error(f"⚠️ Migration failed: {e}", exc_info=True)
+        logger.error("=" * 80)
+        logger.warning("Chapters table migration failed. FEN import will not work.")
+        logger.warning("Please check database permissions and table structure.")
+
+# ============================================================================
+# ⚠️⚠️⚠️ END OF TEMPORARY MIGRATION CODE ⚠️⚠️⚠️
+# ============================================================================
+
+
 async def _presence_cleanup_loop() -> None:
     import os
 
@@ -318,6 +426,10 @@ async def lifespan(app: FastAPI):
 
     # Initialize Blog database and run migrations
     await _init_blog_db()
+
+    # ⚠️ TEMPORARY: Run chapters migration (add starting_fen column)
+    # TODO: Remove this after Railway deployment confirms success
+    await _migrate_chapters_add_starting_fen()
 
     # Initialize MongoDB cache
     try:

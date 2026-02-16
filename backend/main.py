@@ -313,7 +313,7 @@ async def _presence_cleanup_loop() -> None:
         await asyncio.sleep(interval_seconds)
 
 
-async def _migrate_add_user_statistics() -> None:
+def _migrate_add_user_statistics() -> None:
     """
     TEMPORARY MIGRATION: Add user statistics fields
 

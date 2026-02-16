@@ -36,8 +36,11 @@ export function renderItems(
         itemDiv.querySelector('.item-title')!.textContent = node.title;
         const errorEl = itemDiv.querySelector('.item-error') as HTMLElement;
 
-        const date = new Date(node.updated_at).toLocaleDateString();
-        itemDiv.querySelector('.item-meta')!.textContent = date;
+        // Display date based on current sort key
+        const dateToDisplay = state.sortKey === 'created' ? node.created_at : node.updated_at;
+        const date = new Date(dateToDisplay).toLocaleDateString();
+        const dateLabel = state.sortKey === 'created' ? 'Created' : 'Modified';
+        itemDiv.querySelector('.item-meta')!.textContent = `${dateLabel}: ${date}`;
 
         itemDiv.addEventListener('click', (event) => {
             if (event.button !== 0) return;

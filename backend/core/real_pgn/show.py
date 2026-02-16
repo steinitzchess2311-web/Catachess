@@ -1,3 +1,23 @@
+"""
+⚠️⚠️⚠️ LEGACY CODE - USED BY OLD FRONTEND ONLY ⚠️⚠️⚠️
+
+This module builds ShowDTO for the OLD frontend ShowDTO system.
+The OLD frontend (frontend/ui/modules/study/) has been REPLACED by patch/.
+
+Current system uses tree.json directly:
+- Frontend: patch/sidebar/movetree.tsx
+- Backend API: patch/backend/study/api.py
+- Data format: StudyTreeDTO (patch/backend/study/models.py)
+- Storage: R2 tree.json (chapters/{id}.tree.json)
+
+This code is still used by:
+- backend/modules/workspace/api/endpoints/studies.py:get_chapter_show()
+  for backward compatibility with old frontend.
+
+DO NOT USE for new features. Use patch/ system instead.
+⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+"""
+
 from typing import List, Dict, Any
 from backend.core.real_pgn.models import NodeTree, PgnNode
 

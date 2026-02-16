@@ -1,3 +1,19 @@
+/**
+ * ⚠️⚠️⚠️ LEGACY CODE - ENTIRE MODULE NO LONGER USED ⚠️⚠️⚠️
+ *
+ * This ENTIRE frontend/ui/modules/study module has been REPLACED.
+ *
+ * Current implementation:
+ * - Main page: patch/PatchStudyPage.tsx
+ * - Move tree: patch/sidebar/movetree.tsx
+ * - State mgmt: patch/studyContext.tsx
+ * - Backend API: patch/backend/study/api.py
+ *
+ * DO NOT USE THIS CODE FOR NEW FEATURES.
+ * This file is kept ONLY for reference during migration.
+ * ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+ */
+
 import { ChessboardV2 } from '../../chessboard_v2';
 import { createEngineAnalysis, createImitatorPanel } from '../../chessboard';
 import { initDiscussion } from '../../discussion/events';

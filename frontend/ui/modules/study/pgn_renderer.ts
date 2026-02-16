@@ -1,3 +1,13 @@
+/**
+ * ⚠️⚠️⚠️ LEGACY CODE - NO LONGER USED ⚠️⚠️⚠️
+ *
+ * This module has been REPLACED by the patch version.
+ * Current implementation: patch/sidebar/movetree.tsx
+ *
+ * DO NOT USE THIS CODE FOR NEW FEATURES.
+ * ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+ */
+
 import type { ShowDTONode, ShowDTORenderToken, ShowDTOResponse } from './api/pgn';
 
 type LegacyMove = {

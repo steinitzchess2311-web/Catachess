@@ -1437,6 +1437,14 @@ async def get_chapter_show(
     study_repo: StudyRepository = Depends(get_study_repository),
 ):
     """
+    ⚠️ LEGACY ENDPOINT - FOR OLD FRONTEND ONLY ⚠️
+
+    This endpoint is for the OLD frontend ShowDTO system.
+    Current endpoint: GET /study-patch/chapter/{id}/tree (patch/backend/study/api.py)
+
+    DO NOT USE for new features.
+    ----
+
     Get ShowDTO for chapter rendering.
 
     Returns a complete rendering structure including:

@@ -1,3 +1,16 @@
+/**
+ * ⚠️⚠️⚠️ LEGACY API - NO LONGER USED ⚠️⚠️⚠️
+ *
+ * This API module is for the OLD frontend ShowDTO system.
+ *
+ * Current API: patch/backend/study/api.py
+ * Current endpoint: GET /study-patch/chapter/{id}/tree
+ * Current data structure: patch/backend/study/models.py (StudyTreeDTO)
+ *
+ * DO NOT USE THIS CODE FOR NEW FEATURES.
+ * ⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️⚠️
+ */
+
 import { api } from '../../../assets/api';
 
 type PGNDetectGame = {

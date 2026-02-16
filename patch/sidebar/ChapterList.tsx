@@ -5,7 +5,6 @@ export interface ChapterListProps {
   currentChapterId: string | null;
   onSelectChapter: (chapterId: string) => void;
   onCreateChapter: () => void;
-  onImportFen?: (fen: string, title: string) => Promise<void> | void;  // ✅ New: Import FEN
   onRenameChapter: (chapterId: string, title: string) => Promise<void> | void;
   onDeleteChapter: (chapterId: string) => Promise<void> | void;
   onReorderChapters: (
@@ -19,7 +18,6 @@ export function ChapterList({
   currentChapterId,
   onSelectChapter,
   onCreateChapter,
-  onImportFen,
   onRenameChapter,
   onDeleteChapter,
   onReorderChapters,
@@ -38,13 +36,6 @@ export function ChapterList({
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<{ id: string; placement: 'before' | 'after' } | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
-
-  // ✅ FEN Import state
-  const [showFenImport, setShowFenImport] = useState(false);
-  const [fenInput, setFenInput] = useState('');
-  const [fenTitleInput, setFenTitleInput] = useState('From FEN Position');
-  const [fenError, setFenError] = useState<string | null>(null);
-  const [importingFen, setImportingFen] = useState(false);
 
   useEffect(() => {
     if (editingId && inputRef.current) {
@@ -86,40 +77,6 @@ export function ChapterList({
   const handleDelete = (chapterId: string, label: string) => {
     if (chapters.length <= 1) return;
     setConfirmDelete({ id: chapterId, label });
-  };
-
-  // ✅ Handle FEN Import
-  const handleFenImport = async () => {
-    const trimmedFen = fenInput.trim();
-    const trimmedTitle = fenTitleInput.trim();
-
-    if (!trimmedFen) {
-      setFenError('FEN string cannot be empty');
-      return;
-    }
-
-    if (!trimmedTitle) {
-      setFenError('Chapter title cannot be empty');
-      return;
-    }
-
-    setImportingFen(true);
-    setFenError(null);
-
-    try {
-      if (onImportFen) {
-        await onImportFen(trimmedFen, trimmedTitle);
-        // Success - close dialog and reset
-        setShowFenImport(false);
-        setFenInput('');
-        setFenTitleInput('From FEN Position');
-        setFenError(null);
-      }
-    } catch (error: any) {
-      setFenError(error.message || 'Failed to import FEN');
-    } finally {
-      setImportingFen(false);
-    }
   };
 
   const resolveLabel = (chapter: { id: string; title?: string; order?: number }, index: number) => {
@@ -204,25 +161,13 @@ export function ChapterList({
           <h3>Chapters</h3>
           <p>{chapters.length} total</p>
         </div>
-        <div className="patch-chapter-list__actions">
-          <button
-            type="button"
-            className="patch-chapter-list__new"
-            onClick={onCreateChapter}
-          >
-            New Chapter
-          </button>
-          {onImportFen && (
-            <button
-              type="button"
-              className="patch-chapter-list__import-fen"
-              onClick={() => setShowFenImport(true)}
-              title="Import from FEN position"
-            >
-              Import FEN
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          className="patch-chapter-list__new"
+          onClick={onCreateChapter}
+        >
+          New Chapter
+        </button>
       </header>
       <div
         className="patch-chapter-list__scroll"
@@ -405,81 +350,6 @@ export function ChapterList({
                 }}
               >
                 Move
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      {showFenImport && (
-        <div className="patch-action-overlay" role="dialog" aria-modal="true">
-          <div className="patch-action-card patch-action-card--wide">
-            <div className="patch-action-title">Import FEN Position</div>
-            <div className="patch-action-body">
-              <div className="patch-fen-import-form">
-                <label htmlFor="fen-title-input" className="patch-fen-import-label">
-                  Chapter Title
-                </label>
-                <input
-                  id="fen-title-input"
-                  type="text"
-                  className="patch-fen-import-input"
-                  value={fenTitleInput}
-                  onChange={(e) => setFenTitleInput(e.target.value)}
-                  placeholder="From FEN Position"
-                  disabled={importingFen}
-                />
-                <label htmlFor="fen-string-input" className="patch-fen-import-label">
-                  FEN String
-                </label>
-                <textarea
-                  id="fen-string-input"
-                  className="patch-fen-import-textarea"
-                  value={fenInput}
-                  onChange={(e) => {
-                    setFenInput(e.target.value);
-                    setFenError(null);
-                  }}
-                  placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-                  rows={3}
-                  disabled={importingFen}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-                      e.preventDefault();
-                      handleFenImport();
-                    }
-                  }}
-                />
-                <div className="patch-fen-import-hint">
-                  Paste a FEN string to create a chapter from a custom starting position.
-                  <br />
-                  Example: Endgame positions, puzzles, or Chess960.
-                </div>
-                {fenError && (
-                  <div className="patch-fen-import-error">{fenError}</div>
-                )}
-              </div>
-            </div>
-            <div className="patch-action-buttons">
-              <button
-                type="button"
-                className="patch-action-btn"
-                onClick={() => {
-                  setShowFenImport(false);
-                  setFenInput('');
-                  setFenTitleInput('From FEN Position');
-                  setFenError(null);
-                }}
-                disabled={importingFen}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="patch-action-btn patch-action-btn--primary"
-                onClick={handleFenImport}
-                disabled={importingFen || !fenInput.trim() || !fenTitleInput.trim()}
-              >
-                {importingFen ? 'Importing...' : 'Import'}
               </button>
             </div>
           </div>

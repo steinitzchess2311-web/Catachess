@@ -1337,3 +1337,46 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* ===== New Chapter Modal - FEN Input ===== */
+
+.patch-modal-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #333;
+  margin-top: 12px;
+  margin-bottom: 6px;
+}
+
+.patch-modal-hint {
+  display: block;
+  font-size: 11px;
+  font-weight: 400;
+  color: #666;
+  margin-left: 8px;
+}
+
+.patch-modal-textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #cfcfcf;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: 'Courier New', monospace;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.patch-modal-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.patch-modal-hint-text {
+  font-size: 11px;
+  color: #666;
+  margin-top: 4px;
+  line-height: 1.4;
+}

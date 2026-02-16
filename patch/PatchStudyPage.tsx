@@ -32,6 +32,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const [createError, setCreateError] = useState<string | null>(null);
   const [createTitle, setCreateTitle] = useState<string>('');
   const [createTitleError, setCreateTitleError] = useState<string | null>(null);
+  const [createFen, setCreateFen] = useState<string>('');  // ✅ FEN input
   const [rightbarWidth, setRightbarWidth] = useState<number>(280);
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
@@ -252,38 +253,6 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     }
   }, [chapters, id, loadChapterTree, setError, sortChapters]);
 
-  // ✅ Handle FEN Import
-  const handleImportFen = useCallback(async (fen: string, title: string) => {
-    if (!id) return;
-    try {
-      // Call backend FEN import API
-      const response = await api.post('/api/v1/import-export/fen/import', {
-        study_id: id,
-        chapter_title: title,
-        fen: fen
-      });
-
-      // Create chapter object from response
-      const chapter = {
-        id: response.chapter_id,
-        title: title,
-        order: chapters.length,
-        starting_fen: response.starting_fen
-      };
-
-      const nextChapters = sortChapters([...chapters, chapter]);
-      setChapters(nextChapters);
-
-      // Load the newly created chapter
-      if (chapter.id) {
-        await loadChapterTree(chapter.id);
-      }
-    } catch (e: any) {
-      const errorMessage = e.response?.data?.detail || e.message || 'Failed to import FEN';
-      setError('LOAD_ERROR', errorMessage);
-      throw new Error(errorMessage); // Re-throw for ChapterList to catch
-    }
-  }, [chapters, id, loadChapterTree, setError, sortChapters]);
 
   const handleRenameChapter = useCallback(async (chapterId: string, title: string) => {
     if (!id) return;
@@ -492,20 +461,52 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     setCreateError(null);
     const fallbackTitle = `Chapter ${getNextChapterIndex()}`;
     const nextTitle = createTitle.trim() || fallbackTitle;
+    const trimmedFen = createFen.trim();
+
     if (nextTitle.includes('/')) {
       setCreateTitleError('No "/" in study or folder name');
       return;
     }
+
     setIsCreatingChapter(true);
     try {
-      await handleCreateChapter(nextTitle);
+      // ✅ If FEN is provided, use FEN import API; otherwise use standard API
+      if (trimmedFen) {
+        // Call FEN import API
+        const response = await api.post('/api/v1/import-export/fen/import', {
+          study_id: id,
+          chapter_title: nextTitle,
+          fen: trimmedFen
+        });
+
+        // Create chapter object from response
+        const chapter = {
+          id: response.chapter_id,
+          title: nextTitle,
+          order: chapters.length,
+          starting_fen: response.starting_fen
+        };
+
+        const nextChapters = sortChapters([...chapters, chapter]);
+        setChapters(nextChapters);
+
+        if (chapter.id) {
+          await loadChapterTree(chapter.id);
+        }
+      } else {
+        // Standard chapter creation
+        await handleCreateChapter(nextTitle);
+      }
+
       setIsCreateModalOpen(false);
-    } catch (e) {
-      setCreateError(e instanceof Error ? e.message : 'Failed to create chapter');
+      setCreateFen('');  // Reset FEN input
+    } catch (e: any) {
+      const errorMessage = e.response?.data?.detail || e.message || 'Failed to create chapter';
+      setCreateError(errorMessage);
     } finally {
       setIsCreatingChapter(false);
     }
-  }, [createTitle, getNextChapterIndex, handleCreateChapter, isCreatingChapter]);
+  }, [createTitle, createFen, getNextChapterIndex, handleCreateChapter, isCreatingChapter, id, chapters, loadChapterTree, setError, sortChapters]);
 
   useEffect(() => {
     if (isCreateModalOpen && createTitleInputRef.current) {
@@ -710,7 +711,6 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
             currentChapterId={state.chapterId}
             onSelectChapter={handleSelectChapter}
             onCreateChapter={openCreateModal}
-            onImportFen={handleImportFen}
             onRenameChapter={handleRenameChapter}
             onDeleteChapter={handleDeleteChapter}
             onReorderChapters={handleReorderChapters}
@@ -742,8 +742,10 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
       {isCreateModalOpen && (
         <div className="patch-modal-overlay" role="dialog" aria-modal="true">
           <div className="patch-modal">
-            <h3>Create new chapter?</h3>
-            <p>This will add a new chapter to the current study.</p>
+            <h3>Create new chapter</h3>
+            <p>Add a new chapter to the current study.</p>
+
+            <label className="patch-modal-label">Chapter Title</label>
             <input
               ref={createTitleInputRef}
               className="patch-modal-input"
@@ -758,8 +760,25 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
               onFocus={(event) => {
                 event.target.select();
               }}
+              placeholder="Chapter 1"
             />
             {createTitleError && <div className="patch-modal-error">{createTitleError}</div>}
+
+            <label className="patch-modal-label">
+              Starting Position (optional)
+              <span className="patch-modal-hint">Leave empty for standard starting position</span>
+            </label>
+            <textarea
+              className="patch-modal-textarea"
+              value={createFen}
+              onChange={(event) => setCreateFen(event.target.value)}
+              placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+              rows={2}
+            />
+            <div className="patch-modal-hint-text">
+              Enter a FEN string to start from a custom position (endgames, puzzles, etc.)
+            </div>
+
             {createError && <div className="patch-modal-error">{createError}</div>}
             <div className="patch-modal-actions">
               <button

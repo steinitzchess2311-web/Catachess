@@ -111,3 +111,16 @@ class User(Base):
         Text,
         nullable=True,
     )
+
+    # User statistics
+    total_online_seconds: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+    )
+
+    total_moves_count: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+    )

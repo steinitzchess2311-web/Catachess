@@ -313,12 +313,74 @@ async def _presence_cleanup_loop() -> None:
         await asyncio.sleep(interval_seconds)
 
 
+async def _migrate_add_user_statistics() -> None:
+    """
+    TEMPORARY MIGRATION: Add user statistics fields
+
+    Adds:
+    - total_online_seconds (INTEGER, default 0)
+    - total_moves_count (INTEGER, default 0)
+
+    This migration will be removed after deployment.
+    """
+    from sqlalchemy import create_engine, text, inspect
+
+    try:
+        db_url = settings.DATABASE_URL
+        if not db_url:
+            logger.warning("DATABASE_URL not set. Skipping user statistics migration.")
+            return
+
+        logger.info("Running user statistics migration...")
+        engine = create_engine(db_url)
+        inspector = inspect(engine)
+
+        # Check if users table exists
+        if 'users' not in inspector.get_table_names():
+            logger.warning("Users table not found. Skipping migration.")
+            return
+
+        # Get existing columns
+        columns = {col['name'] for col in inspector.get_columns('users')}
+
+        with engine.connect() as conn:
+            # Add total_online_seconds if not exists
+            if 'total_online_seconds' not in columns:
+                logger.info("Adding total_online_seconds column...")
+                conn.execute(text(
+                    "ALTER TABLE users ADD COLUMN total_online_seconds INTEGER DEFAULT 0 NOT NULL"
+                ))
+                conn.commit()
+                logger.info("✓ Added total_online_seconds column")
+            else:
+                logger.info("total_online_seconds column already exists")
+
+            # Add total_moves_count if not exists
+            if 'total_moves_count' not in columns:
+                logger.info("Adding total_moves_count column...")
+                conn.execute(text(
+                    "ALTER TABLE users ADD COLUMN total_moves_count INTEGER DEFAULT 0 NOT NULL"
+                ))
+                conn.commit()
+                logger.info("✓ Added total_moves_count column")
+            else:
+                logger.info("total_moves_count column already exists")
+
+        logger.info("User statistics migration completed successfully")
+
+    except Exception as e:
+        logger.error(f"User statistics migration failed: {e}", exc_info=True)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await _init_workspace_db()
 
     # Initialize Blog database and run migrations
     await _init_blog_db()
+
+    # TEMPORARY: Run user statistics migration
+    await asyncio.to_thread(_migrate_add_user_statistics)
 
     # Initialize MongoDB cache
     try:

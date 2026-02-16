@@ -11,7 +11,7 @@ from core.security.auth import get_current_user_id
 from modules.workspace.db.repos.study_repo import StudyRepository
 from modules.workspace.db.repos.node_repo import NodeRepository
 from modules.workspace.storage.r2_client import create_r2_client_from_env, R2Client
-from services.user_statistics import get_user_statistics, update_user_statistics
+from services.user_statistics import get_user_statistics, update_user_statistics, increment_online_time
 
 
 router = APIRouter(prefix="/api/v1/user/statistics", tags=["user-statistics"])
@@ -28,6 +28,13 @@ class RecalculateMovesResponse(BaseModel):
     """Response for moves recalculation"""
     success: bool
     total_moves_count: int
+    message: str
+
+
+class HeartbeatResponse(BaseModel):
+    """Response for heartbeat"""
+    success: bool
+    total_online_seconds: int
     message: str
 
 
@@ -99,4 +106,35 @@ async def recalculate_user_moves(
         success=True,
         total_moves_count=user.total_moves_count,
         message=f"Successfully recalculated moves count: {user.total_moves_count}"
+    )
+
+
+@router.post("/heartbeat", response_model=HeartbeatResponse)
+async def record_heartbeat(
+    user_id: str = Depends(get_current_user_id),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Record user heartbeat to track online time.
+
+    Frontend should call this endpoint every 60 seconds while user is active.
+    Each heartbeat adds 60 seconds to total_online_seconds.
+
+    Returns:
+        - success: Whether the heartbeat was recorded
+        - total_online_seconds: Updated total online time
+        - message: Status message
+    """
+    success = await increment_online_time(user_id, session, seconds=60)
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to record heartbeat")
+
+    # Get updated statistics
+    stats = await get_user_statistics(user_id, session)
+
+    return HeartbeatResponse(
+        success=True,
+        total_online_seconds=stats['total_online_seconds'],
+        message="Heartbeat recorded successfully"
     )

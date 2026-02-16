@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.user import User
 from modules.workspace.db.repos.study_repo import StudyRepository
 from modules.workspace.db.repos.node_repo import NodeRepository
+from modules.workspace.db.repos.presence_repo import PresenceRepository
 from modules.workspace.db.tables.nodes import NodeType
 from modules.workspace.storage.r2_client import R2Client
 from modules.workspace.storage.keys import R2Keys
@@ -195,3 +196,41 @@ async def get_user_statistics(user_id: str, session: AsyncSession) -> dict:
             'total_moves_count': 0,
             'total_online_hours': 0.0
         }
+
+
+async def increment_online_time(
+    user_id: str,
+    session: AsyncSession,
+    seconds: int = 60
+) -> bool:
+    """
+    Increment user's online time.
+
+    Args:
+        user_id: User ID
+        session: Database session
+        seconds: Seconds to add (default: 60 for 1-minute heartbeat)
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        stmt = select(User).where(User.id == user_id)
+        result = await session.execute(stmt)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            logger.warning(f"User {user_id} not found for online time increment")
+            return False
+
+        user.total_online_seconds += seconds
+        await session.commit()
+        await session.refresh(user)
+
+        logger.debug(f"Incremented online time for user {user_id} by {seconds}s (total: {user.total_online_seconds}s)")
+        return True
+
+    except Exception as e:
+        logger.error(f"Failed to increment online time for user {user_id}: {e}")
+        await session.rollback()
+        return False

@@ -32,8 +32,6 @@ const HomePage: React.FC = () => {
           return;
         }
 
-        setIsAuthed(true);
-
         // Fetch all data in parallel
         const [profileResponse, statsResponse] = await Promise.all([
           api.get("/api/v1/user/profile"),
@@ -42,6 +40,7 @@ const HomePage: React.FC = () => {
 
         setUsername(profileResponse.username || "User");
         setStatistics(statsResponse);
+        setIsAuthed(true); // Only set to true after successful data fetch
       } catch (error) {
         console.error("Failed to fetch user data:", error);
         setIsAuthed(false);
@@ -71,7 +70,11 @@ const HomePage: React.FC = () => {
         <div className="home-content">
           {/* Left Section - Study Statistics */}
           <div className="left-section">
-            {isAuthed ? (
+            {loading ? (
+              <div className="stats-container">
+                <h2 className="stats-title">Loading...</h2>
+              </div>
+            ) : isAuthed ? (
               <div className="stats-container">
                 <h2 className="stats-title">
                   Track your progress!

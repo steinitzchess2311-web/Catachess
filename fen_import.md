@@ -1,5 +1,22 @@
 # FEN Import 实施计划
 
+> **📌 实施状态更新 (2026-02-15)**
+>
+> ✅ **Backend 已完成** - 采用新的模块化架构
+> - 创建独立模块：`backend/modules/pgn_fen_import_export/`
+> - API Endpoint: `POST /api/v1/import-export/fen/import`
+> - 完整测试覆盖率
+>
+> ⏸️ **Frontend 待集成**
+> - 需要在 `patch/sidebar/movetree.tsx` 添加 Import FEN UI
+> - 需要在 `patch/studyContext.tsx` 集成 `starting_fen` 状态
+>
+> **详细实施总结**: 参见 `FEN_IMPORT_IMPLEMENTATION_SUMMARY.md`
+>
+> 以下是原始计划文档（部分内容已按新架构调整实施）。
+
+---
+
 ## 📋 目标
 
 实现从任意棋局位置开始创建 Study Chapter 的功能，支持：
@@ -126,7 +143,11 @@ class Chapter(Base, TimestampMixin):
 
 ### **Phase 2: Backend Models & APIs** ⏱️ 1天
 
-#### 2.1 更新 Domain Model
+> **✅ 实际实施方式（已完成）**:
+> 创建独立模块 `backend/modules/pgn_fen_import_export/` 而非修改现有模块。
+> 详见 `FEN_IMPORT_IMPLEMENTATION_SUMMARY.md`
+
+#### 2.1 更新 Domain Model ✅ 已完成
 **文件**: `backend/modules/workspace/domain/models/chapter.py`
 
 ```python

@@ -24,6 +24,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from routers import auth, assignments, user_profile, game_storage, chess_engine, chess_rules, imitator, tagger_router, blog_admin
 from modules.workspace.api.router import api_router as workspace_router
 from modules.blogs.api.router import router as blog_router
+from modules.pgn_fen_import_export.api import router as import_export_router
 from core.log.log_api import logger
 from core.config import settings
 from modules.workspace.db.session import init_db as init_workspace_db
@@ -451,6 +452,7 @@ app.include_router(tagger_router)
 app.include_router(blog_admin.router)
 app.include_router(blog_router)
 app.include_router(workspace_router, prefix="/api/v1/workspace", tags=["workspace"])
+app.include_router(import_export_router)  # ✅ FEN/PGN import/export endpoints
 
 logger.info("Catachess API initialized")
 

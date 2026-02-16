@@ -33,6 +33,7 @@ class ChapterModel:
     last_synced_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    starting_fen: str | None = None  # ✅ Custom starting position (NULL = standard)
 
     @property
     def has_integrity_info(self) -> bool:
@@ -43,6 +44,11 @@ class ChapterModel:
     def is_synced(self) -> bool:
         """Check if chapter is synced with R2."""
         return self.r2_etag is not None and self.last_synced_at is not None
+
+    @property
+    def is_from_custom_position(self) -> bool:
+        """Check if chapter starts from a custom FEN position."""
+        return self.starting_fen is not None
 
 
 @dataclass
@@ -60,6 +66,7 @@ class AddChapterCommand:
         event: Event name (optional, extracted from PGN)
         date: Game date (optional, extracted from PGN)
         result: Game result (optional, extracted from PGN)
+        starting_fen: Custom starting position FEN (optional, NULL = standard)
     """
 
     study_id: str
@@ -71,6 +78,7 @@ class AddChapterCommand:
     event: str | None = None
     date: str | None = None
     result: str | None = None
+    starting_fen: str | None = None  # ✅ New field for FEN import
 
 
 @dataclass

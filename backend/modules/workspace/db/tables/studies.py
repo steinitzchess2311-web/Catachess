@@ -98,11 +98,19 @@ class Chapter(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    # FEN Import support (Phase 1 - FEN Import feature)
+    starting_fen: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        comment="Custom starting position FEN (NULL = standard starting position)"
+    )
+
     # Indexes
     __table_args__ = (
         Index("ix_chapters_study_id", "study_id"),
         Index("ix_chapters_study_order", "study_id", "order"),
         Index("ix_chapters_r2_key", "r2_key"),
+        Index("ix_chapters_starting_fen", "starting_fen"),
     )
 
     def __repr__(self) -> str:

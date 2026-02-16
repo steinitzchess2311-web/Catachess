@@ -139,6 +139,31 @@
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12), 0 8px 12px rgba(0, 0, 0, 0.06);
 }
 
+.stats-container-login {
+  cursor: pointer;
+  justify-content: center;
+}
+
+.stats-container-login:hover {
+  border-color: #1a73e8;
+}
+
+.login-message {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.login-text {
+  font-size: 1.1rem;
+  color: #5f6368;
+  text-align: center;
+  margin: 0;
+  line-height: 1.6;
+}
+
 .stats-title {
   font-size: 1.75rem;
   font-weight: 700;

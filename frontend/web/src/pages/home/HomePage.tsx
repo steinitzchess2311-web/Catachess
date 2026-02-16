@@ -20,15 +20,19 @@ const HomePage: React.FC = () => {
     total_online_hours: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [isAuthed, setIsAuthed] = useState(false);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('catachess_token') || sessionStorage.getItem('catachess_token');
         if (!token) {
+          setIsAuthed(false);
           setLoading(false);
           return;
         }
+
+        setIsAuthed(true);
 
         // Fetch all data in parallel
         const [profileResponse, statsResponse] = await Promise.all([
@@ -40,6 +44,7 @@ const HomePage: React.FC = () => {
         setStatistics(statsResponse);
       } catch (error) {
         console.error("Failed to fetch user data:", error);
+        setIsAuthed(false);
       } finally {
         setLoading(false);
       }
@@ -66,29 +71,40 @@ const HomePage: React.FC = () => {
         <div className="home-content">
           {/* Left Section - Study Statistics */}
           <div className="left-section">
-            <div className="stats-container">
-              <h2 className="stats-title">
-                Track your progress!
-              </h2>
+            {isAuthed ? (
+              <div className="stats-container">
+                <h2 className="stats-title">
+                  Track your progress!
+                </h2>
 
-              <div className="stats-layout">
-                <div className="stat-item-compact">
-                  <div className="stat-icon-compact">⏱️</div>
-                  <div className="stat-content-compact">
-                    <p className="stat-label">Study Time</p>
-                    <p className="stat-value-large">{displayHours}h</p>
+                <div className="stats-layout">
+                  <div className="stat-item-compact">
+                    <div className="stat-icon-compact">⏱️</div>
+                    <div className="stat-content-compact">
+                      <p className="stat-label">Study Time</p>
+                      <p className="stat-value-large">{displayHours}h</p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="stat-item-compact">
-                  <div className="stat-icon-compact">♟️</div>
-                  <div className="stat-content-compact">
-                    <p className="stat-label">Moves</p>
-                    <p className="stat-value-large">{statistics.total_moves_count}</p>
+                  <div className="stat-item-compact">
+                    <div className="stat-icon-compact">♟️</div>
+                    <div className="stat-content-compact">
+                      <p className="stat-label">Moves</p>
+                      <p className="stat-value-large">{statistics.total_moves_count}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="stats-container stats-container-login" onClick={() => navigate('/login')}>
+                <h2 className="stats-title">
+                  Start via login!
+                </h2>
+                <div className="login-message">
+                  <p className="login-text">Your best option for chess studying!</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Section - Quick Start */}

@@ -1,0 +1,261 @@
+.translate-page {
+  min-height: calc(100vh - 100px);
+  background: linear-gradient(135deg, rgba(250, 248, 245, 0.95) 0%, rgba(245, 242, 238, 0.95) 50%, rgba(242, 238, 233, 0.95) 100%);
+  padding: 60px 24px;
+  font-family: 'Roboto', sans-serif;
+}
+
+.translate-container {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.translate-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.translate-title {
+  font-size: 42px;
+  font-weight: 700;
+  color: #202124;
+  margin: 0 0 16px 0;
+}
+
+.translate-subtitle {
+  font-size: 18px;
+  color: #5f6368;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.translate-card {
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.translate-section {
+  margin-bottom: 32px;
+}
+
+.translate-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 500;
+  color: #202124;
+  margin-bottom: 12px;
+}
+
+.translate-select {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 16px;
+  font-family: 'Roboto', sans-serif;
+  border: 2px solid #dbdbdb;
+  border-radius: 8px;
+  background: white;
+  color: #202124;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.translate-select:hover {
+  border-color: #1a73e8;
+}
+
+.translate-select:focus {
+  outline: none;
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+}
+
+.translate-select:disabled {
+  background: #f1f3f4;
+  cursor: not-allowed;
+}
+
+.translate-dropzone {
+  border: 2px dashed #dbdbdb;
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  background: #fafafa;
+}
+
+.translate-dropzone:hover {
+  border-color: #1a73e8;
+  background: #f8f9fa;
+}
+
+.translate-dropzone.has-file {
+  border-color: #34a853;
+  background: #f0f8f4;
+}
+
+.translate-dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.translate-upload-icon {
+  font-size: 48px;
+  margin-bottom: 8px;
+}
+
+.translate-file-icon {
+  font-size: 56px;
+  margin-bottom: 8px;
+}
+
+.translate-upload-text {
+  font-size: 18px;
+  font-weight: 500;
+  color: #202124;
+}
+
+.translate-upload-hint {
+  font-size: 14px;
+  color: #5f6368;
+}
+
+.translate-file-name {
+  font-size: 18px;
+  font-weight: 500;
+  color: #202124;
+  word-break: break-all;
+}
+
+.translate-file-size {
+  font-size: 14px;
+  color: #5f6368;
+}
+
+.translate-button {
+  width: 100%;
+  padding: 16px 32px;
+  font-size: 18px;
+  font-weight: 600;
+  font-family: 'Roboto', sans-serif;
+  color: white;
+  background: #1a73e8;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.translate-button:hover:not(:disabled) {
+  background: #1557b0;
+  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.3);
+}
+
+.translate-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.translate-button:disabled {
+  background: #dbdbdb;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.translate-spinner {
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: translate-spin 0.8s linear infinite;
+}
+
+@keyframes translate-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.translate-message {
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.translate-message-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.translate-error {
+  background: #fdecea;
+  color: #c5221f;
+  border: 1px solid #f6aea9;
+}
+
+.translate-success {
+  background: #e6f4ea;
+  color: #137333;
+  border: 1px solid #a8dab5;
+}
+
+.translate-info {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.translate-info-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #202124;
+  margin: 0 0 16px 0;
+}
+
+.translate-info-list {
+  margin: 0;
+  padding-left: 24px;
+  color: #5f6368;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.translate-info-list li {
+  margin-bottom: 8px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .translate-page {
+    padding: 40px 16px;
+  }
+
+  .translate-card {
+    padding: 24px 20px;
+  }
+
+  .translate-title {
+    font-size: 32px;
+  }
+
+  .translate-subtitle {
+    font-size: 16px;
+  }
+
+  .translate-dropzone {
+    padding: 32px 16px;
+  }
+}

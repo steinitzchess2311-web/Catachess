@@ -32,6 +32,7 @@ import BlogsPage from "./pages/BlogsPage";
 import ArticleDetailPage from "./pages/BlogsPage/ArticleDetailPage";
 import SponsorshipPage from "./pages/SponsorshipPage/SponsorshipPage";
 import LandingPage from "./pages/Landing/LandingPage";
+import TranslatePage from "./pages/translate";
 import PlayersIndex from "@patch/modules/tagger/pages/PlayersIndex";
 import PlayerDetail from "@patch/modules/tagger/pages/PlayerDetail";
 import AccountPage from "../AccountPage";
@@ -387,6 +388,7 @@ function Layout() {
           <Route path="/blogs" element={<BlogsPage />} />
           <Route path="/blogs/:articleId" element={<BlogsPage />} />
           <Route path="/sponsorship" element={<SponsorshipPage />} />
+          <Route path="/translate" element={<TranslatePage />} />
           <Route
             path="/players"
             element={

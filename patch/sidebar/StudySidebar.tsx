@@ -223,6 +223,7 @@ export function StudySidebar({
         >
           Analysis
         </button>
+        {/* Imitator tab temporarily hidden
         <button
           type="button"
           className={`patch-sidebar-tab${activeTab === 'imitator' ? ' is-active' : ''}`}
@@ -230,6 +231,7 @@ export function StudySidebar({
         >
           Imitator
         </button>
+        */}
       </div>
 
       {activeTab === 'chapters' && (
@@ -266,6 +268,7 @@ export function StudySidebar({
         </div>
       )}
 
+      {/* Imitator panel temporarily hidden
       {activeTab === 'imitator' && (
         <div className="patch-analysis-scroll">
           <ImitatorSettings
@@ -292,6 +295,7 @@ export function StudySidebar({
           />
         </div>
       )}
+      */}
     </div>
   );
 }

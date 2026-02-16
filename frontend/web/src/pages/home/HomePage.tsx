@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "@ui/assets/api";
+import logoImage from "../../assets/chessortag_pure_logo.png";
 import "./HomePage.css";
 
 interface UserStatistics {
@@ -52,6 +53,13 @@ const HomePage: React.FC = () => {
   return (
     <div className="home-page">
       <div className="home-container">
+        {/* Welcome Section */}
+        <div className="welcome-section">
+          <img src={logoImage} alt="Catachess Logo" className="welcome-logo" />
+          <h1 className="welcome-title">Welcome to Catachess!</h1>
+          <p className="welcome-subtitle">Your personal chess training platform</p>
+        </div>
+
         <div className="home-content">
           {/* Left Section - Study Statistics */}
           <div className="left-section">

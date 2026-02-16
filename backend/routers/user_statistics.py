@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
-from core.db.session import get_session
+from modules.workspace.db.session import get_session
 from core.security.auth import get_current_user_id
 from modules.workspace.db.repos.study_repo import StudyRepository
 from modules.workspace.db.repos.node_repo import NodeRepository

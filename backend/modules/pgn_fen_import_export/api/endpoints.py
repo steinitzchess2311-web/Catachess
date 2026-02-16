@@ -141,11 +141,9 @@ async def import_from_fen(
 
         # 6. Save chapter to database
         await study_repo.create_chapter(chapter)
-        await study_repo.commit()
 
         # 7. Update study chapter count
         await study_repo.update_chapter_count(request.study_id)
-        await study_repo.commit()
 
         logger.info(
             f"Created chapter {chapter.id} from FEN in study {request.study_id}",

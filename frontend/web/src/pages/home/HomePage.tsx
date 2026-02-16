@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "@ui/assets/api";
-import logoImage from "../../assets/chessortag_pure_logo.png";
+import logoImage from "../../assets/logo.jpg";
 import "./HomePage.css";
 
 interface UserStatistics {
@@ -10,34 +10,60 @@ interface UserStatistics {
   total_online_hours: number;
 }
 
+interface RecentStudy {
+  id: string;
+  title: string;
+  updated_at: string;
+}
+
 const HomePage: React.FC = () => {
+  const navigate = useNavigate();
   const [username, setUsername] = useState<string>("");
   const [statistics, setStatistics] = useState<UserStatistics>({
     total_online_seconds: 0,
     total_moves_count: 0,
     total_online_hours: 0,
   });
+  const [recentStudy, setRecentStudy] = useState<RecentStudy | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        // Fetch user profile for username
         const token = localStorage.getItem('catachess_token') || sessionStorage.getItem('catachess_token');
         if (!token) {
           setLoading(false);
           return;
         }
 
-        const [profileResponse, statsResponse] = await Promise.all([
-          api.request("/user/profile", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+        // Fetch all data in parallel
+        const [profileResponse, statsResponse, studiesResponse] = await Promise.all([
+          api.get("/api/v1/user/profile"),
           api.get("/api/v1/user/statistics"),
+          api.get("/api/v1/workspace/nodes/root/children").catch(() => ({ children: [] })),
         ]);
 
         setUsername(profileResponse.username || "User");
         setStatistics(statsResponse);
+
+        // Find most recent study
+        if (studiesResponse.children && studiesResponse.children.length > 0) {
+          const studies = studiesResponse.children
+            .filter((node: any) => node.node_type === 'study')
+            .sort((a: any, b: any) => {
+              const dateA = new Date(a.updated_at || a.created_at).getTime();
+              const dateB = new Date(b.updated_at || b.created_at).getTime();
+              return dateB - dateA;
+            });
+
+          if (studies.length > 0) {
+            setRecentStudy({
+              id: studies[0].id,
+              title: studies[0].title,
+              updated_at: studies[0].updated_at || studies[0].created_at,
+            });
+          }
+        }
       } catch (error) {
         console.error("Failed to fetch user data:", error);
       } finally {
@@ -49,6 +75,14 @@ const HomePage: React.FC = () => {
   }, []);
 
   const displayHours = Math.round(statistics.total_online_hours * 10) / 10;
+
+  const handleRecentStudyClick = () => {
+    if (recentStudy) {
+      navigate(`/patch/workspace/${recentStudy.id}`);
+    } else {
+      navigate('/workspace-select');
+    }
+  };
 
   return (
     <div className="home-page">
@@ -68,30 +102,42 @@ const HomePage: React.FC = () => {
                 Hi {loading ? "..." : username || "User"}
               </h2>
 
-              <div className="stat-item">
-                <div className="stat-icon">⏱️</div>
-                <div className="stat-content">
-                  <p className="stat-text">
-                    You've studied chess for{" "}
-                    <span className="stat-value">{displayHours}</span> hours
-                  </p>
+              <div className="stats-layout">
+                {/* Left side - Statistics */}
+                <div className="stats-left">
+                  <div className="stat-item-compact">
+                    <div className="stat-icon-compact">⏱️</div>
+                    <div className="stat-content-compact">
+                      <p className="stat-label">Study Time</p>
+                      <p className="stat-value-large">{displayHours}h</p>
+                    </div>
+                  </div>
+
+                  <div className="stat-item-compact">
+                    <div className="stat-icon-compact">♟️</div>
+                    <div className="stat-content-compact">
+                      <p className="stat-label">Moves</p>
+                      <p className="stat-value-large">{statistics.total_moves_count}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right side - Recent Study Button */}
+                <div className="stats-right">
+                  <button onClick={handleRecentStudyClick} className="recent-study-button">
+                    <div className="recent-study-icon">📚</div>
+                    <div className="recent-study-content">
+                      <span className="recent-study-label">Recent Study</span>
+                      {recentStudy ? (
+                        <span className="recent-study-title">{recentStudy.title}</span>
+                      ) : (
+                        <span className="recent-study-title">Go to Workspace</span>
+                      )}
+                    </div>
+                    <span className="arrow">→</span>
+                  </button>
                 </div>
               </div>
-
-              <div className="stat-item">
-                <div className="stat-icon">♟️</div>
-                <div className="stat-content">
-                  <p className="stat-text">
-                    You've studied{" "}
-                    <span className="stat-value">{statistics.total_moves_count}</span> moves
-                  </p>
-                </div>
-              </div>
-
-              <Link to="/workspace-select" className="recent-study-link">
-                <span>Go to your recent study</span>
-                <span className="arrow">→</span>
-              </Link>
             </div>
           </div>
 

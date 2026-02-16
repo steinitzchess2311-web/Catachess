@@ -306,14 +306,7 @@ class EngineClient:
 
     @staticmethod
     def _normalize_score_for_white(score: int | str, turn: str) -> int | str:
-        if turn != "b":
-            return score
-        if isinstance(score, int):
-            return -score
-        if isinstance(score, str) and score.startswith("mate"):
-            try:
-                val = int(score[4:])
-            except ValueError:
-                return score
-            return f"mate{-val}"
+        # Stockfish always returns scores from white's perspective:
+        # Positive = white is better, Negative = black is better
+        # No need to flip the score based on turn - keep it as-is
         return score

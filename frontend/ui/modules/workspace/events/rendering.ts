@@ -1,4 +1,5 @@
 // UI rendering functions
+// LEGACY: This workspace module is deprecated. All study functionality has been moved to /patch/
 
 import React from 'react';
 import ReactDOM from 'react-dom/client';

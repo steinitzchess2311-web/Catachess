@@ -1,4 +1,5 @@
 // Main integration module - coordinates all workspace modules
+// LEGACY: This workspace module is deprecated. All study functionality has been moved to /patch/
 
 import { WorkspaceOptions } from './types';
 import { createInitialState, setSortSettings } from './state';

@@ -368,11 +368,17 @@
 
 .study-fen-button {
   padding: 6px 12px;
-  border: 1px solid #242424;
   background: #fff;
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.study-fen-button:hover:not(:disabled) {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 .study-fen-button.is-inline {
@@ -380,6 +386,10 @@
   right: 10px;
   top: 50%;
   transform: translateY(-50%);
+}
+
+.study-fen-button.is-inline:hover:not(:disabled) {
+  transform: translateY(-50%) translateY(-1px);
 }
 
 .study-fen-button:disabled {
@@ -601,7 +611,6 @@
 }
 
 .patch-imitator-add {
-  border: 1px solid #242424;
   background: #242424;
   color: #fff;
   border-radius: 6px;
@@ -609,6 +618,13 @@
   font-size: 12px;
   cursor: pointer;
   height: 28px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.patch-imitator-add:hover:not(:disabled) {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 .patch-imitator-add:disabled {
@@ -653,17 +669,23 @@
   align-items: center;
 }
 
+.patch-imitator-remove:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
+}
+
 .patch-imitator-updated {
   color: #999;
 }
 
 .patch-imitator-remove {
-  border: 1px solid #242424;
   background: #fff;
   border-radius: 999px;
   padding: 4px 8px;
   font-size: 11px;
   cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s, transform 0.2s;
 }
 
 .patch-imitator-status {
@@ -832,8 +854,7 @@
   border-radius: 12px;
   padding: 16px;
   width: 320px;
-  border: 1px solid #242424;
-  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 16px 30px rgba(0, 0, 0, 0.2);
 }
 
 .patch-confirm-title {
@@ -855,12 +876,18 @@
 }
 
 .patch-confirm-btn {
-  border: 1px solid #242424;
   background: #fff;
   border-radius: 8px;
   padding: 6px 10px;
   font-size: 12px;
   cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.patch-confirm-btn:hover {
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.12);
+  transform: translateY(-1px);
 }
 
 .patch-confirm-btn.is-danger {
@@ -1297,11 +1324,10 @@
 
 .patch-action-card {
   background: #ffffff;
-  border: 1px solid #242424;
   border-radius: 10px;
   padding: 16px 18px;
   width: 320px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 .patch-action-title {

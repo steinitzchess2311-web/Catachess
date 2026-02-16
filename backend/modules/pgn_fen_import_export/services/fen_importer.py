@@ -124,32 +124,3 @@ def create_chapter_from_fen(
     return chapter
 
 
-async def upload_tree_to_r2(
-    r2_client: R2Client,
-    chapter_id: str,
-    tree: Dict[str, Any]
-) -> str:
-    """
-    Upload tree.json to R2.
-
-    Args:
-        r2_client: R2 client instance
-        chapter_id: Chapter ID
-        tree: Tree structure to upload
-
-    Returns:
-        ETag from R2 upload
-
-    Raises:
-        Exception: If upload fails
-    """
-    key = R2Keys.chapter_tree_json(chapter_id)
-    content = json.dumps(tree, indent=2)
-
-    result = r2_client.upload_json(
-        key=key,
-        data=tree,
-        content_type="application/json"
-    )
-
-    return result.etag

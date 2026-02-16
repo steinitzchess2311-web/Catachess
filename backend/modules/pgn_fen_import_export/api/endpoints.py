@@ -11,11 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from modules.workspace.db.session import get_session
 from modules.workspace.db.repos.study_repo import StudyRepository
 from modules.workspace.storage.r2_client import R2Client, create_r2_client_from_env
+from modules.workspace.storage.keys import R2Keys
 
 from ..services.fen_importer import (
     create_chapter_from_fen,
     create_empty_tree,
-    upload_tree_to_r2,
 )
 from ..services.fen_validator import is_standard_fen
 from .schemas import FenImportRequest, FenImportResponse, ErrorResponse
@@ -131,15 +131,20 @@ async def import_from_fen(
         tree = create_empty_tree()
 
         # 5. Upload tree to R2
-        etag = await upload_tree_to_r2(r2_client, chapter.id, tree)
-        chapter.r2_etag = etag
+        import json
+        tree_json = json.dumps(tree)
+        upload_result = r2_client.upload_json(
+            key=R2Keys.chapter_tree_json(chapter.id),
+            content=tree_json
+        )
+        chapter.r2_etag = upload_result.etag
 
         # 6. Save chapter to database
         await study_repo.create_chapter(chapter)
         await study_repo.commit()
 
         # 7. Update study chapter count
-        await study_repo.increment_chapter_count(request.study_id)
+        await study_repo.update_chapter_count(request.study_id)
         await study_repo.commit()
 
         logger.info(

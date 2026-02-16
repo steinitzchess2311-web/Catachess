@@ -63,8 +63,8 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
         </Link>
         {/* Navigation links moved here, next to logo */}
         <nav className="header-center">
+          <Link to="/workspace-select" className="nav-link">Workspace</Link>
           <Link to="/translate" className="nav-link">Translator</Link>
-          <Link to="/about" className="nav-link">About</Link>
           <Link to="/blogs" className="nav-link">Blogs</Link>
           <Link to="/sponsorship" className="nav-link" style={{ color: '#ff8c00', fontWeight: 600 }}>Sponsorship</Link>
         </nav>

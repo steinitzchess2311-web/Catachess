@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { EnvelopeClosedIcon, GlobeIcon, ChatBubbleIcon } from "@radix-ui/react-icons";
 import "./Footer.css";
 
@@ -61,6 +62,9 @@ const Footer: React.FC = () => {
 
       <div className="footer-bottom">
         <div className="footer-divider"></div>
+        <div className="footer-links">
+          <Link to="/about" className="footer-link">About</Link>
+        </div>
         <p className="footer-copyright">
           Developed by Quanhao (CataDragon) and Jorlanda (Chestnut).
         </p>

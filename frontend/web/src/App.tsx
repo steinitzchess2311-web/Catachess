@@ -32,6 +32,7 @@ import BlogsPage from "./pages/BlogsPage";
 import ArticleDetailPage from "./pages/BlogsPage/ArticleDetailPage";
 import SponsorshipPage from "./pages/SponsorshipPage/SponsorshipPage";
 import LandingPage from "./pages/Landing/LandingPage";
+import { HomePage } from "./pages/home";
 import TranslatePage from "./pages/translate";
 import PlayersIndex from "@patch/modules/tagger/pages/PlayersIndex";
 import PlayerDetail from "@patch/modules/tagger/pages/PlayerDetail";
@@ -46,7 +47,7 @@ import "@patch/styles/index.css";
 const USE_PATCH_STUDY = import.meta.env.VITE_USE_PATCH_STUDY !== "false";
 
 // Cat pet feature toggle
-const ENABLE_CAT_PET = true;
+const ENABLE_CAT_PET = false;
 
 const TOKEN_KEY = "catachess_token";
 const USER_ID_KEY = "catachess_user_id";
@@ -381,7 +382,7 @@ function Layout() {
       <Header username={username} isAuthed={authed} userRole={userRole} />
       <main>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/about" element={<AboutPage />} />

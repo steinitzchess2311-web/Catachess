@@ -2,8 +2,24 @@ import React, { useState, useRef } from 'react';
 import PageTransition from '../../components/animation/PageTransition';
 import './TranslatePage.css';
 
+// 支持的语言列表
+const LANGUAGES = [
+  { code: 'zh-CN', name: '简体中文' },
+  { code: 'zh-TW', name: '繁体中文' },
+  { code: 'en', name: 'English' },
+  { code: 'ja', name: '日本語' },
+  { code: 'ko', name: '한국어' },
+  { code: 'fr', name: 'Français' },
+  { code: 'de', name: 'Deutsch' },
+  { code: 'es', name: 'Español' },
+  { code: 'ru', name: 'Русский' },
+  { code: 'it', name: 'Italiano' },
+  { code: 'pt', name: 'Português' }
+];
+
 const TranslatePage: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
+  const [targetLanguage, setTargetLanguage] = useState<string>('zh-CN'); // 默认简体中文
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -35,6 +51,7 @@ const TranslatePage: React.FC = () => {
 
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('target_language', targetLanguage); // 添加目标语言参数
 
     try {
       // Step 1: Upload and translate
@@ -112,11 +129,28 @@ const TranslatePage: React.FC = () => {
           <div className="translate-header">
             <h1 className="translate-title">PGN Translator</h1>
             <p className="translate-subtitle">
-              Translate chess game annotations from Chinese to English
+              Translate chess game annotations to your preferred language
             </p>
           </div>
 
           <div className="translate-card">
+            {/* 语言选择 */}
+            <div className="translate-section">
+              <label className="translate-label">Target Language</label>
+              <select
+                className="translate-language-select"
+                value={targetLanguage}
+                onChange={(e) => setTargetLanguage(e.target.value)}
+                disabled={loading}
+              >
+                {LANGUAGES.map(lang => (
+                  <option key={lang.code} value={lang.code}>
+                    {lang.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="translate-section">
               <label className="translate-label">Upload PGN File</label>
               <div
@@ -187,8 +221,9 @@ const TranslatePage: React.FC = () => {
             <div className="translate-info">
               <h3 className="translate-info-title">How it works</h3>
               <ol className="translate-info-list">
-                <li>Upload a PGN file containing chess games with Chinese annotations</li>
-                <li>Click "Translate" to convert all annotations to English</li>
+                <li>Select your target language from the dropdown</li>
+                <li>Upload a PGN file containing chess games with annotations</li>
+                <li>Click "Translate" to convert all annotations to your chosen language</li>
                 <li>The translated file will be automatically downloaded</li>
                 <li>Your PGN file must include proper game headers (Event, Site, Date, etc.)</li>
               </ol>

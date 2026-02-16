@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from modules.workspace.db.session import get_session
-from core.security.auth import get_current_user_id
+from modules.workspace.api.deps import get_current_user_id
 from modules.workspace.db.repos.study_repo import StudyRepository
 from modules.workspace.db.repos.node_repo import NodeRepository
 from modules.workspace.storage.r2_client import create_r2_client_from_env, R2Client

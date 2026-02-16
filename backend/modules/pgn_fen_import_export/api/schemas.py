@@ -21,6 +21,11 @@ class FenImportRequest(BaseModel):
     @classmethod
     def validate_fen_format(cls, v: str) -> str:
         """Validate FEN format using fen_validator."""
+        # Strip whitespace
+        v = v.strip()
+        if not v:
+            raise ValueError("FEN string cannot be empty")
+
         result = validate_fen(v)
         if not result.valid:
             raise ValueError(result.error or "Invalid FEN string")

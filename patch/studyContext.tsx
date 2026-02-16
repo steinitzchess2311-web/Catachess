@@ -601,11 +601,11 @@ export function StudyProvider({ children }: StudyProviderProps) {
       return;
     }
 
-    console.log('[Auto-save] Scheduled save in 15s for chapter:', state.chapterId);
+    console.log('[Auto-save] Scheduled save in 5s for chapter:', state.chapterId);
     const timeoutId = window.setTimeout(() => {
       console.log('[Auto-save] Triggering save now...');
       saveTree();
-    }, 15000);
+    }, 5000);
 
     return () => {
       console.log('[Auto-save] Clearing timeout');

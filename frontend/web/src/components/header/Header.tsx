@@ -37,24 +37,15 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
   };
 
   const handleLogoClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    // If not authenticated, navigate to landing page (default Link behavior)
-    if (!isAuthed) {
-      return;
-    }
-
-    // Authenticated user logic
-    if (location.pathname !== '/workspace-select') {
-      return;
-    }
-    event.preventDefault();
-    navigate('/workspace-select', { state: { resetWorkspace: Date.now() } });
+    // Always navigate to home page
+    // No special logic needed - let default Link behavior handle it
   };
 
   return (
     <header className="app-header">
       <div className="header-left">
         <Link
-          to={isAuthed ? "/workspace-select" : "/"}
+          to="/"
           className="logo"
           onClick={handleLogoClick}
           onContextMenu={handleLogoContextMenu}

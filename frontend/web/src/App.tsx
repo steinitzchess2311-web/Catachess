@@ -362,7 +362,7 @@ function Layout() {
           if (derivedName) {
             setUsername(derivedName);
           }
-          const response = await api.request("/user/profile", {
+          const response = await api.request("/api/v1/user/profile", {
             headers: {
               Authorization: `Bearer ${token}`,
             },

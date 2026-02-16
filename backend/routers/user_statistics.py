@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from core.db.session import get_session
 from core.security.auth import get_current_user_id
 from modules.workspace.db.repos.study_repo import StudyRepository
+from modules.workspace.db.repos.node_repo import NodeRepository
 from modules.workspace.storage.r2_client import create_r2_client_from_env, R2Client
 from services.user_statistics import get_user_statistics, update_user_statistics
 
@@ -28,6 +29,11 @@ class RecalculateMovesResponse(BaseModel):
     success: bool
     total_moves_count: int
     message: str
+
+
+async def get_node_repo(session: AsyncSession = Depends(get_session)) -> NodeRepository:
+    """Get node repository dependency"""
+    return NodeRepository(session)
 
 
 async def get_study_repo(session: AsyncSession = Depends(get_session)) -> StudyRepository:
@@ -61,6 +67,7 @@ async def get_current_user_statistics(
 async def recalculate_user_moves(
     user_id: str = Depends(get_current_user_id),
     session: AsyncSession = Depends(get_session),
+    node_repo: NodeRepository = Depends(get_node_repo),
     study_repo: StudyRepository = Depends(get_study_repo),
     r2_client: R2Client = Depends(get_r2_client)
 ):
@@ -78,6 +85,7 @@ async def recalculate_user_moves(
     user = await update_user_statistics(
         user_id=user_id,
         session=session,
+        node_repo=node_repo,
         study_repo=study_repo,
         r2_client=r2_client,
         update_moves=True,

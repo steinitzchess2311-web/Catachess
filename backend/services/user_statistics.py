@@ -8,11 +8,13 @@ Handles calculation and updating of user statistics:
 
 import json
 from typing import Optional
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.user import User
 from modules.workspace.db.repos.study_repo import StudyRepository
+from modules.workspace.db.repos.node_repo import NodeRepository
+from modules.workspace.db.tables.nodes import NodeType
 from modules.workspace.storage.r2_client import R2Client
 from modules.workspace.storage.keys import R2Keys
 from core.log.log_api import logger
@@ -20,6 +22,7 @@ from core.log.log_api import logger
 
 async def calculate_user_moves_count(
     user_id: str,
+    node_repo: NodeRepository,
     study_repo: StudyRepository,
     r2_client: R2Client
 ) -> int:
@@ -28,6 +31,7 @@ async def calculate_user_moves_count(
 
     Args:
         user_id: User ID
+        node_repo: Node repository instance
         study_repo: Study repository instance
         r2_client: R2 client instance
 
@@ -35,48 +39,68 @@ async def calculate_user_moves_count(
         Total number of move nodes
     """
     total_moves = 0
+    total_chapters = 0
 
     try:
-        # Get all chapters owned by user (via their studies)
-        # Note: We need to get studies first, then chapters
-        # This is a simplified version - you may need to adjust based on your schema
+        # Get all study nodes owned by user
+        study_nodes = await node_repo.get_by_owner(
+            owner_id=user_id,
+            node_type=NodeType.STUDY,
+            include_deleted=False
+        )
 
-        # For now, we'll get all chapters and filter by ownership
-        # You'll need to implement proper ownership checking
-        chapters = await study_repo.get_all_chapters()
+        logger.info(f"Found {len(study_nodes)} studies for user {user_id}")
 
-        for chapter in chapters:
+        # For each study, get its chapters
+        for study_node in study_nodes:
+            study_id = study_node.id
+
             try:
-                # Load tree from R2
-                tree_key = chapter.r2_key or R2Keys.chapter_tree_json(chapter.id)
+                chapters = await study_repo.get_chapters_for_study(study_id)
+                total_chapters += len(chapters)
 
-                if not r2_client.exists(tree_key):
-                    continue
+                for chapter in chapters:
+                    try:
+                        # Load tree from R2
+                        tree_key = chapter.r2_key or R2Keys.chapter_tree_json(chapter.id)
 
-                tree_json = r2_client.download_json(tree_key)
-                tree = json.loads(tree_json)
+                        if not r2_client.exists(tree_key):
+                            logger.debug(f"Tree not found for chapter {chapter.id}")
+                            continue
 
-                # Count nodes (excluding root)
-                if 'nodes' in tree:
-                    # Subtract 1 for root node
-                    moves_in_chapter = max(0, len(tree['nodes']) - 1)
-                    total_moves += moves_in_chapter
+                        tree_json = r2_client.download_json(tree_key)
+                        tree = json.loads(tree_json)
+
+                        # Count nodes (excluding root)
+                        if 'nodes' in tree:
+                            # Subtract 1 for root node
+                            moves_in_chapter = max(0, len(tree['nodes']) - 1)
+                            total_moves += moves_in_chapter
+                            logger.debug(f"Chapter {chapter.id}: {moves_in_chapter} moves")
+
+                    except Exception as e:
+                        logger.warning(f"Failed to count moves in chapter {chapter.id}: {e}")
+                        continue
 
             except Exception as e:
-                logger.warning(f"Failed to count moves in chapter {chapter.id}: {e}")
+                logger.warning(f"Failed to process study {study_id}: {e}")
                 continue
 
-        logger.info(f"Calculated {total_moves} total moves for user {user_id}")
+        logger.info(
+            f"Calculated {total_moves} total moves for user {user_id} "
+            f"across {total_chapters} chapters in {len(study_nodes)} studies"
+        )
         return total_moves
 
     except Exception as e:
-        logger.error(f"Failed to calculate moves count for user {user_id}: {e}")
+        logger.error(f"Failed to calculate moves count for user {user_id}: {e}", exc_info=True)
         return 0
 
 
 async def update_user_statistics(
     user_id: str,
     session: AsyncSession,
+    node_repo: NodeRepository,
     study_repo: StudyRepository,
     r2_client: R2Client,
     update_moves: bool = True,
@@ -89,6 +113,7 @@ async def update_user_statistics(
     Args:
         user_id: User ID
         session: Database session
+        node_repo: Node repository instance
         study_repo: Study repository instance
         r2_client: R2 client instance
         update_moves: Whether to recalculate moves count
@@ -110,7 +135,7 @@ async def update_user_statistics(
 
         # Update moves count
         if update_moves:
-            total_moves = await calculate_user_moves_count(user_id, study_repo, r2_client)
+            total_moves = await calculate_user_moves_count(user_id, node_repo, study_repo, r2_client)
             user.total_moves_count = total_moves
 
         # Update online time

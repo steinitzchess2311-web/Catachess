@@ -21,7 +21,7 @@ if str(project_root) not in sys.path:
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import auth, assignments, user_profile, game_storage, chess_engine, chess_rules, imitator, tagger_router, blog_admin
+from routers import auth, assignments, user_profile, game_storage, chess_engine, chess_rules, imitator, tagger_router, blog_admin, user_statistics
 from modules.workspace.api.router import api_router as workspace_router
 from modules.blogs.api.router import router as blog_router
 from modules.pgn_fen_import_export.api import router as import_export_router
@@ -313,120 +313,12 @@ async def _presence_cleanup_loop() -> None:
         await asyncio.sleep(interval_seconds)
 
 
-def _migrate_add_user_statistics() -> None:
-    """
-    TEMPORARY MIGRATION: Add user statistics fields
-
-    Adds:
-    - total_online_seconds (INTEGER, default 0)
-    - total_moves_count (INTEGER, default 0)
-
-    This migration will be removed after deployment.
-    """
-    from sqlalchemy import create_engine, text, inspect
-
-    logger.info("=" * 80)
-    logger.info("🔧 STARTING USER STATISTICS MIGRATION")
-    logger.info("=" * 80)
-
-    try:
-        db_url = settings.DATABASE_URL
-        logger.info(f"📊 Database URL configured: {bool(db_url)}")
-
-        if not db_url:
-            logger.warning("⚠️  DATABASE_URL not set. Skipping user statistics migration.")
-            return
-
-        # Redact password from URL for logging
-        safe_url = db_url
-        if "@" in safe_url:
-            parts = safe_url.split("@")
-            creds = parts[0].split("://")[1]
-            if ":" in creds:
-                safe_url = safe_url.replace(creds.split(":")[1], "***")
-        logger.info(f"🔗 Connecting to: {safe_url}")
-
-        engine = create_engine(db_url)
-        inspector = inspect(engine)
-
-        # List all tables
-        all_tables = inspector.get_table_names()
-        logger.info(f"📋 Found {len(all_tables)} tables in database:")
-        for table in all_tables:
-            logger.info(f"   - {table}")
-
-        # Check if users table exists
-        if 'users' not in all_tables:
-            logger.error("❌ Users table not found! Skipping migration.")
-            logger.info(f"Available tables: {all_tables}")
-            return
-
-        logger.info("✅ Users table found")
-
-        # Get existing columns
-        user_columns = inspector.get_columns('users')
-        column_names = {col['name'] for col in user_columns}
-        logger.info(f"📝 Users table has {len(column_names)} columns:")
-        for col_name in sorted(column_names):
-            logger.info(f"   - {col_name}")
-
-        with engine.connect() as conn:
-            # Add total_online_seconds if not exists
-            if 'total_online_seconds' not in column_names:
-                logger.info("➕ Adding total_online_seconds column...")
-                try:
-                    conn.execute(text(
-                        "ALTER TABLE users ADD COLUMN total_online_seconds INTEGER DEFAULT 0 NOT NULL"
-                    ))
-                    conn.commit()
-                    logger.info("✅ Successfully added total_online_seconds column")
-                except Exception as e:
-                    logger.error(f"❌ Failed to add total_online_seconds: {e}")
-                    raise
-            else:
-                logger.info("ℹ️  total_online_seconds column already exists")
-
-            # Add total_moves_count if not exists
-            if 'total_moves_count' not in column_names:
-                logger.info("➕ Adding total_moves_count column...")
-                try:
-                    conn.execute(text(
-                        "ALTER TABLE users ADD COLUMN total_moves_count INTEGER DEFAULT 0 NOT NULL"
-                    ))
-                    conn.commit()
-                    logger.info("✅ Successfully added total_moves_count column")
-                except Exception as e:
-                    logger.error(f"❌ Failed to add total_moves_count: {e}")
-                    raise
-            else:
-                logger.info("ℹ️  total_moves_count column already exists")
-
-        # Verify columns were added
-        updated_columns = {col['name'] for col in inspector.get_columns('users')}
-        logger.info("🔍 Verifying migration...")
-        logger.info(f"   total_online_seconds present: {'total_online_seconds' in updated_columns}")
-        logger.info(f"   total_moves_count present: {'total_moves_count' in updated_columns}")
-
-        logger.info("=" * 80)
-        logger.info("✅ USER STATISTICS MIGRATION COMPLETED SUCCESSFULLY")
-        logger.info("=" * 80)
-
-    except Exception as e:
-        logger.error("=" * 80)
-        logger.error(f"❌ USER STATISTICS MIGRATION FAILED: {e}")
-        logger.error("=" * 80)
-        logger.error("Full traceback:", exc_info=True)
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await _init_workspace_db()
 
     # Initialize Blog database and run migrations
     await _init_blog_db()
-
-    # TEMPORARY: Run user statistics migration
-    await asyncio.to_thread(_migrate_add_user_statistics)
 
     # Initialize MongoDB cache
     try:
@@ -561,6 +453,7 @@ app.include_router(blog_admin.router)
 app.include_router(blog_router)
 app.include_router(workspace_router, prefix="/api/v1/workspace", tags=["workspace"])
 app.include_router(import_export_router)  # ✅ FEN/PGN import/export endpoints
+app.include_router(user_statistics.router)  # User statistics endpoints
 
 logger.info("Catachess API initialized")
 

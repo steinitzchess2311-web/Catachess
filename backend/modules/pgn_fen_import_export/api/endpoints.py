@@ -116,7 +116,7 @@ async def import_from_fen(
             )
 
         # 2. Get next chapter order
-        chapters = await study_repo.get_chapters_by_study_id(request.study_id)
+        chapters = await study_repo.get_chapters_for_study(request.study_id)
         next_order = len(chapters)
 
         # 3. Create chapter from FEN

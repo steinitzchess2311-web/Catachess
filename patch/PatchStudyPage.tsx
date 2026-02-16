@@ -501,7 +501,26 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
       setIsCreateModalOpen(false);
       setCreateFen('');  // Reset FEN input
     } catch (e: any) {
-      const errorMessage = e.response?.data?.detail || e.message || 'Failed to create chapter';
+      console.error('Chapter creation error:', e);
+      console.error('Response data:', e.response?.data);
+
+      let errorMessage = 'Failed to create chapter';
+
+      // Handle 422 validation errors
+      if (e.response?.status === 422 && e.response?.data?.detail) {
+        const detail = e.response.data.detail;
+        if (Array.isArray(detail)) {
+          // Pydantic validation errors
+          errorMessage = detail.map((err: any) =>
+            `${err.loc?.join('.')}: ${err.msg}`
+          ).join('; ');
+        } else if (typeof detail === 'string') {
+          errorMessage = detail;
+        }
+      } else {
+        errorMessage = e.response?.data?.detail || e.message || errorMessage;
+      }
+
       setCreateError(errorMessage);
     } finally {
       setIsCreatingChapter(false);

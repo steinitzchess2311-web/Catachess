@@ -1122,6 +1122,18 @@
   position: relative;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.03);
   transition: all 0.2s ease;
+  animation: chapterSlideUp 0.3s ease-out;
+}
+
+@keyframes chapterSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .patch-chapter-list__item:hover {
@@ -1170,7 +1182,6 @@
   width: 24px;
   height: 24px;
   border-radius: 6px;
-  border: 1px solid #cfcfcf;
   background: #f7f7f7;
   color: #666;
   display: inline-flex;
@@ -1178,6 +1189,7 @@
   justify-content: center;
   cursor: grab;
   flex-shrink: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .patch-chapter-list__drag:active {
@@ -1194,7 +1206,6 @@
   width: 26px;
   height: 26px;
   border-radius: 6px;
-  border: 1px solid #cfcfcf;
   background: #f7f7f7;
   display: inline-flex;
   align-items: center;
@@ -1203,6 +1214,7 @@
   color: #666;
   flex-shrink: 0;
   cursor: grab;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .patch-chapter-list__order:active {
@@ -1222,13 +1234,15 @@
 
 .patch-chapter-list__title-input {
   flex: 1;
-  border: 1px solid #2a2a2a;
   border-radius: 4px;
   padding: 6px 8px;
   font-size: 13px;
   line-height: 1.2;
   background: #fff;
   color: #000;
+  border: 2px solid #2e6bff;
+  box-shadow: 0 0 0 3px rgba(46, 107, 255, 0.1);
+  outline: none;
 }
 
 .patch-chapter-list__error {
@@ -1243,7 +1257,6 @@
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 1px solid #cfcfcf;
   background: #f7f7f7;
   color: #777;
   display: inline-flex;
@@ -1251,12 +1264,14 @@
   justify-content: center;
   cursor: pointer;
   padding: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
 }
 
 .patch-chapter-list__delete:hover {
   background: #ffe6ee;
-  border-color: #e6a9bf;
   color: #d94f84;
+  box-shadow: 0 2px 4px rgba(217, 79, 132, 0.2);
 }
 
 .patch-chapter-list__delete:disabled {

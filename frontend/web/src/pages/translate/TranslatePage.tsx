@@ -4,25 +4,10 @@ import './TranslatePage.css';
 
 const TranslatePage: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
-  const [targetLanguage, setTargetLanguage] = useState<string>('en');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const languageOptions = [
-    { code: 'zh-CN', label: '简体中文' },
-    { code: 'zh-TW', label: '繁體中文' },
-    { code: 'en', label: 'English' },
-    { code: 'ja', label: '日本語' },
-    { code: 'ko', label: '한국어' },
-    { code: 'fr', label: 'Français' },
-    { code: 'de', label: 'Deutsch' },
-    { code: 'es', label: 'Español' },
-    { code: 'ru', label: 'Русский' },
-    { code: 'it', label: 'Italiano' },
-    { code: 'pt', label: 'Português' },
-  ];
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -50,10 +35,10 @@ const TranslatePage: React.FC = () => {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('target_language', targetLanguage);
 
     try {
-      const response = await fetch('https://translate.catachess.com/translate/file', {
+      // Step 1: Upload and translate
+      const response = await fetch('https://translate.catachess.com/translate', {
         method: 'POST',
         body: formData,
       });
@@ -63,23 +48,30 @@ const TranslatePage: React.FC = () => {
         throw new Error(errorData?.detail || `Translation failed with status ${response.status}`);
       }
 
-      // Get filename from Content-Disposition header
-      const contentDisposition = response.headers.get('Content-Disposition');
-      const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
-      const filename = filenameMatch?.[1] || `translated_${targetLanguage}.pgn`;
+      const result = await response.json();
 
-      // Download the file
-      const blob = await response.blob();
+      if (!result.success) {
+        throw new Error(result.message || 'Translation failed');
+      }
+
+      // Step 2: Download the translated file
+      const downloadResponse = await fetch(`https://translate.catachess.com${result.download_url}`);
+
+      if (!downloadResponse.ok) {
+        throw new Error('Failed to download translated file');
+      }
+
+      const blob = await downloadResponse.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = filename;
+      a.download = result.filename || 'translated.pgn';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      setSuccess('Translation completed! File downloaded.');
+      setSuccess(`Translation completed! ${result.events_count} game(s) translated. File downloaded.`);
       // Reset file input
       setFile(null);
       if (fileInputRef.current) {
@@ -120,27 +112,11 @@ const TranslatePage: React.FC = () => {
           <div className="translate-header">
             <h1 className="translate-title">PGN Translator</h1>
             <p className="translate-subtitle">
-              Translate chess game annotations to your preferred language
+              Translate chess game annotations from Chinese to English
             </p>
           </div>
 
           <div className="translate-card">
-            <div className="translate-section">
-              <label className="translate-label">Select Target Language</label>
-              <select
-                className="translate-select"
-                value={targetLanguage}
-                onChange={(e) => setTargetLanguage(e.target.value)}
-                disabled={loading}
-              >
-                {languageOptions.map((lang) => (
-                  <option key={lang.code} value={lang.code}>
-                    {lang.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div className="translate-section">
               <label className="translate-label">Upload PGN File</label>
               <div
@@ -211,10 +187,10 @@ const TranslatePage: React.FC = () => {
             <div className="translate-info">
               <h3 className="translate-info-title">How it works</h3>
               <ol className="translate-info-list">
-                <li>Select your target language from the dropdown</li>
-                <li>Upload a PGN file containing chess games with annotations</li>
-                <li>Click "Translate" to convert all annotations to your chosen language</li>
+                <li>Upload a PGN file containing chess games with Chinese annotations</li>
+                <li>Click "Translate" to convert all annotations to English</li>
                 <li>The translated file will be automatically downloaded</li>
+                <li>Your PGN file must include proper game headers (Event, Site, Date, etc.)</li>
               </ol>
             </div>
           </div>

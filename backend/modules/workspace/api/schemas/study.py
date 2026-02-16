@@ -99,6 +99,7 @@ class ChapterResponse(BaseModel):
     date: str | None
     result: str | None
     r2_key: str
+    starting_fen: str | None  # Custom starting position (NULL = standard)
     pgn_hash: str | None
     pgn_size: int | None
     pgn_status: str | None

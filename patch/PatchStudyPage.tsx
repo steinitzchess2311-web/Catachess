@@ -206,9 +206,16 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const loadChapterTree = useCallback(async (chapterId: string) => {
     try {
       const treeResponse = await api.get(`${patchBase}/chapter/${chapterId}/tree`);
+      console.log(`[loadChapterTree] API response for ${chapterId}:`, {
+        success: treeResponse?.success,
+        hasTree: !!treeResponse?.tree,
+        starting_fen: treeResponse?.starting_fen
+      });
+
       if (treeResponse?.success && treeResponse.tree) {
         // Pass starting_fen to selectChapter to initialize board position
         const startFen = treeResponse.starting_fen || undefined;
+        console.log(`[loadChapterTree] Calling selectChapter with startFen:`, startFen);
         selectChapter(chapterId, startFen);
 
         if (!treeResponse.tree.version) {
@@ -221,11 +228,13 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         loadTree(treeResponse.tree);
         return;
       }
+      console.warn(`[loadChapterTree] Tree response invalid, falling back to empty tree`);
     } catch (e) {
-      console.warn(`[patch] Tree load failed for chapter ${chapterId}, initializing empty tree.`);
+      console.warn(`[patch] Tree load failed for chapter ${chapterId}, initializing empty tree.`, e);
     }
 
     // Initialize empty tree for new chapter (no custom starting position)
+    console.log(`[loadChapterTree] Initializing empty tree for ${chapterId}, NO startFen`);
     selectChapter(chapterId);
     const emptyTree = createEmptyTree();
     const createResponse = await api.put(`${patchBase}/chapter/${chapterId}/tree`, emptyTree);

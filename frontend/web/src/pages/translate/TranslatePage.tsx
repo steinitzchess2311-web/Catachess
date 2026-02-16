@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import PageTransition from '../../components/animation/PageTransition';
 import './TranslatePage.css';
 
@@ -23,7 +23,20 @@ const TranslatePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number>(0);
+  const [status, setStatus] = useState<string>('');
+  const [taskId, setTaskId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 组件卸载时清理轮询
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+    };
+  }, []);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -39,6 +52,97 @@ const TranslatePage: React.FC = () => {
     }
   };
 
+  // 清理轮询
+  const clearPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  };
+
+  // 轮询查询状态
+  const startPolling = (taskId: string) => {
+    clearPolling(); // 清除之前的轮询
+
+    pollIntervalRef.current = setInterval(async () => {
+      try {
+        const response = await fetch(`https://translate.catachess.com/translate/status/${taskId}`);
+
+        if (!response.ok) {
+          throw new Error('Failed to query translation status');
+        }
+
+        const data = await response.json();
+        console.log('Translation status:', data.status, 'Progress:', data.progress);
+
+        // 更新状态和进度
+        setStatus(data.status);
+        setProgress(data.progress || 0);
+
+        // 检查是否完成
+        if (data.status === 'completed') {
+          clearPolling();
+          setLoading(false);
+
+          // 下载翻译后的文件
+          if (data.translated_pgn) {
+            const blob = new Blob([data.translated_pgn], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file?.name.replace('.pgn', '_translated.pgn') || 'translated.pgn';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            setSuccess(
+              `Translation completed! ${data.original_comments_count} comments translated. File downloaded.`
+            );
+
+            // 重置表单
+            setFile(null);
+            setTaskId(null);
+            setProgress(0);
+            setStatus('');
+            if (fileInputRef.current) {
+              fileInputRef.current.value = '';
+            }
+          }
+        }
+
+        // 检查是否失败
+        if (data.status === 'failed') {
+          clearPolling();
+          setLoading(false);
+          setError(data.error || 'Translation failed. Please try again.');
+          setTaskId(null);
+          setProgress(0);
+          setStatus('');
+        }
+      } catch (err) {
+        clearPolling();
+        setLoading(false);
+        setError(err instanceof Error ? err.message : 'Failed to query translation status');
+        setTaskId(null);
+        setProgress(0);
+        setStatus('');
+      }
+    }, 2000); // 每2秒查询一次
+
+    // 超时保护：5分钟后自动停止
+    setTimeout(() => {
+      if (pollIntervalRef.current) {
+        clearPolling();
+        setLoading(false);
+        setError('Translation timeout. Please try again.');
+        setTaskId(null);
+        setProgress(0);
+        setStatus('');
+      }
+    }, 300000); // 5分钟
+  };
+
   const handleTranslate = async () => {
     if (!file) {
       setError('Please select a PGN file first');
@@ -48,56 +152,43 @@ const TranslatePage: React.FC = () => {
     setLoading(true);
     setError(null);
     setSuccess(null);
-
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('target_language', targetLanguage); // 添加目标语言参数
+    setProgress(0);
+    setStatus('pending');
 
     try {
-      // Step 1: Upload and translate
-      const response = await fetch('https://translate.catachess.com/translate', {
+      // 读取文件内容
+      const pgnContent = await file.text();
+
+      // Step 1: 创建异步翻译任务
+      const response = await fetch('https://translate.catachess.com/translate/async', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pgn_content: pgnContent,
+          target_language: targetLanguage,
+        }),
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.detail || `Translation failed with status ${response.status}`);
+        throw new Error(errorData?.detail || `Failed to create translation task: ${response.status}`);
       }
 
       const result = await response.json();
+      console.log('Task created:', result.task_id);
 
-      if (!result.success) {
-        throw new Error(result.message || 'Translation failed');
-      }
+      // 保存任务ID
+      setTaskId(result.task_id);
 
-      // Step 2: Download the translated file
-      const downloadResponse = await fetch(`https://translate.catachess.com${result.download_url}`);
-
-      if (!downloadResponse.ok) {
-        throw new Error('Failed to download translated file');
-      }
-
-      const blob = await downloadResponse.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = result.filename || 'translated.pgn';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      setSuccess(`Translation completed! ${result.events_count} game(s) translated. File downloaded.`);
-      // Reset file input
-      setFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      // Step 2: 开始轮询查询状态
+      startPolling(result.task_id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Translation failed. Please try again.');
-    } finally {
       setLoading(false);
+      setError(err instanceof Error ? err.message : 'Failed to start translation. Please try again.');
+      setProgress(0);
+      setStatus('');
     }
   };
 
@@ -188,6 +279,35 @@ const TranslatePage: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* 进度显示 */}
+            {loading && taskId && (
+              <div className="translate-status-box">
+                <div className="translate-status-header">
+                  <p className="translate-status-text">
+                    <strong>Task ID:</strong> {taskId}
+                  </p>
+                  <p className="translate-status-text">
+                    <strong>Status:</strong>{' '}
+                    {status === 'pending' && '⏳ Waiting'}
+                    {status === 'processing' && '🔄 Translating'}
+                    {status === 'completed' && '✅ Completed'}
+                    {status === 'failed' && '❌ Failed'}
+                  </p>
+                  <p className="translate-status-text">
+                    <strong>Progress:</strong> {progress}%
+                  </p>
+                </div>
+                <div className="translate-progress-bar">
+                  <div
+                    className="translate-progress-fill"
+                    style={{ width: `${progress}%` }}
+                  >
+                    {progress}%
+                  </div>
+                </div>
+              </div>
+            )}
 
             {error && (
               <div className="translate-message translate-error">

@@ -70,17 +70,27 @@ async def get_study_repo(session: AsyncSession = Depends(get_session)) -> StudyR
 @router.get("/chapter/{chapter_id}/tree", response_model=TreeResponse)
 async def get_chapter_tree(
     chapter_id: str,
-    r2_client: R2Client = Depends(get_r2_client)
+    r2_client: R2Client = Depends(get_r2_client),
+    study_repo: StudyRepository = Depends(get_study_repo)
 ):
     """Get the tree.json for a chapter from R2."""
     key = R2Keys.chapter_tree_json(chapter_id)
     try:
+        # Get chapter metadata (including starting_fen)
+        chapter = await study_repo.get_chapter_by_id(chapter_id)
+        if not chapter:
+            return TreeResponse(success=False, error="Chapter not found")
+
         if not r2_client.exists(key):
             return TreeResponse(success=False, error="Tree not found")
-        
+
         content = r2_client.download_json(key)
         tree_data = json.loads(content)
-        return TreeResponse(success=True, tree=StudyTreeDTO(**tree_data))
+        return TreeResponse(
+            success=True,
+            tree=StudyTreeDTO(**tree_data),
+            starting_fen=chapter.starting_fen  # Include starting_fen from database
+        )
     except Exception as e:
         logger.error(f"Failed to get tree for chapter {chapter_id}: {e}")
         return TreeResponse(success=False, error=str(e))

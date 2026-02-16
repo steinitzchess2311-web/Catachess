@@ -33,4 +33,5 @@ class StudyTreeDTO(BaseModel):
 class TreeResponse(BaseModel):
     success: bool
     tree: Optional[StudyTreeDTO] = None
+    starting_fen: Optional[str] = None  # Custom starting position (NULL = standard)
     error: Optional[str] = None

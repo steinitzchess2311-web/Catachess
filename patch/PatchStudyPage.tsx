@@ -204,11 +204,13 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   }, [chapters, pendingDeleteChapters]);
 
   const loadChapterTree = useCallback(async (chapterId: string) => {
-    selectChapter(chapterId);
-
     try {
       const treeResponse = await api.get(`${patchBase}/chapter/${chapterId}/tree`);
       if (treeResponse?.success && treeResponse.tree) {
+        // Pass starting_fen to selectChapter to initialize board position
+        const startFen = treeResponse.starting_fen || undefined;
+        selectChapter(chapterId, startFen);
+
         if (!treeResponse.tree.version) {
           console.warn(`[patch] Tree missing version for chapter ${chapterId}, will re-save.`);
           const upgradedTree = { ...treeResponse.tree, version: TREE_SCHEMA_VERSION };
@@ -223,6 +225,8 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
       console.warn(`[patch] Tree load failed for chapter ${chapterId}, initializing empty tree.`);
     }
 
+    // Initialize empty tree for new chapter (no custom starting position)
+    selectChapter(chapterId);
     const emptyTree = createEmptyTree();
     const createResponse = await api.put(`${patchBase}/chapter/${chapterId}/tree`, emptyTree);
     if (!createResponse?.success) {

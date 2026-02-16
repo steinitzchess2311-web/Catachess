@@ -432,7 +432,7 @@ export interface StudyContextValue {
   clearError: () => void;
   hasReplayError: () => boolean;
   loadStudy: (studyId: string) => Promise<void>;
-  selectChapter: (chapterId: string) => Promise<void>;
+  selectChapter: (chapterId: string, startFen?: string) => Promise<void>;
   loadTree: (tree: StudyTreeData) => void;
   selectNode: (nodeId: string) => void;
   addMove: (san: string) => void;
@@ -516,9 +516,9 @@ export function StudyProvider({ children }: StudyProviderProps) {
     dispatch({ type: 'SET_STUDY', studyId });
   }, []);
 
-  const selectChapter = useCallback(async (chapterId: string) => {
+  const selectChapter = useCallback(async (chapterId: string, startFen?: string) => {
     fenCacheRef.current = {};
-    dispatch({ type: 'SET_CHAPTER', chapterId });
+    dispatch({ type: 'SET_CHAPTER', chapterId, startFen });
   }, []);
 
   const loadTree = useCallback((tree: StudyTreeData) => {

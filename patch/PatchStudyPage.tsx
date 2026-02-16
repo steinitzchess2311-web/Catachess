@@ -203,10 +203,13 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     return maxOrder + 2;
   }, [chapters, pendingDeleteChapters]);
 
-  const loadChapterTree = useCallback(async (chapterId: string) => {
+  const loadChapterTree = useCallback(async (chapterId: string, retryCount = 0) => {
+    const maxRetries = 3;
+    const retryDelay = 500; // ms
+
     try {
       const treeResponse = await api.get(`${patchBase}/chapter/${chapterId}/tree`);
-      console.log(`[loadChapterTree] API response for ${chapterId}:`, {
+      console.log(`[loadChapterTree] API response for ${chapterId} (attempt ${retryCount + 1}):`, {
         success: treeResponse?.success,
         hasTree: !!treeResponse?.tree,
         starting_fen: treeResponse?.starting_fen
@@ -228,7 +231,15 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         loadTree(treeResponse.tree);
         return;
       }
-      console.warn(`[loadChapterTree] Tree response invalid, falling back to empty tree`);
+
+      // Retry if R2 storage hasn't propagated yet
+      if (retryCount < maxRetries) {
+        console.log(`[loadChapterTree] Tree not ready, retrying in ${retryDelay}ms... (${retryCount + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return loadChapterTree(chapterId, retryCount + 1);
+      }
+
+      console.warn(`[loadChapterTree] Tree not found after ${maxRetries} retries, falling back to empty tree`);
     } catch (e) {
       console.warn(`[patch] Tree load failed for chapter ${chapterId}, initializing empty tree.`, e);
     }

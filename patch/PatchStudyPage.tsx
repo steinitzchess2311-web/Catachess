@@ -252,6 +252,39 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     }
   }, [chapters, id, loadChapterTree, setError, sortChapters]);
 
+  // ✅ Handle FEN Import
+  const handleImportFen = useCallback(async (fen: string, title: string) => {
+    if (!id) return;
+    try {
+      // Call backend FEN import API
+      const response = await api.post('/api/v1/import-export/fen/import', {
+        study_id: id,
+        chapter_title: title,
+        fen: fen
+      });
+
+      // Create chapter object from response
+      const chapter = {
+        id: response.chapter_id,
+        title: title,
+        order: chapters.length,
+        starting_fen: response.starting_fen
+      };
+
+      const nextChapters = sortChapters([...chapters, chapter]);
+      setChapters(nextChapters);
+
+      // Load the newly created chapter
+      if (chapter.id) {
+        await loadChapterTree(chapter.id);
+      }
+    } catch (e: any) {
+      const errorMessage = e.response?.data?.detail || e.message || 'Failed to import FEN';
+      setError('LOAD_ERROR', errorMessage);
+      throw new Error(errorMessage); // Re-throw for ChapterList to catch
+    }
+  }, [chapters, id, loadChapterTree, setError, sortChapters]);
+
   const handleRenameChapter = useCallback(async (chapterId: string, title: string) => {
     if (!id) return;
     try {
@@ -677,6 +710,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
             currentChapterId={state.chapterId}
             onSelectChapter={handleSelectChapter}
             onCreateChapter={openCreateModal}
+            onImportFen={handleImportFen}
             onRenameChapter={handleRenameChapter}
             onDeleteChapter={handleDeleteChapter}
             onReorderChapters={handleReorderChapters}

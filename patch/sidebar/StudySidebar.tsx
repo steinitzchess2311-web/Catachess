@@ -16,6 +16,7 @@ export interface StudySidebarProps {
   currentChapterId: string | null;
   onSelectChapter: (chapterId: string) => void;
   onCreateChapter: () => void;
+  onImportFen?: (fen: string, title: string) => Promise<void> | void;  // ✅ New: Import FEN
   onRenameChapter: (chapterId: string, title: string) => Promise<void> | void;
   onDeleteChapter: (chapterId: string) => Promise<void> | void;
   onReorderChapters: (
@@ -29,6 +30,7 @@ export function StudySidebar({
   currentChapterId,
   onSelectChapter,
   onCreateChapter,
+  onImportFen,
   onRenameChapter,
   onDeleteChapter,
   onReorderChapters,
@@ -238,6 +240,7 @@ export function StudySidebar({
           currentChapterId={currentChapterId}
           onSelectChapter={onSelectChapter}
           onCreateChapter={onCreateChapter}
+          onImportFen={onImportFen}
           onRenameChapter={onRenameChapter}
           onDeleteChapter={onDeleteChapter}
           onReorderChapters={onReorderChapters}

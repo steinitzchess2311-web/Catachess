@@ -91,7 +91,10 @@ const HomePage: React.FC = () => {
         <div className="welcome-section">
           <img src={logoImage} alt="Catachess Logo" className="welcome-logo" />
           <h1 className="welcome-title">Welcome to Catachess!</h1>
-          <p className="welcome-subtitle">Your personal chess training platform</p>
+          <p className="welcome-subtitle">
+            Best Training Platform{' '}
+            <Link to="/about" className="why-link">(why?)</Link>
+          </p>
         </div>
 
         <div className="home-content">
@@ -99,7 +102,7 @@ const HomePage: React.FC = () => {
           <div className="left-section">
             <div className="stats-container">
               <h2 className="stats-title">
-                Hi {loading ? "..." : username || "User"}
+                Track your progress!
               </h2>
 
               <div className="stats-layout">
@@ -122,20 +125,32 @@ const HomePage: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Right side - Recent Study Button */}
+                {/* Right side - Recent Study Card */}
                 <div className="stats-right">
-                  <button onClick={handleRecentStudyClick} className="recent-study-button">
-                    <div className="recent-study-icon">📚</div>
-                    <div className="recent-study-content">
-                      <span className="recent-study-label">Recent Study</span>
-                      {recentStudy ? (
-                        <span className="recent-study-title">{recentStudy.title}</span>
-                      ) : (
-                        <span className="recent-study-title">Go to Workspace</span>
-                      )}
+                  {recentStudy ? (
+                    <div onClick={handleRecentStudyClick} className="study-card-home">
+                      <div className="study-card-icon">
+                        <svg viewBox="0 0 24 24" width="48" height="48">
+                          <path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/>
+                        </svg>
+                      </div>
+                      <div className="study-card-info">
+                        <span className="study-card-title">{recentStudy.title}</span>
+                        <span className="study-card-date">
+                          {new Date(recentStudy.updated_at).toLocaleDateString()}
+                        </span>
+                      </div>
                     </div>
-                    <span className="arrow">→</span>
-                  </button>
+                  ) : (
+                    <button onClick={handleRecentStudyClick} className="recent-study-button">
+                      <div className="recent-study-icon">📚</div>
+                      <div className="recent-study-content">
+                        <span className="recent-study-label">No Recent Study</span>
+                        <span className="recent-study-title">Go to Workspace</span>
+                      </div>
+                      <span className="arrow">→</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -144,7 +159,7 @@ const HomePage: React.FC = () => {
           {/* Right Section - Quick Start */}
           <div className="right-section">
             <div className="quick-start-container">
-              <h2 className="stats-title">Quick Start</h2>
+              <h2 className="stats-title">Quick Start!</h2>
 
               <div className="quick-start-grid">
                 {/* Go to Workspace */}

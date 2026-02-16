@@ -551,11 +551,15 @@ export function StudyProvider({ children }: StudyProviderProps) {
   }, []);
 
   const saveTree = useCallback(async () => {
+    console.log('[saveTree] Called', { chapterId: state.chapterId, isDirty: state.isDirty, isSaving: state.isSaving });
+
     if (!state.chapterId) {
+      console.error('[saveTree] No chapter ID');
       setError('SAVE_ERROR', 'Cannot save: missing chapter id');
       return;
     }
     if (state.isSaving) {
+      console.warn('[saveTree] Already saving, skipping');
       return;
     }
 
@@ -572,17 +576,19 @@ export function StudyProvider({ children }: StudyProviderProps) {
       currentHash = '';
     }
     if (currentHash === state.lastSavedHash && !state.isDirty) {
+      console.log('[saveTree] No changes detected (hash match), skipping', { currentHash, lastSavedHash: state.lastSavedHash });
       return;
     }
 
-    console.info(`[saveTree] Saving tree for chapter ${state.chapterId}`, { hash: currentHash || 'n/a' });
+    console.info(`[saveTree] Saving tree for chapter ${state.chapterId}`, { hash: currentHash || 'n/a', isDirty: state.isDirty });
     dispatch({ type: 'SET_SAVING', isSaving: true });
     try {
       await api.put(`${patchBase}/chapter/${state.chapterId}/tree`, state.tree);
 
-      console.info(`[saveTree] Saved tree for chapter ${state.chapterId}`, { hash: currentHash });
+      console.info(`[saveTree] ✓ Saved tree for chapter ${state.chapterId}`, { hash: currentHash });
       dispatch({ type: 'MARK_SAVED', timestamp: Date.now(), hash: currentHash });
     } catch (e) {
+      console.error('[saveTree] ✗ Save failed:', e);
       setError('SAVE_ERROR', e instanceof Error ? e.message : 'Failed to save tree');
     } finally {
       dispatch({ type: 'SET_SAVING', isSaving: false });
@@ -590,13 +596,19 @@ export function StudyProvider({ children }: StudyProviderProps) {
   }, [patchBase, state.chapterId, state.isSaving, state.isDirty, state.lastSavedHash, state.tree, setError]);
 
   useEffect(() => {
-    if (!state.isDirty || !state.chapterId) return;
+    if (!state.isDirty || !state.chapterId) {
+      console.log('[Auto-save] Skipped:', { isDirty: state.isDirty, chapterId: state.chapterId });
+      return;
+    }
 
+    console.log('[Auto-save] Scheduled save in 15s for chapter:', state.chapterId);
     const timeoutId = window.setTimeout(() => {
+      console.log('[Auto-save] Triggering save now...');
       saveTree();
     }, 15000);
 
     return () => {
+      console.log('[Auto-save] Clearing timeout');
       window.clearTimeout(timeoutId);
     };
   }, [state.isDirty, state.chapterId, state.tree, saveTree]);

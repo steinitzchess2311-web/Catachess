@@ -22,8 +22,6 @@
 .left-section {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .stats-container {
@@ -33,6 +31,8 @@
   padding: 3rem 2.5rem;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
   border: 2px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
 }
 
 .stats-title {
@@ -117,8 +117,6 @@
 .right-section {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .quick-start-container {
@@ -128,6 +126,8 @@
   padding: 3rem 2.5rem;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
   border: 2px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
 }
 
 .quick-start-grid {

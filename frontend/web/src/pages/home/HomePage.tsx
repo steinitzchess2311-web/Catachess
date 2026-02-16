@@ -1,11 +1,53 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { api } from "@ui/assets/api";
 import "./HomePage.css";
 
+interface UserStatistics {
+  total_online_seconds: number;
+  total_moves_count: number;
+  total_online_hours: number;
+}
+
 const HomePage: React.FC = () => {
-  // TODO: Replace with actual data from backend
-  const studyHours = 0;
-  const studiedMoves = 0;
+  const [username, setUsername] = useState<string>("");
+  const [statistics, setStatistics] = useState<UserStatistics>({
+    total_online_seconds: 0,
+    total_moves_count: 0,
+    total_online_hours: 0,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // Fetch user profile for username
+        const token = localStorage.getItem('catachess_token') || sessionStorage.getItem('catachess_token');
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
+        const [profileResponse, statsResponse] = await Promise.all([
+          api.request("/user/profile", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          api.get("/api/v1/user/statistics"),
+        ]);
+
+        setUsername(profileResponse.username || "User");
+        setStatistics(statsResponse);
+      } catch (error) {
+        console.error("Failed to fetch user data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const displayHours = Math.round(statistics.total_online_hours * 10) / 10;
 
   return (
     <div className="home-page">
@@ -14,14 +56,16 @@ const HomePage: React.FC = () => {
           {/* Left Section - Study Statistics */}
           <div className="left-section">
             <div className="stats-container">
-              <h2 className="stats-title">Your Progress</h2>
+              <h2 className="stats-title">
+                Hi {loading ? "..." : username || "User"}
+              </h2>
 
               <div className="stat-item">
                 <div className="stat-icon">⏱️</div>
                 <div className="stat-content">
                   <p className="stat-text">
                     You've studied chess for{" "}
-                    <span className="stat-value">{studyHours}</span> hours
+                    <span className="stat-value">{displayHours}</span> hours
                   </p>
                 </div>
               </div>
@@ -31,7 +75,7 @@ const HomePage: React.FC = () => {
                 <div className="stat-content">
                   <p className="stat-text">
                     You've studied{" "}
-                    <span className="stat-value">{studiedMoves}</span> moves
+                    <span className="stat-value">{statistics.total_moves_count}</span> moves
                   </p>
                 </div>
               </div>

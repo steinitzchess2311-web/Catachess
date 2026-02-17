@@ -1,0 +1,335 @@
+/* Analysis Page Styles */
+
+.analysis-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ── Header ─────────────────────────────────────── */
+
+.analysis-header {
+  margin-bottom: 16px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.analysis-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.analysis-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.analysis-send-btn {
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  background: #2e6bff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.analysis-send-btn:hover {
+  background: #1a55e3;
+  box-shadow: 0 2px 8px rgba(46, 107, 255, 0.35);
+}
+
+/* ── Main layout ─────────────────────────────────── */
+
+.analysis-layout {
+  display: flex;
+  flex: 1;
+  gap: 0;
+  height: 600px;
+  overflow: hidden;
+}
+
+.analysis-sidebar {
+  width: 220px;
+  min-width: 180px;
+  max-width: 280px;
+  overflow-y: auto;
+  border-right: 1px solid #e8e8e8;
+  background: #fff;
+  border-radius: 8px 0 0 8px;
+}
+
+.analysis-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fafafa;
+}
+
+.analysis-splitter {
+  width: 6px;
+  cursor: col-resize;
+  background: #e8e8e8;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.analysis-splitter:hover,
+.analysis-splitter:active {
+  background: #2e6bff;
+}
+
+.analysis-rightbar {
+  overflow-y: auto;
+  background: #fff;
+  border-left: 1px solid #e8e8e8;
+  border-radius: 0 8px 8px 0;
+}
+
+/* ── Analysis-only sidebar ───────────────────────── */
+
+.analysis-sidebar-inner {
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Study Picker Modal ──────────────────────────── */
+
+.picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.picker-modal {
+  background: #fff;
+  border-radius: 14px;
+  width: 480px;
+  max-width: 95vw;
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.picker-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.picker-header h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.picker-close-btn {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #888;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.picker-close-btn:hover {
+  background: #f0f0f0;
+}
+
+.picker-breadcrumb {
+  padding: 8px 20px;
+  font-size: 13px;
+  color: #666;
+  border-bottom: 1px solid #f5f5f5;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.picker-breadcrumb-item {
+  cursor: pointer;
+  color: #2e6bff;
+  font-weight: 500;
+}
+
+.picker-breadcrumb-item:hover {
+  text-decoration: underline;
+}
+
+.picker-breadcrumb-item.current {
+  color: #444;
+  cursor: default;
+  font-weight: 600;
+}
+
+.picker-breadcrumb-sep {
+  color: #bbb;
+}
+
+.picker-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.picker-node-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.picker-node-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background 0.12s;
+  border-bottom: 1px solid #fafafa;
+}
+
+.picker-node-item:hover {
+  background: #f5f7ff;
+}
+
+.picker-node-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.picker-node-title {
+  font-size: 14px;
+  color: #1a1a2e;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.picker-node-item.is-study .picker-node-title {
+  color: #2e6bff;
+}
+
+.picker-node-item.is-study:hover {
+  background: #eef2ff;
+}
+
+.picker-empty {
+  padding: 32px 20px;
+  text-align: center;
+  color: #aaa;
+  font-size: 14px;
+}
+
+.picker-loading {
+  padding: 32px 20px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
+.picker-footer {
+  padding: 12px 20px;
+  border-top: 1px solid #f0f0f0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.picker-new-study-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.picker-new-study-input {
+  flex: 1;
+  padding: 7px 12px;
+  font-size: 13px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  outline: none;
+  font-family: inherit;
+}
+
+.picker-new-study-input:focus {
+  border-color: #2e6bff;
+  box-shadow: 0 0 0 2px rgba(46, 107, 255, 0.12);
+}
+
+.picker-btn {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.picker-btn.secondary {
+  background: #f0f0f0;
+  color: #444;
+}
+
+.picker-btn.secondary:hover {
+  background: #e4e4e4;
+}
+
+.picker-btn.primary {
+  background: #2e6bff;
+  color: #fff;
+}
+
+.picker-btn.primary:hover {
+  background: #1a55e3;
+}
+
+.picker-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.picker-error {
+  color: #e74c3c;
+  font-size: 13px;
+  padding: 0 20px 8px;
+  flex-shrink: 0;
+}

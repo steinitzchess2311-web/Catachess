@@ -28,18 +28,15 @@ const TranslatePage: React.FC = () => {
   const [taskStatus, setTaskStatus] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollRef = useRef<NodeJS.Timeout | null>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
   const stopPolling = () => {
     if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timeoutRef.current = null; }
   };
 
   const downloadPgn = (content: string, originalName: string) => {
@@ -132,17 +129,6 @@ const TranslatePage: React.FC = () => {
           setTaskStatus('');
         }
       }, 2000);
-
-      // 5分钟超时保护
-      timeoutRef.current = setTimeout(() => {
-        if (pollRef.current) {
-          stopPolling();
-          setLoading(false);
-          setError('Translation timed out. Please try again.');
-          setProgress(0);
-          setTaskStatus('');
-        }
-      }, 300000);
 
     } catch (err) {
       setLoading(false);

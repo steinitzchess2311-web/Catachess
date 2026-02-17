@@ -18,7 +18,7 @@ from services.user_service import get_user_by_id, update_user_profile
 from models.user import User
 from core.log.log_api import logger
 
-router = APIRouter(prefix="/api/v1/user", tags=["user"])
+router = APIRouter(prefix="/user", tags=["user"])
 
 
 # Request/Response Schemas

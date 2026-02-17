@@ -34,8 +34,8 @@ const HomePage: React.FC = () => {
 
         // Fetch all data in parallel
         const [profileResponse, statsResponse] = await Promise.all([
-          api.get("/api/v1/user/profile"),
-          api.get("/api/v1/user/statistics"),
+          api.get("/user/profile"),
+          api.get("/user/statistics"),
         ]);
 
         setUsername(profileResponse.username || "User");

@@ -14,7 +14,7 @@ from modules.workspace.storage.r2_client import create_r2_client_from_env, R2Cli
 from services.user_statistics import get_user_statistics, update_user_statistics, increment_online_time
 
 
-router = APIRouter(prefix="/api/v1/user/statistics", tags=["user-statistics"])
+router = APIRouter(prefix="/user/statistics", tags=["user-statistics"])
 
 
 class UserStatisticsResponse(BaseModel):

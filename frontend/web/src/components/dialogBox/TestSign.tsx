@@ -6,6 +6,7 @@ interface TestSignProps {
 }
 
 const TestSign: React.FC<TestSignProps> = ({ floating = false }) => {
+  return null;
   const [isVisible, setIsVisible] = useState(true);
   // const [showToast, setShowToast] = useState(false);
 

@@ -908,26 +908,53 @@ async def debug_r2_config(
     from modules.blogs.services.image_service import get_image_service
 
     try:
-        # Check environment variables
+        # Check the actual variables that image_service.py reads
+        r2_blog_access_key = os.getenv("R2_BLOG_ACCESS_KEY")
+        r2_blog_secret_key = os.getenv("R2_BLOG_SECRET_KEY")
+        r2_endpoint = os.getenv("R2_ENDPOINT")
+        r2_blog_bucket = os.getenv("R2_BLOG_BUCKET")
+        r2_cdn_url = os.getenv("R2_CDN_URL")
+
         config = {
-            "R2_ACCOUNT_ID": "✓ Set" if os.getenv("R2_ACCOUNT_ID") else "✗ Missing",
-            "R2_ACCESS_KEY_ID": "✓ Set" if os.getenv("R2_ACCESS_KEY_ID") else "✗ Missing",
-            "R2_SECRET_ACCESS_KEY": "✓ Set" if os.getenv("R2_SECRET_ACCESS_KEY") else "✗ Missing",
-            "R2_BUCKET_NAME": os.getenv("R2_BUCKET_NAME", "✗ Missing"),
-            "R2_PUBLIC_URL": os.getenv("R2_PUBLIC_URL", "✗ Missing"),
+            "R2_BLOG_ACCESS_KEY": "✓ Set" if r2_blog_access_key else "✗ Missing",
+            "R2_BLOG_SECRET_KEY": "✓ Set" if r2_blog_secret_key else "✗ Missing",
+            "R2_ENDPOINT": r2_endpoint if r2_endpoint else "✗ Missing",
+            "R2_BLOG_BUCKET": r2_blog_bucket if r2_blog_bucket else "✗ Missing (will default to 'Blog-Photo')",
+            "R2_CDN_URL": r2_cdn_url if r2_cdn_url else "✗ Missing (will fallback to R2_ENDPOINT)",
         }
 
-        # Try to initialize image service
-        try:
-            service = get_image_service()
-            config["image_service"] = "✓ Initialized"
-        except Exception as e:
-            config["image_service"] = f"✗ Failed: {str(e)}"
+        missing = [k for k, v in config.items() if "✗" in str(v)]
+        all_required_set = not any("✗" in str(v) for v in [
+            config["R2_BLOG_ACCESS_KEY"],
+            config["R2_BLOG_SECRET_KEY"],
+            config["R2_ENDPOINT"],
+        ])
+
+        # Try a real connection to R2
+        connection_test = None
+        if all_required_set:
+            try:
+                import boto3
+                s3 = boto3.client(
+                    "s3",
+                    endpoint_url=r2_endpoint,
+                    aws_access_key_id=r2_blog_access_key,
+                    aws_secret_access_key=r2_blog_secret_key,
+                    region_name="auto",
+                )
+                bucket = r2_blog_bucket or "Blog-Photo"
+                s3.head_bucket(Bucket=bucket)
+                connection_test = f"✓ Connected to bucket '{bucket}'"
+            except Exception as e:
+                connection_test = f"✗ Connection failed: {type(e).__name__}: {str(e)}"
+        else:
+            connection_test = "✗ Skipped (missing required variables)"
 
         return {
-            "status": "success",
+            "status": "success" if all_required_set else "misconfigured",
             "config": config,
-            "note": "Check that all required environment variables are set in Railway"
+            "connection_test": connection_test,
+            "missing_variables": missing,
         }
     except Exception as e:
         import traceback

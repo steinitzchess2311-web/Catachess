@@ -24,6 +24,16 @@ class ImageUploadService:
         self.r2_bucket = os.getenv("R2_BLOG_BUCKET", "Blog-Photo")
         self.cdn_base_url = os.getenv("R2_CDN_URL", self.r2_endpoint)
 
+        missing = []
+        if not self.r2_access_key:
+            missing.append("R2_BLOG_ACCESS_KEY")
+        if not self.r2_secret_key:
+            missing.append("R2_BLOG_SECRET_KEY")
+        if not self.r2_endpoint:
+            missing.append("R2_ENDPOINT")
+        if missing:
+            raise ValueError(f"Blog R2 misconfigured. Missing env vars: {', '.join(missing)}")
+
         # Image constraints
         self.max_size_bytes = 5 * 1024 * 1024  # 5MB
         self.allowed_formats = {"JPEG", "PNG", "GIF", "WEBP"}

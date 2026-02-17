@@ -166,6 +166,10 @@ export async function analyzeAuto(
   }
 
   const run = (async () => {
+    // Minimum PV length to consider an analysis result complete
+    // Lichess Cloud often returns only 1 move for secondary lines (multipv 2+)
+    const MIN_PV_LENGTH = 4;
+
     // Step 1: Memory + IndexedDB
     const cacheResult = await cacheManager.get({ fen, depth, multipv });
     if (cacheResult.data) {
@@ -183,36 +187,44 @@ export async function analyzeAuto(
       cacheManager.recordNetworkCall();
       const mongoCached = await lookupMongoCache(fen, depth, multipv);
       if (mongoCached && Array.isArray(mongoCached.lines) && mongoCached.lines.length > 0) {
-        console.log('[ENGINE SOURCE] mongoDB');
-        const timestamp = mongoCached.timestamp || Date.now();
-        await cacheManager.set(
-          { fen, depth, multipv },
-          {
-            fen,
-            depth,
-            multipv,
-            lines: mongoCached.lines,
+        const mongoHasAdequatePvs = mongoCached.lines.every((l: any) => (l.pv?.length ?? 0) >= MIN_PV_LENGTH);
+        if (mongoHasAdequatePvs) {
+          console.log('[ENGINE SOURCE] mongoDB');
+          const timestamp = mongoCached.timestamp || Date.now();
+          await cacheManager.set(
+            { fen, depth, multipv },
+            {
+              fen,
+              depth,
+              multipv,
+              lines: mongoCached.lines,
+              source: mapBackendSource(mongoCached.source),
+              timestamp,
+            }
+          );
+          return {
             source: mapBackendSource(mongoCached.source),
-            timestamp,
-          }
-        );
-        return {
-          source: mapBackendSource(mongoCached.source),
-          lines: mongoCached.lines,
-          origin: 'mongoDB',
-        };
+            lines: mongoCached.lines,
+            origin: 'mongoDB',
+          };
+        } else {
+          console.log('[ENGINE SOURCE] mongoDB PVs too short, falling through to fresh analysis');
+        }
       }
     } catch (error) {
       console.warn('[ENGINE CLIENT] MongoDB cache lookup failed:', error);
     }
 
     // Step 3: Lichess Cloud (attempt once per key)
+    // Only use if ALL lines have adequate PV length (Lichess often returns 1-move PVs for secondary lines)
     if (!CLOUD_ATTEMPTED_KEYS.has(cacheKey)) {
       CLOUD_ATTEMPTED_KEYS.add(cacheKey);
       try {
         cacheManager.recordNetworkCall();
         const cloudResult = await callLichessCloud(fen, multipv);
-        if (cloudResult.lines.length > 0) {
+        const hasAdequatePvs = cloudResult.lines.length > 0 &&
+          cloudResult.lines.every(l => (l.pv?.length ?? 0) >= MIN_PV_LENGTH);
+        if (hasAdequatePvs) {
           console.log('[ENGINE SOURCE] lichessCloud');
           const timestamp = Date.now();
           await cacheManager.set(
@@ -232,6 +244,8 @@ export async function analyzeAuto(
             console.warn('[ENGINE CLIENT] MongoDB store failed (cloud):', error);
           }
           return { ...cloudResult, origin: 'lichessCloud' };
+        } else if (cloudResult.lines.length > 0) {
+          console.log('[ENGINE SOURCE] lichessCloud PVs too short, falling through to WASM');
         }
       } catch (error) {
         console.warn('[ENGINE CLIENT] Lichess Cloud failed:', error);

@@ -91,12 +91,11 @@ export function MoveTree({ className }: MoveTreeProps) {
     selectNode(nodeId);
   };
 
-  const handleContainerContextMenu = (event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
   const handleContextMenu = (nodeId: string, event: React.MouseEvent) => {
+    // Allow native browser context menu for inspection when Shift is held.
+    if (event.shiftKey) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     const node = tree.nodes[nodeId];
@@ -147,7 +146,6 @@ export function MoveTree({ className }: MoveTreeProps) {
   return (
     <div
       className={`move-tree-container ${className || ''}`}
-      onContextMenu={handleContainerContextMenu}
       style={{ 
         padding: '10px', 
         fontFamily: 'sans-serif',
@@ -320,6 +318,7 @@ function MoveBranch({
                 rootId={undefined}
                 collapsedVariations={collapsedVariations}
                 onToggleVariation={onToggleVariation}
+                onContextMenu={onContextMenu}
               />
             )}
           </div>

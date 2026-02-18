@@ -2,6 +2,7 @@ import React from 'react';
 import { useStudy } from '../studyContext';
 import { StudyNode } from '../tree/type';
 import type { StudyTree as StudyTreeData } from '../tree/type';
+import { Fork, buildActivePath, getActiveChild } from '../tree/Fork';
 
 export interface MoveTreeProps {
   className?: string;
@@ -70,7 +71,6 @@ const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
   onDeleteMove,
   onPromoteVariation,
 }: MoveTreeDisplayProps) {
-  const [collapsedVariations, setCollapsedVariations] = React.useState<Set<string>>(new Set());
   const [menuState, setMenuState] = React.useState<{
     nodeId: string;
     x: number;
@@ -105,17 +105,12 @@ const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
     setMenuState({ nodeId, x: event.clientX, y: event.clientY, canPromote });
   }, [tree.nodes]);
 
-  const toggleVariation = React.useCallback((nodeId: string) => {
-    setCollapsedVariations((prev) => {
-      const next = new Set(prev);
-      if (next.has(nodeId)) {
-        next.delete(nodeId);
-      } else {
-        next.add(nodeId);
-      }
-      return next;
-    });
-  }, []);
+  // Build the active-path set once per cursor change so fork widgets know
+  // which branch to highlight.
+  const activePath = React.useMemo(
+    () => buildActivePath(cursorNodeId, tree.nodes),
+    [cursorNodeId, tree.nodes],
+  );
 
   if (!tree || !tree.nodes || !tree.rootId || !cursorNodeId) {
     return <MoveTreeUnavailable onReload={handleReload} className={className} />;
@@ -125,6 +120,13 @@ const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
   if (!rootNode || !tree.nodes[cursorNodeId]) {
     return <MoveTreeUnavailable onReload={handleReload} className={className} />;
   }
+
+  // When the root itself has multiple first-move alternatives, determine which
+  // branch the cursor is currently in so MoveBranch starts at the right node.
+  const activeStartId =
+    rootNode.children.length >= 2
+      ? getActiveChild(rootNode, activePath)
+      : rootNode.children[0] ?? null;
 
   return (
     <div
@@ -140,18 +142,24 @@ const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
         <span>Move Tree</span>
       </div>
       <div className="move-tree-content">
-        {rootNode && rootNode.children.length > 0 && (
+        {rootNode.children.length >= 2 && (
+          <Fork
+            childIds={rootNode.children}
+            nodes={tree.nodes}
+            ply={1}
+            activeChildId={getActiveChild(rootNode, activePath)}
+            onSelect={handleNodeClick}
+            onContextMenu={handleContextMenu}
+          />
+        )}
+        {activeStartId && (
           <MoveBranch
-            startNodeId={rootNode.children[0]}
+            startNodeId={activeStartId}
             nodes={tree.nodes}
             cursorNodeId={cursorNodeId}
+            activePath={activePath}
             onSelect={handleNodeClick}
-            depth={0}
             startPly={1}
-            isMainline={true}
-            rootId={tree.rootId}
-            collapsedVariations={collapsedVariations}
-            onToggleVariation={toggleVariation}
             onContextMenu={handleContextMenu}
           />
         )}
@@ -243,18 +251,18 @@ function MoveTreeUnavailable({ onReload, className }: { onReload: () => void; cl
 }
 
 // ─── MoveBranch ───────────────────────────────────────────────────────────────
+// Renders the active path through the tree, injecting Fork widgets at every
+// branch point (nodes with 2+ children).  Only the currently active branch is
+// followed; the other alternatives are visible (and clickable) in the Fork grid.
 
 interface MoveBranchProps {
+  startNodeId: string;
   nodes: Record<string, StudyNode>;
   cursorNodeId: string;
+  /** Set of ancestor IDs from root → cursorNodeId (inclusive). */
+  activePath: Set<string>;
   onSelect: (nodeId: string) => void;
-  depth: number;
-  startNodeId: string;
   startPly: number;
-  isMainline: boolean;
-  rootId?: string;
-  collapsedVariations: Set<string>;
-  onToggleVariation: (nodeId: string) => void;
   onContextMenu: (nodeId: string, event: React.MouseEvent) => void;
 }
 
@@ -264,73 +272,12 @@ const MoveBranch = React.memo(function MoveBranch({
   startNodeId,
   nodes,
   cursorNodeId,
+  activePath,
   onSelect,
-  depth,
   startPly,
-  isMainline,
-  rootId,
-  collapsedVariations,
-  onToggleVariation,
   onContextMenu,
 }: MoveBranchProps) {
   if (!startNodeId) return null;
-
-  const renderVariations = (nodeId: string, ply: number, overrideIds?: string[]) => {
-    const node = nodes[nodeId];
-    const variationsIds = overrideIds || node?.children.slice(1) || [];
-    if (!node || variationsIds.length === 0) return null;
-    return (
-      <div className="variations" style={{
-        fontSize: '12.6px',
-        color: '#555',
-        marginTop: '4px',
-        marginBottom: '4px',
-        borderLeft: '2px solid #ddd',
-        paddingLeft: '8px',
-        marginLeft: '12px'
-      }}>
-        {variationsIds.map((vId) => (
-          <div
-            key={vId}
-            className="variation-wrapper"
-            style={{ marginBottom: '4px' }}
-            onContextMenu={(event) => onContextMenu(vId, event)}
-            onDoubleClick={(event) => onContextMenu(vId, event)}
-          >
-            <button
-              type="button"
-              onClick={() => onToggleVariation(vId)}
-              style={{
-                marginRight: '6px',
-                padding: '0 6px',
-                border: '1px solid #ccc',
-                background: '#fff',
-                cursor: 'pointer',
-              }}
-            >
-              {collapsedVariations.has(vId) ? '+' : '-'}
-            </button>
-            <span style={{ color: '#888', marginRight: '4px' }}>(variation)</span>
-            {!collapsedVariations.has(vId) && (
-              <MoveBranch
-                startNodeId={vId}
-                nodes={nodes}
-                cursorNodeId={cursorNodeId}
-                onSelect={onSelect}
-                depth={depth + 1}
-                startPly={ply}
-                isMainline={false}
-                rootId={undefined}
-                collapsedVariations={collapsedVariations}
-                onToggleVariation={onToggleVariation}
-                onContextMenu={onContextMenu}
-              />
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
 
   const lines: React.ReactNode[] = [];
   const lineStyle: React.CSSProperties = {
@@ -340,6 +287,7 @@ const MoveBranch = React.memo(function MoveBranch({
     marginBottom: '4px',
     alignItems: 'center',
   };
+
   let currentId: string | null = startNodeId;
   let ply = startPly;
 
@@ -349,131 +297,133 @@ const MoveBranch = React.memo(function MoveBranch({
 
     const isWhite = ply % 2 === 1;
     const moveNumber = Math.floor((ply + 1) / 2);
+
     if (isWhite) {
       const whiteNode = currentNode;
-      const blackId = whiteNode.children[0] || null;
-      const blackNode = blackId ? nodes[blackId] : null;
-      const rootNode = rootId ? nodes[rootId] : null;
-      const hasRootVariations =
-        isMainline &&
-        depth === 0 &&
-        rootId &&
-        currentId === startNodeId &&
-        ply === startPly &&
-        (rootNode?.children.length || 0) > 1;
+      const whiteId = whiteNode.id;
 
-      if (hasRootVariations) {
+      if (whiteNode.children.length === 0) {
+        // Terminal white move
         lines.push(
-          <div key={`line-white-${currentId}`} className="move-line" style={lineStyle}>
-            <MoveItem
-              nodeId={whiteNode.id}
-              nodes={nodes}
-              cursorNodeId={cursorNodeId}
-              onSelect={onSelect}
-              isMainline={isMainline}
-              prefix={`${moveNumber}.`}
-              onContextMenu={onContextMenu}
-            />
+          <div key={`line-white-${whiteId}`} className="move-line" style={lineStyle}>
+            <MoveItem nodeId={whiteId} nodes={nodes} cursorNodeId={cursorNodeId}
+              onSelect={onSelect} isMainline={true} prefix={`${moveNumber}.`}
+              onContextMenu={onContextMenu} />
             <div />
           </div>
         );
-        lines.push(renderVariations(rootId!, 1, rootNode!.children.slice(1)));
-      } else if (blackNode) {
+        currentId = null;
+
+      } else if (whiteNode.children.length >= 2) {
+        // Fork: multiple black responses – show white alone then fork grid
+        const activeNextId = getActiveChild(whiteNode, activePath);
         lines.push(
-          <div key={`line-pair-${currentId}`} className="move-line" style={lineStyle}>
-            <MoveItem
-              nodeId={whiteNode.id}
-              nodes={nodes}
-              cursorNodeId={cursorNodeId}
-              onSelect={onSelect}
-              isMainline={isMainline}
-              prefix={`${moveNumber}.`}
-              onContextMenu={onContextMenu}
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <MoveItem
-                nodeId={blackNode.id}
-                nodes={nodes}
-                cursorNodeId={cursorNodeId}
-                onSelect={onSelect}
-                isMainline={isMainline}
-                prefix={`${moveNumber}...`}
-                onContextMenu={onContextMenu}
-              />
-            </div>
+          <div key={`line-white-${whiteId}`} className="move-line" style={lineStyle}>
+            <MoveItem nodeId={whiteId} nodes={nodes} cursorNodeId={cursorNodeId}
+              onSelect={onSelect} isMainline={true} prefix={`${moveNumber}.`}
+              onContextMenu={onContextMenu} />
+            <div />
           </div>
         );
+        lines.push(
+          <Fork key={`fork-${whiteId}`} childIds={whiteNode.children} nodes={nodes}
+            ply={ply + 1} activeChildId={activeNextId}
+            onSelect={onSelect} onContextMenu={onContextMenu} />
+        );
+        currentId = activeNextId;
+        ply += 1;
+
       } else {
-        lines.push(
-          <div key={`line-white-${currentId}`} className="move-line" style={lineStyle}>
-            <MoveItem
-              nodeId={whiteNode.id}
-              nodes={nodes}
-              cursorNodeId={cursorNodeId}
-              onSelect={onSelect}
-              isMainline={isMainline}
-              prefix={`${moveNumber}.`}
-              onContextMenu={onContextMenu}
-            />
-            <div />
-          </div>
-        );
-      }
+        // Single black response
+        const blackId = whiteNode.children[0];
+        const blackNode = nodes[blackId];
 
-      if (blackNode) {
-        if (hasRootVariations) {
+        if (!blackNode) {
           lines.push(
-            <div key={`line-black-${blackNode.id}`} className="move-line" style={lineStyle}>
+            <div key={`line-white-${whiteId}`} className="move-line" style={lineStyle}>
+              <MoveItem nodeId={whiteId} nodes={nodes} cursorNodeId={cursorNodeId}
+                onSelect={onSelect} isMainline={true} prefix={`${moveNumber}.`}
+                onContextMenu={onContextMenu} />
               <div />
+            </div>
+          );
+          currentId = null;
+
+        } else if (blackNode.children.length >= 2) {
+          // Fork: multiple white continuations after the black response
+          const activeNextId = getActiveChild(blackNode, activePath);
+          lines.push(
+            <div key={`line-pair-${whiteId}`} className="move-line" style={lineStyle}>
+              <MoveItem nodeId={whiteId} nodes={nodes} cursorNodeId={cursorNodeId}
+                onSelect={onSelect} isMainline={true} prefix={`${moveNumber}.`}
+                onContextMenu={onContextMenu} />
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <MoveItem
-                  nodeId={blackNode.id}
-                  nodes={nodes}
-                  cursorNodeId={cursorNodeId}
-                  onSelect={onSelect}
-                  isMainline={isMainline}
-                  prefix={`${moveNumber}...`}
-                  onContextMenu={onContextMenu}
-                />
+                <MoveItem nodeId={blackId} nodes={nodes} cursorNodeId={cursorNodeId}
+                  onSelect={onSelect} isMainline={true} prefix={`${moveNumber}...`}
+                  onContextMenu={onContextMenu} />
               </div>
             </div>
           );
+          lines.push(
+            <Fork key={`fork-${blackId}`} childIds={blackNode.children} nodes={nodes}
+              ply={ply + 2} activeChildId={activeNextId}
+              onSelect={onSelect} onContextMenu={onContextMenu} />
+          );
+          currentId = activeNextId;
+          ply += 2;
+
+        } else {
+          // Linear pair (no fork) – standard white + black on one row
+          lines.push(
+            <div key={`line-pair-${whiteId}`} className="move-line" style={lineStyle}>
+              <MoveItem nodeId={whiteId} nodes={nodes} cursorNodeId={cursorNodeId}
+                onSelect={onSelect} isMainline={true} prefix={`${moveNumber}.`}
+                onContextMenu={onContextMenu} />
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <MoveItem nodeId={blackId} nodes={nodes} cursorNodeId={cursorNodeId}
+                  onSelect={onSelect} isMainline={true} prefix={`${moveNumber}...`}
+                  onContextMenu={onContextMenu} />
+              </div>
+            </div>
+          );
+          currentId = blackNode.children[0] || null;
+          ply += 2;
         }
-
-        lines.push(renderVariations(whiteNode.id, ply + 1));
-        lines.push(renderVariations(blackNode.id, ply + 2));
-
-        currentId = blackNode.children[0] || null;
-        ply += 2;
-      } else {
-        currentId = null;
       }
+
     } else {
+      // Black's move (variation branch that starts mid-game from black's turn)
       const blackNode = currentNode;
+      const blackId = blackNode.id;
+
       lines.push(
-        <div key={`line-black-${currentId}`} className="move-line" style={lineStyle}>
+        <div key={`line-black-${blackId}`} className="move-line" style={lineStyle}>
           <div />
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <MoveItem
-              nodeId={blackNode.id}
-              nodes={nodes}
-              cursorNodeId={cursorNodeId}
-              onSelect={onSelect}
-              isMainline={isMainline}
-              prefix={`${moveNumber}...`}
-              onContextMenu={onContextMenu}
-            />
+            <MoveItem nodeId={blackId} nodes={nodes} cursorNodeId={cursorNodeId}
+              onSelect={onSelect} isMainline={true} prefix={`${moveNumber}...`}
+              onContextMenu={onContextMenu} />
           </div>
         </div>
       );
-      lines.push(renderVariations(blackNode.id, ply + 1));
-      currentId = blackNode.children[0] || null;
+
+      if (blackNode.children.length >= 2) {
+        const activeNextId = getActiveChild(blackNode, activePath);
+        lines.push(
+          <Fork key={`fork-${blackId}`} childIds={blackNode.children} nodes={nodes}
+            ply={ply + 1} activeChildId={activeNextId}
+            onSelect={onSelect} onContextMenu={onContextMenu} />
+        );
+        currentId = activeNextId;
+      } else {
+        currentId = blackNode.children[0] || null;
+      }
       ply += 1;
     }
   }
 
   return (
-    <div className="move-branch" style={{ marginLeft: depth > 0 ? '12px' : '0' }}>
+    <div className="move-branch">
       {lines}
     </div>
   );

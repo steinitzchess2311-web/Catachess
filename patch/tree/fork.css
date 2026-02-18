@@ -1,0 +1,68 @@
+/* Fork widget – inline move choice at branch points
+ * Mirrors Lichess analyse/_fork.scss behaviour.
+ * Two alternatives per row; active/hovered cell turns blue.
+ */
+
+.study-fork {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+  margin: 3px 0;
+}
+
+.study-fork__move {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  display: flex;
+  align-items: center;
+  flex: 0 0 50%;
+  cursor: pointer;
+  padding: 0.25em 0.75em;
+  background: rgba(59, 130, 246, 0.12);
+  color: #374151;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+  font-size: 13px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.study-fork__move:nth-child(odd) {
+  border-right: 1px solid rgba(0, 0, 0, 0.07);
+}
+
+/* Touch / no-hover devices: always highlight active */
+@media (hover: none) {
+  .study-fork__move.active {
+    background: #3b82f6;
+    color: #fff;
+  }
+}
+
+/* Hover-capable devices:
+ *  - When NOT hovering the fork container → highlight active child
+ *  - When     hovering the fork container → highlight the hovered child
+ *    (active loses its highlight so the user sees what they're about to pick)
+ */
+@media (hover: hover) {
+  .study-fork__move:hover,
+  .study-fork:not(:hover) .study-fork__move.active {
+    background: #3b82f6;
+    color: #fff;
+  }
+}
+
+.study-fork__nag {
+  margin-left: 2px;
+}
+
+/* NAG colour when cell is highlighted */
+.study-fork__move.active .study-fork__nag,
+.study-fork__move:hover .study-fork__nag {
+  color: #fde68a;
+}
+
+/* NAG colour in normal (un-highlighted) state */
+.study-fork__move:not(.active) .study-fork__nag {
+  color: #d97706;
+}

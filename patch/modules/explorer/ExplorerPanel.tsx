@@ -105,6 +105,12 @@ export function ExplorerPanel({ fen, onMoveSelect }: ExplorerPanelProps) {
           <GameList games={recentGames} label="Recent games" />
         )}
 
+        {tab === 'lichess' && !loading && data && total === 0 && (
+          <div className="explorer-empty">
+            Lichess database coming soon.
+          </div>
+        )}
+
         {tab === 'player' && playerStatus === 'idle' && !loading && !data && (
           <div className="explorer-empty">
             Enter a Lichess username<br />and press Search.

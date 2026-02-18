@@ -88,7 +88,7 @@ export function useEngineAnalysis({
 
     const apiCallStart = performance.now();
     try {
-      const result = await analyzeAuto(targetFen, WASM_MOVETIME_MS, multipv, onUpdate);
+      const result = await analyzeAuto(targetFen, multipv, onUpdate);
       const fetchDuration = performance.now() - apiCallStart;
 
       console.log(`[ENGINE PERF] Network + Backend: ${fetchDuration.toFixed(1)}ms`);

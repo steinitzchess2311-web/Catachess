@@ -172,8 +172,9 @@ async function runAnalysis(
           const parsed = parseSfInfoLine(line);
           if (parsed) {
             entries.push(parsed);
-            // Fire onUpdate when we see the last multipv line at a new depth
-            if (parsed.multipv >= multipv && parsed.depth > lastReportedDepth) {
+            // Fire onUpdate when we see exactly the last expected multipv line at a new depth
+            // Matches Lichess Protocol: if (multiPv === this.expectedPvs)
+            if (parsed.multipv === multipv && parsed.depth > lastReportedDepth) {
               lastReportedDepth = parsed.depth;
               if (onUpdate) {
                 const { lines, nodes, millis } = buildLines(entries);

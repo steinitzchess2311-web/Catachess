@@ -57,7 +57,13 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
           <Link to="/workspace-select" className="nav-link">Workspace</Link>
           <Link to="/translate" className="nav-link">Translator</Link>
           <Link to="/blogs" className="nav-link">Blogs</Link>
-          <Link to="/analysis" className="nav-link">Analysis</Link>
+          <div className="nav-dropdown">
+            <span className="nav-link nav-link--dropdown">Analysis</span>
+            <div className="nav-dropdown-menu">
+              <Link to="/analysis" className="nav-dropdown-item">Analysis Board</Link>
+              <Link to="/board-editor" className="nav-dropdown-item">Board Editor</Link>
+            </div>
+          </div>
           <Link to="/sponsorship" className="nav-link" style={{ color: '#ff8c00', fontWeight: 600 }}>Sponsorship</Link>
         </nav>
       </div>

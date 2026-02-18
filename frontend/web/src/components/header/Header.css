@@ -70,3 +70,60 @@
   align-items: center;
   gap: 12px;
 }
+
+/* ── Analysis dropdown ──────────────────────────── */
+
+.nav-dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.nav-link--dropdown {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-link--dropdown::after {
+  content: '▾';
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.nav-dropdown-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  min-width: 170px;
+  z-index: 1100;
+  padding: 6px 0;
+  white-space: nowrap;
+}
+
+.nav-dropdown:hover .nav-dropdown-menu {
+  display: block;
+}
+
+.nav-dropdown-item {
+  display: block;
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+
+.nav-dropdown-item:hover {
+  background: #f0f4ff;
+  color: #2e6bff;
+}

@@ -14,7 +14,9 @@ function AnalysisPageContent() {
   const [rightbarWidth, setRightbarWidth] = useState(280);
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
+  const [boardWidth, setBoardWidth] = useState(500);
   const layoutRef = useRef<HTMLDivElement | null>(null);
+  const mainRef = useRef<HTMLDivElement | null>(null);
 
   const rightbarMin = 220;
   const rightbarMax = 520;
@@ -23,6 +25,21 @@ function AnalysisPageContent() {
   useEffect(() => {
     loadTree(createEmptyTree());
   }, [loadTree]);
+
+  // Measure main column to size board responsively
+  useEffect(() => {
+    if (!mainRef.current) return;
+    const measure = () => {
+      const el = mainRef.current;
+      if (!el) return;
+      const size = Math.min(el.clientWidth, el.clientHeight);
+      if (size > 0) setBoardWidth(Math.floor(size));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(mainRef.current);
+    return () => ro.disconnect();
+  }, []);
 
   // Rightbar drag-resize
   useEffect(() => {
@@ -64,13 +81,13 @@ function AnalysisPageContent() {
         </div>
       </div>
 
-      <div className="analysis-layout" style={{ height: '600px' }} ref={layoutRef}>
+      <div className="analysis-layout" ref={layoutRef}>
         <div className="analysis-sidebar">
           <AnalysisSidebar />
         </div>
 
-        <div className="analysis-main">
-          <StudyBoard />
+        <div className="analysis-main" ref={mainRef}>
+          <StudyBoard boardWidth={boardWidth} />
         </div>
 
         <div

@@ -567,24 +567,29 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         const resolvedTitle =
           studyResponse?.study?.title || studyResponse?.title || 'Study';
         setStudyTitle(resolvedTitle);
-        const resolvedBreadcrumbs = await resolveDisplayPath('', resolvedTitle, id);
-        setBreadcrumbs(resolvedBreadcrumbs);
 
-        // Fetch study node to get version for rename functionality
-        try {
-          const studyNode = await api.get(`/api/v1/workspace/nodes/${id}`);
-          studyNodeRef.current = studyNode;
-          console.log(`[STUDY PAGE] Study node loaded | id=${id} | title=${studyNode.title} | version=${studyNode.version}`);
-        } catch (nodeError) {
-          console.warn(`[STUDY PAGE] Failed to fetch study node:`, nodeError);
-        }
+        // Render chapters immediately — don't block on breadcrumbs or studyNode
         const responseChapters = extractChapters(studyResponse);
         if (!Array.isArray(responseChapters)) {
           throw new Error('API response unexpected: chapters list missing');
         }
-
         let sortedChapters = sortChapters(responseChapters);
         setChapters(sortedChapters);
+
+        // Breadcrumbs + studyNode in parallel, neither blocks the chapter list
+        Promise.all([
+          resolveDisplayPath('', resolvedTitle, id),
+          api.get(`/api/v1/workspace/nodes/${id}`).catch((nodeError) => {
+            console.warn(`[STUDY PAGE] Failed to fetch study node:`, nodeError);
+            return null;
+          }),
+        ]).then(([resolvedBreadcrumbs, studyNode]) => {
+          if (cancelled) return;
+          setBreadcrumbs(resolvedBreadcrumbs);
+          if (studyNode) {
+            studyNodeRef.current = studyNode;
+          }
+        });
 
         let chapter = sortedChapters[0];
 

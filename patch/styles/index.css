@@ -107,6 +107,9 @@
 }
 
 .breadcrumb-item.clickable {
+  background: none;
+  border: none;
+  font: inherit;
   cursor: pointer;
   color: #2e6bff;
 }
@@ -114,6 +117,11 @@
 .breadcrumb-item.clickable:hover {
   background-color: #e3f2ff;
   color: #1e5bd9;
+}
+
+.breadcrumb-item.clickable:focus-visible {
+  outline: 2px solid #2e6bff;
+  outline-offset: 2px;
 }
 
 .breadcrumb-item.current {

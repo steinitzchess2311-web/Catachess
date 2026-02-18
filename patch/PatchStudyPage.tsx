@@ -397,7 +397,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     }
   }, [navigate]);
 
-  const handleBreadcrumbDoubleClick = useCallback((crumb: Breadcrumb, index: number) => {
+  const handleBreadcrumbClick = useCallback((crumb: Breadcrumb, index: number) => {
     // Last item (current study) is not clickable
     if (index === breadcrumbs.length - 1) {
       return;
@@ -791,19 +791,20 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
           {breadcrumbs.map((crumb, index) => (
             <React.Fragment key={crumb.id}>
               {index > 0 && <span className="breadcrumb-separator">/</span>}
-              <span
-                className={`breadcrumb-item ${
-                  index === breadcrumbs.length - 1 ? 'current' : 'clickable'
-                }`}
-                onDoubleClick={() => handleBreadcrumbDoubleClick(crumb, index)}
-                title={
-                  index === breadcrumbs.length - 1
-                    ? 'Current study'
-                    : 'Double-click to navigate'
-                }
-              >
-                {crumb.title}
-              </span>
+              {index === breadcrumbs.length - 1 ? (
+                <span className="breadcrumb-item current" title="Current study">
+                  {crumb.title}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  className="breadcrumb-item clickable"
+                  onClick={() => handleBreadcrumbClick(crumb, index)}
+                  title="Click to navigate"
+                >
+                  {crumb.title}
+                </button>
+              )}
             </React.Fragment>
           ))}
         </div>

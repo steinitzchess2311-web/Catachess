@@ -3,58 +3,19 @@
  * Temporarily show in corner to verify permissions
  */
 
-import React, { useState, useEffect } from 'react';
-import { api } from '@ui/assets/api';
+import React from 'react';
+import { useUser } from '../../contexts/UserContext';
 
 /**
  * Debug badge showing current user role
  * Remove this component after debugging
  */
 const UserRoleDebug: React.FC = () => {
-  const [userInfo, setUserInfo] = useState<{
-    username?: string;
-    role?: string;
-    id?: string;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { username, userRole, userId } = useUser();
 
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      try {
-        const token = localStorage.getItem('catachess_token') || sessionStorage.getItem('catachess_token');
+  if (!username) return null;
 
-        if (!token) {
-          setUserInfo(null);
-          setLoading(false);
-          return;
-        }
-
-        const response = await api.request("/user/profile", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        setUserInfo({
-          username: response.username,
-          role: response.role,
-          id: response.id
-        });
-      } catch (error) {
-        console.error("Failed to fetch user info:", error);
-        setUserInfo(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchUserInfo();
-  }, []);
-
-  if (loading) return null;
-  if (!userInfo) return null;
-
-  const isPrivileged = userInfo.role === 'editor' || userInfo.role === 'admin';
+  const isPrivileged = userRole === 'editor' || userRole === 'admin';
 
   return (
     <div
@@ -74,13 +35,13 @@ const UserRoleDebug: React.FC = () => {
       }}
     >
       <div style={{ marginBottom: '4px' }}>
-        👤 {userInfo.username || 'Unknown'}
+        👤 {username || 'Unknown'}
       </div>
       <div style={{ marginBottom: '4px' }}>
-        🎭 Role: {userInfo.role || 'none'}
+        🎭 Role: {userRole || 'none'}
       </div>
       <div style={{ fontSize: '0.75rem', opacity: 0.9 }}>
-        ID: {userInfo.id?.substring(0, 8)}...
+        ID: {userId?.substring(0, 8)}...
       </div>
       {!isPrivileged && (
         <div style={{

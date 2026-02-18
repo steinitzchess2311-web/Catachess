@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   BrowserRouter,
   Link,
@@ -27,23 +27,23 @@ import signupLayout from "@ui/modules/auth/signup/layout/index.html?raw";
 import Header from "./components/header/Header";
 import Footer from "./components/footer/Footer";
 import TestSign from "./components/dialogBox/TestSign";
-import AboutPage from "./pages/aboutPage/AboutPage";
-import BlogsPage from "./pages/BlogsPage";
-import ArticleDetailPage from "./pages/BlogsPage/ArticleDetailPage";
-import SponsorshipPage from "./pages/SponsorshipPage/SponsorshipPage";
-import LandingPage from "./pages/Landing/LandingPage";
 import { HomePage } from "./pages/home";
-import TranslatePage from "./pages/translate";
-import PlayersIndex from "@patch/modules/tagger/pages/PlayersIndex";
-import PlayerDetail from "@patch/modules/tagger/pages/PlayerDetail";
-import AccountPage from "../AccountPage";
-import { PatchStudyPage } from "@patch/PatchStudyPage";
-import { BoardEditorPage } from "@patch/modules/board_editor";
-import { AnalysisPage } from "./pages/analysis/AnalysisPage";
 import { TerminalLauncher } from "@patch/modules/terminal";
 import { createCataMazeCommand } from "@patch/modules/catamaze";
 import { CatPet } from "@patch/modules/cats";
+import { UserContext } from "./contexts/UserContext";
 import "@patch/styles/index.css";
+
+const AboutPage = React.lazy(() => import("./pages/aboutPage/AboutPage"));
+const BlogsPage = React.lazy(() => import("./pages/BlogsPage"));
+const SponsorshipPage = React.lazy(() => import("./pages/SponsorshipPage/SponsorshipPage"));
+const TranslatePage = React.lazy(() => import("./pages/translate"));
+const PlayersIndex = React.lazy(() => import("@patch/modules/tagger/pages/PlayersIndex"));
+const PlayerDetail = React.lazy(() => import("@patch/modules/tagger/pages/PlayerDetail"));
+const AccountPage = React.lazy(() => import("../AccountPage"));
+const PatchStudyPage = React.lazy(() => import("@patch/PatchStudyPage").then(m => ({ default: m.PatchStudyPage })));
+const BoardEditorPage = React.lazy(() => import("@patch/modules/board_editor").then(m => ({ default: m.BoardEditorPage })));
+const AnalysisPage = React.lazy(() => import("./pages/analysis/AnalysisPage").then(m => ({ default: m.AnalysisPage })));
 
 // Entry switch configuration: default to patch unless explicitly disabled
 const USE_PATCH_STUDY = import.meta.env.VITE_USE_PATCH_STUDY !== "false";
@@ -307,6 +307,7 @@ function Layout() {
   const location = useLocation();
   const [username, setUsername] = useState<string | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [showCat, setShowCat] = useState(false);
   const authed = isAuthed();
   const catamazeStateRef = useRef({
@@ -371,6 +372,7 @@ function Layout() {
           });
           setUsername(response.username);
           setUserRole(response.role || null);
+          setUserId(response.id || null);
         } catch (error) {
           console.error("Failed to fetch user profile:", error);
         }
@@ -380,9 +382,10 @@ function Layout() {
   }, [authed]);
 
   return (
-    <>
+    <UserContext.Provider value={{ username, userRole, userId }}>
       <Header username={username} isAuthed={authed} userRole={userRole} />
       <main>
+        <Suspense fallback={<div style={{ minHeight: '100vh' }} />}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -446,11 +449,12 @@ function Layout() {
           <Route path="/workspace" element={<Navigate to="/workspace-select" replace />} />
           <Route path="*" element={<div>404</div>} />
         </Routes>
+        </Suspense>
       </main>
       <Footer />
       <TerminalLauncher customCommands={[catamazeCommand]} />
       {ENABLE_CAT_PET && showCat && <CatPet initialPosition={catInitialPosition} />}
-    </>
+    </UserContext.Provider>
   );
 }
 

@@ -10,9 +10,9 @@ import CategorySidebar from "./CategorySidebar";
 import ContentArea from "./ContentArea";
 import BlogHeader from "../../components/BlogHeader";
 import ArticleDetailPage from "./ArticleDetailPage";
-import { api } from '@ui/assets/api';
 import { useBlogArticle } from "../../hooks/useBlogArticle";
 import { getCategoryLastArticle, clearCategoryLastArticle } from "../../utils/articleHistory";
+import { useUser } from "../../contexts/UserContext";
 
 /**
  * Main blog page with sidebar navigation and article grid
@@ -24,8 +24,7 @@ const BlogsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { articleId } = useParams<{ articleId: string }>();
   const navigate = useNavigate();
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [userName, setUserName] = useState<string | null>(null);
+  const { userRole, username: userName } = useUser();
   const [viewMode, setViewMode] = useState<ViewMode>('articles');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
 
@@ -57,34 +56,6 @@ const BlogsPage = () => {
   // Keep original categoryParam for UI display
   const category = categoryParam === 'official' ? undefined : categoryParam;
 
-  // Check user info on mount
-  useEffect(() => {
-    const checkUserInfo = async () => {
-      try {
-        const token = localStorage.getItem('catachess_token') || sessionStorage.getItem('catachess_token');
-        if (!token) {
-          setUserRole(null);
-          setUserName(null);
-          return;
-        }
-
-        const response = await api.request("/user/profile", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        setUserRole(response.role || null);
-        setUserName(response.username || null);
-      } catch (error) {
-        console.error("Failed to fetch user info:", error);
-        setUserRole(null);
-        setUserName(null);
-      }
-    };
-
-    checkUserInfo();
-  }, []);
 
   /**
    * Handle category filter change

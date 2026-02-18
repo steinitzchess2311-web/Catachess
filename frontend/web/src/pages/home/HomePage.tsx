@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { api } from "@ui/assets/api";
 import logoImage from "../../assets/logo.jpg";
 import "./HomePage.css";
+import { useUser } from "../../contexts/UserContext";
 
 interface UserStatistics {
   total_online_seconds: number;
@@ -13,7 +14,7 @@ interface UserStatistics {
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState<string>("");
+  const { username } = useUser();
   const [statistics, setStatistics] = useState<UserStatistics>({
     total_online_seconds: 0,
     total_moves_count: 0,
@@ -32,15 +33,9 @@ const HomePage: React.FC = () => {
           return;
         }
 
-        // Fetch all data in parallel
-        const [profileResponse, statsResponse] = await Promise.all([
-          api.get("/user/profile"),
-          api.get("/user/statistics"),
-        ]);
-
-        setUsername(profileResponse.username || "User");
+        const statsResponse = await api.get("/user/statistics");
         setStatistics(statsResponse);
-        setIsAuthed(true); // Only set to true after successful data fetch
+        setIsAuthed(true);
       } catch (error) {
         console.error("Failed to fetch user data:", error);
         setIsAuthed(false);

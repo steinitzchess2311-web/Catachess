@@ -209,59 +209,49 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
 
     try {
       const treeResponse = await api.get(`${patchBase}/chapter/${chapterId}/tree`);
-      console.log(`[loadChapterTree] API response for ${chapterId} (attempt ${retryCount + 1}):`, {
-        success: treeResponse?.success,
-        hasTree: !!treeResponse?.tree,
-        starting_fen: treeResponse?.starting_fen
-      });
 
       if (treeResponse?.success && treeResponse.tree) {
-        // Pass starting_fen to selectChapter to initialize board position
         const startFen = treeResponse.starting_fen || undefined;
-        console.log(`[loadChapterTree] Calling selectChapter with startFen:`, startFen);
-        selectChapter(chapterId, startFen);
 
         if (!treeResponse.tree.version) {
           console.warn(`[patch] Tree missing version for chapter ${chapterId}, will re-save.`);
           const upgradedTree = { ...treeResponse.tree, version: TREE_SCHEMA_VERSION };
           await api.put(`${patchBase}/chapter/${chapterId}/tree`, upgradedTree);
-          loadTree(upgradedTree);
+          loadTree(upgradedTree, startFen);
           return;
         }
-        loadTree(treeResponse.tree);
+        loadTree(treeResponse.tree, startFen);
         return;
       }
 
       // Retry if R2 storage hasn't propagated yet
       if (retryCount < maxRetries) {
-        console.log(`[loadChapterTree] Tree not ready, retrying in ${retryDelay}ms... (${retryCount + 1}/${maxRetries})`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
         return loadChapterTree(chapterId, retryCount + 1);
       }
 
-      console.warn(`[loadChapterTree] Tree not found after ${maxRetries} retries, falling back to empty tree`);
+      console.warn(`[patch] Tree not found after ${maxRetries} retries for chapter ${chapterId}, initializing empty tree`);
     } catch (e) {
       console.warn(`[patch] Tree load failed for chapter ${chapterId}, initializing empty tree.`, e);
     }
 
-    // Initialize empty tree for new chapter (no custom starting position)
-    console.log(`[loadChapterTree] Initializing empty tree for ${chapterId}, NO startFen`);
-    selectChapter(chapterId);
+    // Initialize empty tree for new chapter
     const emptyTree = createEmptyTree();
     const createResponse = await api.put(`${patchBase}/chapter/${chapterId}/tree`, emptyTree);
     if (!createResponse?.success) {
       throw new Error(createResponse?.error || 'Failed to initialize tree');
     }
     loadTree(emptyTree);
-  }, [loadTree, patchBase, selectChapter]);
+  }, [loadTree, patchBase]);
 
   const handleSelectChapter = useCallback(async (chapterId: string) => {
+    selectChapter(chapterId); // instant optimistic update — board resets, chapter highlighted immediately
     try {
       await loadChapterTree(chapterId);
     } catch (e) {
       setError('LOAD_ERROR', e instanceof Error ? e.message : 'Failed to load chapter');
     }
-  }, [loadChapterTree, setError]);
+  }, [loadChapterTree, selectChapter, setError]);
 
   const handleCreateChapter = useCallback(async (title: string) => {
     if (!id) return;
@@ -270,12 +260,13 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
       const nextChapters = sortChapters([...chapters, chapter]);
       setChapters(nextChapters);
       if (chapter?.id) {
+        selectChapter(chapter.id);
         await loadChapterTree(chapter.id);
       }
     } catch (e) {
       setError('LOAD_ERROR', e instanceof Error ? e.message : 'Failed to create chapter');
     }
-  }, [chapters, id, loadChapterTree, setError, sortChapters]);
+  }, [chapters, id, loadChapterTree, selectChapter, setError, sortChapters]);
 
 
   const handleRenameChapter = useCallback(async (chapterId: string, title: string) => {

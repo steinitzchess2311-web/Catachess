@@ -73,7 +73,7 @@ export interface StudyState extends StudyStateSnapshot {
 type StudyAction =
   | { type: 'SET_STUDY'; studyId: string }
   | { type: 'SET_CHAPTER'; chapterId: string; startFen?: string }
-  | { type: 'LOAD_TREE'; tree: StudyTreeData }
+  | { type: 'LOAD_TREE'; tree: StudyTreeData; startFen?: string }
   | { type: 'SET_CURSOR'; nodeId: string; precomputedFen?: string }
   | { type: 'ADD_MOVE'; san: string }
   | { type: 'SET_COMMENT'; nodeId: string; comment: string }
@@ -118,10 +118,10 @@ const initialState: StudyState = {
 // Helper to create a snapshot for the history stack
 const createSnapshot = (state: StudyState): StudyStateSnapshot => {
   const { history, ...snapshot } = state;
-  // Deep clone tree to ensure snapshot is immutable
+  // tree is never mutated in-place (we always clone before passing to StudyTree),
+  // so the existing reference is safe to reuse in the snapshot.
   return {
     ...snapshot,
-    tree: JSON.parse(JSON.stringify(snapshot.tree)),
     currentPath: [...snapshot.currentPath],
   };
 };
@@ -163,8 +163,9 @@ function studyReducer(state: StudyState, action: StudyAction): StudyState {
     }
 
     case 'LOAD_TREE': {
-      const startValidation = validateFen(state.startFen);
-      const safeStartFen = startValidation.valid ? state.startFen : STARTING_FEN;
+      const requestedFen = action.startFen ?? state.startFen;
+      const startValidation = validateFen(requestedFen);
+      const safeStartFen = startValidation.valid ? requestedFen : STARTING_FEN;
       const upgrade = upgradeTree(action.tree);
       if (!upgrade.tree) {
         return {
@@ -248,7 +249,7 @@ function studyReducer(state: StudyState, action: StudyAction): StudyState {
     }
 
     case 'ADD_MOVE': {
-      const treeClone = JSON.parse(JSON.stringify(state.tree));
+      const treeClone = structuredClone(state.tree);
       const treeOps = new StudyTree(treeClone);
 
       try {
@@ -290,14 +291,13 @@ function studyReducer(state: StudyState, action: StudyAction): StudyState {
     }
 
     case 'SET_COMMENT': {
-      const treeClone = JSON.parse(JSON.stringify(state.tree));
-      if (treeClone.nodes[action.nodeId]) {
-        treeClone.nodes[action.nodeId].comment = action.comment || null;
-      }
+      if (!state.tree.nodes[action.nodeId]) return state;
+      const updatedNode = { ...state.tree.nodes[action.nodeId], comment: action.comment || null };
+      const newTree = { ...state.tree, nodes: { ...state.tree.nodes, [action.nodeId]: updatedNode } };
       const snapshot = createSnapshot(state);
       return {
         ...state,
-        tree: treeClone,
+        tree: newTree,
         isDirty: true,
         history: [...state.history, snapshot],
       };
@@ -307,7 +307,7 @@ function studyReducer(state: StudyState, action: StudyAction): StudyState {
       if (action.nodeId === state.tree.rootId) return state;
 
       const snapshot = createSnapshot(state);
-      const treeClone = JSON.parse(JSON.stringify(state.tree));
+      const treeClone = structuredClone(state.tree);
       const treeOps = new StudyTree(treeClone);
 
       let nextCursorId = state.cursorNodeId;
@@ -351,7 +351,7 @@ function studyReducer(state: StudyState, action: StudyAction): StudyState {
       if (!state.tree.nodes[action.nodeId]) return state;
 
       const snapshot = createSnapshot(state);
-      const treeClone = JSON.parse(JSON.stringify(state.tree));
+      const treeClone = structuredClone(state.tree);
       const treeOps = new StudyTree(treeClone);
 
       try {
@@ -521,8 +521,8 @@ export function StudyProvider({ children }: StudyProviderProps) {
     dispatch({ type: 'SET_CHAPTER', chapterId, startFen });
   }, []);
 
-  const loadTree = useCallback((tree: StudyTreeData) => {
-    dispatch({ type: 'LOAD_TREE', tree });
+  const loadTree = useCallback((tree: StudyTreeData, startFen?: string) => {
+    dispatch({ type: 'LOAD_TREE', tree, startFen });
   }, []);
 
   const selectNode = useCallback((nodeId: string) => {
@@ -551,17 +551,11 @@ export function StudyProvider({ children }: StudyProviderProps) {
   }, []);
 
   const saveTree = useCallback(async () => {
-    console.log('[saveTree] Called', { chapterId: state.chapterId, isDirty: state.isDirty, isSaving: state.isSaving });
-
     if (!state.chapterId) {
-      console.error('[saveTree] No chapter ID');
       setError('SAVE_ERROR', 'Cannot save: missing chapter id');
       return;
     }
-    if (state.isSaving) {
-      console.warn('[saveTree] Already saving, skipping');
-      return;
-    }
+    if (state.isSaving) return;
 
     const treePayload = JSON.stringify(state.tree);
     let currentHash = '';
@@ -575,20 +569,14 @@ export function StudyProvider({ children }: StudyProviderProps) {
     } catch {
       currentHash = '';
     }
-    if (currentHash === state.lastSavedHash && !state.isDirty) {
-      console.log('[saveTree] No changes detected (hash match), skipping', { currentHash, lastSavedHash: state.lastSavedHash });
-      return;
-    }
+    if (currentHash === state.lastSavedHash && !state.isDirty) return;
 
-    console.info(`[saveTree] Saving tree for chapter ${state.chapterId}`, { hash: currentHash || 'n/a', isDirty: state.isDirty });
     dispatch({ type: 'SET_SAVING', isSaving: true });
     try {
       await api.put(`${patchBase}/chapter/${state.chapterId}/tree`, state.tree);
-
-      console.info(`[saveTree] ✓ Saved tree for chapter ${state.chapterId}`, { hash: currentHash });
       dispatch({ type: 'MARK_SAVED', timestamp: Date.now(), hash: currentHash });
     } catch (e) {
-      console.error('[saveTree] ✗ Save failed:', e);
+      console.error('[saveTree] Save failed:', e);
       setError('SAVE_ERROR', e instanceof Error ? e.message : 'Failed to save tree');
     } finally {
       dispatch({ type: 'SET_SAVING', isSaving: false });
@@ -596,25 +584,18 @@ export function StudyProvider({ children }: StudyProviderProps) {
   }, [patchBase, state.chapterId, state.isSaving, state.isDirty, state.lastSavedHash, state.tree, setError]);
 
   useEffect(() => {
-    if (!state.isDirty || !state.chapterId) {
-      console.log('[Auto-save] Skipped:', { isDirty: state.isDirty, chapterId: state.chapterId });
-      return;
-    }
+    if (!state.isDirty || !state.chapterId) return;
 
-    console.log('[Auto-save] Scheduled save in 5s for chapter:', state.chapterId);
     const timeoutId = window.setTimeout(() => {
-      console.log('[Auto-save] Triggering save now...');
       saveTree();
     }, 5000);
 
     return () => {
-      console.log('[Auto-save] Clearing timeout');
       window.clearTimeout(timeoutId);
     };
   }, [state.isDirty, state.chapterId, state.tree, saveTree]);
 
   const loadTreeFromServer = useCallback(async () => {
-    console.log("loadTreeFromServer placeholder called");
   }, []);
 
   const value: StudyContextValue = {

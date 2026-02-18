@@ -49,33 +49,14 @@ export function AnalysisPanel({
         {engineEnabled && lines.length === 0 && (
           <div className="patch-analysis-empty">No analysis yet.</div>
         )}
-        {(() => {
-          const linesRenderStart = performance.now();
-          console.log(`[RENDER PERF] ===== Rendering ${lines.length} analysis lines =====`);
-
-          const elements = lines.map((line, index) => {
-            const lineRenderStart = performance.now();
-            const element = (
-              <div key={`pv-${line.multipv}`} className="patch-analysis-line">
-                <div className="patch-analysis-score">{formatScore(line.score)}</div>
-                <div className="patch-analysis-pv">
-                  {line.sanText || (line.pv?.join(' ') ?? '')}
-                </div>
-              </div>
-            );
-            const lineRenderDuration = performance.now() - lineRenderStart;
-            console.log(
-              `[RENDER PERF] Line ${index + 1}/${lines.length}: ${lineRenderDuration.toFixed(3)}ms`
-            );
-            return element;
-          });
-
-          const linesRenderDuration = performance.now() - linesRenderStart;
-          console.log(`[RENDER PERF] All lines JSX created: ${linesRenderDuration.toFixed(2)}ms`);
-          console.log('[RENDER PERF] Note: DOM update happens AFTER this');
-
-          return elements;
-        })()}
+        {lines.map((line) => (
+          <div key={`pv-${line.multipv}`} className="patch-analysis-line">
+            <div className="patch-analysis-score">{formatScore(line.score)}</div>
+            <div className="patch-analysis-pv">
+              {line.sanText || (line.pv?.join(' ') ?? '')}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

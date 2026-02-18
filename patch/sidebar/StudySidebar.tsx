@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useStudy } from '../studyContext';
 import { uciLineToSan } from '../chessJS/uci';
+import { getTurn } from '../chessJS/fen';
 import { ChapterList } from './ChapterList';
 import { getCacheManager } from '../engine/cache';
 import { AnalysisSettings } from './components/AnalysisSettings';
@@ -173,6 +174,7 @@ export function StudySidebar({
             error={engineAnalysis.error}
             lastUpdated={engineAnalysis.lastUpdated}
             engineOrigin={engineAnalysis.engineOrigin}
+            turn={getTurn(state.currentFen) ?? 'w'}
           />
         </div>
       )}

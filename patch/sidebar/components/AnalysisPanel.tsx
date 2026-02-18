@@ -10,6 +10,7 @@ export interface AnalysisPanelProps {
   error: string | null;
   lastUpdated: number | null;
   engineOrigin: string | null;
+  turn?: 'w' | 'b';
 }
 
 export function AnalysisPanel({
@@ -20,6 +21,7 @@ export function AnalysisPanel({
   error,
   lastUpdated,
   engineOrigin,
+  turn = 'w',
 }: AnalysisPanelProps) {
   return (
     <div className="patch-analysis-panel">
@@ -51,7 +53,7 @@ export function AnalysisPanel({
         )}
         {lines.map((line) => (
           <div key={`pv-${line.multipv}`} className="patch-analysis-line">
-            <div className="patch-analysis-score">{formatScore(line.score)}</div>
+            <div className="patch-analysis-score">{formatScore(line.score, turn)}</div>
             <div className="patch-analysis-pv">
               {line.sanText || (line.pv?.join(' ') ?? '')}
             </div>

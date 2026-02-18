@@ -1,17 +1,23 @@
 import { getFullmoveNumber, getTurn } from '../../chessJS/fen';
 
 /**
- * Format engine score for display
+ * Format engine score for display.
+ * Stockfish scores are from the side-to-move's perspective (positive = side to move is better).
+ * We normalize to white's perspective: positive = white better (+), negative = black better (-).
  */
-export function formatScore(raw: number | string): string {
+export function formatScore(raw: number | string, turn: 'w' | 'b' = 'w'): string {
   if (typeof raw === 'string') {
     if (raw.startsWith('mate')) {
-      const mate = raw.slice(4);
-      return `M${mate}`;
+      const mateNum = parseInt(raw.slice(4), 10);
+      // Flip for black to move so positive still means white is winning
+      const normalized = turn === 'b' ? -mateNum : mateNum;
+      return normalized > 0 ? `+M${normalized}` : `-M${Math.abs(normalized)}`;
     }
     return raw;
   }
-  const value = raw / 100;
+  // Flip CP score for black to move
+  const normalized = turn === 'b' ? -raw : raw;
+  const value = normalized / 100;
   const sign = value > 0 ? '+' : '';
   return `${sign}${value.toFixed(2)}`;
 }

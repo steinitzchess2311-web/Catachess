@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { StudyProvider, useStudy } from './studyContext';
 import { StudyBoard } from './board/studyBoard';
 import { MoveTree } from './sidebar/movetree';
+import { ForkWidget } from './tree/Fork';
 import { StudySidebar } from './sidebar/StudySidebar';
 import { CommentBox } from './CommentBox';
 import { api } from '@ui/assets/api';
@@ -858,14 +859,17 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
                 Explorer
               </button>
             </div>
-            {rightPanelTab === 'tree' ? (
-              <MoveTree />
-            ) : (
-              <ExplorerPanel
-                fen={state.currentFen}
-                onMoveSelect={addMove}
-              />
-            )}
+            <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+              {rightPanelTab === 'tree' ? (
+                <MoveTree />
+              ) : (
+                <ExplorerPanel
+                  fen={state.currentFen}
+                  onMoveSelect={addMove}
+                />
+              )}
+            </div>
+            {rightPanelTab === 'tree' && <ForkWidget />}
           </div>
         </div>
       </div>

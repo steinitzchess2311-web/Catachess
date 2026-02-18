@@ -2,53 +2,21 @@
  * Fork.tsx – inline branch-choice widget for the study move tree.
  *
  * Mirrors Lichess analyse/src/fork.ts + css/_fork.scss.
- * When a position has 2+ children, the Fork component renders them as a
- * 2-per-row clickable grid with blue highlighting on the active path.
+ * When a position has 2+ child moves, the Fork component renders them as a
+ * 2-per-row clickable grid with blue highlighting on the active/hovered cell.
  *
- * Key exports
- * ───────────
- *  buildActivePath  – build the Set of ancestor IDs from root → cursorNodeId
- *  getActiveChild   – pick the child of a node that lies on the active path
- *  Fork             – React component (the visible widget)
+ * Exports
+ * ───────
+ *  Fork        – pure presentational component (the visible grid)
+ *  ForkWidget  – context-aware wrapper: reads useStudy(), renders Fork when
+ *                the current cursor node has 2+ children.  Place this at the
+ *                bottom of the sidebar panel.
  */
 
 import React from 'react';
 import type { StudyNode } from './type';
+import { useStudy } from '../studyContext';
 import './fork.css';
-
-// ---------------------------------------------------------------------------
-// Path helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Walk from cursorNodeId up to the root, collecting every visited ID.
- * The resulting Set is used to determine which branch is "active" at each
- * fork point.
- */
-export function buildActivePath(
-  cursorNodeId: string,
-  nodes: Record<string, StudyNode>,
-): Set<string> {
-  const path = new Set<string>();
-  let id: string | null = cursorNodeId;
-  while (id && nodes[id]) {
-    path.add(id);
-    id = nodes[id].parentId;
-  }
-  return path;
-}
-
-/**
- * Given a node with 2+ children, return the child that lies on the active
- * path to cursorNodeId.  Falls back to children[0] (main line) when the
- * cursor is above this fork (none of the children are ancestors of cursor).
- */
-export function getActiveChild(
-  node: StudyNode,
-  activePath: Set<string>,
-): string {
-  return node.children.find(id => activePath.has(id)) ?? node.children[0];
-}
 
 // ---------------------------------------------------------------------------
 // Annotation helpers
@@ -67,15 +35,29 @@ function nagToSymbol(nag: number): string {
   return NAG_MAP[nag] ?? '';
 }
 
-/** Convert a 1-based half-move ply to a human-readable prefix ("3." / "3..."). */
+/** Convert a 1-based half-move ply to a human-readable move prefix. */
 function movePrefix(ply: number): string {
   const moveNum = Math.floor((ply + 1) / 2);
   const isWhite = ply % 2 === 1;
   return isWhite ? `${moveNum}.` : `${moveNum}...`;
 }
 
+/**
+ * Count the depth of nodeId from the root (root = depth 0).
+ * Returns the ply that nodeId's children are at (depth + 1).
+ */
+function childPlyOf(nodeId: string, nodes: Record<string, StudyNode>): number {
+  let depth = 0;
+  let id: string | null = nodeId;
+  while (id && nodes[id] && nodes[id].parentId !== null) {
+    depth++;
+    id = nodes[id].parentId;
+  }
+  return depth + 1; // children are one level deeper
+}
+
 // ---------------------------------------------------------------------------
-// Fork component
+// Fork – presentational component
 // ---------------------------------------------------------------------------
 
 export interface ForkProps {
@@ -84,7 +66,7 @@ export interface ForkProps {
   nodes: Record<string, StudyNode>;
   /** 1-based half-move ply of the children – used to build the move prefix. */
   ply: number;
-  /** The child that is currently on the active path (shown highlighted). */
+  /** The child that is shown as highlighted by default (main line). */
   activeChildId: string;
   onSelect: (nodeId: string) => void;
   onContextMenu?: (nodeId: string, event: React.MouseEvent) => void;
@@ -138,3 +120,35 @@ export const Fork = React.memo(function Fork({
     </div>
   );
 });
+
+// ---------------------------------------------------------------------------
+// ForkWidget – context-aware wrapper, place at the bottom of the sidebar
+// ---------------------------------------------------------------------------
+
+/**
+ * Reads the current cursor position from useStudy().
+ * Renders a Fork grid when the cursor node has 2+ children (i.e. there are
+ * multiple candidate moves from the current position).
+ * Renders nothing when there is only one (or zero) continuation.
+ */
+export function ForkWidget() {
+  const { state, selectNode } = useStudy();
+  const { tree, cursorNodeId } = state;
+
+  if (!tree?.nodes || !cursorNodeId) return null;
+
+  const cursorNode = tree.nodes[cursorNodeId];
+  if (!cursorNode || cursorNode.children.length < 2) return null;
+
+  const ply = childPlyOf(cursorNodeId, tree.nodes);
+
+  return (
+    <Fork
+      childIds={cursorNode.children}
+      nodes={tree.nodes}
+      ply={ply}
+      activeChildId={cursorNode.children[0]}
+      onSelect={selectNode}
+    />
+  );
+}

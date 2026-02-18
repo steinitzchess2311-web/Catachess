@@ -9,6 +9,7 @@ import { api } from '@ui/assets/api';
 import { createEmptyTree } from './tree/StudyTree';
 import { TREE_SCHEMA_VERSION } from './tree/type';
 import { TerminalLauncher } from './modules/terminal';
+import { ExplorerPanel } from './modules/explorer';
 import { importMultiPgn } from './pgn/import';
 
 function pgnGameTitle(headers: Record<string, string>): string {
@@ -33,7 +34,7 @@ interface Breadcrumb {
 function StudyPageContent({ className }: PatchStudyPageProps) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { state, clearError, setError, selectChapter, loadTree, saveTree, loadStudy } = useStudy();
+  const { state, clearError, setError, selectChapter, loadTree, saveTree, loadStudy, addMove } = useStudy();
   const [chapters, setChapters] = useState<any[]>([]);
   const [studyTitle, setStudyTitle] = useState<string>('');
   const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([]);
@@ -49,6 +50,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const [createPgnImporting, setCreatePgnImporting] = useState(false);
   const createPgnFileRef = useRef<HTMLInputElement | null>(null);
   const [rightbarWidth, setRightbarWidth] = useState<number>(280);
+  const [rightPanelTab, setRightPanelTab] = useState<'tree' | 'explorer'>('tree');
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [pendingDeleteChapters, setPendingDeleteChapters] = useState<Array<{ id: string; order?: number }>>([]);
@@ -840,7 +842,30 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         />
         <div className="patch-study-rightbar" style={{ width: `${rightbarWidth}px` }}>
           <div className="patch-right-panel">
-            <MoveTree />
+            <div className="patch-sidebar-tabs">
+              <button
+                type="button"
+                className={`patch-sidebar-tab${rightPanelTab === 'tree' ? ' is-active' : ''}`}
+                onClick={() => setRightPanelTab('tree')}
+              >
+                Moves
+              </button>
+              <button
+                type="button"
+                className={`patch-sidebar-tab${rightPanelTab === 'explorer' ? ' is-active' : ''}`}
+                onClick={() => setRightPanelTab('explorer')}
+              >
+                Explorer
+              </button>
+            </div>
+            {rightPanelTab === 'tree' ? (
+              <MoveTree />
+            ) : (
+              <ExplorerPanel
+                fen={state.currentFen}
+                onMoveSelect={addMove}
+              />
+            )}
           </div>
         </div>
       </div>

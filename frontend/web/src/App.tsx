@@ -38,6 +38,7 @@ import PlayersIndex from "@patch/modules/tagger/pages/PlayersIndex";
 import PlayerDetail from "@patch/modules/tagger/pages/PlayerDetail";
 import AccountPage from "../AccountPage";
 import { PatchStudyPage } from "@patch/PatchStudyPage";
+import { BoardEditorPage } from "@patch/modules/board_editor";
 import { AnalysisPage } from "./pages/analysis/AnalysisPage";
 import { TerminalLauncher } from "@patch/modules/terminal";
 import { createCataMazeCommand } from "@patch/modules/catamaze";
@@ -391,6 +392,7 @@ function Layout() {
           <Route path="/blogs/:articleId" element={<BlogsPage />} />
           <Route path="/sponsorship" element={<SponsorshipPage />} />
           <Route path="/analysis" element={<AnalysisPage />} />
+          <Route path="/board-editor" element={<BoardEditorPage />} />
           <Route path="/translate" element={<TranslatePage />} />
           <Route
             path="/players"

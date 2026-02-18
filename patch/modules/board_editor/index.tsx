@@ -1,0 +1,1 @@
+export { BoardEditorPage } from './BoardEditorPage';

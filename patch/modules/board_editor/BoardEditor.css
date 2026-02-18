@@ -1,0 +1,279 @@
+/* ─── Board Editor Page ─────────────────────────────────────────────────── */
+
+.board-editor-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.board-editor-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.board-editor-back-btn {
+  background: none;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #555;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.board-editor-back-btn:hover {
+  background: #f0f0f0;
+  border-color: #bbb;
+}
+
+.board-editor-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+/* ─── Main Layout ────────────────────────────────────────────────────────── */
+
+.board-editor-layout {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+/* ─── Board Column ───────────────────────────────────────────────────────── */
+
+.board-editor-board-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 0 0 auto;
+}
+
+.board-editor-board-wrap {
+  width: min(480px, calc(100vw - 380px));
+  min-width: 240px;
+}
+
+/* ─── Spare Pieces ───────────────────────────────────────────────────────── */
+
+.board-editor-spare {
+  display: flex;
+  gap: 0;
+}
+
+.board-editor-spare-piece {
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 4px;
+  padding: 0;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: border-color 0.1s, background 0.1s;
+}
+
+.board-editor-spare-piece:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.board-editor-spare-piece.is-selected {
+  border-color: #2e6bff;
+  background: rgba(46, 107, 255, 0.12);
+}
+
+/* ─── Controls Panel ─────────────────────────────────────────────────────── */
+
+.board-editor-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 260px;
+  flex-shrink: 0;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.board-editor-section {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.board-editor-section:last-child {
+  border-bottom: none;
+}
+
+.board-editor-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+/* ─── Tool buttons ───────────────────────────────────────────────────────── */
+
+.board-editor-tools {
+  display: flex;
+  gap: 8px;
+}
+
+.board-editor-tool-btn {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  background: #fafafa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.board-editor-tool-btn:hover {
+  background: #f0f0f0;
+  border-color: #bbb;
+}
+
+.board-editor-tool-btn.is-active {
+  border-color: #2e6bff;
+  background: rgba(46, 107, 255, 0.1);
+}
+
+.board-editor-tool-hint {
+  font-size: 11px;
+  color: #999;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+/* ─── Radio group ────────────────────────────────────────────────────────── */
+
+.board-editor-radio-group {
+  display: flex;
+  gap: 16px;
+}
+
+.board-editor-radio {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* ─── Castling ───────────────────────────────────────────────────────────── */
+
+.board-editor-castling-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+}
+
+.board-editor-castling-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.board-editor-castling-item.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ─── Select ─────────────────────────────────────────────────────────────── */
+
+.board-editor-select {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+/* ─── FEN Input ──────────────────────────────────────────────────────────── */
+
+.board-editor-fen-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 11px;
+  font-family: monospace;
+  resize: none;
+  line-height: 1.5;
+  color: #333;
+}
+
+.board-editor-fen-input:focus {
+  outline: none;
+  border-color: #2e6bff;
+}
+
+.board-editor-error {
+  font-size: 11px;
+  color: #e53e3e;
+  margin-top: 4px;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+
+.board-editor-btn {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: #fafafa;
+  cursor: pointer;
+  font-size: 13px;
+  color: #333;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.board-editor-btn:hover:not(:disabled) {
+  background: #f0f0f0;
+  border-color: #bbb;
+}
+
+.board-editor-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.board-editor-btn.primary {
+  background: #2e6bff;
+  border-color: #2e6bff;
+  color: #fff;
+  font-weight: 600;
+  width: 100%;
+}
+
+.board-editor-btn.primary:hover:not(:disabled) {
+  background: #1a57f0;
+  border-color: #1a57f0;
+}
+
+.board-editor-action-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

@@ -14,6 +14,7 @@
   flex-direction: column;
   flex: 1;        /* fill remaining space in patch-right-panel flex column */
   min-height: 0;  /* allow shrinking so explorer-body can scroll */
+  overflow: hidden; /* bounds the flex child — mirrors move-tree-container pattern */
   gap: 0;
 }
 

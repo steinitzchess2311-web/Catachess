@@ -62,9 +62,6 @@ export function useEngineAnalysis({
     const now = Date.now();
     if (now < nextAllowedRef.current) return;
 
-    console.log('[ENGINE] ===== Analysis Request =====');
-    console.log('[ENGINE] FEN:', targetFen.slice(0, 50) + '...');
-
     inFlightRef.current = true;
     setStatus('running');
     setError(null);
@@ -86,15 +83,8 @@ export function useEngineAnalysis({
       }
     };
 
-    const apiCallStart = performance.now();
     try {
       const result = await analyzeAuto(targetFen, multipv, onUpdate);
-      const fetchDuration = performance.now() - apiCallStart;
-
-      console.log(`[ENGINE PERF] Network + Backend: ${fetchDuration.toFixed(1)}ms`);
-      console.log('[ENGINE PERF] Source:', result.source);
-      console.log('[ENGINE PERF] Lines received:', result.lines.length);
-
       // Only apply if FEN hasn't changed and WASM hasn't already updated with a deeper result
       if (currentFenRef.current === targetFen) {
         setLines(result.lines);
@@ -133,7 +123,6 @@ export function useEngineAnalysis({
       (lastParams.fen !== fen || lastParams.multipv !== multipv);
 
     if (paramsChanged) {
-      console.log('[PRECOMPUTE] 🔄 Position parameters changed, cancelling previous session');
       cancelPrecompute();
     }
 

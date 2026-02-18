@@ -7,6 +7,8 @@ const IN_FLIGHT = new Map<string, Promise<EngineAnalysis>>();
 const WASM_MOVETIME_MS = 8000;
 // Synthetic depth key used for cache storage (movetime-based results stored under this key)
 const WASM_CACHE_DEPTH = 99;
+// Match Lichess: throttle UI updates to max 5x/sec
+const ONUPDATE_THROTTLE_MS = 200;
 
 function resolveEnv(name: string): string | undefined {
   try {
@@ -122,23 +124,32 @@ export async function analyzeAuto(
     return IN_FLIGHT.get(cacheKey)!;
   }
 
+  // Throttle onUpdate to max 5x/sec (Lichess: throttle(200ms))
+  let lastEmitTime = 0;
+  const throttledUpdate = onUpdate
+    ? (analysis: EngineAnalysis, depth: number) => {
+        const now = Date.now();
+        if (now - lastEmitTime >= ONUPDATE_THROTTLE_MS) {
+          lastEmitTime = now;
+          onUpdate(analysis, depth);
+        }
+      }
+    : undefined;
+
   const run = (async () => {
     // Step 1: Stockfish WASM (time-based, streaming via onUpdate)
     try {
-      const wasmResult = await analyzeWithWasm(fen, multipv, WASM_MOVETIME_MS, onUpdate);
+      const wasmResult = await analyzeWithWasm(fen, multipv, WASM_MOVETIME_MS, throttledUpdate);
       if (wasmResult.lines.length > 0) {
-        console.log('[ENGINE SOURCE] stockfishWASM');
         const timestamp = Date.now();
-        await cacheManager.set(
+        // Fire-and-forget: don't block result delivery on I/O
+        cacheManager.set(
           { fen, depth: WASM_CACHE_DEPTH, multipv },
           { fen, depth: WASM_CACHE_DEPTH, multipv, lines: wasmResult.lines, source: wasmResult.source, timestamp }
-        );
-        try {
-          await storeMongoCache(fen, WASM_CACHE_DEPTH, multipv, wasmResult.lines, wasmResult.source);
-        } catch (error) {
-          console.warn('[ENGINE CLIENT] MongoDB store failed (wasm):', error);
-        }
-        return { ...wasmResult, origin: 'stockfishWASM' };
+        ).catch(() => {});
+        storeMongoCache(fen, WASM_CACHE_DEPTH, multipv, wasmResult.lines, wasmResult.source)
+          .catch(e => console.warn('[ENGINE CLIENT] MongoDB store failed (wasm):', e));
+        return { ...wasmResult, origin: 'stockfishWASM' as const };
       }
     } catch (error) {
       console.warn('[ENGINE CLIENT] Stockfish WASM failed:', error);
@@ -147,21 +158,18 @@ export async function analyzeAuto(
     // Step 2: SFCata fallback
     cacheManager.recordNetworkCall();
     const sfResult = await callSfcata(fen, SFCATA_DEPTH, multipv);
-    console.log('[ENGINE SOURCE] SFCata');
     if (sfResult.lines.length > 0) {
       const timestamp = Date.now();
-      await cacheManager.set(
+      // Fire-and-forget
+      cacheManager.set(
         { fen, depth: WASM_CACHE_DEPTH, multipv },
         { fen, depth: WASM_CACHE_DEPTH, multipv, lines: sfResult.lines, source: sfResult.source, timestamp }
-      );
-      try {
-        await storeMongoCache(fen, WASM_CACHE_DEPTH, multipv, sfResult.lines, sfResult.source);
-      } catch (error) {
-        console.warn('[ENGINE CLIENT] MongoDB store failed (sfcata):', error);
-      }
+      ).catch(() => {});
+      storeMongoCache(fen, WASM_CACHE_DEPTH, multipv, sfResult.lines, sfResult.source)
+        .catch(e => console.warn('[ENGINE CLIENT] MongoDB store failed (sfcata):', e));
     }
 
-    return { ...sfResult, origin: 'SFCata' };
+    return { ...sfResult, origin: 'SFCata' as const };
   })();
 
   IN_FLIGHT.set(cacheKey, run);

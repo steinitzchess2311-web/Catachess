@@ -17,11 +17,23 @@ type StockfishFactory = (options: Record<string, any>) => Promise<StockfishModul
 
 let factoryPromise: Promise<StockfishFactory> | null = null;
 let modulePromise: Promise<StockfishModule> | null = null;
+let loadedModule: StockfishModule | null = null;
 let runQueue: Promise<EngineAnalysis> = Promise.resolve({ source: 'stockfish-wasm', lines: [] });
 let wasmCurrentlyRunning = false;
 
 export function isWasmFree(): boolean {
   return !wasmCurrentlyRunning;
+}
+
+/**
+ * Send "stop" to the engine immediately. If an analysis is running,
+ * the engine will emit "bestmove" within ~5ms, resolving the current
+ * runQueue entry and allowing the next queued analysis to start.
+ */
+export function stopAnalysis(): void {
+  if (loadedModule && wasmCurrentlyRunning) {
+    sendCommand(loadedModule, 'stop');
+  }
 }
 
 function resolveEnv(name: string): string | undefined {
@@ -85,6 +97,7 @@ async function loadModule(): Promise<StockfishModule> {
       throw new Error('Stockfish module missing processCommand/ccall');
     }
 
+    loadedModule = module;
     return module;
   })();
 
@@ -221,6 +234,9 @@ export async function analyzeWithWasm(
   movetimeMs: number = DEFAULT_MOVETIME_MS,
   onUpdate?: (analysis: EngineAnalysis, currentDepth: number) => void
 ): Promise<EngineAnalysis> {
+  // Interrupt any currently running analysis so it resolves immediately
+  // (engine emits "bestmove" in <5ms), allowing this new request to start ASAP.
+  stopAnalysis();
   const run = runQueue.then(() => runAnalysis(fen, multipv, movetimeMs, onUpdate));
   runQueue = run.catch(() => ({ source: 'stockfish-wasm', lines: [] }));
   return run;

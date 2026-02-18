@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useStudy } from '../studyContext';
 import { uciLineToSan } from '../chessJS/uci';
 import { ChapterList } from './ChapterList';
@@ -33,35 +33,7 @@ export function StudySidebar({
   onDeleteChapter,
   onReorderChapters,
 }: StudySidebarProps) {
-  const componentRenderStart = performance.now();
-  const renderCountRef = useRef(0);
-  const prevPropsRef = useRef({ chapters, currentChapterId });
-  renderCountRef.current++;
-
-  // Detect what changed to trigger this render
-  if (renderCountRef.current > 1) {
-    console.log(`[COMPONENT PERF] ===== Render #${renderCountRef.current} Triggered =====`);
-    if (prevPropsRef.current.chapters !== chapters) {
-      console.log('[COMPONENT PERF] ⚠️ Chapters prop changed');
-    }
-    if (prevPropsRef.current.currentChapterId !== currentChapterId) {
-      console.log('[COMPONENT PERF] ⚠️ CurrentChapterId prop changed');
-    }
-  }
-  prevPropsRef.current = { chapters, currentChapterId };
-
   const { state } = useStudy();
-  const prevStateRef = useRef({ currentFen: state.currentFen });
-
-  // Track state changes
-  if (renderCountRef.current > 1) {
-    if (prevStateRef.current.currentFen !== state.currentFen) {
-      console.log('[COMPONENT PERF] ⚠️ CurrentFen changed from study state');
-      console.log('[COMPONENT PERF]   Old:', prevStateRef.current.currentFen.slice(0, 30) + '...');
-      console.log('[COMPONENT PERF]   New:', state.currentFen.slice(0, 30) + '...');
-    }
-  }
-  prevStateRef.current = { currentFen: state.currentFen };
 
   const [activeTab, setActiveTab] = useState<'chapters' | 'analysis' | 'imitator'>('chapters');
   const [multipv, setMultipv] = useState(3);
@@ -84,25 +56,6 @@ export function StudySidebar({
     multipv,
   });
 
-  // Monitor component render performance
-  useEffect(() => {
-    const renderDuration = performance.now() - componentRenderStart;
-    console.log('[COMPONENT PERF] ===== Render Cycle Complete =====');
-    console.log(`[COMPONENT PERF] Render #${renderCountRef.current}`);
-    console.log(`[COMPONENT PERF] Render duration: ${renderDuration.toFixed(2)}ms`);
-    console.log('[COMPONENT PERF] Active tab:', activeTab);
-    console.log('[COMPONENT PERF] Engine enabled:', engineEnabled);
-    console.log('[COMPONENT PERF] Lines count:', engineAnalysis.lines.length);
-    console.log('[COMPONENT PERF] Formatted lines count:', formattedLines.length);
-
-    // Schedule a post-paint check
-    requestAnimationFrame(() => {
-      const paintDuration = performance.now() - componentRenderStart;
-      console.log(`[COMPONENT PERF] Paint complete: ${paintDuration.toFixed(2)}ms`);
-      console.log('[COMPONENT PERF] =====================================');
-    });
-  });
-
   // Expose cache stats to window for debugging
   useEffect(() => {
     (window as any).cacheStats = () => cacheManager.printStats();
@@ -115,57 +68,15 @@ export function StudySidebar({
 
   // Memoize formatted lines to avoid expensive UCI->SAN conversion on every render
   const formattedLines = useMemo(() => {
-    const memoStart = performance.now();
-    console.log('[ENGINE PERF] ===== Formatting Lines (useMemo triggered) =====');
-    console.log('[ENGINE PERF] Lines to format:', engineAnalysis.lines.length);
-    console.log('[ENGINE PERF] Current FEN:', state.currentFen.slice(0, 50) + '...');
-    console.log('[ENGINE PERF] ⚠️ useMemo is running - dependencies changed');
-
-    if (engineAnalysis.lines.length === 0) {
-      console.log('[ENGINE PERF] No lines to format');
-      return [];
-    }
-
-    const result = engineAnalysis.lines.map((line, index) => {
-      const lineStart = performance.now();
-      console.log(`[ENGINE PERF] Line ${index + 1}/${engineAnalysis.lines.length} - Starting conversion`);
-      console.log(`[ENGINE PERF]   - UCI PV length: ${line.pv?.length || 0} moves`);
-
-      // Step 1: UCI to SAN conversion
-      const uciStart = performance.now();
+    if (engineAnalysis.lines.length === 0) return [];
+    return engineAnalysis.lines.map((line) => {
       const sanLine = uciLineToSan(line.pv || [], state.currentFen);
-      const uciDuration = performance.now() - uciStart;
-      console.log(`[ENGINE PERF]   - UCI->SAN conversion: ${uciDuration.toFixed(2)}ms`);
-
-      // Step 2: Extract SAN moves
-      const extractStart = performance.now();
       const sanMoves = sanLine
         .map((step) => step.san)
         .filter((move): move is string => Boolean(move));
-      const extractDuration = performance.now() - extractStart;
-      console.log(`[ENGINE PERF]   - Extract SAN moves: ${extractDuration.toFixed(2)}ms`);
-
-      // Step 3: Format with move numbers
-      const formatStart = performance.now();
       const sanText = formatSanWithMoveNumbers(sanMoves, state.currentFen);
-      const formatDuration = performance.now() - formatStart;
-      console.log(`[ENGINE PERF]   - Format move numbers: ${formatDuration.toFixed(2)}ms`);
-
-      const lineDuration = performance.now() - lineStart;
-      console.log(`[ENGINE PERF]   - Line ${index + 1} total: ${lineDuration.toFixed(2)}ms`);
-
-      return {
-        ...line,
-        sanText,
-      };
+      return { ...line, sanText };
     });
-
-    const memoDuration = performance.now() - memoStart;
-    console.log('[ENGINE PERF] ===== Formatting Complete =====');
-    console.log(`[ENGINE PERF] Total formatting time: ${memoDuration.toFixed(2)}ms`);
-    console.log(`[ENGINE PERF] Average per line: ${(memoDuration / engineAnalysis.lines.length).toFixed(2)}ms`);
-
-    return result;
   }, [engineAnalysis.lines, state.currentFen]);
 
   // Imitator handlers

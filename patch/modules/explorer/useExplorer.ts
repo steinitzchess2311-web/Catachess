@@ -104,6 +104,12 @@ export function useExplorer(fen: string): UseExplorerResult {
       return;
     }
 
+    // No cache hit — clear stale data immediately so old moves can't be
+    // re-clicked while the debounce timer is running (prevents the
+    // "Nxd4 added ten times" bug when the user clicks quickly).
+    setData(null);
+    setError(null);
+
     // debounce network request
     timerRef.current = setTimeout(() => {
       timerRef.current = null;

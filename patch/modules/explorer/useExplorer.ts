@@ -4,6 +4,7 @@ import { isQueueStatus } from './types';
 import type {
   ExplorerTab,
   ExplorerResponse,
+  GameRef,
   MastersFilters,
   LichessFilters,
   PlayerFilters,
@@ -40,12 +41,18 @@ function useStoredState<T>(key: string, defaultValue: T): [T, (v: T) => void] {
 // ---- Public hook -------------------------------------------
 
 export interface UseExplorerResult {
-  // data
+  // moves data (Phase 1)
   data: ExplorerResponse | null;
   loading: boolean;
+  error: string | null;
+
+  // top games data (Phase 2 — Masters only, parallel fetch)
+  topGames: GameRef[] | null;
+  topGamesLoading: boolean;
+
+  // player state
   queuePosition: number | null;
   playerStatus: PlayerLoadStatus;
-  error: string | null;
 
   // tab
   tab: ExplorerTab;
@@ -83,68 +90,77 @@ export function useExplorer(fen: string): UseExplorerResult {
     DEFAULT_PLAYER,
   );
 
-  // ---- transient fetch state -----------------------------------
+  // ---- Phase 1: moves data ------------------------------------
   const [data, setData] = useState<ExplorerResponse | null>(null);
   const [loading, setLoading] = useState(false);
-  const [queuePosition, setQueuePosition] = useState<number | null>(null);
-  const [playerStatus, setPlayerStatus] = useState<PlayerLoadStatus>('idle');
   const [error, setError] = useState<string | null>(null);
 
-  // ---- refs (stable across renders) ---------------------------
-  const cacheRef = useRef<Map<string, ExplorerResponse>>(new Map());
-  const abortRef = useRef<AbortController | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ---- Phase 2: top games (Masters only) ----------------------
+  const [topGames, setTopGames] = useState<GameRef[] | null>(null);
+  const [topGamesLoading, setTopGamesLoading] = useState(false);
 
-  // ---- build cache key ----------------------------------------
+  // ---- Player state -------------------------------------------
+  const [queuePosition, setQueuePosition] = useState<number | null>(null);
+  const [playerStatus, setPlayerStatus] = useState<PlayerLoadStatus>('idle');
+
+  // ---- Refs ---------------------------------------------------
+  // Phase 1
+  const cacheRef  = useRef<Map<string, ExplorerResponse>>(new Map());
+  const abortRef  = useRef<AbortController | null>(null);
+  const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Phase 2 (games)
+  const gamesCacheRef = useRef<Map<string, GameRef[]>>(new Map());
+  const gamesAbortRef = useRef<AbortController | null>(null);
+
+  // ---- Cache keys ---------------------------------------------
   const filters =
     tab === 'masters' ? mastersFilters : tab === 'lichess' ? lichessFilters : playerFilters;
-  const cacheKey = `${tab}:${fen}:${JSON.stringify(filters)}`;
+  const cacheKey      = `${tab}:${fen}:${JSON.stringify(filters)}`;
+  const gamesCacheKey = `games:masters:${fen}:${JSON.stringify(mastersFilters)}`;
 
-  // ---- core effect --------------------------------------------
+  // ---- Core effect --------------------------------------------
   useEffect(() => {
     if (!fen) return;
 
-    // 1. Cancel any pending debounce timer
-    if (timerRef.current !== null) {
-      clearTimeout(timerRef.current);
-      timerRef.current = null;
+    // Cancel pending debounce + in-flight requests
+    if (timerRef.current !== null) { clearTimeout(timerRef.current); timerRef.current = null; }
+    abortRef.current?.abort();    abortRef.current = null;
+    gamesAbortRef.current?.abort(); gamesAbortRef.current = null;
+
+    // Reset games when position changes (non-Masters tabs don't use them)
+    if (tab !== 'masters') {
+      setTopGames(null);
+      setTopGamesLoading(false);
     }
 
-    // 2. Cancel any in-flight request
-    abortRef.current?.abort();
-    abortRef.current = null;
+    // Player: manual-trigger only
+    if (tab === 'player') return;
 
-    // 3. Cache hit → show immediately, no network
+    // Phase 1 cache hit
     const cached = cacheRef.current.get(cacheKey);
     if (cached) {
       setData(cached);
       setLoading(false);
       setError(null);
-      setQueuePosition(null);
-      setPlayerStatus('ready');
+    }
+
+    // Phase 2 cache hit (Masters only)
+    if (tab === 'masters') {
+      const cachedGames = gamesCacheRef.current.get(gamesCacheKey);
+      if (cachedGames) {
+        setTopGames(cachedGames);
+        setTopGamesLoading(false);
+      }
+      // If both are cached, we're done
+      if (cached && cachedGames) return;
+    } else if (cached) {
       return;
     }
 
-    // 4. Debounce the network request (skip for player — user must hit "Search")
-    if (tab === 'player') {
-      // Player fetch is triggered manually via triggerPlayerFetch (see below).
-      // Don't auto-fire on FEN change because the player field might be empty.
-      return;
-    }
-
+    // Debounce before firing network requests
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
-      const controller = new AbortController();
-      abortRef.current = controller;
 
-      setLoading(true);
-      setError(null);
-
-      const done = (result: ExplorerResponse) => {
-        cacheRef.current.set(cacheKey, result);
-        setData(result);
-        setLoading(false);
-      };
       const fail = (e: unknown) => {
         if ((e as Error)?.name === 'AbortError') return;
         setError((e as Error)?.message ?? 'Unknown error');
@@ -152,24 +168,65 @@ export function useExplorer(fen: string): UseExplorerResult {
       };
 
       if (tab === 'masters') {
-        fetchMasters(fen, mastersFilters, controller.signal).then(done).catch(fail);
+        // ---- Phase 1: moves only (topGames=0) ---------------
+        if (!cached) {
+          const ctrl1 = new AbortController();
+          abortRef.current = ctrl1;
+          setLoading(true);
+          setError(null);
+
+          fetchMasters(fen, mastersFilters, ctrl1.signal, { topGames: 0 })
+            .then((result) => {
+              cacheRef.current.set(cacheKey, result);
+              setData(result);
+              setLoading(false);
+            })
+            .catch(fail);
+        }
+
+        // ---- Phase 2: games only (moves=0), parallel --------
+        const cachedGames = gamesCacheRef.current.get(gamesCacheKey);
+        if (!cachedGames) {
+          const ctrl2 = new AbortController();
+          gamesAbortRef.current = ctrl2;
+          setTopGamesLoading(true);
+
+          fetchMasters(fen, mastersFilters, ctrl2.signal, { movesCount: 0, topGames: 15 })
+            .then((result) => {
+              gamesCacheRef.current.set(gamesCacheKey, result.topGames);
+              setTopGames(result.topGames);
+              setTopGamesLoading(false);
+            })
+            .catch((e) => {
+              if ((e as Error)?.name !== 'AbortError') setTopGamesLoading(false);
+            });
+        }
       } else {
-        fetchLichess(fen, lichessFilters, controller.signal).then(done).catch(fail);
+        // ---- Lichess: single request -------------------------
+        const ctrl = new AbortController();
+        abortRef.current = ctrl;
+        setLoading(true);
+        setError(null);
+
+        fetchLichess(fen, lichessFilters, ctrl.signal)
+          .then((result) => {
+            cacheRef.current.set(cacheKey, result);
+            setData(result);
+            setLoading(false);
+          })
+          .catch(fail);
       }
     }, 250);
 
     return () => {
-      if (timerRef.current !== null) {
-        clearTimeout(timerRef.current);
-        timerRef.current = null;
-      }
-      abortRef.current?.abort();
-      abortRef.current = null;
+      if (timerRef.current !== null) { clearTimeout(timerRef.current); timerRef.current = null; }
+      abortRef.current?.abort();    abortRef.current = null;
+      gamesAbortRef.current?.abort(); gamesAbortRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cacheKey]);
+  }, [cacheKey, gamesCacheKey]);
 
-  // ---- player manual trigger ----------------------------------
+  // ---- Player manual trigger ----------------------------------
   const triggerPlayerFetch = useCallback(() => {
     if (!playerFilters.player.trim()) return;
 
@@ -220,9 +277,11 @@ export function useExplorer(fen: string): UseExplorerResult {
   return {
     data,
     loading,
+    error,
+    topGames,
+    topGamesLoading,
     queuePosition,
     playerStatus,
-    error,
     tab,
     setTab,
     mastersFilters,

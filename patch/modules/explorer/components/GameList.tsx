@@ -18,8 +18,8 @@ export function GameList({ games, label }: GameListProps) {
   return (
     <div className="explorer-games">
       <div className="explorer-games__heading">{label}</div>
-      {games.map((g) => (
-        <div key={g.id} className="explorer-game">
+      {games.map((g, i) => (
+        <div key={g.id} className="explorer-game" style={{ animationDelay: `${i * 35}ms` }}>
           <div className="explorer-game__players">
             <span className="explorer-game__player">
               {g.white.name}

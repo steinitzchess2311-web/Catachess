@@ -11,15 +11,25 @@ const BASE = 'https://database.catachess.com';
 
 // ---- Masters -----------------------------------------------
 
+export interface FetchMastersOptions {
+  /** Max candidate moves to return. Pass 0 to skip moves (games-only request). Default: 12 */
+  movesCount?: number;
+  /** Max top games to return. Pass 0 to skip games (moves-only request). Default: 15 */
+  topGames?: number;
+}
+
 export async function fetchMasters(
   fen: string,
   filters: MastersFilters,
   signal?: AbortSignal,
+  options?: FetchMastersOptions,
 ): Promise<ExplorerResponse> {
   const url = new URL(`${BASE}/masters`);
   url.searchParams.set('fen', fen);
   if (filters.since != null) url.searchParams.set('since', String(filters.since));
   if (filters.until != null) url.searchParams.set('until', String(filters.until));
+  if (options?.movesCount != null) url.searchParams.set('moves', String(options.movesCount));
+  if (options?.topGames != null) url.searchParams.set('topGames', String(options.topGames));
 
   const res = await fetch(url.toString(), { signal });
   if (!res.ok) {

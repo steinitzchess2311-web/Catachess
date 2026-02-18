@@ -33,13 +33,31 @@ function LoadingDots() {
   );
 }
 
+/** Skeleton placeholder shown while top games are loading in the background */
+function GamesSkeleton() {
+  return (
+    <div className="explorer-games-skeleton">
+      <div className="explorer-games__heading">Top games</div>
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="explorer-games-skeleton__row"
+          style={{ animationDelay: `${i * 0.15}s` }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function ExplorerPanel({ fen, onMoveSelect }: ExplorerPanelProps) {
   const {
     data,
     loading,
+    error,
+    topGames,
+    topGamesLoading,
     queuePosition,
     playerStatus,
-    error,
     tab,
     setTab,
     mastersFilters,
@@ -83,7 +101,7 @@ export function ExplorerPanel({ fen, onMoveSelect }: ExplorerPanelProps) {
           onPlayerSearch={triggerPlayerFetch}
         />
 
-        {/* Loading state */}
+        {/* Phase 1 loading */}
         {loading && <LoadingDots />}
 
         {/* Player-specific status */}
@@ -98,7 +116,7 @@ export function ExplorerPanel({ fen, onMoveSelect }: ExplorerPanelProps) {
         {/* Error */}
         {error && <div className="explorer-error">{error}</div>}
 
-        {/* Summary win bar */}
+        {/* Summary win bar — appears as soon as Phase 1 resolves */}
         {!loading && data && total > 0 && (
           <div className="explorer-summary">
             <WinBar white={data.white} draws={data.draws} black={data.black} />
@@ -106,21 +124,24 @@ export function ExplorerPanel({ fen, onMoveSelect }: ExplorerPanelProps) {
           </div>
         )}
 
-        {/* Move table */}
+        {/* Move table — Phase 1 */}
         {!loading && data && (
           <MoveTable moves={data.moves} onMoveClick={onMoveSelect} />
         )}
 
-        {/* Game lists */}
-        {!loading && data && (
-          <>
-            {data.topGames.length > 0 && (
-              <GameList games={data.topGames} label="Top games" />
-            )}
-            {data.recentGames.length > 0 && (
-              <GameList games={data.recentGames} label="Recent games" />
-            )}
-          </>
+        {/* Top games — Phase 2 (Masters only)
+            Show skeleton while loading, then animate cards in when ready */}
+        {tab === 'masters' && !loading && data && (
+          topGamesLoading
+            ? <GamesSkeleton />
+            : topGames && topGames.length > 0
+              ? <GameList games={topGames} label="Top games" />
+              : null
+        )}
+
+        {/* Lichess recent games (come from Phase 1) */}
+        {tab === 'lichess' && !loading && data && data.recentGames.length > 0 && (
+          <GameList games={data.recentGames} label="Recent games" />
         )}
 
         {/* Player idle state */}

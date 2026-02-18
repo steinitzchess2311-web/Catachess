@@ -309,6 +309,8 @@
   background: #ffffff;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+  /* enter animation — delay is set inline per card */
+  animation: explorer-card-in 0.22s ease-out both;
   transition: box-shadow 0.15s ease, transform 0.15s ease;
   cursor: default;
 }
@@ -316,6 +318,31 @@
 .explorer-game:hover {
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
   transform: translateX(2px);
+}
+
+@keyframes explorer-card-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Games section skeleton while loading */
+.explorer-games-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.explorer-games-skeleton__row {
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: explorer-shimmer 1.2s ease-in-out infinite;
+}
+
+@keyframes explorer-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .explorer-game__players {

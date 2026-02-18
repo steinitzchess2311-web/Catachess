@@ -21,8 +21,9 @@ logger.info("=" * 80)
 def _validate_tree_structure(tree: StudyTreeDTO) -> list[str]:
     errors: list[str] = []
 
-    if tree.version != "v1":
-        errors.append(f'Invalid version: expected "v1", got "{tree.version}"')
+    SUPPORTED_VERSIONS = {"v1", "v2"}
+    if tree.version not in SUPPORTED_VERSIONS:
+        errors.append(f'Invalid version: expected one of {sorted(SUPPORTED_VERSIONS)}, got "{tree.version}"')
 
     if not tree.rootId:
         errors.append("Missing rootId")

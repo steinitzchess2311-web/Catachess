@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 class StudyNodeDTO(BaseModel):
@@ -8,6 +8,9 @@ class StudyNodeDTO(BaseModel):
     children: List[str] = []
     comment: Optional[str] = None
     nags: List[int] = []
+    # v2 optional fields – shapes (circles/arrows) and clock (centiseconds)
+    shapes: Optional[List[Dict[str, Any]]] = None
+    clock: Optional[int] = None
 
     model_config = {
         "extra": "forbid"

@@ -31,7 +31,7 @@ export interface PgnParseResult {
   errors: string[];
 }
 
-const MAX_PGN_CHARS = 100_000;
+const MAX_PGN_CHARS = 500_000; // 500 KB – matches Lichess limit
 
 /**
  * Import a single-game PGN string into a StudyTree.

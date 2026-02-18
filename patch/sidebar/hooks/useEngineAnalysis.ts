@@ -4,10 +4,12 @@ import type { EngineLine, EngineSource } from '../../engine/types';
 import { cancelPrecompute } from '../../engine/precompute';
 import { FALLBACK_BACKOFF_MS } from '../utils/config';
 
+// Matches WASM_MOVETIME_MS in client.ts — kept in sync manually
+const WASM_MOVETIME_MS = 8000;
+
 export interface UseEngineAnalysisOptions {
   enabled: boolean;
   fen: string;
-  depth: number;
   multipv: number;
 }
 
@@ -19,15 +21,16 @@ export interface UseEngineAnalysisResult {
   health: 'unknown' | 'ok' | 'down';
   source: EngineSource | null;
   engineOrigin: string | null;
+  currentDepth: number | null;
+  nps: number | null;  // nodes per second (knps)
 }
 
 /**
- * Hook for managing engine analysis state and polling
+ * Hook for managing engine analysis state with streaming depth updates
  */
 export function useEngineAnalysis({
   enabled,
   fen,
-  depth,
   multipv,
 }: UseEngineAnalysisOptions): UseEngineAnalysisResult {
   const [lines, setLines] = useState<EngineLine[]>([]);
@@ -37,65 +40,83 @@ export function useEngineAnalysis({
   const [health, setHealth] = useState<'unknown' | 'ok' | 'down'>('unknown');
   const [source, setSource] = useState<EngineSource | null>(null);
   const [engineOrigin, setEngineOrigin] = useState<string | null>(null);
+  const [currentDepth, setCurrentDepth] = useState<number | null>(null);
+  const [nps, setNps] = useState<number | null>(null);
 
   const inFlightRef = useRef(false);
   const pollRef = useRef<number | null>(null);
   const nextAllowedRef = useRef<number>(0);
+  const currentFenRef = useRef<string>(fen);
   const lastPrecomputeParamsRef = useRef<{
     fen: string;
-    depth: number;
     multipv: number;
   } | null>(null);
 
-  const analyzePosition = async (currentFen: string) => {
-    if (!currentFen || inFlightRef.current) return;
+  // Keep current FEN ref in sync for stale callback detection
+  useEffect(() => {
+    currentFenRef.current = fen;
+  }, [fen]);
+
+  const analyzePosition = async (targetFen: string) => {
+    if (!targetFen || inFlightRef.current) return;
     const now = Date.now();
     if (now < nextAllowedRef.current) return;
 
     console.log('[ENGINE] ===== Analysis Request =====');
-    console.log('[ENGINE] FEN:', currentFen.slice(0, 50) + '...');
-    console.log('[ENGINE] ✗ CACHE MISS - Calling engine');
+    console.log('[ENGINE] FEN:', targetFen.slice(0, 50) + '...');
 
     inFlightRef.current = true;
-
-    const setStatusStart = performance.now();
     setStatus('running');
     setError(null);
-    const setStatusDuration = performance.now() - setStatusStart;
-    console.log(`[ENGINE PERF] Set status to 'running': ${setStatusDuration.toFixed(2)}ms`);
+
+    // onUpdate is called for each depth increment from WASM streaming
+    const onUpdate = (analysis: { lines: any[]; source: any; currentDepth?: number; nodes?: number; millis?: number }, depth: number) => {
+      // Ignore stale updates if FEN has changed
+      if (currentFenRef.current !== targetFen) return;
+      setLines(analysis.lines);
+      setSource(analysis.source);
+      setCurrentDepth(depth);
+      setLastUpdated(Date.now());
+      setHealth('ok');
+      setStatus('ready');
+      setEngineOrigin('stockfishWASM');
+      // Compute knps (Lichess style: nodes / millis)
+      if (analysis.nodes && analysis.millis && analysis.millis > 0) {
+        setNps(Math.round(analysis.nodes / analysis.millis));
+      }
+    };
 
     const apiCallStart = performance.now();
     try {
-      const fetchStart = performance.now();
-      const result = await analyzeAuto(currentFen, depth, multipv);
-      const fetchDuration = performance.now() - fetchStart;
+      const result = await analyzeAuto(targetFen, WASM_MOVETIME_MS, multipv, onUpdate);
+      const fetchDuration = performance.now() - apiCallStart;
 
-      console.log(`[ENGINE PERF] ===== API Call Complete =====`);
       console.log(`[ENGINE PERF] Network + Backend: ${fetchDuration.toFixed(1)}ms`);
       console.log('[ENGINE PERF] Source:', result.source);
       console.log('[ENGINE PERF] Lines received:', result.lines.length);
 
-      const processStart = performance.now();
-      setLines(result.lines);
-      setSource(result.source);
-      setEngineOrigin(result.origin ?? null);
-      setStatus('ready');
-      const timestamp = Date.now();
-      setLastUpdated(timestamp);
-      setHealth('ok');
-
-      const processDuration = performance.now() - processStart;
-      const totalDuration = performance.now() - apiCallStart;
-      console.log(`[ENGINE PERF] Process result + cache: ${processDuration.toFixed(2)}ms`);
-      console.log(`[ENGINE PERF] Total API handling: ${totalDuration.toFixed(1)}ms`);
-      console.log('[ENGINE PERF] Note: useMemo will run on next render to format lines');
+      // Only apply if FEN hasn't changed and WASM hasn't already updated with a deeper result
+      if (currentFenRef.current === targetFen) {
+        setLines(result.lines);
+        setSource(result.source);
+        setEngineOrigin(result.origin ?? null);
+        if (result.currentDepth) setCurrentDepth(result.currentDepth);
+        if (result.nodes && result.millis && result.millis > 0) {
+          setNps(Math.round(result.nodes / result.millis));
+        }
+        setStatus('ready');
+        setLastUpdated(Date.now());
+        setHealth('ok');
+      }
     } catch (e: any) {
       if (e?.message?.includes('429')) {
         nextAllowedRef.current = Date.now() + FALLBACK_BACKOFF_MS;
       }
-      setStatus('error');
-      setError(e?.message || 'Engine request failed');
-      setHealth('down');
+      if (currentFenRef.current === targetFen) {
+        setStatus('error');
+        setError(e?.message || 'Engine request failed');
+        setHealth('down');
+      }
     } finally {
       inFlightRef.current = false;
     }
@@ -109,26 +130,14 @@ export function useEngineAnalysis({
     const lastParams = lastPrecomputeParamsRef.current;
     const paramsChanged =
       lastParams !== null &&
-      (lastParams.fen !== fen || lastParams.depth !== depth || lastParams.multipv !== multipv);
+      (lastParams.fen !== fen || lastParams.multipv !== multipv);
 
     if (paramsChanged) {
       console.log('[PRECOMPUTE] 🔄 Position parameters changed, cancelling previous session');
-      if (lastParams.fen !== fen) {
-        console.log(
-          `[PRECOMPUTE]   FEN changed: ${lastParams.fen.slice(0, 30)}... → ${fen.slice(0, 30)}...`
-        );
-      }
-      if (lastParams.depth !== depth) {
-        console.log(`[PRECOMPUTE]   Depth changed: ${lastParams.depth} → ${depth}`);
-      }
-      if (lastParams.multipv !== multipv) {
-        console.log(`[PRECOMPUTE]   MultiPV changed: ${lastParams.multipv} → ${multipv}`);
-      }
       cancelPrecompute();
     }
 
-    // Update last params
-    lastPrecomputeParamsRef.current = { fen, depth, multipv };
+    lastPrecomputeParamsRef.current = { fen, multipv };
 
     analyzePosition(fen);
     if (pollRef.current) window.clearInterval(pollRef.current);
@@ -142,7 +151,7 @@ export function useEngineAnalysis({
         pollRef.current = null;
       }
     };
-  }, [enabled, fen, depth, multipv]);
+  }, [enabled, fen, multipv]);
 
   // Reset state when disabled
   useEffect(() => {
@@ -158,6 +167,8 @@ export function useEngineAnalysis({
     setLastUpdated(null);
     setSource(null);
     setEngineOrigin(null);
+    setCurrentDepth(null);
+    setNps(null);
   }, [enabled]);
 
   // Reset lines when parameters change
@@ -168,7 +179,9 @@ export function useEngineAnalysis({
     setError(null);
     setSource(null);
     setEngineOrigin(null);
-  }, [enabled, fen, depth, multipv]);
+    setCurrentDepth(null);
+    setNps(null);
+  }, [enabled, fen, multipv]);
 
   return {
     lines,
@@ -178,5 +191,7 @@ export function useEngineAnalysis({
     health,
     source,
     engineOrigin,
+    currentDepth,
+    nps,
   };
 }

@@ -1,17 +1,23 @@
 import React from 'react';
 
 export interface AnalysisSettingsProps {
-  depth: number;
-  onDepthChange: (depth: number) => void;
+  currentDepth: number | null;
+  nps: number | null;
   multipv: number;
   onMultipvChange: (multipv: number) => void;
   engineEnabled: boolean;
   onEngineEnabledChange: (enabled: boolean) => void;
 }
 
+function formatNps(knps: number | null): string {
+  if (knps === null) return '';
+  if (knps >= 1000) return ` · ${(knps / 1000).toFixed(knps >= 10000 ? 0 : 1)} Mn/s`;
+  return ` · ${Math.round(knps)} kn/s`;
+}
+
 export function AnalysisSettings({
-  depth,
-  onDepthChange,
+  currentDepth,
+  nps,
   multipv,
   onMultipvChange,
   engineEnabled,
@@ -21,13 +27,9 @@ export function AnalysisSettings({
     <div className="patch-analysis-settings">
       <div className="patch-analysis-field">
         <span className="patch-analysis-label">Depth</span>
-        <select value={depth} onChange={(e) => onDepthChange(Number(e.target.value))}>
-          {[8, 10, 12, 14, 16, 18, 20].map((d) => (
-            <option key={d} value={d}>
-              {d}
-            </option>
-          ))}
-        </select>
+        <span className="patch-analysis-value">
+          {currentDepth !== null ? `${currentDepth}${formatNps(nps)}` : '--'}
+        </span>
       </div>
       <div className="patch-analysis-field">
         <span className="patch-analysis-label">Lines</span>

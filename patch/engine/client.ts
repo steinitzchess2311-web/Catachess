@@ -2,11 +2,50 @@ import type { EngineAnalysis } from './types';
 import { parseLichessCloudEval } from './parsers';
 import { getCacheManager } from './cache';
 import { generateCacheKey } from './cache/utils';
-import { analyzeWithWasm } from './wasm/stockfish';
+import { analyzeWithWasm, isWasmFree } from './wasm/stockfish';
 
 const LICHESS_URL = 'https://lichess.org/api/cloud-eval';
 const CLOUD_ATTEMPTED_KEYS = new Set<string>();
 const IN_FLIGHT = new Map<string, Promise<EngineAnalysis>>();
+const BACKGROUND_WASM_KEYS = new Set<string>();
+const WASM_MOVETIME_MS = 8000;
+// Synthetic depth key used for cache storage (movetime-based results stored under this key)
+const WASM_CACHE_DEPTH = 99;
+
+function fireBackgroundWasm(
+  fen: string,
+  multipv: number,
+  cacheManager: ReturnType<typeof getCacheManager>,
+  onUpdate?: (analysis: EngineAnalysis, currentDepth: number) => void
+): void {
+  if (!isWasmFree()) return;
+  const bgKey = `${fen}||${multipv}`;
+  if (BACKGROUND_WASM_KEYS.has(bgKey)) return;
+  BACKGROUND_WASM_KEYS.add(bgKey);
+
+  analyzeWithWasm(fen, multipv, WASM_MOVETIME_MS, onUpdate)
+    .then(async (result) => {
+      if (result.lines.length > 0) {
+        const timestamp = Date.now();
+        await cacheManager.set(
+          { fen, depth: WASM_CACHE_DEPTH, multipv },
+          { fen, depth: WASM_CACHE_DEPTH, multipv, lines: result.lines, source: result.source, timestamp }
+        );
+        try {
+          await storeMongoCache(fen, WASM_CACHE_DEPTH, multipv, result.lines, result.source);
+        } catch {
+          // ignore background store errors
+        }
+        if (onUpdate) {
+          onUpdate({ ...result, origin: 'stockfishWASM' }, result.currentDepth ?? 0);
+        }
+      }
+    })
+    .catch(() => {})
+    .finally(() => {
+      BACKGROUND_WASM_KEYS.delete(bgKey);
+    });
+}
 
 function resolveEnv(name: string): string | undefined {
   try {
@@ -153,13 +192,16 @@ async function callLichessCloud(
   return { source: 'lichess-cloud', lines, origin: 'lichessCloud' };
 }
 
+// Depth used for SFCata backend requests
+const SFCATA_DEPTH = 20;
+
 export async function analyzeAuto(
   fen: string,
-  depth: number,
-  multipv: number
+  multipv: number,
+  onUpdate?: (analysis: EngineAnalysis, currentDepth: number) => void
 ): Promise<EngineAnalysis> {
   const cacheManager = getCacheManager();
-  const cacheKey = generateCacheKey({ fen, depth, multipv });
+  const cacheKey = generateCacheKey({ fen, depth: WASM_CACHE_DEPTH, multipv });
 
   if (IN_FLIGHT.has(cacheKey)) {
     return IN_FLIGHT.get(cacheKey)!;
@@ -167,46 +209,32 @@ export async function analyzeAuto(
 
   const run = (async () => {
     // Minimum PV length to consider an analysis result complete
-    // Lichess Cloud often returns only 1 move for secondary lines (multipv 2+)
     const MIN_PV_LENGTH = 4;
 
     // Step 1: Memory + IndexedDB
-    const cacheResult = await cacheManager.get({ fen, depth, multipv });
+    const cacheResult = await cacheManager.get({ fen, depth: WASM_CACHE_DEPTH, multipv });
     if (cacheResult.data) {
       const origin = cacheResult.source === 'memory' ? 'browser DB' : 'indexDB';
       console.log(`[ENGINE SOURCE] ${origin}`);
-      return {
-        source: cacheResult.data.source,
-        lines: cacheResult.data.lines,
-        origin,
-      };
+      fireBackgroundWasm(fen, multipv, cacheManager, onUpdate);
+      return { source: cacheResult.data.source, lines: cacheResult.data.lines, origin };
     }
 
     // Step 2: MongoDB cache lookup
     try {
       cacheManager.recordNetworkCall();
-      const mongoCached = await lookupMongoCache(fen, depth, multipv);
+      const mongoCached = await lookupMongoCache(fen, WASM_CACHE_DEPTH, multipv);
       if (mongoCached && Array.isArray(mongoCached.lines) && mongoCached.lines.length > 0) {
         const mongoHasAdequatePvs = mongoCached.lines.every((l: any) => (l.pv?.length ?? 0) >= MIN_PV_LENGTH);
         if (mongoHasAdequatePvs) {
           console.log('[ENGINE SOURCE] mongoDB');
           const timestamp = mongoCached.timestamp || Date.now();
           await cacheManager.set(
-            { fen, depth, multipv },
-            {
-              fen,
-              depth,
-              multipv,
-              lines: mongoCached.lines,
-              source: mapBackendSource(mongoCached.source),
-              timestamp,
-            }
+            { fen, depth: WASM_CACHE_DEPTH, multipv },
+            { fen, depth: WASM_CACHE_DEPTH, multipv, lines: mongoCached.lines, source: mapBackendSource(mongoCached.source), timestamp }
           );
-          return {
-            source: mapBackendSource(mongoCached.source),
-            lines: mongoCached.lines,
-            origin: 'mongoDB',
-          };
+          fireBackgroundWasm(fen, multipv, cacheManager, onUpdate);
+          return { source: mapBackendSource(mongoCached.source), lines: mongoCached.lines, origin: 'mongoDB' };
         } else {
           console.log('[ENGINE SOURCE] mongoDB PVs too short, falling through to fresh analysis');
         }
@@ -216,7 +244,6 @@ export async function analyzeAuto(
     }
 
     // Step 3: Lichess Cloud (attempt once per key)
-    // Only use if ALL lines have adequate PV length (Lichess often returns 1-move PVs for secondary lines)
     if (!CLOUD_ATTEMPTED_KEYS.has(cacheKey)) {
       CLOUD_ATTEMPTED_KEYS.add(cacheKey);
       try {
@@ -228,21 +255,15 @@ export async function analyzeAuto(
           console.log('[ENGINE SOURCE] lichessCloud');
           const timestamp = Date.now();
           await cacheManager.set(
-            { fen, depth, multipv },
-            {
-              fen,
-              depth,
-              multipv,
-              lines: cloudResult.lines,
-              source: cloudResult.source,
-              timestamp,
-            }
+            { fen, depth: WASM_CACHE_DEPTH, multipv },
+            { fen, depth: WASM_CACHE_DEPTH, multipv, lines: cloudResult.lines, source: cloudResult.source, timestamp }
           );
           try {
-            await storeMongoCache(fen, depth, multipv, cloudResult.lines, cloudResult.source);
+            await storeMongoCache(fen, WASM_CACHE_DEPTH, multipv, cloudResult.lines, cloudResult.source);
           } catch (error) {
             console.warn('[ENGINE CLIENT] MongoDB store failed (cloud):', error);
           }
+          fireBackgroundWasm(fen, multipv, cacheManager, onUpdate);
           return { ...cloudResult, origin: 'lichessCloud' };
         } else if (cloudResult.lines.length > 0) {
           console.log('[ENGINE SOURCE] lichessCloud PVs too short, falling through to WASM');
@@ -252,25 +273,18 @@ export async function analyzeAuto(
       }
     }
 
-    // Step 4: Stockfish WASM (30s timeout)
+    // Step 4: Stockfish WASM (foreground, time-based, streaming)
     try {
-      const wasmResult = await analyzeWithWasm(fen, depth, multipv, 30000);
+      const wasmResult = await analyzeWithWasm(fen, multipv, WASM_MOVETIME_MS, onUpdate);
       if (wasmResult.lines.length > 0) {
         console.log('[ENGINE SOURCE] stockfishWASM');
         const timestamp = Date.now();
         await cacheManager.set(
-          { fen, depth, multipv },
-          {
-            fen,
-            depth,
-            multipv,
-            lines: wasmResult.lines,
-            source: wasmResult.source,
-            timestamp,
-          }
+          { fen, depth: WASM_CACHE_DEPTH, multipv },
+          { fen, depth: WASM_CACHE_DEPTH, multipv, lines: wasmResult.lines, source: wasmResult.source, timestamp }
         );
         try {
-          await storeMongoCache(fen, depth, multipv, wasmResult.lines, wasmResult.source);
+          await storeMongoCache(fen, WASM_CACHE_DEPTH, multipv, wasmResult.lines, wasmResult.source);
         } catch (error) {
           console.warn('[ENGINE CLIENT] MongoDB store failed (wasm):', error);
         }
@@ -282,28 +296,20 @@ export async function analyzeAuto(
 
     // Step 5: SFCata fallback
     cacheManager.recordNetworkCall();
-    const sfResult = await callSfcata(fen, depth, multipv);
+    const sfResult = await callSfcata(fen, SFCATA_DEPTH, multipv);
     console.log('[ENGINE SOURCE] SFCata');
     if (sfResult.lines.length > 0) {
       const timestamp = Date.now();
       await cacheManager.set(
-        { fen, depth, multipv },
-        {
-          fen,
-          depth,
-          multipv,
-          lines: sfResult.lines,
-          source: sfResult.source,
-          timestamp,
-        }
+        { fen, depth: WASM_CACHE_DEPTH, multipv },
+        { fen, depth: WASM_CACHE_DEPTH, multipv, lines: sfResult.lines, source: sfResult.source, timestamp }
       );
     }
 
-    // Trigger precomputation only for SFCata results
     if (sfResult.source === 'sf-catachess') {
       try {
         cacheManager.triggerPrecompute(
-          { fen, depth, multipv },
+          { fen, depth: SFCATA_DEPTH, multipv },
           sfResult
         ).catch(err => {
           console.warn('[ENGINE CLIENT] Precompute trigger failed:', err);
@@ -326,8 +332,8 @@ export async function analyzeAuto(
 
 export async function analyzeWithFallback(
   fen: string,
-  depth: number,
-  multipv: number
+  multipv: number,
+  onUpdate?: (analysis: EngineAnalysis, currentDepth: number) => void
 ): Promise<EngineAnalysis> {
-  return analyzeAuto(fen, depth, multipv);
+  return analyzeAuto(fen, multipv, onUpdate);
 }

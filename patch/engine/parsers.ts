@@ -14,6 +14,8 @@ export type SfEntry = {
   multipv: number;
   score: number | string;
   pv: string[];
+  nodes?: number;
+  millis?: number;
 };
 
 export function parseSfInfoLine(line: string): SfEntry | null {
@@ -42,7 +44,12 @@ export function parseSfInfoLine(line: string): SfEntry | null {
     score = `mate${scoreVal}`;
   }
 
-  return { depth, multipv, score, pv: pvMoves };
+  const nodesIndex = tokens.indexOf('nodes');
+  const timeIndex = tokens.indexOf('time');
+  const nodes = nodesIndex !== -1 ? Number(tokens[nodesIndex + 1]) : undefined;
+  const millis = timeIndex !== -1 ? Number(tokens[timeIndex + 1]) : undefined;
+
+  return { depth, multipv, score, pv: pvMoves, nodes, millis };
 }
 
 export function parseSfCatachess(data: any): EngineLine[] {

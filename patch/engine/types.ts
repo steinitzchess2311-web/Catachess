@@ -12,4 +12,7 @@ export interface EngineAnalysis {
   source: EngineSource;
   lines: EngineLine[];
   origin?: 'browser DB' | 'indexDB' | 'mongoDB' | 'lichessCloud' | 'stockfishWASM' | 'SFCata';
+  currentDepth?: number;
+  nodes?: number;
+  millis?: number;
 }

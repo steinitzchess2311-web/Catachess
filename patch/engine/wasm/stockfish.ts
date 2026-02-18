@@ -3,7 +3,9 @@ import { parseSfInfoLine, type SfEntry } from '../parsers';
 
 const DEFAULT_SCRIPT_URL = '/assets/stockfish/stockfish-lite-single.js';
 const DEFAULT_WASM_URL = '/assets/stockfish/stockfish-lite-single.wasm';
-const DEFAULT_TIMEOUT_MS = 30000;
+// movetime sent to engine; JS timeout adds a buffer on top
+const DEFAULT_MOVETIME_MS = 8000;
+const JS_TIMEOUT_BUFFER_MS = 5000;
 
 type StockfishModule = {
   listener?: (line: string) => void;
@@ -16,6 +18,11 @@ type StockfishFactory = (options: Record<string, any>) => Promise<StockfishModul
 let factoryPromise: Promise<StockfishFactory> | null = null;
 let modulePromise: Promise<StockfishModule> | null = null;
 let runQueue: Promise<EngineAnalysis> = Promise.resolve({ source: 'stockfish-wasm', lines: [] });
+let wasmCurrentlyRunning = false;
+
+export function isWasmFree(): boolean {
+  return !wasmCurrentlyRunning;
+}
 
 function resolveEnv(name: string): string | undefined {
   try {
@@ -84,8 +91,8 @@ async function loadModule(): Promise<StockfishModule> {
   return modulePromise;
 }
 
-function buildLines(entries: SfEntry[]): EngineLine[] {
-  if (entries.length === 0) return [];
+function buildLines(entries: SfEntry[]): { lines: EngineLine[]; nodes?: number; millis?: number } {
+  if (entries.length === 0) return { lines: [] };
   const maxDepth = Math.max(...entries.map((e) => e.depth));
   const perMultipv = new Map<number, SfEntry>();
 
@@ -106,13 +113,20 @@ function buildLines(entries: SfEntry[]): EngineLine[] {
     }
   }
 
-  return Array.from(perMultipv.values())
+  // Take nodes/millis from the last seen entry at maxDepth (most recent timing info)
+  const lastEntry = entries[entries.length - 1];
+  const nodes = lastEntry?.nodes;
+  const millis = lastEntry?.millis;
+
+  const lines = Array.from(perMultipv.values())
     .sort((a, b) => a.multipv - b.multipv)
     .map((entry) => ({
       multipv: entry.multipv,
       score: entry.score,
       pv: entry.pv,
     }));
+
+  return { lines, nodes, millis };
 }
 
 function sendCommand(module: StockfishModule, cmd: string): void {
@@ -125,60 +139,88 @@ function sendCommand(module: StockfishModule, cmd: string): void {
   }
 }
 
-async function runAnalysis(fen: string, depth: number, multipv: number, timeoutMs: number): Promise<EngineAnalysis> {
+async function runAnalysis(
+  fen: string,
+  multipv: number,
+  movetimeMs: number,
+  onUpdate?: (analysis: EngineAnalysis, currentDepth: number) => void
+): Promise<EngineAnalysis> {
+  wasmCurrentlyRunning = true;
   const module = await loadModule();
   const entries: SfEntry[] = [];
 
-  return await new Promise<EngineAnalysis>((resolve, reject) => {
-    let finished = false;
-    const timeout = setTimeout(() => {
-      if (finished) return;
-      finished = true;
-      reject(new Error('Stockfish WASM timeout'));
-    }, timeoutMs || DEFAULT_TIMEOUT_MS);
+  try {
+    return await new Promise<EngineAnalysis>((resolve, reject) => {
+      let finished = false;
+      let lastReportedDepth = 0;
 
-    const cleanup = () => {
-      clearTimeout(timeout);
-      module.listener = undefined;
-    };
+      // JS timeout = movetime + buffer (engine should stop itself via bestmove first)
+      const timeout = setTimeout(() => {
+        if (finished) return;
+        finished = true;
+        reject(new Error('Stockfish WASM timeout'));
+      }, movetimeMs + JS_TIMEOUT_BUFFER_MS);
 
-    module.listener = (line: string) => {
-      if (!line) return;
-      if (line.startsWith('info ')) {
-        const parsed = parseSfInfoLine(line);
-        if (parsed) entries.push(parsed);
-        return;
-      }
-      if (line.startsWith('bestmove')) {
+      const cleanup = () => {
+        clearTimeout(timeout);
+        module.listener = undefined;
+      };
+
+      module.listener = (line: string) => {
+        if (!line) return;
+        if (line.startsWith('info ')) {
+          const parsed = parseSfInfoLine(line);
+          if (parsed) {
+            entries.push(parsed);
+            // Fire onUpdate when we see the last multipv line at a new depth
+            if (parsed.multipv >= multipv && parsed.depth > lastReportedDepth) {
+              lastReportedDepth = parsed.depth;
+              if (onUpdate) {
+                const { lines, nodes, millis } = buildLines(entries);
+                if (lines.length > 0) {
+                  onUpdate(
+                    { source: 'stockfish-wasm', lines, currentDepth: parsed.depth, nodes, millis },
+                    parsed.depth
+                  );
+                }
+              }
+            }
+          }
+          return;
+        }
+        if (line.startsWith('bestmove')) {
+          if (finished) return;
+          finished = true;
+          cleanup();
+          const { lines, nodes, millis } = buildLines(entries);
+          resolve({ source: 'stockfish-wasm', lines, currentDepth: lastReportedDepth, nodes, millis });
+        }
+      };
+
+      try {
+        sendCommand(module, `setoption name MultiPV value ${multipv}`);
+        sendCommand(module, 'ucinewgame');
+        sendCommand(module, `position fen ${fen}`);
+        sendCommand(module, `go movetime ${movetimeMs}`);
+      } catch (error) {
         if (finished) return;
         finished = true;
         cleanup();
-        const lines = buildLines(entries);
-        resolve({ source: 'stockfish-wasm', lines });
+        reject(error instanceof Error ? error : new Error('Stockfish WASM failed'));
       }
-    };
-
-    try {
-      sendCommand(module, `setoption name MultiPV value ${multipv}`);
-      sendCommand(module, 'ucinewgame');
-      sendCommand(module, `position fen ${fen}`);
-      sendCommand(module, `go depth ${depth}`);
-    } catch (error) {
-      if (finished) return;
-      finished = true;
-      cleanup();
-      reject(error instanceof Error ? error : new Error('Stockfish WASM failed'));
-    }
-  });
+    });
+  } finally {
+    wasmCurrentlyRunning = false;
+  }
 }
 
 export async function analyzeWithWasm(
   fen: string,
-  depth: number,
   multipv: number,
-  timeoutMs: number = DEFAULT_TIMEOUT_MS
+  movetimeMs: number = DEFAULT_MOVETIME_MS,
+  onUpdate?: (analysis: EngineAnalysis, currentDepth: number) => void
 ): Promise<EngineAnalysis> {
-  const run = runQueue.then(() => runAnalysis(fen, depth, multipv, timeoutMs));
+  const run = runQueue.then(() => runAnalysis(fen, multipv, movetimeMs, onUpdate));
   runQueue = run.catch(() => ({ source: 'stockfish-wasm', lines: [] }));
   return run;
 }

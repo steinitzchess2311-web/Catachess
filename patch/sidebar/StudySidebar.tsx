@@ -64,7 +64,6 @@ export function StudySidebar({
   prevStateRef.current = { currentFen: state.currentFen };
 
   const [activeTab, setActiveTab] = useState<'chapters' | 'analysis' | 'imitator'>('chapters');
-  const [depth, setDepth] = useState(14);
   const [multipv, setMultipv] = useState(3);
   const [engineEnabled, setEngineEnabled] = useState(false);
 
@@ -75,14 +74,13 @@ export function StudySidebar({
   const engineAnalysis = useEngineAnalysis({
     enabled: activeTab === 'analysis' && engineEnabled,
     fen: state.currentFen,
-    depth,
     multipv,
   });
 
   const imitator = useImitator({
     enabled: activeTab === 'imitator',
     fen: state.currentFen,
-    depth,
+    depth: 14,
     multipv,
   });
 
@@ -249,8 +247,8 @@ export function StudySidebar({
       {activeTab === 'analysis' && (
         <div className="patch-analysis-scroll">
           <AnalysisSettings
-            depth={depth}
-            onDepthChange={setDepth}
+            currentDepth={engineAnalysis.currentDepth}
+            nps={engineAnalysis.nps}
             multipv={multipv}
             onMultipvChange={setMultipv}
             engineEnabled={engineEnabled}

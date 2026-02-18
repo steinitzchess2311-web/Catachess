@@ -433,7 +433,7 @@ export interface StudyContextValue {
   hasReplayError: () => boolean;
   loadStudy: (studyId: string) => Promise<void>;
   selectChapter: (chapterId: string, startFen?: string) => Promise<void>;
-  loadTree: (tree: StudyTreeData) => void;
+  loadTree: (tree: StudyTreeData, startFen?: string) => void;
   selectNode: (nodeId: string) => void;
   addMove: (san: string) => void;
   setComment: (nodeId: string, comment: string) => void;

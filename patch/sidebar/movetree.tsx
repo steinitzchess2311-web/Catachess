@@ -1,16 +1,19 @@
 import React from 'react';
 import { useStudy } from '../studyContext';
+import type { StudyErrorType } from '../studyContext';
 import { StudyNode } from '../tree/type';
+import type { StudyTree as StudyTreeData } from '../tree/type';
 import { PgnImportModal } from './components/PgnImportModal';
 
 export interface MoveTreeProps {
   className?: string;
 }
 
-/**
- * MoveTree - Displays the chess move tree in the sidebar
- * Supports recursive rendering of mainline and variations.
- */
+// ─── Thin wrapper ────────────────────────────────────────────────────────────
+// Re-renders on every context change, but is lightweight (just passes props).
+// MoveTreeDisplay below is memoized so it skips re-renders caused by unrelated
+// state changes (isSaving, currentFen, error, isDirty, etc.).
+
 export function MoveTree({ className }: MoveTreeProps) {
   const {
     state,
@@ -24,6 +27,63 @@ export function MoveTree({ className }: MoveTreeProps) {
     deleteMove,
     promoteVariation,
   } = useStudy();
+
+  return (
+    <MoveTreeDisplay
+      className={className}
+      tree={state.tree}
+      cursorNodeId={state.cursorNodeId}
+      chapterId={state.chapterId}
+      onSelectNode={selectNode}
+      onSelectChapter={selectChapter}
+      loadTreeFromServer={loadTreeFromServer}
+      loadTree={loadTree}
+      setError={setError}
+      clearError={clearError}
+      saveTree={saveTree}
+      onDeleteMove={deleteMove}
+      onPromoteVariation={promoteVariation}
+    />
+  );
+}
+
+// ─── MoveTreeDisplay props ────────────────────────────────────────────────────
+
+interface MoveTreeDisplayProps {
+  className?: string;
+  tree: StudyTreeData;
+  cursorNodeId: string;
+  chapterId: string | null;
+  onSelectNode: (nodeId: string) => void;
+  onSelectChapter: (chapterId: string, startFen?: string) => Promise<void>;
+  loadTreeFromServer: () => Promise<void>;
+  loadTree: (tree: StudyTreeData, startFen?: string) => void;
+  setError: (type: StudyErrorType, message: string, context?: Record<string, unknown>) => void;
+  clearError: () => void;
+  saveTree: () => Promise<void>;
+  onDeleteMove: (nodeId: string) => void;
+  onPromoteVariation: (nodeId: string) => void;
+}
+
+// ─── Memoized display ────────────────────────────────────────────────────────
+// Only re-renders when tree or cursorNodeId changes (or local UI state).
+// Unrelated context changes (isSaving, currentFen, error…) are blocked here.
+
+const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
+  className,
+  tree,
+  cursorNodeId,
+  chapterId,
+  onSelectNode,
+  onSelectChapter,
+  loadTreeFromServer,
+  loadTree,
+  setError,
+  clearError,
+  saveTree,
+  onDeleteMove,
+  onPromoteVariation,
+}: MoveTreeDisplayProps) {
   const [showPgnImport, setShowPgnImport] = React.useState(false);
   const [collapsedVariations, setCollapsedVariations] = React.useState<Set<string>>(new Set());
   const [menuState, setMenuState] = React.useState<{
@@ -33,70 +93,23 @@ export function MoveTree({ className }: MoveTreeProps) {
     canPromote: boolean;
   } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
-  const { tree, cursorNodeId } = state;
 
-  const handleReload = () => {
-    if (state.chapterId) {
-      selectChapter(state.chapterId);
+  const handleReload = React.useCallback(() => {
+    if (chapterId) {
+      onSelectChapter(chapterId);
       return;
     }
     loadTreeFromServer();
-  };
+  }, [chapterId, onSelectChapter, loadTreeFromServer]);
 
-  if (!tree || !tree.nodes || !tree.rootId || !cursorNodeId) {
-    return (
-      <div className={`move-tree-container ${className || ''}`} style={{ padding: '20px', color: '#666', fontStyle: 'italic' }}>
-        <div style={{ marginBottom: '8px' }}>Move tree unavailable.</div>
-        <button
-          type="button"
-          onClick={handleReload}
-          style={{
-            padding: '6px 10px',
-            backgroundColor: '#4a4a4a',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          Reload Chapter
-        </button>
-      </div>
-    );
-  }
+  const handleNodeClick = React.useCallback((nodeId: string) => {
+    onSelectNode(nodeId);
+  }, [onSelectNode]);
 
-  const rootNode = tree.nodes[tree.rootId];
-  if (!rootNode || !tree.nodes[cursorNodeId]) {
-    return (
-      <div className={`move-tree-container ${className || ''}`} style={{ padding: '20px', color: '#666', fontStyle: 'italic' }}>
-        <div style={{ marginBottom: '8px' }}>Move tree unavailable.</div>
-        <button
-          type="button"
-          onClick={handleReload}
-          style={{
-            padding: '6px 10px',
-            backgroundColor: '#4a4a4a',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          Reload Chapter
-        </button>
-      </div>
-    );
-  }
-
-  const handleNodeClick = (nodeId: string) => {
-    selectNode(nodeId);
-  };
-
-  const handleContextMenu = (nodeId: string, event: React.MouseEvent) => {
-    // Allow native browser context menu for inspection when Shift is held.
-    if (event.shiftKey) {
-      return;
-    }
+  // tree.nodes is stable when only cursorNodeId changes, so this callback
+  // won't be recreated on every cursor move.
+  const handleContextMenu = React.useCallback((nodeId: string, event: React.MouseEvent) => {
+    if (event.shiftKey) return;
     event.preventDefault();
     event.stopPropagation();
     const node = tree.nodes[nodeId];
@@ -104,20 +117,10 @@ export function MoveTree({ className }: MoveTreeProps) {
     const canPromote = Boolean(
       parentId && tree.nodes[parentId]?.children?.[0] && tree.nodes[parentId]?.children[0] !== nodeId
     );
-    setMenuState({
-      nodeId,
-      x: event.clientX,
-      y: event.clientY,
-      canPromote,
-    });
-  };
+    setMenuState({ nodeId, x: event.clientX, y: event.clientY, canPromote });
+  }, [tree.nodes]);
 
-  React.useEffect(() => {
-    // Close handled by onMouseLeave of the menu to keep behavior consistent with hover.
-    if (!menuState) return;
-  }, [menuState]);
-
-  const toggleVariation = (nodeId: string) => {
+  const toggleVariation = React.useCallback((nodeId: string) => {
     setCollapsedVariations((prev) => {
       const next = new Set(prev);
       if (next.has(nodeId)) {
@@ -127,18 +130,27 @@ export function MoveTree({ className }: MoveTreeProps) {
       }
       return next;
     });
-  };
+  }, []);
 
-  const handleImportClick = () => {
+  const handleImportClick = React.useCallback(() => {
     clearError();
     setShowPgnImport(true);
-  };
+  }, [clearError]);
+
+  if (!tree || !tree.nodes || !tree.rootId || !cursorNodeId) {
+    return <MoveTreeUnavailable onReload={handleReload} className={className} />;
+  }
+
+  const rootNode = tree.nodes[tree.rootId];
+  if (!rootNode || !tree.nodes[cursorNodeId]) {
+    return <MoveTreeUnavailable onReload={handleReload} className={className} />;
+  }
 
   return (
     <div
       className={`move-tree-container ${className || ''}`}
-      style={{ 
-        padding: '10px', 
+      style={{
+        padding: '10px',
         fontFamily: 'sans-serif',
         fontSize: '14px',
         overflowY: 'auto'
@@ -152,11 +164,11 @@ export function MoveTree({ className }: MoveTreeProps) {
       </div>
       <div className="move-tree-content">
         {rootNode && rootNode.children.length > 0 && (
-          <MoveBranch 
+          <MoveBranch
             startNodeId={rootNode.children[0]}
-            nodes={tree.nodes} 
-            cursorNodeId={cursorNodeId} 
-            onSelect={handleNodeClick} 
+            nodes={tree.nodes}
+            cursorNodeId={cursorNodeId}
+            onSelect={handleNodeClick}
             depth={0}
             startPly={1}
             isMainline={true}
@@ -178,7 +190,7 @@ export function MoveTree({ className }: MoveTreeProps) {
             className="patch-context-item"
             disabled={!menuState.canPromote}
             onClick={() => {
-              promoteVariation(menuState.nodeId);
+              onPromoteVariation(menuState.nodeId);
               setMenuState(null);
             }}
           >
@@ -215,7 +227,7 @@ export function MoveTree({ className }: MoveTreeProps) {
                 type="button"
                 className="patch-confirm-btn is-danger"
                 onClick={() => {
-                  deleteMove(confirmDeleteId);
+                  onDeleteMove(confirmDeleteId);
                   setConfirmDeleteId(null);
                 }}
               >
@@ -232,16 +244,41 @@ export function MoveTree({ className }: MoveTreeProps) {
             // Tree already loaded via loadTree() inside the modal
           }}
           onMultiImport={(_firstChapterId) => {
-            // Reload current chapter list from parent if needed
-            if (state.chapterId) {
-              selectChapter(state.chapterId);
+            if (chapterId) {
+              onSelectChapter(chapterId);
             }
           }}
         />
       )}
     </div>
   );
+});
+
+// ─── Unavailable fallback ─────────────────────────────────────────────────────
+
+function MoveTreeUnavailable({ onReload, className }: { onReload: () => void; className?: string }) {
+  return (
+    <div className={`move-tree-container ${className || ''}`} style={{ padding: '20px', color: '#666', fontStyle: 'italic' }}>
+      <div style={{ marginBottom: '8px' }}>Move tree unavailable.</div>
+      <button
+        type="button"
+        onClick={onReload}
+        style={{
+          padding: '6px 10px',
+          backgroundColor: '#4a4a4a',
+          color: 'white',
+          border: 'none',
+          borderRadius: '4px',
+          cursor: 'pointer'
+        }}
+      >
+        Reload Chapter
+      </button>
+    </div>
+  );
 }
+
+// ─── MoveBranch ───────────────────────────────────────────────────────────────
 
 interface MoveBranchProps {
   nodes: Record<string, StudyNode>;
@@ -257,10 +294,9 @@ interface MoveBranchProps {
   onContextMenu: (nodeId: string, event: React.MouseEvent) => void;
 }
 
-/**
- * Renders a branch of moves (mainline + variations)
- */
-function MoveBranch({
+// React.memo prevents re-renders when only MoveTreeDisplay's local UI state
+// changes (menuState, confirmDeleteId, showPgnImport).
+const MoveBranch = React.memo(function MoveBranch({
   startNodeId,
   nodes,
   cursorNodeId,
@@ -280,9 +316,9 @@ function MoveBranch({
     const variationsIds = overrideIds || node?.children.slice(1) || [];
     if (!node || variationsIds.length === 0) return null;
     return (
-      <div className="variations" style={{ 
-        fontSize: '12.6px', 
-        color: '#555', 
+      <div className="variations" style={{
+        fontSize: '12.6px',
+        color: '#555',
         marginTop: '4px',
         marginBottom: '4px',
         borderLeft: '2px solid #ddd',
@@ -424,20 +460,20 @@ function MoveBranch({
         if (hasRootVariations) {
           lines.push(
             <div key={`line-black-${blackNode.id}`} className="move-line" style={lineStyle}>
-            <div />
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <MoveItem
-                nodeId={blackNode.id}
-                nodes={nodes}
-                cursorNodeId={cursorNodeId}
-                onSelect={onSelect}
-                isMainline={isMainline}
-                prefix={`${moveNumber}...`}
-                onContextMenu={onContextMenu}
-              />
+              <div />
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <MoveItem
+                  nodeId={blackNode.id}
+                  nodes={nodes}
+                  cursorNodeId={cursorNodeId}
+                  onSelect={onSelect}
+                  isMainline={isMainline}
+                  prefix={`${moveNumber}...`}
+                  onContextMenu={onContextMenu}
+                />
+              </div>
             </div>
-          </div>
-        );
+          );
         }
 
         lines.push(renderVariations(whiteNode.id, ply + 1));
@@ -451,7 +487,7 @@ function MoveBranch({
     } else {
       const blackNode = currentNode;
       lines.push(
-      <div key={`line-black-${currentId}`} className="move-line" style={lineStyle}>
+        <div key={`line-black-${currentId}`} className="move-line" style={lineStyle}>
           <div />
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <MoveItem
@@ -477,7 +513,9 @@ function MoveBranch({
       {lines}
     </div>
   );
-}
+});
+
+// ─── MoveItem ─────────────────────────────────────────────────────────────────
 
 interface MoveItemProps {
   nodeId: string;
@@ -489,7 +527,22 @@ interface MoveItemProps {
   onContextMenu: (nodeId: string, event: React.MouseEvent) => void;
 }
 
-function MoveItem({
+// Custom comparator: only re-renders when this node's own data changes OR its
+// active state flips. Cursor navigation that doesn't touch this node is skipped.
+function moveItemPropsAreEqual(prev: MoveItemProps, next: MoveItemProps): boolean {
+  const prevActive = prev.cursorNodeId === prev.nodeId;
+  const nextActive = next.cursorNodeId === next.nodeId;
+  return (
+    prevActive === nextActive &&
+    prev.nodes[prev.nodeId] === next.nodes[next.nodeId] &&
+    prev.isMainline === next.isMainline &&
+    prev.prefix === next.prefix &&
+    prev.onSelect === next.onSelect &&
+    prev.onContextMenu === next.onContextMenu
+  );
+}
+
+const MoveItem = React.memo(function MoveItem({
   nodeId,
   nodes,
   cursorNodeId,
@@ -504,7 +557,7 @@ function MoveItem({
   const isActive = cursorNodeId === nodeId;
 
   return (
-    <div 
+    <div
       className={`move-item ${isActive ? 'active' : ''}`}
       onClick={(e) => {
         e.stopPropagation();
@@ -551,11 +604,8 @@ function MoveItem({
       )}
     </div>
   );
-}
+}, moveItemPropsAreEqual);
 
-/**
- * Simple NAG to Symbol mapping
- */
 function nagToSymbol(nag: number): string {
   const map: Record<number, string> = {
     1: '!',

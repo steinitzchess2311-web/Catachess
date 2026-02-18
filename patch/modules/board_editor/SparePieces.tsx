@@ -1,9 +1,14 @@
 import React from 'react';
-import { getPieceImageUrl } from '@ui/modules/chess_pieces';
+import { SparePiece } from 'react-chessboard';
 import type { EditorPiece, PieceColor, PieceType } from './fenManipulation';
 import type { Selected } from './useBoardEditor';
 
 const PIECE_ORDER: PieceType[] = ['k', 'q', 'r', 'b', 'n', 'p'];
+
+// EditorPiece { color: 'w'|'b', type: 'q'|... } → react-chessboard "wQ" format
+export function toRcbPiece(color: PieceColor, type: PieceType): string {
+  return `${color}${type.toUpperCase()}`;
+}
 
 interface SparePiecesProps {
   color: PieceColor;
@@ -14,34 +19,29 @@ interface SparePiecesProps {
 
 export function SparePieces({ color, selected, onSelect, pieceSize }: SparePiecesProps) {
   return (
-    <div
-      className="board-editor-spare"
-      style={{ height: pieceSize, display: 'flex', alignItems: 'center' }}
-    >
+    <div className="board-editor-spare" style={{ height: pieceSize, display: 'flex', alignItems: 'center' }}>
       {PIECE_ORDER.map((type) => {
         const piece: EditorPiece = { color, type };
-        const imgUrl = getPieceImageUrl({ type, color });
+        const rcbPiece = toRcbPiece(color, type);
         const isSelected =
           typeof selected === 'object' &&
           selected.color === color &&
           selected.type === type;
 
         return (
-          <button
+          <div
             key={type}
             className={`board-editor-spare-piece${isSelected ? ' is-selected' : ''}`}
             style={{ width: pieceSize, height: pieceSize }}
             onClick={() => onSelect(piece)}
             title={`${color === 'w' ? 'White' : 'Black'} ${type.toUpperCase()}`}
-            type="button"
           >
-            <img
-              src={imgUrl}
-              alt={`${color}${type}`}
-              style={{ width: '100%', height: '100%', display: 'block' }}
-              draggable={false}
+            <SparePiece
+              piece={rcbPiece as any}
+              width={pieceSize}
+              dndId={`spare-${rcbPiece}`}
             />
-          </button>
+          </div>
         );
       })}
     </div>

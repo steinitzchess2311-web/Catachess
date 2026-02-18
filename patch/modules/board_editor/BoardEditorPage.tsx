@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Chessboard } from 'react-chessboard';
+import { Chessboard, ChessboardDnDProvider } from 'react-chessboard';
 import { api } from '@ui/assets/api';
 import { useBoardEditor } from './useBoardEditor';
 import { SparePieces } from './SparePieces';
@@ -30,6 +30,7 @@ export function BoardEditorPage() {
     onSquareRightClick,
     onPieceDrop,
     onPieceDropOffBoard,
+    onSparePieceDrop,
     setTurnAction,
     setCastlingAction,
     setEnPassantAction,
@@ -55,7 +56,6 @@ export function BoardEditorPage() {
 
   const pieceSize = Math.floor(boardWidth / 8);
 
-  // Create chapter in a study from this FEN
   const handleCreateChapter = useCallback(
     async (fenStr: string) => {
       if (!studyId) return;
@@ -74,7 +74,6 @@ export function BoardEditorPage() {
     [studyId, navigate]
   );
 
-  // Keyboard shortcut: 'f' = flip
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -87,7 +86,6 @@ export function BoardEditorPage() {
   }, [flipBoard, setSelected]);
 
   const boardCursor = selected === 'trash' ? 'crosshair' : 'default';
-
   const isDraggable = selected === 'pointer';
 
   return (
@@ -103,68 +101,70 @@ export function BoardEditorPage() {
         <h2 className="board-editor-title">Board Editor</h2>
       </div>
 
-      <div className="board-editor-layout">
-        {/* Board column */}
-        <div className="board-editor-board-col">
-          {/* Spare pieces: black (top when white orientation, white on top when flipped) */}
-          <SparePieces
-            color={orientation === 'white' ? 'b' : 'w'}
-            selected={selected}
-            onSelect={setSelected}
-            pieceSize={pieceSize}
-          />
+      {/* ChessboardDnDProvider lets SparePiece drag onto the Chessboard */}
+      <ChessboardDnDProvider>
+        <div className="board-editor-layout">
+          {/* Board column */}
+          <div className="board-editor-board-col">
+            <SparePieces
+              color={orientation === 'white' ? 'b' : 'w'}
+              selected={selected}
+              onSelect={setSelected}
+              pieceSize={pieceSize}
+            />
 
-          <div
-            ref={boardContainerRef}
-            className="board-editor-board-wrap"
-            style={{ cursor: boardCursor }}
-          >
-            <Chessboard
-              id="board-editor"
-              position={fen}
-              boardWidth={boardWidth}
-              boardOrientation={orientation}
-              arePiecesDraggable={isDraggable}
-              dropOffBoard="trash"
-              onPieceDrop={onPieceDrop}
-              onPieceDropOffBoard={onPieceDropOffBoard}
-              onSquareClick={onSquareClick}
-              onSquareRightClick={onSquareRightClick}
-              animationDuration={100}
-              customDarkSquareStyle={{ backgroundColor: '#779954' }}
-              customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
+            <div
+              ref={boardContainerRef}
+              className="board-editor-board-wrap"
+              style={{ cursor: boardCursor }}
+            >
+              <Chessboard
+                id="board-editor"
+                position={fen}
+                boardWidth={boardWidth}
+                boardOrientation={orientation}
+                arePiecesDraggable={isDraggable}
+                dropOffBoard="trash"
+                onPieceDrop={onPieceDrop}
+                onPieceDropOffBoard={onPieceDropOffBoard}
+                onSparePieceDrop={onSparePieceDrop}
+                onSquareClick={onSquareClick}
+                onSquareRightClick={onSquareRightClick}
+                animationDuration={100}
+                customDarkSquareStyle={{ backgroundColor: '#779954' }}
+                customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
+              />
+            </div>
+
+            <SparePieces
+              color={orientation === 'white' ? 'w' : 'b'}
+              selected={selected}
+              onSelect={setSelected}
+              pieceSize={pieceSize}
             />
           </div>
 
-          {/* Spare pieces: white (bottom when white orientation) */}
-          <SparePieces
-            color={orientation === 'white' ? 'w' : 'b'}
+          {/* Controls column */}
+          <EditorControls
+            fen={fen}
+            legalFen={legalFen}
             selected={selected}
-            onSelect={setSelected}
-            pieceSize={pieceSize}
+            turn={turn}
+            castling={castling}
+            enPassant={enPassant}
+            availableCastling={availableCastling}
+            onSetFen={setFen}
+            onSetSelected={setSelected}
+            onSetTurn={setTurnAction}
+            onSetCastling={setCastlingAction}
+            onSetEnPassant={setEnPassantAction}
+            onFlip={flipBoard}
+            onClear={clearBoard}
+            onReset={resetToStart}
+            onCreateChapter={studyId ? handleCreateChapter : undefined}
           />
         </div>
-
-        {/* Controls column */}
-        <EditorControls
-          fen={fen}
-          legalFen={legalFen}
-          selected={selected}
-          turn={turn}
-          castling={castling}
-          enPassant={enPassant}
-          availableCastling={availableCastling}
-          onSetFen={setFen}
-          onSetSelected={setSelected}
-          onSetTurn={setTurnAction}
-          onSetCastling={setCastlingAction}
-          onSetEnPassant={setEnPassantAction}
-          onFlip={flipBoard}
-          onClear={clearBoard}
-          onReset={resetToStart}
-          onCreateChapter={studyId ? handleCreateChapter : undefined}
-        />
-      </div>
+      </ChessboardDnDProvider>
     </div>
   );
 }

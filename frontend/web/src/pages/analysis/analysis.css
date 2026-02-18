@@ -56,9 +56,9 @@
 
 .analysis-layout {
   display: flex;
+  flex: 0 0 600px;
   gap: 16px;
-  height: calc(100vh - 180px);
-  min-height: 400px;
+  height: 600px;
   border-radius: 16px;
   padding: 16px;
   overflow: hidden;

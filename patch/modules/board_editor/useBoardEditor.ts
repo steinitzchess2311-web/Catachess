@@ -144,6 +144,14 @@ export function useBoardEditor() {
     dispatch({ type: 'REMOVE_PIECE', square });
   }, []);
 
+  // react-chessboard SparePiece drag → board drop  ("wQ", "e4")
+  const onSparePieceDrop = useCallback((piece: string, square: string): boolean => {
+    const color = piece[0] as PieceColor;
+    const type = piece[1].toLowerCase() as PieceType;
+    dispatch({ type: 'PLACE_PIECE', square, piece: { color, type } });
+    return true;
+  }, []);
+
   const setTurnAction = useCallback((t: 'w' | 'b') => dispatch({ type: 'SET_TURN', turn: t }), []);
   const setCastlingAction = useCallback((c: CastlingToggles) => dispatch({ type: 'SET_CASTLING', castling: c }), []);
   const setEnPassantAction = useCallback((ep: string) => dispatch({ type: 'SET_EN_PASSANT', ep }), []);
@@ -166,6 +174,7 @@ export function useBoardEditor() {
     onSquareRightClick,
     onPieceDrop,
     onPieceDropOffBoard,
+    onSparePieceDrop,
     setTurnAction,
     setCastlingAction,
     setEnPassantAction,

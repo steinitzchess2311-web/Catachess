@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { analyzeAuto } from '../../engine/client';
+import { stopAnalysis } from '../../engine/wasm/stockfish';
 import type { EngineLine, EngineSource } from '../../engine/types';
 import { cancelPrecompute } from '../../engine/precompute';
 import { FALLBACK_BACKOFF_MS } from '../utils/config';
@@ -116,16 +117,11 @@ export function useEngineAnalysis({
   useEffect(() => {
     if (!enabled) return;
 
-    // Cancel any ongoing precomputation if position parameters changed
-    const lastParams = lastPrecomputeParamsRef.current;
-    const paramsChanged =
-      lastParams !== null &&
-      (lastParams.fen !== fen || lastParams.multipv !== multipv);
-
-    if (paramsChanged) {
-      cancelPrecompute();
-    }
-
+    // When fen/multipv changes: immediately stop the running engine and
+    // release the inFlight lock so the new position can start right away.
+    stopAnalysis();
+    inFlightRef.current = false;
+    cancelPrecompute();
     lastPrecomputeParamsRef.current = { fen, multipv };
 
     analyzePosition(fen);
@@ -135,6 +131,8 @@ export function useEngineAnalysis({
     }, 2000);
 
     return () => {
+      stopAnalysis();
+      inFlightRef.current = false;
       if (pollRef.current) {
         window.clearInterval(pollRef.current);
         pollRef.current = null;

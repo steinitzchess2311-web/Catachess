@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStudy } from '../studyContext';
-import { importPgn } from '../pgn/import';
 import { StudyNode } from '../tree/type';
+import { PgnImportModal } from './components/PgnImportModal';
 
 export interface MoveTreeProps {
   className?: string;
@@ -24,6 +24,7 @@ export function MoveTree({ className }: MoveTreeProps) {
     deleteMove,
     promoteVariation,
   } = useStudy();
+  const [showPgnImport, setShowPgnImport] = React.useState(false);
   const [collapsedVariations, setCollapsedVariations] = React.useState<Set<string>>(new Set());
   const [menuState, setMenuState] = React.useState<{
     nodeId: string;
@@ -129,18 +130,8 @@ export function MoveTree({ className }: MoveTreeProps) {
   };
 
   const handleImportClick = () => {
-    const pgnContent = window.prompt('Paste PGN to import');
-    if (!pgnContent) return;
-
     clearError();
-    const result = importPgn(pgnContent);
-    if (!result.success || !result.tree) {
-      const message = result.errors.length > 0 ? result.errors.join('; ') : 'Failed to import PGN';
-      setError('LOAD_ERROR', message, { errors: result.errors });
-      return;
-    }
-
-    loadTree(result.tree);
+    setShowPgnImport(true);
   };
 
   return (
@@ -233,6 +224,20 @@ export function MoveTree({ className }: MoveTreeProps) {
             </div>
           </div>
         </div>
+      )}
+      {showPgnImport && (
+        <PgnImportModal
+          onClose={() => setShowPgnImport(false)}
+          onSingleImport={(_tree) => {
+            // Tree already loaded via loadTree() inside the modal
+          }}
+          onMultiImport={(_firstChapterId) => {
+            // Reload current chapter list from parent if needed
+            if (state.chapterId) {
+              selectChapter(state.chapterId);
+            }
+          }}
+        />
       )}
     </div>
   );

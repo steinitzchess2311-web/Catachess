@@ -1,5 +1,5 @@
 /**
- * Tree Schema v1 - Study Tree Data Structure
+ * Tree Schema v2 - Study Tree Data Structure
  *
  * CRITICAL CONSTRAINTS:
  * - Nodes only store SAN, NEVER FEN (FEN is computed via replay)
@@ -15,10 +15,38 @@
  * - If version === TREE_SCHEMA_VERSION: load directly
  *
  * Migration functions should be added to patch/tree/migrations/ as needed.
+ *
+ * v2 additions (backward-compatible optional fields on StudyNode):
+ * - shapes: circles and arrows from [%csl] / [%cal] PGN comments
+ * - clock: remaining time in centiseconds from [%clk] PGN comments
  */
 
 /** Current schema version - increment when making breaking changes */
-export const TREE_SCHEMA_VERSION = 'v1' as const;
+export const TREE_SCHEMA_VERSION = 'v2' as const;
+
+// ---------------------------------------------------------------------------
+// Shape types (v2)
+// ---------------------------------------------------------------------------
+
+export type ShapeColor = 'green' | 'red' | 'blue' | 'yellow';
+
+export interface ShapeCircle {
+  type: 'circle';
+  /** Square in algebraic notation, e.g. "e4" */
+  color: ShapeColor;
+  square: string;
+}
+
+export interface ShapeArrow {
+  type: 'arrow';
+  color: ShapeColor;
+  /** Origin square, e.g. "e2" */
+  from: string;
+  /** Destination square, e.g. "e4" */
+  to: string;
+}
+
+export type Shape = ShapeCircle | ShapeArrow;
 
 /**
  * StudyNode - A single node in the move tree
@@ -64,6 +92,20 @@ export interface StudyNode {
    * Empty array if no NAGs
    */
   nags: number[];
+
+  // --- v2 optional fields (absent in v1; treated as empty/null when missing) ---
+
+  /**
+   * Board shapes (circles and arrows) from [%csl] / [%cal] PGN annotations.
+   * Displayed on the board when this move is selected.
+   */
+  shapes?: Shape[];
+
+  /**
+   * Clock time remaining in centiseconds after this move, from [%clk].
+   * null / undefined means no clock data.
+   */
+  clock?: number | null;
 }
 
 /**
@@ -204,8 +246,10 @@ export function validateTree(tree: unknown): TreeValidationResult {
 /**
  * Upgrade a legacy tree to the current schema version when possible.
  *
- * Supported upgrade:
- * - Missing version -> set to current version (v1)
+ * Supported upgrades:
+ * - Missing version  → treat as v1, migrate to v2
+ * - v1               → migrate to v2 (add optional shapes/clock fields)
+ * - v2               → already current, validate only
  */
 export function upgradeTree(tree: unknown): TreeUpgradeResult {
   if (!tree || typeof tree !== 'object') {
@@ -215,7 +259,8 @@ export function upgradeTree(tree: unknown): TreeUpgradeResult {
   const t = tree as Partial<StudyTree>;
   const version = (t as { version?: string }).version;
 
-  if (!version) {
+  // No version tag → assume v1, migrate
+  if (!version || version === 'v1') {
     const upgraded = { ...t, version: TREE_SCHEMA_VERSION } as StudyTree;
     const validation = validateTree(upgraded);
     return {
@@ -249,6 +294,8 @@ export type TreeOperation =
   | { type: 'REMOVE_NODE'; nodeId: string }
   | { type: 'UPDATE_COMMENT'; nodeId: string; comment: string | null }
   | { type: 'UPDATE_NAGS'; nodeId: string; nags: number[] }
+  | { type: 'UPDATE_SHAPES'; nodeId: string; shapes: Shape[] }
+  | { type: 'UPDATE_CLOCK'; nodeId: string; clock: number | null }
   | { type: 'PROMOTE_VARIATION'; nodeId: string }
   | { type: 'DELETE_VARIATION'; nodeId: string };
 

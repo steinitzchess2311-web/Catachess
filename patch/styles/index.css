@@ -1525,3 +1525,72 @@
   margin-top: 4px;
   line-height: 1.4;
 }
+
+/* Mode tabs inside New Chapter modal */
+.patch-modal-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0;
+}
+
+.patch-modal-tab {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #555;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  cursor: pointer;
+  border-radius: 4px 4px 0 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.patch-modal-tab:hover {
+  color: #222;
+}
+
+.patch-modal-tab.is-active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+  font-weight: 600;
+}
+
+.patch-modal-tab:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* PGN textarea variant (taller) */
+.patch-modal-textarea--pgn {
+  font-size: 11px;
+  height: 160px;
+  margin-bottom: 8px;
+}
+
+/* File upload row */
+.patch-modal-pgn-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+/* PGN parse preview */
+.patch-modal-pgn-preview {
+  background: #f3f4f6;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: #374151;
+}
+
+.patch-modal-pgn-preview__first {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #6b7280;
+}

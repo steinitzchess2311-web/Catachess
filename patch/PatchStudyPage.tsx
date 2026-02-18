@@ -9,6 +9,16 @@ import { api } from '@ui/assets/api';
 import { createEmptyTree } from './tree/StudyTree';
 import { TREE_SCHEMA_VERSION } from './tree/type';
 import { TerminalLauncher } from './modules/terminal';
+import { importMultiPgn } from './pgn/import';
+
+function pgnGameTitle(headers: Record<string, string>): string {
+  const white = headers['White'] ?? '?';
+  const black = headers['Black'] ?? '?';
+  const event = headers['Event'] ?? '';
+  if (white === '?' && black === '?' && !event) return 'Imported Game';
+  const players = white === '?' && black === '?' ? '' : `${white} vs ${black}`;
+  return [players, event].filter(Boolean).join(' – ');
+}
 
 export interface PatchStudyPageProps {
   className?: string;
@@ -32,7 +42,12 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const [createError, setCreateError] = useState<string | null>(null);
   const [createTitle, setCreateTitle] = useState<string>('');
   const [createTitleError, setCreateTitleError] = useState<string | null>(null);
-  const [createFen, setCreateFen] = useState<string>('');  // ✅ FEN input
+  const [createFen, setCreateFen] = useState<string>('');
+  const [createMode, setCreateMode] = useState<'empty' | 'fen' | 'pgn'>('empty');
+  const [createPgnText, setCreatePgnText] = useState('');
+  const [createPgnParsed, setCreatePgnParsed] = useState<ReturnType<typeof importMultiPgn> | null>(null);
+  const [createPgnImporting, setCreatePgnImporting] = useState(false);
+  const createPgnFileRef = useRef<HTMLInputElement | null>(null);
   const [rightbarWidth, setRightbarWidth] = useState<number>(280);
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
@@ -463,20 +478,91 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     setCreateTitleError(null);
     const nextIndex = getNextChapterIndex();
     setCreateTitle(`Chapter ${nextIndex}`);
+    setCreateMode('empty');
+    setCreateFen('');
+    setCreatePgnText('');
+    setCreatePgnParsed(null);
     setIsCreateModalOpen(true);
   }, [getNextChapterIndex]);
 
   const closeCreateModal = useCallback(() => {
-    if (isCreatingChapter) return;
+    if (isCreatingChapter || createPgnImporting) return;
     setIsCreateModalOpen(false);
-  }, [isCreatingChapter]);
+    setCreatePgnText('');
+    setCreatePgnParsed(null);
+  }, [isCreatingChapter, createPgnImporting]);
+
+  const handlePgnFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const content = ev.target?.result as string;
+      if (content) setCreatePgnText(content);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  }, []);
 
   const confirmCreateChapter = useCallback(async () => {
-    if (isCreatingChapter) return;
+    if (isCreatingChapter || createPgnImporting) return;
     setCreateError(null);
+
+    // ── PGN mode ──────────────────────────────────────────────────────────
+    if (createMode === 'pgn') {
+      if (!createPgnParsed || createPgnParsed.games.length === 0 || !id) return;
+      setCreatePgnImporting(true);
+      const errs: string[] = [];
+      let firstChapterId: string | null = null;
+      let addedChapters: any[] = [];
+      try {
+        for (const game of createPgnParsed.games) {
+          const title = pgnGameTitle(game.headers);
+          let chapterId: string | null = null;
+          try {
+            if (game.startingFen) {
+              const resp = await api.post('/api/v1/import-export/fen/import', {
+                study_id: id,
+                chapter_title: title,
+                fen: game.startingFen,
+              });
+              chapterId = resp?.chapter_id ?? null;
+              if (chapterId) addedChapters.push({ id: chapterId, title, order: chapters.length + addedChapters.length });
+            } else {
+              const resp = await api.post(`/api/v1/workspace/studies/${id}/chapters`, { title });
+              chapterId = resp?.id ?? null;
+              if (chapterId) addedChapters.push({ id: chapterId, title, order: chapters.length + addedChapters.length });
+            }
+          } catch (e) {
+            errs.push(`Failed to create "${title}": ${e instanceof Error ? e.message : 'error'}`);
+            continue;
+          }
+          if (!chapterId) { errs.push(`Could not get chapter ID for "${title}"`); continue; }
+          if (!firstChapterId) firstChapterId = chapterId;
+          try {
+            await api.put(`/api/v1/workspace/studies/study-patch/chapter/${chapterId}/tree`, game.tree);
+          } catch (e) {
+            errs.push(`Failed to save tree for "${title}": ${e instanceof Error ? e.message : 'error'}`);
+          }
+        }
+      } finally {
+        setCreatePgnImporting(false);
+      }
+      if (errs.length > 0) { setCreateError(errs.join('\n')); return; }
+      if (addedChapters.length > 0) {
+        setChapters((prev) => sortChapters([...prev, ...addedChapters]));
+      }
+      if (firstChapterId) await loadChapterTree(firstChapterId);
+      setIsCreateModalOpen(false);
+      setCreatePgnText('');
+      setCreatePgnParsed(null);
+      return;
+    }
+
+    // ── Empty / FEN mode ──────────────────────────────────────────────────
     const fallbackTitle = `Chapter ${getNextChapterIndex()}`;
     const nextTitle = createTitle.trim() || fallbackTitle;
-    const trimmedFen = createFen.trim();
+    const trimmedFen = createMode === 'fen' ? createFen.trim() : '';
 
     if (nextTitle.includes('/')) {
       setCreateTitleError('No "/" in study or folder name');
@@ -485,69 +571,56 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
 
     setIsCreatingChapter(true);
     try {
-      // ✅ If FEN is provided, use FEN import API; otherwise use standard API
       if (trimmedFen) {
-        // Call FEN import API
         const response = await api.post('/api/v1/import-export/fen/import', {
           study_id: id,
           chapter_title: nextTitle,
           fen: trimmedFen
         });
-
-        // Create chapter object from response
         const chapter = {
           id: response.chapter_id,
           title: nextTitle,
           order: chapters.length,
           starting_fen: response.starting_fen
         };
-
         const nextChapters = sortChapters([...chapters, chapter]);
         setChapters(nextChapters);
-
-        if (chapter.id) {
-          await loadChapterTree(chapter.id);
-        }
+        if (chapter.id) await loadChapterTree(chapter.id);
       } else {
-        // Standard chapter creation
         await handleCreateChapter(nextTitle);
       }
-
       setIsCreateModalOpen(false);
-      setCreateFen('');  // Reset FEN input
+      setCreateFen('');
     } catch (e: any) {
-      console.error('Chapter creation error:', e);
-      console.error('Response data:', e.response?.data);
-
       let errorMessage = 'Failed to create chapter';
-
-      // Handle 422 validation errors
       if (e.response?.status === 422 && e.response?.data?.detail) {
         const detail = e.response.data.detail;
         if (Array.isArray(detail)) {
-          // Pydantic validation errors
-          errorMessage = detail.map((err: any) =>
-            `${err.loc?.join('.')}: ${err.msg}`
-          ).join('; ');
+          errorMessage = detail.map((err: any) => `${err.loc?.join('.')}: ${err.msg}`).join('; ');
         } else if (typeof detail === 'string') {
           errorMessage = detail;
         }
       } else {
         errorMessage = e.response?.data?.detail || e.message || errorMessage;
       }
-
       setCreateError(errorMessage);
     } finally {
       setIsCreatingChapter(false);
     }
-  }, [createTitle, createFen, getNextChapterIndex, handleCreateChapter, isCreatingChapter, id, chapters, loadChapterTree, setError, sortChapters]);
+  }, [createMode, createTitle, createFen, createPgnParsed, createPgnImporting, getNextChapterIndex, handleCreateChapter, isCreatingChapter, id, chapters, loadChapterTree, sortChapters]);
 
   useEffect(() => {
-    if (isCreateModalOpen && createTitleInputRef.current) {
+    if (isCreateModalOpen && createMode !== 'pgn' && createTitleInputRef.current) {
       createTitleInputRef.current.focus();
       createTitleInputRef.current.select();
     }
-  }, [isCreateModalOpen]);
+  }, [isCreateModalOpen, createMode]);
+
+  useEffect(() => {
+    const text = createPgnText.trim();
+    if (!text) { setCreatePgnParsed(null); return; }
+    setCreatePgnParsed(importMultiPgn(text, 64));
+  }, [createPgnText]);
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -781,50 +854,124 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
       {isCreateModalOpen && (
         <div className="patch-modal-overlay" role="dialog" aria-modal="true">
           <div className="patch-modal">
-            <h3>Create new chapter</h3>
-            <p>Add a new chapter to the current study.</p>
+            <h3>New Chapter</h3>
 
-            <label className="patch-modal-label">Chapter Title</label>
-            <input
-              ref={createTitleInputRef}
-              className="patch-modal-input"
-              value={createTitle}
-              onChange={(event) => {
-                const nextValue = event.target.value;
-                setCreateTitle(nextValue);
-                if (!nextValue.includes('/')) {
-                  setCreateTitleError(null);
-                }
-              }}
-              onFocus={(event) => {
-                event.target.select();
-              }}
-              placeholder="Chapter 1"
-            />
-            {createTitleError && <div className="patch-modal-error">{createTitleError}</div>}
-
-            <label className="patch-modal-label">
-              Starting Position (optional)
-              <span className="patch-modal-hint">Leave empty for standard starting position</span>
-            </label>
-            <textarea
-              className="patch-modal-textarea"
-              value={createFen}
-              onChange={(event) => setCreateFen(event.target.value)}
-              placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-              rows={2}
-            />
-            <div className="patch-modal-hint-text">
-              Enter a FEN string to start from a custom position (endgames, puzzles, etc.)
+            {/* Mode tabs */}
+            <div className="patch-modal-tabs">
+              {(['empty', 'fen', 'pgn'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`patch-modal-tab${createMode === mode ? ' is-active' : ''}`}
+                  onClick={() => { setCreateMode(mode); setCreateError(null); setCreateTitleError(null); }}
+                  disabled={isCreatingChapter || createPgnImporting}
+                >
+                  {mode === 'empty' ? 'Empty' : mode === 'fen' ? 'From FEN' : 'From PGN'}
+                </button>
+              ))}
             </div>
 
-            {createError && <div className="patch-modal-error">{createError}</div>}
+            {/* Title input (Empty + FEN modes) */}
+            {createMode !== 'pgn' && (
+              <>
+                <label className="patch-modal-label">Chapter Title</label>
+                <input
+                  ref={createTitleInputRef}
+                  className="patch-modal-input"
+                  value={createTitle}
+                  onChange={(event) => {
+                    const nextValue = event.target.value;
+                    setCreateTitle(nextValue);
+                    if (!nextValue.includes('/')) setCreateTitleError(null);
+                  }}
+                  onFocus={(event) => event.target.select()}
+                  placeholder="Chapter 1"
+                />
+                {createTitleError && <div className="patch-modal-error">{createTitleError}</div>}
+              </>
+            )}
+
+            {/* FEN input */}
+            {createMode === 'fen' && (
+              <>
+                <label className="patch-modal-label">Starting Position (FEN)</label>
+                <textarea
+                  className="patch-modal-textarea"
+                  value={createFen}
+                  onChange={(event) => setCreateFen(event.target.value)}
+                  placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+                  rows={2}
+                />
+                <div className="patch-modal-hint-text">
+                  Enter a FEN string to start from a custom position (endgames, puzzles, etc.)
+                </div>
+              </>
+            )}
+
+            {/* PGN input */}
+            {createMode === 'pgn' && (
+              <>
+                <textarea
+                  className="patch-modal-textarea patch-modal-textarea--pgn"
+                  value={createPgnText}
+                  onChange={(event) => setCreatePgnText(event.target.value)}
+                  placeholder="Paste PGN here…"
+                  spellCheck={false}
+                  rows={8}
+                />
+                <div className="patch-modal-pgn-actions">
+                  <button
+                    type="button"
+                    className="patch-modal-button"
+                    onClick={() => createPgnFileRef.current?.click()}
+                    disabled={createPgnImporting}
+                  >
+                    Load .pgn file
+                  </button>
+                  <input
+                    ref={createPgnFileRef}
+                    type="file"
+                    accept=".pgn,text/plain"
+                    style={{ display: 'none' }}
+                    onChange={handlePgnFileChange}
+                  />
+                  {createPgnText && (
+                    <button
+                      type="button"
+                      className="patch-modal-button"
+                      onClick={() => { setCreatePgnText(''); setCreatePgnParsed(null); }}
+                      disabled={createPgnImporting}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                {createPgnParsed && createPgnParsed.games.length > 0 && (
+                  <div className="patch-modal-pgn-preview">
+                    <strong>
+                      {createPgnParsed.games.length === 1
+                        ? '1 game found'
+                        : `${createPgnParsed.games.length} games found${createPgnParsed.truncated ? ' (truncated to 64)' : ''}`}
+                    </strong>
+                    <div className="patch-modal-pgn-preview__first">
+                      {pgnGameTitle(createPgnParsed.games[0].headers)}
+                      {createPgnParsed.games[0].startingFen && <span> · Custom starting position</span>}
+                    </div>
+                  </div>
+                )}
+                {createPgnParsed && createPgnParsed.games.length === 0 && (
+                  <div className="patch-modal-error">No valid PGN games found.</div>
+                )}
+              </>
+            )}
+
+            {createError && <div className="patch-modal-error" style={{ whiteSpace: 'pre-line' }}>{createError}</div>}
             <div className="patch-modal-actions">
               <button
                 type="button"
                 className="patch-modal-button"
                 onClick={closeCreateModal}
-                disabled={isCreatingChapter}
+                disabled={isCreatingChapter || createPgnImporting}
               >
                 Cancel
               </button>
@@ -832,9 +979,21 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
                 type="button"
                 className="patch-modal-button primary"
                 onClick={confirmCreateChapter}
-                disabled={isCreatingChapter}
+                disabled={
+                  isCreatingChapter ||
+                  createPgnImporting ||
+                  (createMode === 'pgn' && (!createPgnParsed || createPgnParsed.games.length === 0))
+                }
               >
-                {isCreatingChapter ? 'Creating...' : 'Create'}
+                {createMode === 'pgn'
+                  ? createPgnImporting
+                    ? 'Importing…'
+                    : createPgnParsed && createPgnParsed.games.length > 0
+                      ? `Import ${createPgnParsed.games.length} game${createPgnParsed.games.length > 1 ? 's' : ''}`
+                      : 'Import'
+                  : isCreatingChapter
+                    ? 'Creating…'
+                    : 'Create'}
               </button>
             </div>
           </div>

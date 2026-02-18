@@ -1,9 +1,7 @@
 import React from 'react';
 import { useStudy } from '../studyContext';
-import type { StudyErrorType } from '../studyContext';
 import { StudyNode } from '../tree/type';
 import type { StudyTree as StudyTreeData } from '../tree/type';
-import { PgnImportModal } from './components/PgnImportModal';
 
 export interface MoveTreeProps {
   className?: string;
@@ -20,9 +18,6 @@ export function MoveTree({ className }: MoveTreeProps) {
     selectNode,
     selectChapter,
     loadTreeFromServer,
-    loadTree,
-    setError,
-    clearError,
     saveTree,
     deleteMove,
     promoteVariation,
@@ -37,9 +32,6 @@ export function MoveTree({ className }: MoveTreeProps) {
       onSelectNode={selectNode}
       onSelectChapter={selectChapter}
       loadTreeFromServer={loadTreeFromServer}
-      loadTree={loadTree}
-      setError={setError}
-      clearError={clearError}
       saveTree={saveTree}
       onDeleteMove={deleteMove}
       onPromoteVariation={promoteVariation}
@@ -57,9 +49,6 @@ interface MoveTreeDisplayProps {
   onSelectNode: (nodeId: string) => void;
   onSelectChapter: (chapterId: string, startFen?: string) => Promise<void>;
   loadTreeFromServer: () => Promise<void>;
-  loadTree: (tree: StudyTreeData, startFen?: string) => void;
-  setError: (type: StudyErrorType, message: string, context?: Record<string, unknown>) => void;
-  clearError: () => void;
   saveTree: () => Promise<void>;
   onDeleteMove: (nodeId: string) => void;
   onPromoteVariation: (nodeId: string) => void;
@@ -77,14 +66,10 @@ const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
   onSelectNode,
   onSelectChapter,
   loadTreeFromServer,
-  loadTree,
-  setError,
-  clearError,
   saveTree,
   onDeleteMove,
   onPromoteVariation,
 }: MoveTreeDisplayProps) {
-  const [showPgnImport, setShowPgnImport] = React.useState(false);
   const [collapsedVariations, setCollapsedVariations] = React.useState<Set<string>>(new Set());
   const [menuState, setMenuState] = React.useState<{
     nodeId: string;
@@ -132,11 +117,6 @@ const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
     });
   }, []);
 
-  const handleImportClick = React.useCallback(() => {
-    clearError();
-    setShowPgnImport(true);
-  }, [clearError]);
-
   if (!tree || !tree.nodes || !tree.rootId || !cursorNodeId) {
     return <MoveTreeUnavailable onReload={handleReload} className={className} />;
   }
@@ -156,11 +136,8 @@ const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
         overflowY: 'auto'
       }}
     >
-      <div className="move-tree-title" style={{ fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #ddd', paddingBottom: '5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="move-tree-title" style={{ fontWeight: 'bold', marginBottom: '10px', borderBottom: '1px solid #ddd', paddingBottom: '5px' }}>
         <span>Move Tree</span>
-        <div className="tree-controls" style={{ fontSize: '0.8em' }}>
-          <button onClick={handleImportClick} style={{ marginRight: '5px' }}>Import</button>
-        </div>
       </div>
       <div className="move-tree-content">
         {rootNode && rootNode.children.length > 0 && (
@@ -237,19 +214,6 @@ const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
           </div>
         </div>
       )}
-      {showPgnImport && (
-        <PgnImportModal
-          onClose={() => setShowPgnImport(false)}
-          onSingleImport={(_tree) => {
-            // Tree already loaded via loadTree() inside the modal
-          }}
-          onMultiImport={(_firstChapterId) => {
-            if (chapterId) {
-              onSelectChapter(chapterId);
-            }
-          }}
-        />
-      )}
     </div>
   );
 });
@@ -295,7 +259,7 @@ interface MoveBranchProps {
 }
 
 // React.memo prevents re-renders when only MoveTreeDisplay's local UI state
-// changes (menuState, confirmDeleteId, showPgnImport).
+// changes (menuState, confirmDeleteId).
 const MoveBranch = React.memo(function MoveBranch({
   startNodeId,
   nodes,

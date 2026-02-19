@@ -314,9 +314,26 @@ async def _presence_cleanup_loop() -> None:
         await asyncio.sleep(interval_seconds)
 
 
+def _run_alembic_migrations() -> None:
+    """TEMPORARY: Run alembic upgrade head on startup. Remove after 009 migration is applied."""
+    try:
+        import os
+        from alembic.config import Config
+        from alembic import command as alembic_command
+        alembic_cfg = Config(os.path.join(os.path.dirname(__file__), "alembic.ini"))
+        alembic_cfg.set_main_option("script_location", os.path.join(os.path.dirname(__file__), "alembic"))
+        alembic_command.upgrade(alembic_cfg, "head")
+        logger.info("✅ Alembic migrations applied successfully")
+    except Exception as e:
+        logger.error(f"Alembic migration failed: {e}", exc_info=True)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await _init_workspace_db()
+
+    # TEMPORARY: apply pending alembic migrations (remove after 009 is confirmed)
+    await asyncio.to_thread(_run_alembic_migrations)
 
     # Initialize Blog database and run migrations
     await _init_blog_db()

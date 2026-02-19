@@ -1,10 +1,53 @@
 # Catachess API Documentation
 
-> **Last Updated**: 2025-02-16
+> **Last Updated**: 2025-02-19
 >
 > **Base URL**: `https://api.catachess.com` (Production)
 >
 > **Base URL**: `http://localhost:8000` (Development)
+
+新增的端点：
+GET /api/v1/workspace/public/studies               
+                                                     
+  无需鉴权。                                         
+                                                     
+  Query 参数                                         
+                                                     
+  ┌────────┬──────┬────────┬───────┬──────────┐      
+  │  参数  │ 类型 │ 默认值 │ 范围  │   说明   │      
+  ├────────┼──────┼────────┼───────┼──────────┤      
+  │ limit  │ int  │ 20     │ 1–100 │ 每页条数 │
+  ├────────┼──────┼────────┼───────┼──────────┤
+  │ offset │ int  │ 0      │ ≥0    │ 分页偏移 │
+  └────────┴──────┴────────┴───────┴──────────┘
+
+  Response 示例
+
+  {
+    "items": [
+      {
+        "id": "abc123",
+        "title": "Philidor Defense",
+        "owner_id": "user-uuid",
+        "created_at": "2026-02-19T10:00:00",
+        "updated_at": "2026-02-19T12:00:00"
+      }
+    ],
+    "limit": 20,
+    "offset": 0
+  }
+
+  排序：按 created_at 降序（最新的在前）。
+
+  分页示例
+  GET
+  /api/v1/workspace/public/studies?limit=20&offset=0
+    # 第1页
+  GET
+  /api/v1/workspace/public/studies?limit=20&offset=20
+    # 第2页
+
+
 
 ## 📋 Table of Contents
 

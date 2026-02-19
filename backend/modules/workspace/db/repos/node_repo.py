@@ -358,7 +358,8 @@ class NodeRepository:
         ancestor_ids = [p for p in node.path.split("/") if p][:-1]
         if not ancestor_ids:
             return False
-        stmt = (
+        # Wrap .exists() in select() so SQLAlchemy emits: SELECT EXISTS (SELECT ...)
+        exists_clause = (
             select(Node.id)
             .where(
                 Node.id.in_(ancestor_ids),
@@ -368,7 +369,7 @@ class NodeRepository:
             )
             .exists()
         )
-        return bool(await self.session.scalar(stmt))
+        return bool(await self.session.scalar(select(exists_clause)))
 
     async def get_public_nodes(
         self, parent_id: str | None = None

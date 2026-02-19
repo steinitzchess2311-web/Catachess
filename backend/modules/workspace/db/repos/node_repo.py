@@ -4,7 +4,7 @@ Node repository for database operations.
 
 from typing import Sequence
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, or_, select, update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
@@ -296,48 +296,37 @@ class NodeRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
+    async def cascade_visibility(self, node_path: str, visibility: Visibility) -> None:
+        """
+        Bulk-update visibility of all descendants of a node.
+
+        Called after changing a node's own visibility so the entire subtree
+        reflects the new state. Uses path-prefix matching for efficiency.
+        """
+        await self.session.execute(
+            sa_update(Node)
+            .where(
+                Node.path.like(node_path + "%"),
+                Node.path != node_path,
+                Node.deleted_at.is_(None),
+            )
+            .values(visibility=visibility)
+        )
+
     async def get_public_studies(
         self, limit: int = 20, offset: int = 0
     ) -> Sequence[Node]:
         """
         Get public study nodes, ordered by most recently created.
 
-        Includes:
-        - Studies directly set to visibility=public
-        - Studies inside a folder that is visibility=public (inherited)
-
-        Args:
-            limit: Maximum results (capped at 100)
-            offset: Pagination offset
-
-        Returns:
-            List of public study nodes
+        With cascade-based visibility, a study is public iff visibility='public'.
         """
-        # Correlated subquery: does any public folder/workspace ancestor exist?
-        # Uses startswith on the study's path (forward LIKE: ancestor.path is prefix of Node.path).
-        # Node.path.like(ancestor.path + '%') ← column-on-column LIKE, safe in SQLAlchemy.
-        folder_alias = aliased(Node, flat=True)
-        in_public_folder = (
-            select(folder_alias.id)
-            .where(
-                folder_alias.node_type.in_([NodeType.FOLDER, NodeType.WORKSPACE]),
-                folder_alias.visibility == Visibility.PUBLIC,
-                folder_alias.deleted_at.is_(None),
-                Node.path.like(folder_alias.path + "%"),
-                Node.path != folder_alias.path,
-            )
-            .exists()
-        )
-
         stmt = (
             select(Node)
             .where(
                 Node.node_type == NodeType.STUDY,
+                Node.visibility == Visibility.PUBLIC,
                 Node.deleted_at.is_(None),
-                or_(
-                    Node.visibility == Visibility.PUBLIC,
-                    in_public_folder,
-                ),
             )
             .order_by(Node.created_at.desc())
             .limit(min(limit, 100))
@@ -346,30 +335,13 @@ class NodeRepository:
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
-    async def _is_publicly_accessible(self, node: Node) -> bool:
-        """Return True if node is public or sits inside a public folder/workspace.
+    def _is_publicly_accessible(self, node: Node) -> bool:
+        """Return True if node has visibility=public.
 
-        Uses path components to find ancestor IDs directly (avoids LIKE-on-column issues).
-        Path format: /id1/id2/id3/ — split gives ['id1', 'id2', 'id3'].
+        With cascade-based visibility inheritance, the DB value is always the
+        effective visibility — no ancestor traversal needed.
         """
-        if node.visibility == Visibility.PUBLIC:
-            return True
-        # Extract ancestor IDs from the materialized path (everything except self)
-        ancestor_ids = [p for p in node.path.split("/") if p][:-1]
-        if not ancestor_ids:
-            return False
-        # Wrap .exists() in select() so SQLAlchemy emits: SELECT EXISTS (SELECT ...)
-        exists_clause = (
-            select(Node.id)
-            .where(
-                Node.id.in_(ancestor_ids),
-                Node.node_type.in_([NodeType.FOLDER, NodeType.WORKSPACE]),
-                Node.visibility == Visibility.PUBLIC,
-                Node.deleted_at.is_(None),
-            )
-            .exists()
-        )
-        return bool(await self.session.scalar(select(exists_clause)))
+        return node.visibility == Visibility.PUBLIC
 
     async def get_public_nodes(
         self, parent_id: str | None = None
@@ -396,13 +368,15 @@ class NodeRepository:
             return result.scalars().all()
 
         parent = await self.get_by_id(parent_id)
-        if parent is None or not await self._is_publicly_accessible(parent):
+        if parent is None or not self._is_publicly_accessible(parent):
             return []
 
+        # Only show children that are also public (private subtrees are excluded by cascade)
         stmt = (
             select(Node)
             .where(
                 Node.parent_id == parent_id,
+                Node.visibility == Visibility.PUBLIC,
                 Node.deleted_at.is_(None),
             )
             .order_by(Node.created_at.desc())

@@ -445,3 +445,14 @@
   font-size: 11px;
   color: var(--error, #e05252);
 }
+
+.nsm-cascade-hint {
+  display: block;
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 6px;
+  padding: 6px 8px;
+  background: var(--surface-raised, rgba(0,0,0,0.04));
+  border-radius: var(--radius-sm, 4px);
+  border-left: 2px solid var(--primary, #4e7fff);
+}

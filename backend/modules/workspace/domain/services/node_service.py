@@ -110,6 +110,11 @@ class NodeService:
                 ):
                     raise PermissionDeniedError("Cannot create node under this parent")
 
+        # Inherit parent visibility: if parent is public, child starts public too
+        effective_visibility = command.visibility
+        if parent is not None and parent.visibility == Visibility.PUBLIC:
+            effective_visibility = Visibility.PUBLIC
+
         # Create node
         node = Node(
             id=str(uuid.uuid4()),
@@ -117,7 +122,7 @@ class NodeService:
             title=command.title,
             description=command.description,
             owner_id=command.owner_id,
-            visibility=command.visibility,
+            visibility=effective_visibility,
             parent_id=command.parent_id,
             layout=command.layout,
             version=1,
@@ -203,6 +208,8 @@ class NodeService:
         if command.visibility is not None:
             changes["visibility"] = {"old": getattr(node.visibility, 'value', node.visibility), "new": getattr(command.visibility, 'value', command.visibility)}
             node.visibility = command.visibility
+            # Cascade to all descendants so subtree reflects the new visibility
+            await self.node_repo.cascade_visibility(node.path, command.visibility)
 
         if command.layout is not None:
             changes["layout"] = {"old": node.layout, "new": command.layout}

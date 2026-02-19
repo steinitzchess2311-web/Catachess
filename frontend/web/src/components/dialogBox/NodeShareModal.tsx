@@ -18,6 +18,12 @@ const VIS: { value: VisMode; icon: string; label: string; desc: string }[] = [
   { value: 'shared',  icon: '👥', label: 'Share with', desc: 'Specific people' },
 ];
 
+const CASCADE_HINT: Record<VisMode, string | null> = {
+  public:  'All content inside this folder will be made public.',
+  private: 'This folder and all its content will be hidden from public view.',
+  shared:  null,
+};
+
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 const NodeShareModal: React.FC<NodeShareModalProps> = ({ node, onClose }) => {
@@ -159,6 +165,9 @@ const NodeShareModal: React.FC<NodeShareModalProps> = ({ node, onClose }) => {
             })}
           </div>
           {visError && <span className="nsm-error">{visError}</span>}
+          {node.node_type === 'folder' && CASCADE_HINT[visibility] && (
+            <span className="nsm-cascade-hint">{CASCADE_HINT[visibility]}</span>
+          )}
 
           {/* Share-with panel — animated in */}
           {isShared && (

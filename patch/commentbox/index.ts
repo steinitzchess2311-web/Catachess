@@ -1,2 +1,2 @@
 export { CommentBox } from './CommentBox';
-export { ShareSettings } from './ShareSettings';
+export { ShareSettings } from './ShareSettings/index';

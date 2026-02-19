@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useStudy } from '../studyContext';
-import { ShareSettings } from './ShareSettings';
+import { ShareSettings } from './ShareSettings/index';
 
 export function CommentBox() {
   const { state, setComment } = useStudy();

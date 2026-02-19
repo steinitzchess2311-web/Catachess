@@ -6,7 +6,7 @@ from typing import Sequence
 
 from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import aliased, selectinload
 
 from modules.workspace.db.tables.nodes import Node
 from modules.workspace.domain.models.types import NodeType, Visibility
@@ -301,6 +301,10 @@ class NodeRepository:
         """
         Get public study nodes, ordered by most recently created.
 
+        Includes:
+        - Studies directly set to visibility=public
+        - Studies inside a folder that is visibility=public (inherited)
+
         Args:
             limit: Maximum results (capped at 100)
             offset: Pagination offset
@@ -308,12 +312,29 @@ class NodeRepository:
         Returns:
             List of public study nodes
         """
+        # Correlated subquery: does any public folder ancestor exist?
+        folder_alias = aliased(Node, flat=True)
+        in_public_folder = (
+            select(folder_alias.id)
+            .where(
+                folder_alias.node_type == NodeType.FOLDER,
+                folder_alias.visibility == Visibility.PUBLIC,
+                folder_alias.deleted_at.is_(None),
+                Node.path.like(folder_alias.path + "%"),
+                Node.path != folder_alias.path,
+            )
+            .exists()
+        )
+
         stmt = (
             select(Node)
             .where(
-                Node.visibility == Visibility.PUBLIC,
                 Node.node_type == NodeType.STUDY,
                 Node.deleted_at.is_(None),
+                or_(
+                    Node.visibility == Visibility.PUBLIC,
+                    in_public_folder,
+                ),
             )
             .order_by(Node.created_at.desc())
             .limit(min(limit, 100))

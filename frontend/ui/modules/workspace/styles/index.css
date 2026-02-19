@@ -70,7 +70,7 @@
 
 /* New item cards in grid */
 .new-item-card {
-    border: 2px dashed var(--border);
+    border: 2px dashed var(--primary);
     background: transparent;
     opacity: 0.7;
     box-shadow: none;

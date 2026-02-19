@@ -23,12 +23,10 @@ const AccountPage: React.FC = () => {
     fide_title: '',
     self_intro: '',
   });
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
-      setLoading(true);
       try {
         const data = await api.get('/user/profile');
         setProfile({
@@ -43,9 +41,6 @@ const AccountPage: React.FC = () => {
         });
       } catch (error) {
         console.error('Error fetching profile:', error);
-        // Optionally show an error message to the user
-      } finally {
-        setLoading(false);
       }
     };
 
@@ -82,14 +77,6 @@ const AccountPage: React.FC = () => {
       setSaving(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 64 }}>
-        Loading...
-      </div>
-    );
-  }
 
   return (
     <div style={{ margin: '32px auto', maxWidth: 900, padding: '0 16px' }}>

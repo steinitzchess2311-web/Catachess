@@ -1,4 +1,5 @@
 from sqlalchemy import String
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from modules.workspace.db.base import Base
@@ -15,5 +16,5 @@ class User(Base):
 
     __tablename__ = "users"
 
-    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True)
     username: Mapped[str] = mapped_column(String(64), unique=True, nullable=True)

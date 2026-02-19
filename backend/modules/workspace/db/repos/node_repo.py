@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from modules.workspace.db.tables.nodes import Node
-from modules.workspace.domain.models.types import NodeType
+from modules.workspace.domain.models.types import NodeType, Visibility
 
 
 class NodeRepository:
@@ -292,5 +292,32 @@ class NodeRepository:
             conditions.append(Node.owner_id == owner_id)
 
         stmt = select(Node).where(and_(*conditions)).limit(limit)
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def get_public_studies(
+        self, limit: int = 20, offset: int = 0
+    ) -> Sequence[Node]:
+        """
+        Get public study nodes, ordered by most recently created.
+
+        Args:
+            limit: Maximum results (capped at 100)
+            offset: Pagination offset
+
+        Returns:
+            List of public study nodes
+        """
+        stmt = (
+            select(Node)
+            .where(
+                Node.visibility == Visibility.PUBLIC,
+                Node.node_type == NodeType.STUDY,
+                Node.deleted_at.is_(None),
+            )
+            .order_by(Node.created_at.desc())
+            .limit(min(limit, 100))
+            .offset(offset)
+        )
         result = await self.session.execute(stmt)
         return result.scalars().all()

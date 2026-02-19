@@ -28,10 +28,8 @@ export function sortNodes(state: WorkspaceState, nodes: any[]): any[] {
 export async function refreshNodes(state: WorkspaceState, parentId: string, renderItems: (nodes: any[]) => void) {
     let url: string;
     if (state.mode === 'public') {
-        // stub: backend API not yet implemented
         url = `/api/v1/workspace/public-nodes?parent_id=${parentId}`;
     } else if (state.mode === 'shared') {
-        // stub: backend API not yet implemented
         url = `/api/v1/workspace/shared-nodes?parent_id=${parentId}`;
     } else {
         url = `/api/v1/workspace/nodes?parent_id=${parentId}`;
@@ -40,12 +38,8 @@ export async function refreshNodes(state: WorkspaceState, parentId: string, rend
         const response = await api.get(url);
         renderItems(response.nodes);
     } catch (error) {
-        if (state.mode !== 'private') {
-            // public/shared APIs not yet implemented — render empty list silently
-            renderItems([]);
-        } else {
-            console.error('Failed to fetch nodes:', error);
-        }
+        console.error('Failed to fetch nodes:', error);
+        renderItems([]);
     }
 }
 

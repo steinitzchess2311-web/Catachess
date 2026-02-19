@@ -11,6 +11,7 @@ api_router = APIRouter()
 
 # Include all endpoint routers
 api_router.include_router(public.router)
+api_router.include_router(public.browse_router)
 api_router.include_router(nodes.router)
 api_router.include_router(shares.router)
 api_router.include_router(studies.router)

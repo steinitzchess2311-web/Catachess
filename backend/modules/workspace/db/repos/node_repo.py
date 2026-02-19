@@ -4,10 +4,11 @@ Node repository for database operations.
 
 from typing import Sequence
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, literal, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
+from modules.workspace.db.tables.acl import ACL
 from modules.workspace.db.tables.nodes import Node
 from modules.workspace.domain.models.types import NodeType, Visibility
 
@@ -340,5 +341,97 @@ class NodeRepository:
             .limit(min(limit, 100))
             .offset(offset)
         )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def _is_publicly_accessible(self, node: Node) -> bool:
+        """Return True if node is public or sits inside a public folder."""
+        if node.visibility == Visibility.PUBLIC:
+            return True
+        ancestor = aliased(Node, flat=True)
+        stmt = (
+            select(ancestor.id)
+            .where(
+                ancestor.node_type == NodeType.FOLDER,
+                ancestor.visibility == Visibility.PUBLIC,
+                ancestor.deleted_at.is_(None),
+                literal(node.path).like(ancestor.path + "%"),
+                literal(node.path) != ancestor.path,
+            )
+            .exists()
+        )
+        return bool(await self.session.scalar(stmt))
+
+    async def get_public_nodes(
+        self, parent_id: str | None = None
+    ) -> Sequence[Node]:
+        """
+        Get publicly browseable nodes.
+
+        - parent_id None or "root*": root-level nodes with visibility=public
+        - parent_id UUID: direct children of that folder, if publicly accessible
+        """
+        is_root = parent_id is None or str(parent_id).startswith("root")
+
+        if is_root:
+            stmt = (
+                select(Node)
+                .where(
+                    Node.parent_id.is_(None),
+                    Node.visibility == Visibility.PUBLIC,
+                    Node.deleted_at.is_(None),
+                )
+                .order_by(Node.created_at.desc())
+            )
+            result = await self.session.execute(stmt)
+            return result.scalars().all()
+
+        parent = await self.get_by_id(parent_id)
+        if parent is None or not await self._is_publicly_accessible(parent):
+            return []
+
+        stmt = (
+            select(Node)
+            .where(
+                Node.parent_id == parent_id,
+                Node.deleted_at.is_(None),
+            )
+            .order_by(Node.created_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def get_shared_nodes(
+        self, user_id: str, parent_id: str | None = None
+    ) -> Sequence[Node]:
+        """
+        Get nodes shared with a user.
+
+        - parent_id None or "root*": nodes directly shared (non-inherited ACL)
+        - parent_id UUID: direct children of a shared folder
+        """
+        is_root = parent_id is None or str(parent_id).startswith("root")
+
+        if is_root:
+            stmt = (
+                select(Node)
+                .join(ACL, ACL.object_id == Node.id)
+                .where(
+                    ACL.user_id == user_id,
+                    ACL.is_inherited.is_(False),
+                    Node.deleted_at.is_(None),
+                )
+                .order_by(Node.created_at.desc())
+            )
+        else:
+            stmt = (
+                select(Node)
+                .where(
+                    Node.parent_id == parent_id,
+                    Node.deleted_at.is_(None),
+                )
+                .order_by(Node.created_at.desc())
+            )
+
         result = await self.session.execute(stmt)
         return result.scalars().all()

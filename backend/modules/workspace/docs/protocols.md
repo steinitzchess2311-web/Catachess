@@ -270,7 +270,47 @@ The system is built in **12 phases**:
 12. **Phase 11**: Email notifications (optional)
 13. **Phase 12**: Activity log & audit
 
-## 12. Testing Requirements
+## 12. Public & Shared Browsing API
+
+### Endpoints
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| `GET` | `/api/v1/workspace/public-nodes` | None | Browse public node tree |
+| `GET` | `/api/v1/workspace/shared-nodes` | Required | Browse nodes shared with current user |
+| `GET` | `/api/v1/workspace/public/studies` | None | List all public studies (feed, paginated) |
+
+### `/public-nodes` — Public Tree Browser
+
+Query params:
+- `parent_id` (optional): `root` or a UUID
+
+Behaviour:
+- `parent_id` omitted / starts with `"root"` → returns root-level nodes (`parent_id IS NULL`) with `visibility = public`
+- `parent_id` = UUID → returns direct children of that folder, **only if** the folder is publicly accessible (directly `public` or inside a `public` folder via materialized-path ancestor check)
+
+Response: `NodeListResponse` — `{ nodes: NodeResponse[], total: int }`
+
+### `/shared-nodes` — Shared-With-Me Browser
+
+Query params:
+- `parent_id` (optional): `root` or a UUID
+
+Behaviour:
+- `parent_id` root → returns all nodes with a direct (non-inherited) ACL entry for the current user
+- `parent_id` UUID → direct children of that folder (user already has access through shared root)
+
+Response: `NodeListResponse`
+
+### Visibility Inheritance Rule
+
+A node is considered **publicly accessible** if:
+1. Its own `visibility = 'public'`, **or**
+2. Any ancestor folder in the materialized path has `visibility = 'public'`
+
+This is enforced server-side in `NodeRepository._is_publicly_accessible()`.
+
+## 13. Testing Requirements
 
 Every phase must achieve:
 - ✅ All checklist items completed

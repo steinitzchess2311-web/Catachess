@@ -1,12 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useStudy } from './studyContext';
+import { api } from '@ui/assets/api';
 
-export function CommentBox() {
+interface CommentBoxProps {
+  studyTitle?: string;
+  onOpenShare?: () => void;
+}
+
+export function CommentBox({ studyTitle: _studyTitle, onOpenShare }: CommentBoxProps = {}) {
   const { state, setComment } = useStudy();
   const currentNode = state.tree.nodes[state.cursorNodeId];
   const [value, setValue] = useState(currentNode?.comment || '');
-  const [activeTab, setActiveTab] = useState<'comment' | 'output'>('comment');
+  const [activeTab, setActiveTab] = useState<'comment' | 'output' | 'settings'>('comment');
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [visibility, setVisibility] = useState<'private' | 'shared' | 'public'>('private');
+  const [visibilityLoading, setVisibilityLoading] = useState(false);
   const fen = state.currentFen || '';
 
   useEffect(() => {
@@ -18,6 +26,32 @@ export function CommentBox() {
     const timer = window.setTimeout(() => setCopyState('idle'), 1500);
     return () => window.clearTimeout(timer);
   }, [copyState]);
+
+  useEffect(() => {
+    if (!state.studyId) return;
+    api.get(`/api/v1/workspace/nodes/${state.studyId}`)
+      .then((node: any) => {
+        if (node?.visibility) setVisibility(node.visibility);
+      })
+      .catch(() => {});
+  }, [state.studyId]);
+
+  const handleVisibilityChange = async (next: 'private' | 'shared' | 'public') => {
+    if (!state.studyId) return;
+    setVisibilityLoading(true);
+    try {
+      const node = await api.get(`/api/v1/workspace/nodes/${state.studyId}`);
+      await api.put(`/api/v1/workspace/nodes/${state.studyId}`, {
+        visibility: next,
+        version: node?.version ?? 1,
+      });
+      setVisibility(next);
+    } catch {
+      // revert on failure
+    } finally {
+      setVisibilityLoading(false);
+    }
+  };
 
   const handleCopyFen = async () => {
     if (!fen) return;
@@ -151,9 +185,49 @@ export function CommentBox() {
         >
           Output
         </button>
+        <button
+          type="button"
+          className={`study-comment-tab ${activeTab === 'settings' ? 'is-active' : ''}`}
+          onClick={() => setActiveTab('settings')}
+        >
+          Settings
+        </button>
+        {onOpenShare && (
+          <button
+            type="button"
+            className="study-comment-tab study-comment-tab--share"
+            onClick={onOpenShare}
+          >
+            Share
+          </button>
+        )}
       </div>
       <div className="study-comment-panel">
-        {activeTab === 'comment' ? (
+        {activeTab === 'settings' ? (
+          <div className="study-settings-panel">
+            <div className="study-settings-row">
+              <span className="study-settings-label">Visibility</span>
+              <div className="study-settings-visibility">
+                {(['private', 'shared', 'public'] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className={`study-settings-vis-btn${visibility === v ? ' is-active' : ''}`}
+                    onClick={() => handleVisibilityChange(v)}
+                    disabled={visibilityLoading || visibility === v}
+                  >
+                    {v.charAt(0).toUpperCase() + v.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="study-settings-hint">
+              {visibility === 'private' && 'Only you can see this study.'}
+              {visibility === 'shared' && 'Visible to users you\'ve shared with.'}
+              {visibility === 'public' && 'Anyone with the link can view.'}
+            </p>
+          </div>
+        ) : activeTab === 'comment' ? (
           <textarea
             className="study-comment-input"
             placeholder="Add comment..."

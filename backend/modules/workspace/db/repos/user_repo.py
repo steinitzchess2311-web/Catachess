@@ -24,3 +24,12 @@ class UserRepository:
             select(User).where(User.username == username)
         )
         return result.scalar_one_or_none()
+
+    async def search_by_username(self, query: str, limit: int = 10) -> list[User]:
+        result = await self.session.execute(
+            select(User)
+            .where(User.username.ilike(f"%{query}%"))
+            .order_by(User.username)
+            .limit(limit)
+        )
+        return list(result.scalars().all())

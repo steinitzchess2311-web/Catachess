@@ -5,6 +5,10 @@ Share endpoints.
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from modules.workspace.api.deps import get_current_user_id, get_share_service
+from modules.workspace.api.deps_core import get_acl_repo, get_node_repo, get_user_repo
+from modules.workspace.db.repos.acl_repo import ACLRepository
+from modules.workspace.db.repos.node_repo import NodeRepository
+from modules.workspace.db.repos.user_repo import UserRepository
 from modules.workspace.api.schemas.share import (
     ACLResponse,
     ChangeRole,
@@ -12,6 +16,7 @@ from modules.workspace.api.schemas.share import (
     RevokeShare,
     ShareLinkResponse,
     ShareWithUser,
+    SharedUserResponse,
 )
 from modules.workspace.domain.models.acl import (
     ChangeRoleCommand,
@@ -28,6 +33,37 @@ from modules.workspace.domain.services.node_service import (
 from modules.workspace.domain.services.share_service import ShareService
 
 router = APIRouter(prefix="/share", tags=["share"])
+
+
+@router.get("/{object_id}/users", response_model=list[SharedUserResponse])
+async def get_shared_users(
+    object_id: str,
+    user_id: str = Depends(get_current_user_id),
+    node_repo: NodeRepository = Depends(get_node_repo),
+    acl_repo: ACLRepository = Depends(get_acl_repo),
+    user_repo: UserRepository = Depends(get_user_repo),
+) -> list[SharedUserResponse]:
+    """List all users who have explicit access to a node."""
+    from fastapi import HTTPException, status
+
+    node = await node_repo.get_by_id(object_id)
+    if not node:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+    if node.owner_id != user_id:
+        acl = await acl_repo.get_acl(object_id, user_id)
+        if not acl:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+
+    acls = await acl_repo.get_acls_for_object(object_id)
+    result = []
+    for acl in acls:
+        u = await user_repo.get_by_id(acl.user_id)
+        result.append(SharedUserResponse(
+            user_id=acl.user_id,
+            username=u.username if u else acl.user_id,
+            permission=acl.permission,
+        ))
+    return result
 
 
 @router.post("/{object_id}/users", response_model=ACLResponse)

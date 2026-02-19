@@ -2,6 +2,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.workspace.db.repos.acl_repo import ACLRepository
+from modules.workspace.db.repos.user_repo import UserRepository
 from modules.workspace.db.repos.audit_log_repo import AuditLogRepository
 from modules.workspace.db.repos.discussion_reaction_repo import DiscussionReactionRepository
 from modules.workspace.db.repos.discussion_reply_repo import DiscussionReplyRepository
@@ -21,6 +22,12 @@ from modules.workspace.events.subscribers.registry import register_all_subscribe
 from modules.workspace.api.rate_limit import RateLimiter
 
 _rate_limiter = RateLimiter()
+
+async def get_user_repo(
+    session: AsyncSession = Depends(get_session),
+) -> UserRepository:
+    return UserRepository(session)
+
 
 async def get_node_repo(
     session: AsyncSession = Depends(get_session),

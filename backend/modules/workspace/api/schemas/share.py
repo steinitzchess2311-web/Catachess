@@ -70,6 +70,14 @@ class ACLResponse(BaseModel):
     created_at: datetime
 
 
+class SharedUserResponse(BaseModel):
+    """Schema for a user currently shared on a node."""
+
+    user_id: str
+    username: str
+    permission: Permission
+
+
 class SharedWithMeResponse(BaseModel):
     """Schema for shared-with-me response."""
 

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useStudy } from '../studyContext';
 import { api } from '@ui/assets/api';
 
@@ -40,7 +41,7 @@ function AddPopover({ anchor, inputRef, query, setQuery, results, searching, onS
   // Position: appears above the anchor button, fixed to viewport
   const bottomPx = window.innerHeight - anchor.top + 6;
 
-  return (
+  return createPortal(
     <div
       ref={wrapRef}
       style={{
@@ -111,7 +112,8 @@ function AddPopover({ anchor, inputRef, query, setQuery, results, searching, onS
           Type to search…
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -257,14 +259,16 @@ export function ShareSettings() {
                 disabled={visLoading}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '9px',
-                  padding: '7px 10px',
+                  padding: '0 10px',
+                  height: '32px',
                   border: `1.5px solid ${active ? 'var(--accent, #4e7fff)' : 'var(--border, rgba(128,128,128,0.18))'}`,
                   borderRadius: '8px',
                   background: active ? 'var(--accent-bg, rgba(78,127,255,0.07))' : 'transparent',
                   cursor: visLoading ? 'default' : 'pointer',
                   transition: 'border-color 0.14s, background 0.14s',
                   opacity: visLoading && !active ? 0.5 : 1,
-                  color: 'inherit', width: '100%',
+                  color: 'inherit', width: '100%', flexShrink: 0,
+                  boxSizing: 'border-box',
                 }}
               >
                 <span style={{ fontSize: '15px', lineHeight: 1, flexShrink: 0 }}>{icon}</span>

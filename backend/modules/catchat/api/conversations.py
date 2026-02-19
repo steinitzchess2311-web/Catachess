@@ -24,6 +24,12 @@ def _sorted_pair(a: uuid.UUID, b: uuid.UUID) -> tuple[uuid.UUID, uuid.UUID]:
     return (a, b) if a < b else (b, a)
 
 
+def _resolve_username(db: Session, user_id: uuid.UUID) -> str | None:
+    """Look up the username for a given user UUID."""
+    user = db.get(User, user_id)
+    return user.username if user else None
+
+
 @router.get("", response_model=list[ConversationResponse])
 def list_my_conversations(
     current_user: User = Depends(get_current_user),
@@ -39,7 +45,8 @@ def list_my_conversations(
     return [
         ConversationResponse(
             id=str(c.id),
-            other_user_id=str(c.user2_id if c.user1_id == uid else c.user1_id),
+            other_user_id=str(other_id := c.user2_id if c.user1_id == uid else c.user1_id),
+            other_username=_resolve_username(db, other_id),
             last_message_at=c.last_message_at,
             created_at=c.created_at,
         )
@@ -77,6 +84,7 @@ def open_conversation(
     return ConversationResponse(
         id=str(conv.id),
         other_user_id=str(other_id),
+        other_username=_resolve_username(db, other_id),
         last_message_at=conv.last_message_at,
         created_at=conv.created_at,
     )

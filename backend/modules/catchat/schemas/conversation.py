@@ -9,8 +9,9 @@ class ConversationCreate(BaseModel):
 
 class ConversationResponse(BaseModel):
     id: str
-    other_user_id: str        # UUID of the other participant
-    last_message_at: datetime  # use this to sort conversation list
+    other_user_id: str           # UUID of the other participant
+    other_username: str | None   # display name, resolved via JOIN
+    last_message_at: datetime    # use this to sort conversation list
     created_at: datetime
 
     model_config = {"from_attributes": True}

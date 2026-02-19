@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { useStudy } from '../studyContext';
 import { getMoveSan } from '../chessJS/replay';
@@ -100,29 +100,29 @@ export function StudyBoard({ className, boardWidth = 500 }: StudyBoardProps) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [moveToEnd, moveToNext, moveToPrev, moveToStart, toggleFlip]);
 
-  // Derive customArrows from current node's shapes
-  const customArrows = useMemo<[string, string, string][]>(() => {
-    const node = state.tree.nodes[state.cursorNodeId];
-    if (!node?.shapes) return [];
-    return node.shapes
-      .filter((s): s is ShapeArrow => s.type === 'arrow')
-      .map((s) => [s.from, s.to, SHAPE_COLOR_CSS[s.color]]);
-  }, [state.tree.nodes, state.cursorNodeId]);
+  // Display arrows/circles: only update when navigating to a different node.
+  // IMPORTANT: must NOT depend on node.shapes — if customArrows prop changes,
+  // react-chessboard unconditionally calls clearArrows(), which fires onArrowsChange([]),
+  // which would immediately erase whatever the user just drew (feedback loop).
+  const [displayArrows, setDisplayArrows] = useState<[string, string, string][]>([]);
+  const [displaySquareStyles, setDisplaySquareStyles] = useState<Record<string, React.CSSProperties>>({});
 
-  // Derive circle highlights from current node's shapes
-  const customSquareStyles = useMemo<Record<string, React.CSSProperties>>(() => {
+  useEffect(() => {
     const node = state.tree.nodes[state.cursorNodeId];
-    if (!node?.shapes) return {};
+    const arrows: [string, string, string][] =
+      node?.shapes
+        ?.filter((s): s is ShapeArrow => s.type === 'arrow')
+        .map((s) => [s.from, s.to, SHAPE_COLOR_CSS[s.color]]) ?? [];
+    setDisplayArrows(arrows);
+
     const styles: Record<string, React.CSSProperties> = {};
-    node.shapes
-      .filter((s): s is ShapeCircle => s.type === 'circle')
+    node?.shapes
+      ?.filter((s): s is ShapeCircle => s.type === 'circle')
       .forEach((s) => {
-        styles[s.square] = {
-          boxShadow: `inset 0 0 0 4px ${CIRCLE_COLOR_CSS[s.color]}`,
-        };
+        styles[s.square] = { boxShadow: `inset 0 0 0 4px ${CIRCLE_COLOR_CSS[s.color]}` };
       });
-    return styles;
-  }, [state.tree.nodes, state.cursorNodeId]);
+    setDisplaySquareStyles(styles);
+  }, [state.cursorNodeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Capture user-drawn arrows and save to current node
   const onArrowsChange = useCallback(

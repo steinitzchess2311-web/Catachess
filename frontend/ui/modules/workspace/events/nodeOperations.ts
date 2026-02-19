@@ -26,12 +26,26 @@ export function sortNodes(state: WorkspaceState, nodes: any[]): any[] {
 }
 
 export async function refreshNodes(state: WorkspaceState, parentId: string, renderItems: (nodes: any[]) => void) {
+    let url: string;
+    if (state.mode === 'public') {
+        // stub: backend API not yet implemented
+        url = `/api/v1/workspace/public-nodes?parent_id=${parentId}`;
+    } else if (state.mode === 'shared') {
+        // stub: backend API not yet implemented
+        url = `/api/v1/workspace/shared-nodes?parent_id=${parentId}`;
+    } else {
+        url = `/api/v1/workspace/nodes?parent_id=${parentId}`;
+    }
     try {
-        // Using the new unified list endpoint
-        const response = await api.get(`/api/v1/workspace/nodes?parent_id=${parentId}`);
+        const response = await api.get(url);
         renderItems(response.nodes);
     } catch (error) {
-        console.error('Failed to fetch nodes:', error);
+        if (state.mode !== 'private') {
+            // public/shared APIs not yet implemented — render empty list silently
+            renderItems([]);
+        } else {
+            console.error('Failed to fetch nodes:', error);
+        }
     }
 }
 

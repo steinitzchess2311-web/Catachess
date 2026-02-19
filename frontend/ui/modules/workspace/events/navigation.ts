@@ -3,12 +3,23 @@
 import { api } from '../../../assets/api';
 import { WorkspaceState, WorkspaceElements } from './types';
 
+export function getRootPrefix(state: WorkspaceState): string {
+    const map: Record<string, string> = { private: 'root/', public: 'public/', shared: 'shared/' };
+    return map[state.mode ?? 'private'] ?? 'root/';
+}
+
+export function getRootLabel(state: WorkspaceState): string {
+    const map: Record<string, string> = { private: 'Root', public: 'Public', shared: 'Shared' };
+    return map[state.mode ?? 'private'] ?? 'Root';
+}
+
 export function getPathPrefix(state: WorkspaceState) {
+    const base = getRootPrefix(state).slice(0, -1); // strip trailing slash
     const segments = state.breadcrumbPath
         .map((item) => item.title)
         .filter((_, idx) => idx > 0);
-    if (segments.length === 0) return 'root/';
-    return `root/${segments.join('/')}/`;
+    if (segments.length === 0) return `${base}/`;
+    return `${base}/${segments.join('/')}/`;
 }
 
 export function updatePathInputDisplay(state: WorkspaceState, elements: WorkspaceElements) {
@@ -38,7 +49,7 @@ export async function navigateToFolder(
     state.currentParentId = id;
     // Update breadcrumb
     if (id === 'root') {
-        state.breadcrumbPath = [{id: 'root', title: 'Root'}];
+        state.breadcrumbPath = [{id: 'root', title: getRootLabel(state)}];
     } else {
         // Simple logic: if exists in path, truncate, else append
         const index = state.breadcrumbPath.findIndex(p => p.id === id);
@@ -72,17 +83,19 @@ export async function resolvePath(
     if (cleaned.endsWith('/...')) {
         cleaned = cleaned.slice(0, -4);
     }
-    if (cleaned.endsWith('/') && cleaned !== 'root/') {
+    const rootPrefixes = ['root/', 'public/', 'shared/'];
+    if (cleaned.endsWith('/') && !rootPrefixes.includes(cleaned)) {
         cleaned = cleaned.slice(0, -1);
     }
     if (!cleaned) return;
     const parts = cleaned.split('/').filter(Boolean);
-    if (parts.length === 0 || parts[0] !== 'root') {
+    const prefixLabelMap: Record<string, string> = { root: 'Root', public: 'Public', shared: 'Shared' };
+    if (parts.length === 0 || !prefixLabelMap[parts[0]]) {
         shakePathInput(elements);
         return;
     }
     if (parts.length === 1) {
-        navigateToFolder('root', 'Root');
+        navigateToFolder('root', prefixLabelMap[parts[0]]);
         return;
     }
 

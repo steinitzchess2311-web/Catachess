@@ -15,13 +15,30 @@ export function renderItems(
     options: WorkspaceOptions,
     handlers: {
         navigateToFolder: (id: string, title: string) => Promise<void>;
-        openNodeActions: (node: any) => void;
+        openNodeActions: (node: any, disabledActions?: { move?: boolean; rename?: boolean; delete?: boolean }) => void;
         openMoveConfirm: (source: any, target: any) => void;
+        openCreateModal: (type: 'folder' | 'study') => void;
     }
 ) {
     const sortedNodes = sortNodes(state, nodes);
     state.currentNodes = sortedNodes;
     elements.itemsGrid.innerHTML = '';
+
+    // Insert New Folder / New Study cards as first two grid items (private mode only)
+    if (state.mode === 'private') {
+        for (const type of ['folder', 'study'] as const) {
+            const card = document.createElement('div');
+            card.className = 'grid-item new-item-card';
+            card.innerHTML = `
+                <div class="item-icon" style="font-size:36px;color:var(--text-secondary)">+</div>
+                <div class="item-info">
+                    <span class="item-title">New ${type === 'folder' ? 'Folder' : 'Study'}</span>
+                </div>`;
+            card.addEventListener('click', () => handlers.openCreateModal(type));
+            elements.itemsGrid.appendChild(card);
+        }
+    }
+
     const folderTpl = document.getElementById('folder-item-template') as HTMLTemplateElement;
     const studyTpl = document.getElementById('study-item-template') as HTMLTemplateElement;
 
@@ -33,7 +50,7 @@ export function renderItems(
         itemDiv.setAttribute('data-type', node.node_type);
         itemDiv.setAttribute('data-version', String(node.version));
         itemDiv.setAttribute('data-parent-id', node.parent_id ?? '');
-        itemDiv.setAttribute('draggable', 'true');
+        itemDiv.setAttribute('draggable', state.mode === 'private' ? 'true' : 'false');
         itemDiv.querySelector('.item-title')!.textContent = node.title;
         const errorEl = itemDiv.querySelector('.item-error') as HTMLElement;
 
@@ -62,7 +79,10 @@ export function renderItems(
         itemDiv.addEventListener('contextmenu', (event) => {
             event.preventDefault();
             event.stopPropagation();
-            handlers.openNodeActions(node);
+            const disabledActions = state.mode !== 'private'
+                ? { move: true, rename: true, delete: true }
+                : undefined;
+            handlers.openNodeActions(node, disabledActions);
         });
 
         const startInlineRename = () => {

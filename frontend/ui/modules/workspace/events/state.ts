@@ -1,6 +1,6 @@
 // State management for workspace
 
-import { WorkspaceState, SortKey, SortDir } from './types';
+import { WorkspaceState, SortKey, SortDir, WorkspaceMode } from './types';
 
 export function createInitialState(startParentId: string): WorkspaceState {
     return {
@@ -12,8 +12,15 @@ export function createInitialState(startParentId: string): WorkspaceState {
         sortDir: 'desc' as SortDir,
         isBatchMode: false,
         selectedItemIds: new Set<string>(),
-        currentNodes: []
+        currentNodes: [],
+        mode: 'private' as WorkspaceMode,
     };
+}
+
+export function setMode(state: WorkspaceState, mode: WorkspaceMode) {
+    state.mode = mode;
+    const rootLabel = { private: 'Root', public: 'Public', shared: 'Shared' }[mode];
+    state.breadcrumbPath = [{ id: 'root', title: rootLabel }];
 }
 
 export function clearCache(state: WorkspaceState) {

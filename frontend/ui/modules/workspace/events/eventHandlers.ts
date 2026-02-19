@@ -1,7 +1,8 @@
 // Event handlers setup
 
-import { WorkspaceState, WorkspaceElements, WorkspaceOptions } from './types';
-import { getPathPrefix, shakePathInput, resolvePath } from './navigation';
+import { WorkspaceState, WorkspaceElements, WorkspaceOptions, WorkspaceMode } from './types';
+import { getPathPrefix, getRootPrefix, getRootLabel, shakePathInput, resolvePath } from './navigation';
+import { setMode, clearCache } from './state';
 import { runSearch } from './search';
 
 export function setupEventHandlers(
@@ -15,9 +16,20 @@ export function setupEventHandlers(
         refreshNodes: (parentId: string) => Promise<void>;
     }
 ) {
-    // New folder/study buttons
-    elements.newFolderBtn.addEventListener('click', () => handlers.openCreateModal('folder'));
-    elements.newStudyBtn.addEventListener('click', () => handlers.openCreateModal('study'));
+    // Mode nav buttons
+    elements.container.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = (btn as HTMLElement).dataset.mode as WorkspaceMode;
+            elements.container.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            setMode(state, mode);
+            if (elements.pathInput) {
+                elements.pathInput.placeholder = `${getRootPrefix(state)}...`;
+            }
+            clearCache(state);
+            handlers.navigateToFolder('root', getRootLabel(state));
+        });
+    });
 
     // Path input - Enter key
     elements.pathInput?.addEventListener('keydown', (event) => {
@@ -48,19 +60,21 @@ export function setupEventHandlers(
         }
     });
 
-    // Path input - Prevent deleting 'root/'
+    // Path input - Prevent deleting mode prefix
     elements.pathInput?.addEventListener('keydown', (event) => {
         if (event.key !== 'Backspace') return;
         const start = elements.pathInput.selectionStart ?? 0;
-        if (start <= 5) {
+        const rootPrefix = getRootPrefix(state);
+        if (start <= rootPrefix.length) {
             event.preventDefault();
         }
     });
 
-    // Path input - Auto-prepend 'root/'
+    // Path input - Auto-prepend mode prefix
     elements.pathInput?.addEventListener('input', () => {
-        if (!elements.pathInput.value.startsWith('root/')) {
-            elements.pathInput.value = `root/${elements.pathInput.value.replace(/^\/+/, '')}`;
+        const rootPrefix = getRootPrefix(state);
+        if (!elements.pathInput.value.startsWith(rootPrefix)) {
+            elements.pathInput.value = `${rootPrefix}${elements.pathInput.value.replace(/^\/+/, '')}`;
         }
     });
 

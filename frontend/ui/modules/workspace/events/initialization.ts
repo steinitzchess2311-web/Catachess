@@ -62,8 +62,6 @@ export function extractElements(container: HTMLElement) {
         itemsGrid: container.querySelector('#items-grid') as HTMLElement,
         breadcrumb: container.querySelector('#breadcrumb') as HTMLElement,
         folderTree: container.querySelector('#folder-tree') as HTMLElement,
-        newFolderBtn: container.querySelector('#new-folder-btn') as HTMLButtonElement,
-        newStudyBtn: container.querySelector('#new-study-btn') as HTMLButtonElement,
         pathInput: container.querySelector('#path-input') as HTMLInputElement,
         searchInput: container.querySelector('#workspace-search-input') as HTMLInputElement,
         searchClearBtn: container.querySelector('#workspace-search-clear') as HTMLButtonElement,

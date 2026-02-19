@@ -2,8 +2,11 @@
     <div class="workspace-container">
         <aside class="workspace-sidebar">
             <div class="sidebar-header">
-                <button id="new-folder-btn" class="btn-primary btn-sm">+ New Folder</button>
-                <button id="new-study-btn" class="btn-primary btn-sm">+ New Study</button>
+                <nav class="workspace-mode-nav">
+                    <button class="mode-btn active" data-mode="private">Private</button>
+                    <button class="mode-btn" data-mode="public">Public</button>
+                    <button class="mode-btn" data-mode="shared">Shared with me</button>
+                </nav>
                 <div class="workspace-search-row">
                     <input id="workspace-search-input" type="text" placeholder="Search folders / studies">
                     <button id="workspace-search-clear" type="button" aria-label="Clear search">×</button>

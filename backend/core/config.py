@@ -73,7 +73,7 @@ class Settings(BaseSettings):
     # Using a weak default only for local development convenience
     JWT_SECRET_KEY: str = "CHANGE_ME_IN_PRODUCTION"
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1000000000000000000
 
     # ===== internal worker auth =====
     WORKER_API_TOKEN: str = ""

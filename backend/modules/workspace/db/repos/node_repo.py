@@ -349,18 +349,32 @@ class NodeRepository:
         """
         Get publicly browseable nodes.
 
-        - parent_id None or "root*": root-level nodes with visibility=public
-        - parent_id UUID: direct children of that folder, if publicly accessible
+        Root view (parent_id omitted / "root*"):
+          Returns every "public island entry point" — a public node whose parent
+          is either absent (true root) or non-public (private parent).
+          When a user later makes the parent public (cascade), that node is no longer
+          an entry point and naturally disappears from this list, reappearing inside
+          its parent's tree.
+
+        Child view (parent_id = UUID):
+          Returns direct public children of the given public folder.
         """
         is_root = parent_id is None or str(parent_id).startswith("root")
 
         if is_root:
+            # LEFT JOIN with parent to detect "public island entry points":
+            # visible iff node is public AND (no parent OR parent is not public)
+            parent_alias = aliased(Node, flat=True)
             stmt = (
                 select(Node)
+                .outerjoin(parent_alias, parent_alias.id == Node.parent_id)
                 .where(
-                    Node.parent_id.is_(None),
                     Node.visibility == Visibility.PUBLIC,
                     Node.deleted_at.is_(None),
+                    or_(
+                        Node.parent_id.is_(None),
+                        parent_alias.visibility != Visibility.PUBLIC,
+                    ),
                 )
                 .order_by(Node.created_at.desc())
             )

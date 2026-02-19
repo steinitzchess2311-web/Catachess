@@ -313,12 +313,12 @@ class NodeRepository:
         Returns:
             List of public study nodes
         """
-        # Correlated subquery: does any public folder ancestor exist?
+        # Correlated subquery: does any public folder/workspace ancestor exist?
         folder_alias = aliased(Node, flat=True)
         in_public_folder = (
             select(folder_alias.id)
             .where(
-                folder_alias.node_type == NodeType.FOLDER,
+                folder_alias.node_type.in_([NodeType.FOLDER, NodeType.WORKSPACE]),
                 folder_alias.visibility == Visibility.PUBLIC,
                 folder_alias.deleted_at.is_(None),
                 Node.path.like(folder_alias.path + "%"),
@@ -345,14 +345,14 @@ class NodeRepository:
         return result.scalars().all()
 
     async def _is_publicly_accessible(self, node: Node) -> bool:
-        """Return True if node is public or sits inside a public folder."""
+        """Return True if node is public or sits inside a public folder/workspace."""
         if node.visibility == Visibility.PUBLIC:
             return True
         ancestor = aliased(Node, flat=True)
         stmt = (
             select(ancestor.id)
             .where(
-                ancestor.node_type == NodeType.FOLDER,
+                ancestor.node_type.in_([NodeType.FOLDER, NodeType.WORKSPACE]),
                 ancestor.visibility == Visibility.PUBLIC,
                 ancestor.deleted_at.is_(None),
                 literal(node.path).like(ancestor.path + "%"),

@@ -315,6 +315,19 @@ async def _presence_cleanup_loop() -> None:
 
 
 
+async def _init_workspace_schema() -> None:
+    """Ensure all workspace tables exist in PostgreSQL (create_all is skipped for non-SQLite)."""
+    try:
+        import modules.workspace.db.tables  # noqa: F401 — registers all ORM models
+        from modules.workspace.db.base import Base
+        from modules.workspace.db.session import get_db_config
+        config = get_db_config()
+        await asyncio.to_thread(Base.metadata.create_all, config.engine.sync_engine)
+        logger.info("✅ Workspace schema ready")
+    except Exception as e:
+        logger.error(f"Workspace schema init failed: {e}", exc_info=True)
+
+
 def _run_alembic_migrations() -> None:
     """TEMPORARY: Run alembic upgrade head on startup. Remove after 009 migration is applied."""
     try:
@@ -332,6 +345,9 @@ def _run_alembic_migrations() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await _init_workspace_db()
+
+    # Ensure workspace tables exist in PostgreSQL
+    await _init_workspace_schema()
 
     # TEMPORARY: apply pending alembic migrations (remove after 009 is confirmed)
     await asyncio.to_thread(_run_alembic_migrations)

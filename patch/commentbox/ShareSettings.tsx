@@ -272,11 +272,6 @@ export function ShareSettings() {
                   <span style={{ display: 'block', fontSize: '12px', fontWeight: active ? 600 : 500, lineHeight: 1.2, color: active ? 'var(--accent, #4e7fff)' : 'inherit' }}>
                     {label}
                   </span>
-                  {!isShared && (
-                    <span style={{ display: 'block', fontSize: '10px', color: 'var(--text-muted, #888)', lineHeight: 1.2, marginTop: '1px' }}>
-                      {desc}
-                    </span>
-                  )}
                 </span>
                 {active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent, #4e7fff)', flexShrink: 0 }} />}
               </button>

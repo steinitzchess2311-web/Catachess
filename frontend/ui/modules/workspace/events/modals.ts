@@ -4,6 +4,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import CreateModal from '../../../../web/src/components/dialogBox/CreateModal';
 import NodeActionsModal from '../../../../web/src/components/dialogBox/NodeActionsModal';
+import NodeShareModal from '../../../../web/src/components/dialogBox/NodeShareModal';
 import MoveModal from '../../../../web/src/components/dialogBox/MoveModal';
 import RenameModal from '../../../../web/src/components/dialogBox/RenameModal';
 import DeleteModal from '../../../../web/src/components/dialogBox/DeleteModal';
@@ -24,6 +25,8 @@ export function createModalRoots(): ModalRoots {
         deleteModalRoot: null,
         dragMoveModalContainer: null,
         dragMoveModalRoot: null,
+        shareModalContainer: null,
+        shareModalRoot: null,
     };
 }
 
@@ -202,12 +205,36 @@ export function openRenameModal(
     );
 }
 
+export function openShareModal(
+    modalRoots: ModalRoots,
+    node: any,
+) {
+    if (!modalRoots.shareModalContainer) {
+        modalRoots.shareModalContainer = document.createElement('div');
+        modalRoots.shareModalContainer.id = 'share-modal-root';
+        document.body.appendChild(modalRoots.shareModalContainer);
+        modalRoots.shareModalRoot = ReactDOM.createRoot(modalRoots.shareModalContainer);
+    }
+
+    modalRoots.shareModalRoot!.render(
+        React.createElement(NodeShareModal, {
+            node,
+            onClose: () => {
+                if (modalRoots.shareModalRoot) {
+                    modalRoots.shareModalRoot.render(null);
+                }
+            },
+        })
+    );
+}
+
 export function openNodeActions(
     modalRoots: ModalRoots,
     node: any,
     onMove: (n: any) => void,
     onRename: (n: any) => void,
     onDelete: (n: any) => void,
+    onShare: (n: any) => void,
     disabledActions?: { move?: boolean; rename?: boolean; delete?: boolean }
 ) {
     // Create actions modal container if not exists
@@ -224,32 +251,34 @@ export function openNodeActions(
             node: node,
             disabledActions,
             onClose: () => {
-                // Unmount modal
                 if (modalRoots.actionsModalRoot) {
                     modalRoots.actionsModalRoot.render(null);
                 }
             },
             onMove: (n: any) => {
-                // Close React modal and open native Move modal
                 if (modalRoots.actionsModalRoot) {
                     modalRoots.actionsModalRoot.render(null);
                 }
                 onMove(n);
             },
             onRename: (n: any) => {
-                // Close React modal and open native Rename modal
                 if (modalRoots.actionsModalRoot) {
                     modalRoots.actionsModalRoot.render(null);
                 }
                 onRename(n);
             },
             onDelete: (n: any) => {
-                // Close React modal and open native Delete confirm
                 if (modalRoots.actionsModalRoot) {
                     modalRoots.actionsModalRoot.render(null);
                 }
                 onDelete(n);
-            }
+            },
+            onShare: (n: any) => {
+                if (modalRoots.actionsModalRoot) {
+                    modalRoots.actionsModalRoot.render(null);
+                }
+                onShare(n);
+            },
         })
     );
 }

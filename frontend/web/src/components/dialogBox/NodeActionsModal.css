@@ -186,6 +186,18 @@
   flex: 1;
 }
 
+/* Share Button */
+.node-action-btn-share {
+  border-color: var(--primary, #4e7fff);
+  color: var(--primary, #4e7fff);
+}
+
+.node-action-btn-share:hover {
+  border-color: var(--primary, #4e7fff);
+  background: rgba(78, 127, 255, 0.06);
+  box-shadow: 0 2px 8px rgba(78, 127, 255, 0.18);
+}
+
 /* Danger Button (Delete) */
 .node-action-btn-danger {
   border-color: var(--error);

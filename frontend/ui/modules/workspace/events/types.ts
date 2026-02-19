@@ -7,6 +7,7 @@ export type WorkspaceOptions = {
 
 export type SortKey = 'created' | 'modified' | null;
 export type SortDir = 'asc' | 'desc';
+export type WorkspaceMode = 'private' | 'public' | 'shared';
 
 export interface WorkspaceState {
     currentParentId: string;
@@ -18,6 +19,7 @@ export interface WorkspaceState {
     isBatchMode: boolean;
     selectedItemIds: Set<string>;
     currentNodes: any[];
+    mode: WorkspaceMode;
 }
 
 export interface WorkspaceElements {
@@ -25,8 +27,6 @@ export interface WorkspaceElements {
     itemsGrid: HTMLElement;
     breadcrumb: HTMLElement;
     folderTree: HTMLElement;
-    newFolderBtn: HTMLButtonElement;
-    newStudyBtn: HTMLButtonElement;
     pathInput: HTMLInputElement;
     searchInput: HTMLInputElement;
     searchClearBtn: HTMLButtonElement;
@@ -45,4 +45,6 @@ export interface ModalRoots {
     deleteModalRoot: any;
     dragMoveModalContainer: HTMLDivElement | null;
     dragMoveModalRoot: any;
+    shareModalContainer: HTMLDivElement | null;
+    shareModalRoot: any;
 }

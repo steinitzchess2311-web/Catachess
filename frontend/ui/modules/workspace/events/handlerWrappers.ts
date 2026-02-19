@@ -2,7 +2,7 @@
 
 import { WorkspaceState, WorkspaceOptions, WorkspaceElements, ModalRoots } from './types';
 import { clearCache } from './state';
-import { openCreateModal, openMoveModal, openDeleteConfirm, openMoveConfirm, openRenameModal, openNodeActions } from './modals';
+import { openCreateModal, openMoveModal, openDeleteConfirm, openMoveConfirm, openRenameModal, openNodeActions, openShareModal } from './modals';
 import { refreshNodes as doRefreshNodes } from './nodeOperations';
 import { navigateToFolder as doNavigateToFolder } from './navigation';
 import { renderItems as doRenderItems } from './rendering';
@@ -29,7 +29,8 @@ export function createHandlerWrappers(
         doRenderItems(state, elements, nodes, options, {
             navigateToFolder,
             openNodeActions: openNodeActionsWrapper,
-            openMoveConfirm: openMoveConfirmWrapper
+            openMoveConfirm: openMoveConfirmWrapper,
+            openCreateModal: openCreateModalWrapper
         });
     };
 
@@ -74,6 +75,10 @@ export function createHandlerWrappers(
         });
     };
 
+    const openShareModalWrapper = (node: any) => {
+        openShareModal(modalRoots, node);
+    };
+
     openNodeActionsWrapper = (node: any, disabledActions?: { move?: boolean; rename?: boolean; delete?: boolean }) => {
         openNodeActions(
             modalRoots,
@@ -81,6 +86,7 @@ export function createHandlerWrappers(
             openMoveModalWrapper,
             openRenameModalWrapper,
             openDeleteConfirmWrapper,
+            openShareModalWrapper,
             disabledActions
         );
     };
@@ -94,6 +100,7 @@ export function createHandlerWrappers(
         openDeleteConfirmWrapper,
         openMoveConfirmWrapper,
         openRenameModalWrapper,
-        openNodeActionsWrapper
+        openNodeActionsWrapper,
+        openShareModalWrapper,
     };
 }

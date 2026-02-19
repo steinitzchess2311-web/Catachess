@@ -15,6 +15,7 @@ interface NodeActionsModalProps {
   onMove: (node: any) => void;
   onRename: (node: any) => void;
   onDelete: (node: any) => void;
+  onShare: (node: any) => void;
 }
 
 const formatDate = (dateString: string): string => {
@@ -31,6 +32,7 @@ const NodeActionsModal: React.FC<NodeActionsModalProps> = ({
   onMove,
   onRename,
   onDelete,
+  onShare,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -64,10 +66,11 @@ const NodeActionsModal: React.FC<NodeActionsModalProps> = ({
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
 
-  const handleAction = (action: 'move' | 'rename' | 'delete') => {
-    if (action === 'move') onMove(node);
+  const handleAction = (action: 'move' | 'rename' | 'delete' | 'share') => {
+    if (action === 'move')   onMove(node);
     if (action === 'rename') onRename(node);
     if (action === 'delete') onDelete(node);
+    if (action === 'share')  onShare(node);
   };
 
   const icon = node.node_type === 'folder' ? '📁' : '📖';
@@ -94,6 +97,13 @@ const NodeActionsModal: React.FC<NodeActionsModalProps> = ({
         </div>
 
         <div className="node-actions-body">
+          <button
+            className="node-action-btn node-action-btn-share"
+            onClick={() => handleAction('share')}
+          >
+            <span className="action-icon">🔗</span>
+            <span className="action-label">Share</span>
+          </button>
           <button
             className="node-action-btn"
             onClick={() => handleAction('move')}

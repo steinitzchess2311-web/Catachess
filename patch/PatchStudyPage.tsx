@@ -5,7 +5,7 @@ import { StudyBoard } from './board/studyBoard';
 import { MoveTree } from './sidebar/movetree';
 import { ForkWidget } from './tree/Fork';
 import { StudySidebar } from './sidebar/StudySidebar';
-import { CommentBox } from './CommentBox';
+import { CommentBox } from './commentbox';
 import { api } from '@ui/assets/api';
 import { TerminalLauncher } from './modules/terminal';
 import { ExplorerPanel } from './modules/explorer';

@@ -26,7 +26,6 @@ from modules.workspace.api.router import api_router as workspace_router
 from modules.blogs.api.router import router as blog_router
 from modules.pgn_fen_import_export.api import router as import_export_router
 from modules.catchat.api.router import router as catchat_router
-from modules.catchat.main import init_catchat_db
 from core.log.log_api import logger
 from core.config import settings
 from modules.workspace.db.session import init_db as init_workspace_db
@@ -321,12 +320,6 @@ async def lifespan(app: FastAPI):
 
     # Initialize Blog database and run migrations
     await _init_blog_db()
-
-    # Initialize catchat database tables
-    try:
-        init_catchat_db()
-    except Exception as e:
-        logger.error(f"catchat DB init failed: {e}")
 
     # Initialize MongoDB cache
     try:

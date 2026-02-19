@@ -283,18 +283,22 @@ export function ShareSettings() {
           })}
         </div>
 
-        {/* ── Right: access panel ──────────────────────────────────────── */}
+        {/* ── Right: access panel (independent scroll container) ──────── */}
         <div style={{
-          display: 'flex', flexDirection: 'column', gap: '5px',
+          display: 'flex', flexDirection: 'column',
           opacity: isShared ? 1 : 0,
           transform: isShared ? 'translateX(0)' : 'translateX(8px)',
           transition: `opacity 0.2s ease ${isShared ? '0.16s' : '0s'}, transform 0.2s ease ${isShared ? '0.16s' : '0s'}`,
           pointerEvents: isShared ? 'auto' : 'none',
+          minHeight: 0,
         }}>
-          <span style={sLabel}>Who has access</span>
+          <span style={{ ...sLabel, marginBottom: '5px' }}>Who has access</span>
 
-          {/* User list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '116px', overflowY: 'auto' }}>
+          {/* Scrollable user list — independent of left panel */}
+          <div style={{
+            flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '3px',
+            maxHeight: '88px',
+          }}>
             <div style={sCard(true)}>
               <div style={sAvatar('#4e7fff', '#fff')}>Y</div>
               <span style={sName}>You</span>
@@ -322,18 +326,20 @@ export function ShareSettings() {
             ))}
           </div>
 
-          {/* Add user button */}
+          {/* Add user button — always pinned below the list */}
           <button
             ref={addBtnRef}
             type="button"
             onClick={openAdd}
             style={{
               display: 'flex', alignItems: 'center', gap: '5px',
+              marginTop: '4px',
               padding: '5px 9px',
               border: '1.5px dashed var(--border, rgba(128,128,128,0.28))',
               borderRadius: '7px', background: 'none', cursor: 'pointer',
               fontSize: '11px', color: 'var(--text-muted, #888)', width: '100%',
               transition: 'border-color 0.14s, color 0.14s',
+              flexShrink: 0,
             }}
           >
             <span style={{ fontSize: '14px', lineHeight: 1 }}>+</span>
@@ -341,7 +347,7 @@ export function ShareSettings() {
           </button>
 
           {shareError && (
-            <span style={{ fontSize: '10px', color: 'var(--error, #e05252)' }}>{shareError}</span>
+            <span style={{ fontSize: '10px', color: 'var(--error, #e05252)', marginTop: '2px' }}>{shareError}</span>
           )}
         </div>
       </div>

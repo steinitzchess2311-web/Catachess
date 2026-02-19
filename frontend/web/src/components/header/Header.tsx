@@ -148,7 +148,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
           </div>
         )}
         {isAuthed ? (
-          <Link to="/account" className="username" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Link to={`/@${username || ''}`} className="username" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {displayName}
             {(userRole === 'admin' || userRole === 'editor') && (
               <span style={{

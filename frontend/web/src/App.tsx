@@ -439,7 +439,7 @@ function Layout() {
             }
           />
           <Route
-            path="/account"
+            path="/@:username"
             element={
               <Protected>
                 <AccountPage />

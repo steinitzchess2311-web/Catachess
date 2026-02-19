@@ -183,8 +183,8 @@ export function StudyBoard({ className, boardWidth = 500 }: StudyBoardProps) {
           customDarkSquareStyle={{ backgroundColor: '#779954' }}
           customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
           animationDuration={200}
-          customArrows={customArrows}
-          customSquareStyles={customSquareStyles}
+          customArrows={displayArrows}
+          customSquareStyles={displaySquareStyles}
           onArrowsChange={onArrowsChange}
           areArrowsAllowed={true}
         />

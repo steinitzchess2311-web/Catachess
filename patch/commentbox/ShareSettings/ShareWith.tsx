@@ -29,8 +29,8 @@ export function ShareWith({ studyId }: ShareWithProps) {
     if (!q) return;
     setIsSearching(true); setSearched(true);
     try {
-      const res = await api.get(`/api/v1/workspace/users/search?q=${encodeURIComponent(q)}`);
-      setSearchResults((res as UserResult[]) || []);
+      const res = await api.get(`/user/by-username/${encodeURIComponent(q)}`);
+      setSearchResults(res ? [res as UserResult] : []);
     } catch {
       setSearchResults([]);
     } finally {

@@ -1,8 +1,28 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { useStudy } from '../studyContext';
 import { getMoveSan } from '../chessJS/replay';
 import { StudyTree } from '../tree/StudyTree';
+import type { Shape, ShapeArrow, ShapeCircle, ShapeColor } from '../tree/type';
+
+const SHAPE_COLOR_CSS: Record<ShapeColor, string> = {
+  green:  'rgba(0, 155, 60, 0.8)',
+  red:    'rgba(220, 50, 40, 0.8)',
+  blue:   'rgba(50, 130, 220, 0.8)',
+  yellow: 'rgba(255, 200, 0, 0.8)',
+};
+
+const CIRCLE_COLOR_CSS: Record<ShapeColor, string> = {
+  green:  'rgba(0, 155, 60, 0.6)',
+  red:    'rgba(220, 50, 40, 0.6)',
+  blue:   'rgba(50, 130, 220, 0.6)',
+  yellow: 'rgba(255, 200, 0, 0.6)',
+};
+
+// Map CSS back to ShapeColor for arrows drawn by the user
+const CSS_TO_SHAPE_COLOR: Record<string, ShapeColor> = Object.fromEntries(
+  Object.entries(SHAPE_COLOR_CSS).map(([k, v]) => [v, k as ShapeColor])
+);
 
 export interface StudyBoardProps {
   className?: string;
@@ -10,7 +30,7 @@ export interface StudyBoardProps {
 }
 
 export function StudyBoard({ className, boardWidth = 500 }: StudyBoardProps) {
-  const { state, addMove, setError, selectNode } = useStudy();
+  const { state, addMove, setError, selectNode, setShapes } = useStudy();
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
   const isFlipped = orientation === 'black';
   const toggleFlip = useCallback(() => {
@@ -80,6 +100,46 @@ export function StudyBoard({ className, boardWidth = 500 }: StudyBoardProps) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [moveToEnd, moveToNext, moveToPrev, moveToStart, toggleFlip]);
 
+  // Derive customArrows from current node's shapes
+  const customArrows = useMemo<[string, string, string][]>(() => {
+    const node = state.tree.nodes[state.cursorNodeId];
+    if (!node?.shapes) return [];
+    return node.shapes
+      .filter((s): s is ShapeArrow => s.type === 'arrow')
+      .map((s) => [s.from, s.to, SHAPE_COLOR_CSS[s.color]]);
+  }, [state.tree.nodes, state.cursorNodeId]);
+
+  // Derive circle highlights from current node's shapes
+  const customSquareStyles = useMemo<Record<string, React.CSSProperties>>(() => {
+    const node = state.tree.nodes[state.cursorNodeId];
+    if (!node?.shapes) return {};
+    const styles: Record<string, React.CSSProperties> = {};
+    node.shapes
+      .filter((s): s is ShapeCircle => s.type === 'circle')
+      .forEach((s) => {
+        styles[s.square] = {
+          boxShadow: `inset 0 0 0 4px ${CIRCLE_COLOR_CSS[s.color]}`,
+        };
+      });
+    return styles;
+  }, [state.tree.nodes, state.cursorNodeId]);
+
+  // Capture user-drawn arrows and save to current node
+  const onArrowsChange = useCallback(
+    (arrows: [string, string, string?][]) => {
+      const node = state.tree.nodes[state.cursorNodeId];
+      const circles: Shape[] = node?.shapes?.filter((s): s is ShapeCircle => s.type === 'circle') ?? [];
+      const newArrows: ShapeArrow[] = arrows.map(([from, to, color]) => ({
+        type: 'arrow',
+        color: (color ? (CSS_TO_SHAPE_COLOR[color] ?? 'green') : 'green') as ShapeColor,
+        from,
+        to,
+      }));
+      setShapes(state.cursorNodeId, [...circles, ...newArrows]);
+    },
+    [state.cursorNodeId, state.tree.nodes, setShapes]
+  );
+
   const onPieceDrop = useCallback(
     (sourceSquare: string, targetSquare: string, piece: string) => {
       // 1. Convert to SAN and validate using current FEN
@@ -123,6 +183,10 @@ export function StudyBoard({ className, boardWidth = 500 }: StudyBoardProps) {
           customDarkSquareStyle={{ backgroundColor: '#779954' }}
           customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
           animationDuration={200}
+          customArrows={customArrows}
+          customSquareStyles={customSquareStyles}
+          onArrowsChange={onArrowsChange}
+          areArrowsAllowed={true}
         />
       </div>
       <div className="study-board-nav">

@@ -3,7 +3,7 @@ import { api } from '@ui/assets/api';
 import { replaySanPath, STARTING_FEN } from './chessJS/replay';
 import type { ReplayResult } from './chessJS/replay';
 import { StudyTree, createEmptyTree } from './tree/StudyTree';
-import type { StudyTree as StudyTreeData } from './tree/type';
+import type { StudyTree as StudyTreeData, Shape } from './tree/type';
 import { upgradeTree } from './tree/type';
 import { validateFen } from './chessJS/fen';
 
@@ -77,6 +77,7 @@ type StudyAction =
   | { type: 'SET_CURSOR'; nodeId: string; precomputedFen?: string }
   | { type: 'ADD_MOVE'; san: string }
   | { type: 'SET_COMMENT'; nodeId: string; comment: string }
+  | { type: 'SET_SHAPES'; nodeId: string; shapes: Shape[] }
   | { type: 'DELETE_MOVE'; nodeId: string }
   | { type: 'PROMOTE_VARIATION'; nodeId: string }
   | { type: 'UNDO' }
@@ -303,6 +304,17 @@ function studyReducer(state: StudyState, action: StudyAction): StudyState {
       };
     }
 
+    case 'SET_SHAPES': {
+      if (!state.tree.nodes[action.nodeId]) return state;
+      const updatedNode = { ...state.tree.nodes[action.nodeId], shapes: action.shapes };
+      const newTree = { ...state.tree, nodes: { ...state.tree.nodes, [action.nodeId]: updatedNode } };
+      return {
+        ...state,
+        tree: newTree,
+        isDirty: true,
+      };
+    }
+
     case 'DELETE_MOVE': {
       if (action.nodeId === state.tree.rootId) return state;
 
@@ -437,6 +449,7 @@ export interface StudyContextValue {
   selectNode: (nodeId: string) => void;
   addMove: (san: string) => void;
   setComment: (nodeId: string, comment: string) => void;
+  setShapes: (nodeId: string, shapes: Shape[]) => void;
   deleteMove: (nodeId: string) => void;
   promoteVariation: (nodeId: string) => void;
   undo: () => void;
@@ -456,6 +469,7 @@ const defaultContextValue: StudyContextValue = {
   selectNode: () => {},
   addMove: () => {},
   setComment: () => {},
+  setShapes: () => {},
   deleteMove: () => {},
   promoteVariation: () => {},
   undo: () => {},
@@ -538,6 +552,10 @@ export function StudyProvider({ children }: StudyProviderProps) {
     dispatch({ type: 'SET_COMMENT', nodeId, comment });
   }, []);
 
+  const setShapes = useCallback((nodeId: string, shapes: Shape[]) => {
+    dispatch({ type: 'SET_SHAPES', nodeId, shapes });
+  }, []);
+
   const deleteMove = useCallback((nodeId: string) => {
     dispatch({ type: 'DELETE_MOVE', nodeId });
   }, []);
@@ -610,6 +628,7 @@ export function StudyProvider({ children }: StudyProviderProps) {
     selectNode,
     addMove,
     setComment,
+    setShapes,
     deleteMove,
     promoteVariation,
     undo,

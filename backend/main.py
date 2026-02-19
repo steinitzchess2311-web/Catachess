@@ -316,13 +316,19 @@ async def _presence_cleanup_loop() -> None:
 
 
 async def _init_workspace_schema() -> None:
-    """Ensure all workspace tables exist in PostgreSQL (create_all is skipped for non-SQLite)."""
+    """Ensure all workspace tables exist in PostgreSQL (create_all is skipped for non-SQLite).
+
+    Uses conn.run_sync instead of asyncio.to_thread because asyncpg does not
+    support synchronous execution — calling sync_engine.create_all directly
+    would silently fail with asyncpg.
+    """
     try:
         import modules.workspace.db.tables  # noqa: F401 — registers all ORM models
         from modules.workspace.db.base import Base
         from modules.workspace.db.session import get_db_config
         config = get_db_config()
-        await asyncio.to_thread(Base.metadata.create_all, config.engine.sync_engine)
+        async with config.engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
         logger.info("✅ Workspace schema ready")
     except Exception as e:
         logger.error(f"Workspace schema init failed: {e}", exc_info=True)

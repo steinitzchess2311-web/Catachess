@@ -4,11 +4,13 @@ User Profile Router - User profile and settings endpoints
 Endpoints:
     GET /user/profile - Get current user's profile
     PUT /user/profile - Update current user's profile (chess info, self-intro, etc.)
+    GET /user/by-username/{username} - Look up a user by username (for catachat)
 
 This router handles user profile information that users can set after signup.
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 from pydantic import BaseModel, Field
 import uuid
 
@@ -69,6 +71,27 @@ class UpdateProfileRequest(BaseModel):
 
     # Self introduction
     self_intro: str | None = Field(None, max_length=5000, description="Self introduction")
+
+
+class UserLookupResponse(BaseModel):
+    """Minimal user info for starting a catachat conversation."""
+    id: str
+    username: str
+
+
+@router.get("/by-username/{username}", response_model=UserLookupResponse)
+def get_user_by_username(
+    username: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Look up a user by their username. Used by catachat to find who to message."""
+    user = db.execute(
+        select(User).where(User.username == username)
+    ).scalar_one_or_none()
+    if not user or not user.username:
+        raise HTTPException(status_code=404, detail="User not found")
+    return UserLookupResponse(id=str(user.id), username=user.username)
 
 
 @router.get("/profile", response_model=UserProfileResponse)

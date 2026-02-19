@@ -201,7 +201,7 @@ class NodeService:
             node.description = command.description
 
         if command.visibility is not None:
-            changes["visibility"] = {"old": node.visibility.value, "new": command.visibility.value}
+            changes["visibility"] = {"old": getattr(node.visibility, 'value', node.visibility), "new": getattr(command.visibility, 'value', command.visibility)}
             node.visibility = command.visibility
 
         if command.layout is not None:

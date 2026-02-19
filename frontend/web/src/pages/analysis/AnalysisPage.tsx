@@ -32,7 +32,8 @@ function AnalysisPageContent() {
     const measure = () => {
       const el = mainRef.current;
       if (!el) return;
-      const size = Math.min(el.clientWidth, el.clientHeight);
+        const NAV_HEIGHT = 42; // study-board-nav: 32px buttons + 10px gap
+      const size = Math.min(el.clientWidth, el.clientHeight - NAV_HEIGHT);
       if (size > 0) setBoardWidth(Math.floor(size));
     };
     measure();

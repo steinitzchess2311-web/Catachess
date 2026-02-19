@@ -12,7 +12,6 @@ import { TREE_SCHEMA_VERSION } from './tree/type';
 import { TerminalLauncher } from './modules/terminal';
 import { ExplorerPanel } from './modules/explorer';
 import { importMultiPgn } from './pgn/import';
-import { ShareModal } from './sidebar/components/ShareModal';
 
 function pgnGameTitle(headers: Record<string, string>): string {
   const white = headers['White'] ?? '?';
@@ -56,7 +55,6 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<string[]>([]);
   const [pendingDeleteChapters, setPendingDeleteChapters] = useState<Array<{ id: string; order?: number }>>([]);
-  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState<string>('');
   const [titleError, setTitleError] = useState<string | null>(null);
@@ -879,10 +877,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
       <div className="patch-study-footer-row">
         <div className="patch-study-footer-spacer" />
         <div className="patch-study-footer-box">
-          <CommentBox
-            studyTitle={studyTitle}
-            onOpenShare={() => setIsShareModalOpen(true)}
-          />
+          <CommentBox />
         </div>
         <div className="patch-study-footer-spacer" />
       </div>
@@ -1070,13 +1065,6 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
             </div>
           </div>
         </div>
-      )}
-      {isShareModalOpen && id && (
-        <ShareModal
-          nodeId={id}
-          nodeTitle={studyTitle}
-          onClose={() => setIsShareModalOpen(false)}
-        />
       )}
       <TerminalLauncher />
     </div>

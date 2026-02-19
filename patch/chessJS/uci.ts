@@ -35,13 +35,35 @@ export function uciToSan(uci: string, fen: string): UciToSanResult {
 }
 
 export function uciLineToSan(uciMoves: string[], startFen: string): UciToSanResult[] {
+  if (uciMoves.length === 0) return [];
   const results: UciToSanResult[] = [];
-  let fen = startFen;
-  for (const uci of uciMoves) {
-    const result = uciToSan(uci, fen);
-    results.push(result);
-    if (!result.fenAfter) break;
-    fen = result.fenAfter;
+  let board: Chess;
+
+  try {
+    board = new Chess(startFen);
+  } catch (e: any) {
+    return [{
+      san: null,
+      fenAfter: null,
+      error: e?.message || 'Failed to convert UCI',
+    }];
   }
+
+  for (const uci of uciMoves) {
+    const parsed = parseUci(uci);
+    if (!parsed) {
+      results.push({ san: null, fenAfter: null, error: 'Invalid UCI' });
+      break;
+    }
+
+    const move = board.move(parsed);
+    if (!move) {
+      results.push({ san: null, fenAfter: null, error: 'Illegal move' });
+      break;
+    }
+
+    results.push({ san: move.san, fenAfter: board.fen() });
+  }
+
   return results;
 }

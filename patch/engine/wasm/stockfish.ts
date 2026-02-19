@@ -14,9 +14,14 @@ type StockfishModule = {
 };
 
 type StockfishFactory = (options: Record<string, any>) => Promise<StockfishModule>;
+type EngineBackend =
+  | { kind: 'worker'; worker: Worker }
+  | { kind: 'module'; module: StockfishModule };
 
 let factoryPromise: Promise<StockfishFactory> | null = null;
 let modulePromise: Promise<StockfishModule> | null = null;
+let workerPromise: Promise<Worker> | null = null;
+let workerInstance: Worker | null = null;
 let loadedModule: StockfishModule | null = null;
 let runQueue: Promise<EngineAnalysis> = Promise.resolve({ source: 'stockfish-wasm', lines: [] });
 let wasmCurrentlyRunning = false;
@@ -31,8 +36,13 @@ export function isWasmFree(): boolean {
  * runQueue entry and allowing the next queued analysis to start.
  */
 export function stopAnalysis(): void {
-  if (loadedModule && wasmCurrentlyRunning) {
-    sendCommand(loadedModule, 'stop');
+  if (!wasmCurrentlyRunning) return;
+  if (workerInstance) {
+    workerInstance.postMessage('stop');
+    return;
+  }
+  if (loadedModule) {
+    sendCommandToModule(loadedModule, 'stop');
   }
 }
 
@@ -104,6 +114,83 @@ async function loadModule(): Promise<StockfishModule> {
   return modulePromise;
 }
 
+async function loadWorker(): Promise<Worker> {
+  if (workerPromise) return workerPromise;
+
+  workerPromise = new Promise<Worker>((resolve, reject) => {
+    let worker: Worker | null = null;
+    let settled = false;
+    const scriptUrl = resolveScriptUrl();
+    const wasmUrl = resolveWasmUrl();
+    const workerUrl = `${scriptUrl}#${encodeURIComponent(wasmUrl)},worker`;
+
+    const cleanup = () => {
+      if (!worker) return;
+      worker.removeEventListener('message', onMessage);
+      worker.removeEventListener('error', onError);
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+
+    const fail = (message: string) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (worker) {
+        try {
+          worker.terminate();
+        } catch {
+          // ignore
+        }
+      }
+      workerPromise = null;
+      reject(new Error(message));
+    };
+
+    const onMessage = (event: MessageEvent) => {
+      if (settled || typeof event.data !== 'string') return;
+      if (event.data === 'uciok') {
+        settled = true;
+        cleanup();
+        workerInstance = worker;
+        resolve(worker!);
+      }
+    };
+
+    const onError = () => {
+      fail('Stockfish WASM worker failed to initialize');
+    };
+
+    let timeoutId: number | null = null;
+
+    try {
+      worker = new Worker(workerUrl);
+      worker.addEventListener('message', onMessage);
+      worker.addEventListener('error', onError);
+      worker.postMessage('uci');
+      timeoutId = window.setTimeout(() => {
+        fail('Stockfish WASM worker initialization timeout');
+      }, 4000);
+    } catch {
+      fail('Stockfish WASM worker creation failed');
+    }
+  });
+
+  return workerPromise;
+}
+
+async function loadBackend(): Promise<EngineBackend> {
+  try {
+    const worker = await loadWorker();
+    return { kind: 'worker', worker };
+  } catch (error) {
+    console.warn('[ENGINE WASM] Worker unavailable, falling back to main thread module:', error);
+    const module = await loadModule();
+    return { kind: 'module', module };
+  }
+}
+
 function buildLines(entries: SfEntry[]): { lines: EngineLine[]; nodes?: number; millis?: number } {
   if (entries.length === 0) return { lines: [] };
   const maxDepth = Math.max(...entries.map((e) => e.depth));
@@ -142,7 +229,7 @@ function buildLines(entries: SfEntry[]): { lines: EngineLine[]; nodes?: number; 
   return { lines, nodes, millis };
 }
 
-function sendCommand(module: StockfishModule, cmd: string): void {
+function sendCommandToModule(module: StockfishModule, cmd: string): void {
   if (module.processCommand) {
     module.processCommand(cmd);
     return;
@@ -152,6 +239,14 @@ function sendCommand(module: StockfishModule, cmd: string): void {
   }
 }
 
+function sendCommand(backend: EngineBackend, cmd: string): void {
+  if (backend.kind === 'worker') {
+    backend.worker.postMessage(cmd);
+    return;
+  }
+  sendCommandToModule(backend.module, cmd);
+}
+
 async function runAnalysis(
   fen: string,
   multipv: number,
@@ -159,13 +254,15 @@ async function runAnalysis(
   onUpdate?: (analysis: EngineAnalysis, currentDepth: number) => void
 ): Promise<EngineAnalysis> {
   wasmCurrentlyRunning = true;
-  const module = await loadModule();
+  const backend = await loadBackend();
   const entries: SfEntry[] = [];
 
   try {
     return await new Promise<EngineAnalysis>((resolve, reject) => {
       let finished = false;
       let lastReportedDepth = 0;
+      let workerMessageHandler: ((event: MessageEvent) => void) | null = null;
+      let workerErrorHandler: ((event: ErrorEvent) => void) | null = null;
 
       // JS timeout = movetime + buffer (engine should stop itself via bestmove first)
       const timeout = setTimeout(() => {
@@ -176,10 +273,21 @@ async function runAnalysis(
 
       const cleanup = () => {
         clearTimeout(timeout);
-        module.listener = undefined;
+        if (backend.kind === 'module') {
+          backend.module.listener = undefined;
+          return;
+        }
+        if (workerMessageHandler) {
+          backend.worker.removeEventListener('message', workerMessageHandler);
+          workerMessageHandler = null;
+        }
+        if (workerErrorHandler) {
+          backend.worker.removeEventListener('error', workerErrorHandler);
+          workerErrorHandler = null;
+        }
       };
 
-      module.listener = (line: string) => {
+      const handleLine = (line: string) => {
         if (!line) return;
         if (line.startsWith('info ')) {
           const parsed = parseSfInfoLine(line);
@@ -211,11 +319,28 @@ async function runAnalysis(
         }
       };
 
+      if (backend.kind === 'module') {
+        backend.module.listener = handleLine;
+      } else {
+        workerMessageHandler = (event: MessageEvent) => {
+          if (typeof event.data !== 'string') return;
+          handleLine(event.data);
+        };
+        workerErrorHandler = () => {
+          if (finished) return;
+          finished = true;
+          cleanup();
+          reject(new Error('Stockfish WASM worker crashed'));
+        };
+        backend.worker.addEventListener('message', workerMessageHandler);
+        backend.worker.addEventListener('error', workerErrorHandler);
+      }
+
       try {
-        sendCommand(module, `setoption name MultiPV value ${multipv}`);
-        sendCommand(module, 'ucinewgame');
-        sendCommand(module, `position fen ${fen}`);
-        sendCommand(module, `go movetime ${movetimeMs}`);
+        sendCommand(backend, `setoption name MultiPV value ${multipv}`);
+        sendCommand(backend, 'ucinewgame');
+        sendCommand(backend, `position fen ${fen}`);
+        sendCommand(backend, `go movetime ${movetimeMs}`);
       } catch (error) {
         if (finished) return;
         finished = true;

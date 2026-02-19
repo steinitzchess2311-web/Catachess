@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 
 from modules.catchat.auth import get_current_user
 from modules.catchat.db.session import get_db
+from core.db.deps import get_db as get_main_db   # main DB — where users table lives
 from modules.catchat.db.models import Conversation
 from modules.catchat.schemas import ConversationCreate, ConversationResponse
 from models.user import User
@@ -24,9 +25,9 @@ def _sorted_pair(a: uuid.UUID, b: uuid.UUID) -> tuple[uuid.UUID, uuid.UUID]:
     return (a, b) if a < b else (b, a)
 
 
-def _resolve_username(db: Session, user_id: uuid.UUID) -> str | None:
-    """Look up the username for a given user UUID."""
-    user = db.get(User, user_id)
+def _resolve_username(main_db: Session, user_id: uuid.UUID) -> str | None:
+    """Look up username from the main catachess users table."""
+    user = main_db.get(User, user_id)
     return user.username if user else None
 
 
@@ -34,6 +35,7 @@ def _resolve_username(db: Session, user_id: uuid.UUID) -> str | None:
 def list_my_conversations(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    main_db: Session = Depends(get_main_db),
 ):
     uid = current_user.id
     rows = db.execute(
@@ -46,7 +48,7 @@ def list_my_conversations(
         ConversationResponse(
             id=str(c.id),
             other_user_id=str(other_id := c.user2_id if c.user1_id == uid else c.user1_id),
-            other_username=_resolve_username(db, other_id),
+            other_username=_resolve_username(main_db, other_id),
             last_message_at=c.last_message_at,
             created_at=c.created_at,
         )
@@ -59,6 +61,7 @@ def open_conversation(
     body: ConversationCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    main_db: Session = Depends(get_main_db),
 ):
     try:
         other_id = uuid.UUID(body.user_id)
@@ -84,7 +87,7 @@ def open_conversation(
     return ConversationResponse(
         id=str(conv.id),
         other_user_id=str(other_id),
-        other_username=_resolve_username(db, other_id),
+        other_username=_resolve_username(main_db, other_id),
         last_message_at=conv.last_message_at,
         created_at=conv.created_at,
     )

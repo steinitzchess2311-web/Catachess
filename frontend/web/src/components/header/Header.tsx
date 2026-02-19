@@ -121,9 +121,9 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
-  function handleNotificationClick(id: string) {
+  function handleNotificationClick(id: string, senderName: string | null) {
     markSeen(id);
-    openCatachat();
+    openCatachat(senderName ? `/chat/${encodeURIComponent(senderName)}` : '');
   }
 
   function handleBroadcastClick(id: string) {
@@ -197,7 +197,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
                     <button
                       key={n.id}
                       className={`bell-item ${seenIds.has(n.id) ? 'bell-item--seen' : ''}`}
-                      onClick={() => handleNotificationClick(n.id)}
+                      onClick={() => handleNotificationClick(n.id, n.sender_name)}
                     >
                       <span className="bell-item-sender">{n.sender_name ?? 'Someone'}</span>
                       <span className="bell-item-content">{n.content}</span>

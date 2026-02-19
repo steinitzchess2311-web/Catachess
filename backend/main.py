@@ -314,6 +314,73 @@ async def _presence_cleanup_loop() -> None:
         await asyncio.sleep(interval_seconds)
 
 
+# ============================================================
+# TEMPORARY — auto-create catchat group tables on startup.
+# Delete this entire function AND its call in lifespan()
+# once the tables are confirmed to exist in the catchat DB.
+# ============================================================
+async def _init_catchat_group_tables() -> None:
+    import os
+    from sqlalchemy import create_engine, text, inspect
+
+    url = os.getenv("CATCHAT_DATABASE")
+    if not url:
+        logger.warning("CATCHAT_DATABASE not set — skipping group table creation")
+        return
+    try:
+        engine = create_engine(url, pool_pre_ping=True)
+        inspector = inspect(engine)
+        existing = inspector.get_table_names()
+        if all(t in existing for t in ("catchat_groups", "catchat_group_members", "catchat_group_messages")):
+            logger.info("✅ catchat group tables already exist — skipping")
+            return
+
+        logger.info("🔨 Creating catchat group tables…")
+        with engine.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS catchat_groups (
+                    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    name        VARCHAR(100),
+                    created_by  UUID NOT NULL,
+                    created_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+                    last_message_at TIMESTAMP NOT NULL DEFAULT NOW()
+                );
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS catchat_group_members (
+                    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    group_id   UUID NOT NULL REFERENCES catchat_groups(id) ON DELETE CASCADE,
+                    user_id    UUID NOT NULL,
+                    username   VARCHAR(50) NOT NULL,
+                    role       VARCHAR(10) NOT NULL DEFAULT 'member',
+                    joined_at  TIMESTAMP NOT NULL DEFAULT NOW(),
+                    CONSTRAINT uq_catchat_group_member UNIQUE (group_id, user_id)
+                );
+                CREATE INDEX IF NOT EXISTS ix_catchat_group_members_group_id
+                    ON catchat_group_members(group_id);
+            """))
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS catchat_group_messages (
+                    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    group_id    UUID NOT NULL REFERENCES catchat_groups(id) ON DELETE CASCADE,
+                    sender_id   UUID NOT NULL,
+                    sender_name VARCHAR(50) NOT NULL,
+                    content     TEXT NOT NULL,
+                    created_at  TIMESTAMP NOT NULL DEFAULT NOW()
+                );
+                CREATE INDEX IF NOT EXISTS ix_catchat_group_messages_group_id
+                    ON catchat_group_messages(group_id);
+                CREATE INDEX IF NOT EXISTS ix_catchat_group_messages_created_at
+                    ON catchat_group_messages(created_at);
+            """))
+        logger.info("✅ catchat group tables created")
+    except Exception as e:
+        logger.error(f"catchat group table creation failed: {e}", exc_info=True)
+# ============================================================
+# END TEMPORARY
+# ============================================================
+
+
 def _run_alembic_migrations() -> None:
     """TEMPORARY: Run alembic upgrade head on startup. Remove after 009 migration is applied."""
     try:
@@ -334,6 +401,9 @@ async def lifespan(app: FastAPI):
 
     # TEMPORARY: apply pending alembic migrations (remove after 009 is confirmed)
     await asyncio.to_thread(_run_alembic_migrations)
+
+    # TEMPORARY — create catchat group tables (delete once confirmed in DB)
+    await _init_catchat_group_tables()
 
     # Initialize Blog database and run migrations
     await _init_blog_db()

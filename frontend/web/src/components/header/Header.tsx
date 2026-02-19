@@ -79,7 +79,9 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
 
   const handleNotificationClick = () => {
     setBellOpen(false);
-    window.open(CATACHAT_URL, "_blank", "noopener,noreferrer");
+    const token = localStorage.getItem('catachess_token') || sessionStorage.getItem('catachess_token');
+    const url = token ? `${CATACHAT_URL}?token=${encodeURIComponent(token)}` : CATACHAT_URL;
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (

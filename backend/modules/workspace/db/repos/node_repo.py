@@ -4,7 +4,7 @@ Node repository for database operations.
 
 from typing import Sequence
 
-from sqlalchemy import and_, literal, or_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import aliased, selectinload
 
@@ -314,6 +314,8 @@ class NodeRepository:
             List of public study nodes
         """
         # Correlated subquery: does any public folder/workspace ancestor exist?
+        # Uses startswith on the study's path (forward LIKE: ancestor.path is prefix of Node.path).
+        # Node.path.like(ancestor.path + '%') ← column-on-column LIKE, safe in SQLAlchemy.
         folder_alias = aliased(Node, flat=True)
         in_public_folder = (
             select(folder_alias.id)
@@ -345,18 +347,24 @@ class NodeRepository:
         return result.scalars().all()
 
     async def _is_publicly_accessible(self, node: Node) -> bool:
-        """Return True if node is public or sits inside a public folder/workspace."""
+        """Return True if node is public or sits inside a public folder/workspace.
+
+        Uses path components to find ancestor IDs directly (avoids LIKE-on-column issues).
+        Path format: /id1/id2/id3/ — split gives ['id1', 'id2', 'id3'].
+        """
         if node.visibility == Visibility.PUBLIC:
             return True
-        ancestor = aliased(Node, flat=True)
+        # Extract ancestor IDs from the materialized path (everything except self)
+        ancestor_ids = [p for p in node.path.split("/") if p][:-1]
+        if not ancestor_ids:
+            return False
         stmt = (
-            select(ancestor.id)
+            select(Node.id)
             .where(
-                ancestor.node_type.in_([NodeType.FOLDER, NodeType.WORKSPACE]),
-                ancestor.visibility == Visibility.PUBLIC,
-                ancestor.deleted_at.is_(None),
-                literal(node.path).like(ancestor.path + "%"),
-                literal(node.path) != ancestor.path,
+                Node.id.in_(ancestor_ids),
+                Node.node_type.in_([NodeType.FOLDER, NodeType.WORKSPACE]),
+                Node.visibility == Visibility.PUBLIC,
+                Node.deleted_at.is_(None),
             )
             .exists()
         )

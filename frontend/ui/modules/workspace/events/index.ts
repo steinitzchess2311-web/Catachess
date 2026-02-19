@@ -2,13 +2,15 @@
 // LEGACY: This workspace module is deprecated. All study functionality has been moved to /patch/
 
 import { WorkspaceOptions } from './types';
-import { createInitialState, setSortSettings } from './state';
+import { api } from '../../../assets/api';
+import { createInitialState, setMode } from './state';
 import { createModalRoots } from './modals';
 import { renderReactComponents } from './rendering';
 import { setupEventHandlers } from './eventHandlers';
 import { extractElements, initializeToFolder } from './initialization';
 import { createReactRoots } from './reactComponents';
 import { createOrchestrator } from './orchestrator';
+import { getRootLabel } from './navigation';
 
 export async function initWorkspace(container: HTMLElement, options: WorkspaceOptions = {}) {
     // 1. Load template
@@ -22,6 +24,11 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
     // 3. Initialize state
     const startParentId = options.initialParentId || 'root';
     const state = createInitialState(startParentId);
+
+    // Apply initial mode (updates state.mode + root breadcrumb label)
+    if (options.initialMode) {
+        setMode(state, options.initialMode);
+    }
 
     // 4. Create roots
     const modalRoots = createModalRoots();
@@ -52,11 +59,28 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
     renderSortTogglesWrapper();
 
     // 9. Initialize to folder
-    await initializeToFolder(
-        state,
-        elements,
-        startParentId,
-        handlers.navigateToFolder,
-        handlers.refreshNodes
-    );
+    if (options.initialTopFolderName) {
+        // Navigate to the named top-level folder (from URL slug)
+        try {
+            const response = await api.get('/api/v1/workspace/nodes?parent_id=root');
+            const folder = (response.nodes as any[])?.find(
+                (n) => n.title === options.initialTopFolderName && n.node_type === 'folder'
+            );
+            if (folder) {
+                await handlers.navigateToFolder(folder.id, folder.title);
+            } else {
+                await handlers.navigateToFolder('root', getRootLabel(state));
+            }
+        } catch {
+            await handlers.navigateToFolder('root', getRootLabel(state));
+        }
+    } else {
+        await initializeToFolder(
+            state,
+            elements,
+            startParentId,
+            handlers.navigateToFolder,
+            handlers.refreshNodes
+        );
+    }
 }

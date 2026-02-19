@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { StudyProvider, useStudy } from './studyContext';
 import { StudyBoard } from './board/studyBoard';
 import { MoveTree } from './sidebar/movetree';
@@ -23,8 +23,9 @@ interface Breadcrumb {
 }
 
 function StudyPageContent({ className }: PatchStudyPageProps) {
-  const { id } = useParams<{ id: string }>();
+  const { id, topFolder } = useParams<{ id?: string; topFolder?: string }>();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const { state, clearError, setError, loadStudy, saveTree, addMove } = useStudy();
 
   const {
@@ -194,9 +195,17 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
 
   // ── Navigation ───────────────────────────────────────────────────────────
   const navigateToBreadcrumb = useCallback((crumb: Breadcrumb) => {
-    if (crumb.id === 'root') navigate('/workspace-select');
-    else navigate(`/workspace-select?parent=${crumb.id}`);
-  }, [navigate]);
+    const mode = pathname.startsWith('/private') ? 'private'
+               : pathname.startsWith('/public') ? 'public'
+               : pathname.startsWith('/shared') ? 'shared'
+               : 'private';
+    const base = topFolder ? `/${mode}/${topFolder}` : `/${mode}`;
+    if (crumb.id === 'root') {
+      navigate(base);
+    } else {
+      navigate(`${base}?parent=${crumb.id}`);
+    }
+  }, [navigate, pathname, topFolder]);
 
   const handleBreadcrumbClick = useCallback((crumb: Breadcrumb, index: number) => {
     if (index === breadcrumbs.length - 1) return;

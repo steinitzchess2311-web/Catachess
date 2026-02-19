@@ -1262,7 +1262,7 @@ export async function initStudy(container: HTMLElement, studyId: string): Promis
             
                                     alert(`PGN split into ${count} study(ies). Check workspace list.`);
             
-                                    window.location.assign('/workspace-select');
+                                    window.location.assign('/private');
             
                                     return;
             

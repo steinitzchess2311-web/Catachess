@@ -10,6 +10,7 @@ import {
   useParams,
   useSearchParams,
 } from "react-router-dom";
+import type { WorkspaceMode } from "@ui/modules/workspace/events/types";
 import { api } from "@ui/assets/api";
 import { initSignup } from "@ui/modules/auth/signup/events/index";
 import { initWorkspace } from "@ui/modules/workspace/events/index";
@@ -40,7 +41,6 @@ const SponsorshipPage = React.lazy(() => import("./pages/SponsorshipPage/Sponsor
 const TranslatePage = React.lazy(() => import("./pages/translate"));
 const PlayersIndex = React.lazy(() => import("@patch/modules/tagger/pages/PlayersIndex"));
 const PlayerDetail = React.lazy(() => import("@patch/modules/tagger/pages/PlayerDetail"));
-const AccountPage = React.lazy(() => import("../AccountPage"));
 const PatchStudyPage = React.lazy(() => import("@patch/PatchStudyPage").then(m => ({ default: m.PatchStudyPage })));
 const BoardEditorPage = React.lazy(() => import("@patch/modules/board_editor").then(m => ({ default: m.BoardEditorPage })));
 const AnalysisPage = React.lazy(() => import("./pages/analysis/AnalysisPage").then(m => ({ default: m.AnalysisPage })));
@@ -137,7 +137,7 @@ function LoginPage() {
 
   const redirect = useMemo(() => {
     const params = new URLSearchParams(location.search);
-    return params.get("redirect") || "/workspace-select";
+    return params.get("redirect") || "/private";
   }, [location.search]);
 
   const submit = async (event: React.FormEvent) => {
@@ -232,26 +232,30 @@ function SignupPage() {
   );
 }
 
-function WorkspaceSelect() {
+function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const location = useLocation();
-  const initialParentId = searchParams.get("parent") || "root";
-  const resetWorkspace = (location.state as { resetWorkspace?: number } | null)?.resetWorkspace;
+  const { pathname } = useLocation();
+  // Capture initial URL state at mount time (refs don't trigger re-renders)
+  const initSearchParams = useRef(searchParams);
+  const initPathname = useRef(pathname);
 
   useEffect(() => {
     if (!containerRef.current) return;
     containerRef.current.innerHTML = "";
+    const parentId = initSearchParams.current.get("parent") || undefined;
+    // parts[0] = mode segment, parts[1] = topFolder slug (if navigated into a folder)
+    const parts = initPathname.current.split("/").filter(Boolean);
+    const topFolderFromUrl = parts.length >= 2 ? decodeURIComponent(parts[1]) : undefined;
+
     initWorkspace(containerRef.current, {
-      onOpenStudy: (studyId) => {
-        // Use patch route if VITE_USE_PATCH_STUDY is enabled
-        const basePath = USE_PATCH_STUDY ? "/patch/workspace" : "/workspace";
-        navigate(`${basePath}/${studyId}`);
-      },
-      initialParentId,
+      initialMode: mode,
+      initialParentId: parentId,
+      initialTopFolderName: topFolderFromUrl,
+      onNavigateToUrl: (path) => navigate(path, { replace: true }),
     });
-  }, [navigate, initialParentId, resetWorkspace]);
+  }, [navigate, mode]); // only re-init on mode change (component remounts for mode switch)
 
   return (
     <div>
@@ -259,6 +263,17 @@ function WorkspaceSelect() {
       <div ref={containerRef} />
     </div>
   );
+}
+
+const AccountPage = React.lazy(() => import("../AccountPage"));
+
+function DynamicIdRoute() {
+  const { id } = useParams<{ id: string }>();
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (id && UUID_RE.test(id)) {
+    return <PatchStudyPage />;
+  }
+  return <AccountPage />;
 }
 
 function WorkspacePage() {
@@ -413,40 +428,27 @@ function Layout() {
               </Protected>
             }
           />
-          <Route
-            path="/workspace-select"
-            element={
-              <Protected>
-                <WorkspaceSelect />
-              </Protected>
-            }
-          />
-          <Route
-            path="/workspace/:id"
-            element={
-              <Protected>
-                {USE_PATCH_STUDY ? <PatchStudyPage /> : <WorkspacePage />}
-              </Protected>
-            }
-          />
-          {/* Patch-based study route - explicit route for new implementation */}
-          <Route
-            path="/patch/workspace/:id"
-            element={
-              <Protected>
-                <PatchStudyPage />
-              </Protected>
-            }
-          />
-          <Route
-            path="/:username"
-            element={
-              <Protected>
-                <AccountPage />
-              </Protected>
-            }
-          />
-          <Route path="/workspace" element={<Navigate to="/workspace-select" replace />} />
+          {/* Legacy workspace-select redirect */}
+          <Route path="/workspace-select" element={<Navigate to="/private" replace />} />
+          <Route path="/workspace" element={<Navigate to="/private" replace />} />
+
+          {/* Study routes — 3-segment paths take priority over wildcard */}
+          <Route path="/private/:topFolder/:id" element={<Protected><PatchStudyPage /></Protected>} />
+          <Route path="/public/:topFolder/:id" element={<Protected><PatchStudyPage /></Protected>} />
+          <Route path="/shared/:topFolder/:id" element={<Protected><PatchStudyPage /></Protected>} />
+
+          {/* Workspace browser — wildcard covers /{mode} and /{mode}/{topFolder} */}
+          <Route path="/private/*" element={<Protected><WorkspaceSelect mode="private" /></Protected>} />
+          <Route path="/public/*" element={<Protected><WorkspaceSelect mode="public" /></Protected>} />
+          <Route path="/shared/*" element={<Protected><WorkspaceSelect mode="shared" /></Protected>} />
+
+          {/* Legacy study routes (backward compat) */}
+          <Route path="/workspace/:id" element={<Protected>{USE_PATCH_STUDY ? <PatchStudyPage /> : <WorkspacePage />}</Protected>} />
+          <Route path="/patch/workspace/:id" element={<Protected><PatchStudyPage /></Protected>} />
+
+          {/* Root-level study (UUID) or username — distinguished at runtime */}
+          <Route path="/:id" element={<Protected><DynamicIdRoute /></Protected>} />
+
           <Route path="*" element={<div>404</div>} />
         </Routes>
         </Suspense>

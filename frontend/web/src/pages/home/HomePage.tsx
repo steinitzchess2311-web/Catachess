@@ -112,7 +112,7 @@ const HomePage: React.FC = () => {
 
               <div className="quick-start-grid">
                 {/* Go to Workspace */}
-                <Link to="/workspace-select" className="quick-start-card">
+                <Link to="/private" className="quick-start-card">
                   <div className="card-icon">📁</div>
                   <h3 className="card-title">Go to Workspace</h3>
                   <p className="card-description">

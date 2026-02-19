@@ -51,7 +51,7 @@ export function initLogin(container: HTMLElement) {
                     localStorage.setItem('catachess_user_id', userId);
                 }
                 // Redirect to workspace selection
-                window.location.assign('/workspace-select');
+                window.location.assign('/private');
             }
         } catch (error: any) {
             console.error('Login failed:', error);

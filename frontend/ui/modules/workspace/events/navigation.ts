@@ -76,7 +76,7 @@ export async function resolvePath(
     state: WorkspaceState,
     elements: WorkspaceElements,
     rawPath: string,
-    options: { onOpenStudy?: (studyId: string) => void },
+    options: { onOpenStudy?: (studyId: string) => void; onNavigateToUrl?: (path: string) => void },
     navigateToFolder: (id: string, title: string) => Promise<void>
 ) {
     let cleaned = rawPath.trim().replace(/\/+/g, '/');
@@ -132,7 +132,15 @@ export async function resolvePath(
                 shakePathInput(elements);
                 return;
             }
-            if (options.onOpenStudy) {
+            if (options.onNavigateToUrl) {
+                const modeMap: Record<string, string> = { root: 'private', public: 'public', shared: 'shared' };
+                const mode = modeMap[parts[0]] || 'private';
+                const topFolderName = parts.length > 1 ? parts[1] : null;
+                const path = topFolderName
+                    ? `/${mode}/${encodeURIComponent(topFolderName)}/${match.id}`
+                    : `/${match.id}`;
+                options.onNavigateToUrl(path);
+            } else if (options.onOpenStudy) {
                 options.onOpenStudy(match.id);
             } else {
                 window.location.assign(`/workspace/${match.id}`);

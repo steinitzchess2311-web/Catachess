@@ -3,6 +3,9 @@
 export type WorkspaceOptions = {
     onOpenStudy?: (studyId: string) => void;
     initialParentId?: string;
+    initialMode?: WorkspaceMode;
+    initialTopFolderName?: string;
+    onNavigateToUrl?: (path: string) => void;
 };
 
 export type SortKey = 'created' | 'modified' | null;

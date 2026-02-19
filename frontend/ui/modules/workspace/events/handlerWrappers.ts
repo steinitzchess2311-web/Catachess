@@ -37,6 +37,14 @@ export function createHandlerWrappers(
     // navigateToFolder implementation
     navigateToFolder = async (id: string, title: string) => {
         await doNavigateToFolder(state, elements, id, title, refreshNodes);
+        // Update browser URL to reflect mode + top-level folder
+        if (options.onNavigateToUrl) {
+            const topFolder = state.breadcrumbPath[1];
+            const path = topFolder
+                ? `/${state.mode}/${encodeURIComponent(topFolder.title)}`
+                : `/${state.mode}`;
+            options.onNavigateToUrl(path);
+        }
     };
 
     // Modal wrappers

@@ -69,7 +69,13 @@ export function renderItems(
                 handlers.navigateToFolder(node.id, node.title);
                 return;
             }
-            if (options.onOpenStudy) {
+            if (options.onNavigateToUrl) {
+                const topFolder = state.breadcrumbPath[1];
+                const path = topFolder
+                    ? `/${state.mode}/${encodeURIComponent(topFolder.title)}/${node.id}`
+                    : `/${node.id}`;
+                options.onNavigateToUrl(path);
+            } else if (options.onOpenStudy) {
                 options.onOpenStudy(node.id);
             } else {
                 window.location.assign(`/workspace/${node.id}`);

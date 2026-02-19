@@ -4,8 +4,8 @@ import { api } from '@ui/assets/api';
 
 type VisibilityMode = 'public' | 'private' | 'shared';
 
-interface UserResult  { id: string; username: string; }
-interface SharedUser  { user_id: string; username: string; permission: string; }
+interface UserResult { id: string; username: string; }
+interface SharedUser { user_id: string; username: string; permission: string; }
 
 const VIS = [
   { value: 'public'  as VisibilityMode, icon: '🌐', label: 'Public',     desc: 'Anyone can view' },
@@ -13,8 +13,9 @@ const VIS = [
   { value: 'shared'  as VisibilityMode, icon: '👥', label: 'Share with', desc: 'Specific users'  },
 ];
 
-// ─── Add-user popover ────────────────────────────────────────────────────────
+// ─── Add-user popover (fixed-position, escapes overflow:hidden) ───────────────
 interface AddPopoverProps {
+  anchor: { top: number; left: number; width: number };
   inputRef: React.RefObject<HTMLInputElement>;
   query: string;
   setQuery: (q: string) => void;
@@ -24,32 +25,43 @@ interface AddPopoverProps {
   onClose: () => void;
 }
 
-function AddPopover({ inputRef, query, setQuery, results, searching, onSelect, onClose }: AddPopoverProps) {
-  // Close on outside click
+function AddPopover({ anchor, inputRef, query, setQuery, results, searching, onSelect, onClose }: AddPopoverProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
   useEffect(() => {
-    const handler = (e: MouseEvent) => {
+    const h = (e: MouseEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) onClose();
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
   }, [onClose]);
+
+  // Position: appears above the anchor button, fixed to viewport
+  const bottomPx = window.innerHeight - anchor.top + 6;
 
   return (
     <div
       ref={wrapRef}
       style={{
-        position: 'absolute', bottom: 'calc(100% + 6px)', left: 0, right: 0,
+        position: 'fixed',
+        bottom: bottomPx,
+        left: anchor.left,
+        width: Math.max(anchor.width, 200),
         background: 'var(--surface-elevated, var(--bg, #1c1c1e))',
         border: '1.5px solid var(--border, rgba(128,128,128,0.18))',
         borderRadius: '10px',
-        boxShadow: '0 12px 32px rgba(0,0,0,0.22)',
-        overflow: 'hidden', zIndex: 200,
-        minWidth: '180px',
+        boxShadow: '0 12px 32px rgba(0,0,0,0.26)',
+        overflow: 'hidden',
+        zIndex: 9999,
       }}
     >
-      {/* Search row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 12px', borderBottom: '1px solid var(--border, rgba(128,128,128,0.12))' }}>
+      {/* Search input */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: '8px',
+        padding: '9px 12px',
+        borderBottom: '1px solid var(--border, rgba(128,128,128,0.12))',
+      }}>
         <span style={{ fontSize: '13px', color: 'var(--text-muted, #888)', flexShrink: 0 }}>🔍</span>
         <input
           ref={inputRef}
@@ -59,18 +71,16 @@ function AddPopover({ inputRef, query, setQuery, results, searching, onSelect, o
           placeholder="Search users…"
           autoComplete="off"
           style={{
-            flex: 1, border: 'none', outline: 'none', background: 'transparent',
-            color: 'inherit', fontSize: '12px',
+            flex: 1, border: 'none', outline: 'none',
+            background: 'transparent', color: 'inherit', fontSize: '13px',
           }}
         />
-        {searching && (
-          <span style={{ fontSize: '10px', color: 'var(--text-muted, #888)' }}>···</span>
-        )}
+        {searching && <span style={{ fontSize: '10px', color: 'var(--text-muted, #888)' }}>···</span>}
       </div>
 
-      {/* Results */}
+      {/* Results list */}
       {results.length > 0 ? (
-        <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
+        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
           {results.map(u => (
             <button
               key={u.id}
@@ -78,7 +88,7 @@ function AddPopover({ inputRef, query, setQuery, results, searching, onSelect, o
               onMouseDown={() => onSelect(u)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '10px',
-                width: '100%', padding: '8px 12px',
+                width: '100%', padding: '9px 14px',
                 background: 'none', border: 'none', cursor: 'pointer',
                 color: 'inherit', textAlign: 'left',
               }}
@@ -93,35 +103,37 @@ function AddPopover({ inputRef, query, setQuery, results, searching, onSelect, o
           ))}
         </div>
       ) : query.trim() && !searching ? (
-        <div style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-muted, #888)' }}>
+        <div style={{ padding: '10px 14px', fontSize: '12px', color: 'var(--text-muted, #888)' }}>
           No users found
         </div>
-      ) : !query.trim() ? (
-        <div style={{ padding: '10px 12px', fontSize: '12px', color: 'var(--text-muted, #888)' }}>
+      ) : (
+        <div style={{ padding: '10px 14px', fontSize: '12px', color: 'var(--text-muted, #888)' }}>
           Type to search…
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
 
-// ─── Main settings component ─────────────────────────────────────────────────
+// ─── Main component ───────────────────────────────────────────────────────────
 export function ShareSettings() {
   const { state } = useStudy();
 
-  const [visibility, setVisibility]         = useState<VisibilityMode>('private');
-  const nodeVersionRef                       = useRef(1);
-  const [visLoading, setVisLoading]         = useState(false);
-  const [shareError, setShareError]         = useState<string | null>(null);
-  const [sharedUsers, setSharedUsers]       = useState<SharedUser[]>([]);
+  const [visibility, setVisibility]       = useState<VisibilityMode>('private');
+  const nodeVersionRef                     = useRef(1);
+  const [visLoading, setVisLoading]       = useState(false);
+  const [shareError, setShareError]       = useState<string | null>(null);
+  const [sharedUsers, setSharedUsers]     = useState<SharedUser[]>([]);
 
   // Add-user popup
-  const [addOpen, setAddOpen]               = useState(false);
-  const [searchQuery, setSearchQuery]       = useState('');
-  const [searchResults, setSearchResults]   = useState<UserResult[]>([]);
-  const [isSearching, setIsSearching]       = useState(false);
-  const debounceRef                         = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const searchInputRef                      = useRef<HTMLInputElement>(null);
+  const [addOpen, setAddOpen]             = useState(false);
+  const [addAnchor, setAddAnchor]         = useState<{ top: number; left: number; width: number } | null>(null);
+  const [searchQuery, setSearchQuery]     = useState('');
+  const [searchResults, setSearchResults] = useState<UserResult[]>([]);
+  const [isSearching, setIsSearching]     = useState(false);
+  const debounceRef                        = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchInputRef                     = useRef<HTMLInputElement>(null);
+  const addBtnRef                          = useRef<HTMLButtonElement>(null);
 
   const isShared = visibility === 'shared';
 
@@ -207,6 +219,10 @@ export function ShareSettings() {
   }, [state.studyId, sharedUsers]);
 
   const openAdd = useCallback(() => {
+    if (addBtnRef.current) {
+      const r = addBtnRef.current.getBoundingClientRect();
+      setAddAnchor({ top: r.top, left: r.left, width: r.width });
+    }
     setAddOpen(true);
     setTimeout(() => searchInputRef.current?.focus(), 40);
   }, []);
@@ -230,7 +246,7 @@ export function ShareSettings() {
         alignItems: 'start',
       }}>
 
-        {/* ── Left: vis selector ───────────────────────────────────────── */}
+        {/* ── Left: visibility cards ───────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {VIS.map(({ value: v, icon, label, desc }) => {
             const active = visibility === v;
@@ -253,7 +269,7 @@ export function ShareSettings() {
               >
                 <span style={{ fontSize: '15px', lineHeight: 1, flexShrink: 0 }}>{icon}</span>
                 <span style={{ flex: 1, textAlign: 'left' }}>
-                  <span style={{ display: 'block', fontSize: '12px', fontWeight: active ? 600 : 500, color: active ? 'var(--accent, #4e7fff)' : 'inherit', lineHeight: 1.2 }}>
+                  <span style={{ display: 'block', fontSize: '12px', fontWeight: active ? 600 : 500, lineHeight: 1.2, color: active ? 'var(--accent, #4e7fff)' : 'inherit' }}>
                     {label}
                   </span>
                   {!isShared && (
@@ -271,7 +287,6 @@ export function ShareSettings() {
         {/* ── Right: access panel ──────────────────────────────────────── */}
         <div style={{
           display: 'flex', flexDirection: 'column', gap: '5px',
-          overflow: 'hidden',
           opacity: isShared ? 1 : 0,
           transform: isShared ? 'translateX(0)' : 'translateX(8px)',
           transition: `opacity 0.2s ease ${isShared ? '0.16s' : '0s'}, transform 0.2s ease ${isShared ? '0.16s' : '0s'}`,
@@ -281,7 +296,6 @@ export function ShareSettings() {
 
           {/* User list */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', maxHeight: '116px', overflowY: 'auto' }}>
-            {/* Owner */}
             <div style={sCard(true)}>
               <div style={sAvatar('#4e7fff', '#fff')}>Y</div>
               <span style={sName}>You</span>
@@ -300,8 +314,8 @@ export function ShareSettings() {
                   aria-label={`Remove ${u.username}`}
                   style={{
                     width: '14px', height: '14px', border: 'none', background: 'none',
-                    cursor: 'pointer', padding: 0, lineHeight: 1,
-                    fontSize: '14px', color: 'var(--text-muted, #888)', opacity: 0.65, flexShrink: 0,
+                    cursor: 'pointer', padding: 0, fontSize: '14px', lineHeight: 1,
+                    color: 'var(--text-muted, #888)', opacity: 0.65, flexShrink: 0,
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   }}
                 >×</button>
@@ -309,42 +323,43 @@ export function ShareSettings() {
             ))}
           </div>
 
-          {/* Add user button + popover */}
-          <div style={{ position: 'relative' }}>
-            <button
-              type="button"
-              onClick={openAdd}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '5px',
-                padding: '5px 9px',
-                border: '1.5px dashed var(--border, rgba(128,128,128,0.28))',
-                borderRadius: '7px', background: 'none', cursor: 'pointer',
-                fontSize: '11px', color: 'var(--text-muted, #888)', width: '100%',
-                transition: 'border-color 0.14s, color 0.14s',
-              }}
-            >
-              <span style={{ fontSize: '14px', lineHeight: 1 }}>+</span>
-              Add user
-            </button>
-
-            {addOpen && (
-              <AddPopover
-                inputRef={searchInputRef}
-                query={searchQuery}
-                setQuery={setSearchQuery}
-                results={searchResults}
-                searching={isSearching}
-                onSelect={handleAddUser}
-                onClose={closeAdd}
-              />
-            )}
-          </div>
+          {/* Add user button */}
+          <button
+            ref={addBtnRef}
+            type="button"
+            onClick={openAdd}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              padding: '5px 9px',
+              border: '1.5px dashed var(--border, rgba(128,128,128,0.28))',
+              borderRadius: '7px', background: 'none', cursor: 'pointer',
+              fontSize: '11px', color: 'var(--text-muted, #888)', width: '100%',
+              transition: 'border-color 0.14s, color 0.14s',
+            }}
+          >
+            <span style={{ fontSize: '14px', lineHeight: 1 }}>+</span>
+            Add user
+          </button>
 
           {shareError && (
             <span style={{ fontSize: '10px', color: 'var(--error, #e05252)' }}>{shareError}</span>
           )}
         </div>
       </div>
+
+      {/* Fixed-position popover — escapes overflow:hidden parents */}
+      {addOpen && addAnchor && (
+        <AddPopover
+          anchor={addAnchor}
+          inputRef={searchInputRef}
+          query={searchQuery}
+          setQuery={setSearchQuery}
+          results={searchResults}
+          searching={isSearching}
+          onSelect={handleAddUser}
+          onClose={closeAdd}
+        />
+      )}
     </div>
   );
 }

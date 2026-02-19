@@ -195,11 +195,11 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
 
   // ── Navigation ───────────────────────────────────────────────────────────
   const navigateToBreadcrumb = useCallback((crumb: Breadcrumb) => {
-    const mode = pathname.startsWith('/private') ? 'private'
-               : pathname.startsWith('/public') ? 'public'
-               : pathname.startsWith('/shared') ? 'shared'
+    const mode = pathname.startsWith('/workspace/private') ? 'private'
+               : pathname.startsWith('/workspace/public') ? 'public'
+               : pathname.startsWith('/workspace/shared') ? 'shared'
                : 'private';
-    const base = topFolder ? `/${mode}/${topFolder}` : `/${mode}`;
+    const base = topFolder ? `/workspace/${mode}/${topFolder}` : `/workspace/${mode}`;
     if (crumb.id === 'root') {
       navigate(base);
     } else {

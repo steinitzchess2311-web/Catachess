@@ -1,7 +1,7 @@
 // Navigation and path management
 
 import { api } from '../../../assets/api';
-import { WorkspaceState, WorkspaceElements } from './types';
+import { WorkspaceState, WorkspaceElements, WorkspaceMode } from './types';
 
 export function getRootPrefix(state: WorkspaceState): string {
     const map: Record<string, string> = { private: 'root/', public: 'public/', shared: 'shared/' };
@@ -76,7 +76,10 @@ export async function resolvePath(
     state: WorkspaceState,
     elements: WorkspaceElements,
     rawPath: string,
-    options: { onOpenStudy?: (studyId: string) => void; onNavigateToUrl?: (path: string) => void },
+    options: {
+        onOpenStudy?: (studyId: string, context: { mode: WorkspaceMode; topFolder: string | null }) => void;
+        onWorkspaceNavigate?: (mode: WorkspaceMode, topFolder: string | null) => void;
+    },
     navigateToFolder: (id: string, title: string) => Promise<void>
 ) {
     let cleaned = rawPath.trim().replace(/\/+/g, '/');
@@ -132,16 +135,11 @@ export async function resolvePath(
                 shakePathInput(elements);
                 return;
             }
-            if (options.onNavigateToUrl) {
-                const modeMap: Record<string, string> = { root: 'private', public: 'public', shared: 'shared' };
-                const mode = modeMap[parts[0]] || 'private';
-                const topFolderName = parts.length > 1 ? parts[1] : null;
-                const path = topFolderName
-                    ? `/${mode}/${encodeURIComponent(topFolderName)}/${match.id}`
-                    : `/${match.id}`;
-                options.onNavigateToUrl(path);
-            } else if (options.onOpenStudy) {
-                options.onOpenStudy(match.id);
+            const modeMap: Record<string, WorkspaceMode> = { root: 'private', public: 'public', shared: 'shared' };
+            const mode = modeMap[parts[0]] || 'private';
+            const topFolderName = parts.length > 2 ? parts[1] : null;
+            if (options.onOpenStudy) {
+                options.onOpenStudy(match.id, { mode, topFolder: topFolderName });
             } else {
                 window.location.assign(`/workspace/${match.id}`);
             }

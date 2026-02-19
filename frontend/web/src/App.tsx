@@ -48,6 +48,10 @@ const AnalysisPage = React.lazy(() => import("./pages/analysis/AnalysisPage").th
 // Entry switch configuration: default to patch unless explicitly disabled
 const USE_PATCH_STUDY = import.meta.env.VITE_USE_PATCH_STUDY !== "false";
 
+function toSlug(title: string): string {
+  return title.replace(/\s+/g, '-');
+}
+
 // Cat pet feature toggle
 const ENABLE_CAT_PET = false;
 
@@ -137,7 +141,7 @@ function LoginPage() {
 
   const redirect = useMemo(() => {
     const params = new URLSearchParams(location.search);
-    return params.get("redirect") || "/private";
+    return params.get("redirect") || "/workspace/private";
   }, [location.search]);
 
   const submit = async (event: React.FormEvent) => {
@@ -245,15 +249,29 @@ function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
     if (!containerRef.current) return;
     containerRef.current.innerHTML = "";
     const parentId = initSearchParams.current.get("parent") || undefined;
-    // parts[0] = mode segment, parts[1] = topFolder slug (if navigated into a folder)
+    // path: /workspace/{mode}/{topFolderSlug?}
+    // parts: ['workspace', mode, topFolderSlug?]
     const parts = initPathname.current.split("/").filter(Boolean);
-    const topFolderFromUrl = parts.length >= 2 ? decodeURIComponent(parts[1]) : undefined;
+    const topFolderSlug = parts.length >= 3 ? decodeURIComponent(parts[2]) : undefined;
 
     initWorkspace(containerRef.current, {
       initialMode: mode,
       initialParentId: parentId,
-      initialTopFolderName: topFolderFromUrl,
-      onNavigateToUrl: (path) => navigate(path, { replace: true }),
+      initialTopFolderName: topFolderSlug,
+      onWorkspaceNavigate: (newMode, topFolder) => {
+        const base = `/workspace/${newMode}`;
+        const next = topFolder ? `${base}/${toSlug(topFolder)}` : base;
+        if (window.location.pathname !== next) {
+          navigate(next, { replace: true });
+        }
+      },
+      onOpenStudy: (studyId, context) => {
+        const base = `/workspace/${context.mode}`;
+        const next = context.topFolder
+          ? `${base}/${toSlug(context.topFolder)}/${studyId}`
+          : `/${studyId}`;
+        navigate(next);
+      },
     });
   }, [navigate, mode]); // only re-init on mode change (component remounts for mode switch)
 
@@ -429,18 +447,20 @@ function Layout() {
             }
           />
           {/* Legacy workspace-select redirect */}
-          <Route path="/workspace-select" element={<Navigate to="/private" replace />} />
-          <Route path="/workspace" element={<Navigate to="/private" replace />} />
+          <Route path="/workspace-select" element={<Navigate to="/workspace/private" replace />} />
 
-          {/* Study routes — 3-segment paths take priority over wildcard */}
-          <Route path="/private/:topFolder/:id" element={<Protected><PatchStudyPage /></Protected>} />
-          <Route path="/public/:topFolder/:id" element={<Protected><PatchStudyPage /></Protected>} />
-          <Route path="/shared/:topFolder/:id" element={<Protected><PatchStudyPage /></Protected>} />
+          {/* Study routes — must precede workspace wildcard */}
+          <Route path="/workspace/private/:topFolder/:id" element={<Protected><PatchStudyPage /></Protected>} />
+          <Route path="/workspace/public/:topFolder/:id" element={<Protected><PatchStudyPage /></Protected>} />
+          <Route path="/workspace/shared/:topFolder/:id" element={<Protected><PatchStudyPage /></Protected>} />
 
-          {/* Workspace browser — wildcard covers /{mode} and /{mode}/{topFolder} */}
-          <Route path="/private/*" element={<Protected><WorkspaceSelect mode="private" /></Protected>} />
-          <Route path="/public/*" element={<Protected><WorkspaceSelect mode="public" /></Protected>} />
-          <Route path="/shared/*" element={<Protected><WorkspaceSelect mode="shared" /></Protected>} />
+          {/* Workspace browser — wildcard covers /workspace/{mode} and /workspace/{mode}/{topFolder} */}
+          <Route path="/workspace/private/*" element={<Protected><WorkspaceSelect mode="private" /></Protected>} />
+          <Route path="/workspace/public/*" element={<Protected><WorkspaceSelect mode="public" /></Protected>} />
+          <Route path="/workspace/shared/*" element={<Protected><WorkspaceSelect mode="shared" /></Protected>} />
+
+          {/* /workspace → redirect to private */}
+          <Route path="/workspace" element={<Navigate to="/workspace/private" replace />} />
 
           {/* Legacy study routes (backward compat) */}
           <Route path="/workspace/:id" element={<Protected>{USE_PATCH_STUDY ? <PatchStudyPage /> : <WorkspacePage />}</Protected>} />

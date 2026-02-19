@@ -1,6 +1,6 @@
 const routes = {
-  login: '/login?redirect=/workspace-select',
-  signup: '/signup?redirect=/workspace-select',
+  login: '/login?redirect=/workspace/private',
+  signup: '/signup?redirect=/workspace/private',
   account: '/account',
 };
 

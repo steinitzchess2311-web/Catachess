@@ -144,7 +144,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
         </Link>
         {/* Navigation links moved here, next to logo */}
         <nav className="header-center">
-          <Link to="/private" className="nav-link">Workspace</Link>
+          <Link to="/workspace/private" className="nav-link">Workspace</Link>
           <Link to="/translate" className="nav-link">Translator</Link>
           <Link to="/blogs" className="nav-link">Blogs</Link>
           <div className="nav-dropdown">

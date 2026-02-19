@@ -94,7 +94,7 @@ export function BoardEditorPage() {
         <button
           type="button"
           className="board-editor-back-btn"
-          onClick={() => navigate(studyId ? `/${studyId}` : '/private')}
+          onClick={() => navigate(studyId ? `/${studyId}` : '/workspace/private')}
         >
           ← Back
         </button>

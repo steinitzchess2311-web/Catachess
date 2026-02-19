@@ -1,11 +1,11 @@
 // Type definitions for workspace module
 
 export type WorkspaceOptions = {
-    onOpenStudy?: (studyId: string) => void;
+    onOpenStudy?: (studyId: string, context: { mode: WorkspaceMode; topFolder: string | null }) => void;
     initialParentId?: string;
     initialMode?: WorkspaceMode;
     initialTopFolderName?: string;
-    onNavigateToUrl?: (path: string) => void;
+    onWorkspaceNavigate?: (mode: WorkspaceMode, topFolder: string | null) => void;
 };
 
 export type SortKey = 'created' | 'modified' | null;

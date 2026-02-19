@@ -63,8 +63,12 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
         // Navigate to the named top-level folder (from URL slug)
         try {
             const response = await api.get('/api/v1/workspace/nodes?parent_id=root');
+            const slug = options.initialTopFolderName!;
             const folder = (response.nodes as any[])?.find(
-                (n) => n.title === options.initialTopFolderName && n.node_type === 'folder'
+                (n) => n.node_type === 'folder' && (
+                    n.title === slug ||
+                    n.title === slug.replace(/-/g, ' ')
+                )
             );
             if (folder) {
                 await handlers.navigateToFolder(folder.id, folder.title);

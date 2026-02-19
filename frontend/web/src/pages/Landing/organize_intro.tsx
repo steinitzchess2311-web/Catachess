@@ -70,7 +70,7 @@ const OrganizeIntro = () => {
           that allows you to effectively organize your chess materials!
         </div>
         <Link
-          to="/private"
+          to="/workspace/private"
           className="landing-button"
           style={{
             alignSelf: "flex-end",

@@ -69,14 +69,9 @@ export function renderItems(
                 handlers.navigateToFolder(node.id, node.title);
                 return;
             }
-            if (options.onNavigateToUrl) {
+            if (options.onOpenStudy) {
                 const topFolder = state.breadcrumbPath[1];
-                const path = topFolder
-                    ? `/${state.mode}/${encodeURIComponent(topFolder.title)}/${node.id}`
-                    : `/${node.id}`;
-                options.onNavigateToUrl(path);
-            } else if (options.onOpenStudy) {
-                options.onOpenStudy(node.id);
+                options.onOpenStudy(node.id, { mode: state.mode, topFolder: topFolder ? topFolder.title : null });
             } else {
                 window.location.assign(`/workspace/${node.id}`);
             }

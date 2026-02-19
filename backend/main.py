@@ -319,7 +319,7 @@ async def _presence_cleanup_loop() -> None:
 # Delete this entire function AND its call in lifespan()
 # once the tables are confirmed to exist in the catchat DB.
 # ============================================================
-async def _init_catchat_group_tables() -> None:
+def _init_catchat_group_tables() -> None:
     import os
     from sqlalchemy import create_engine, text, inspect
 
@@ -403,7 +403,7 @@ async def lifespan(app: FastAPI):
     await asyncio.to_thread(_run_alembic_migrations)
 
     # TEMPORARY — create catchat group tables (delete once confirmed in DB)
-    await _init_catchat_group_tables()
+    await asyncio.to_thread(_init_catchat_group_tables)
 
     # Initialize Blog database and run migrations
     await _init_blog_db()

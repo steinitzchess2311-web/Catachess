@@ -106,11 +106,11 @@ export function ShareWith({ studyId }: ShareWithProps) {
       <div style={{ display: 'flex', gap: '5px', alignItems: 'center', marginTop: '2px' }}>
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', gap: '6px',
-          border: '1.5px solid var(--border, rgba(128,128,128,0.25))',
+          border: '1.5px solid #d0d5dd',
           borderRadius: '7px', padding: '0 8px', height: '28px',
-          background: 'var(--surface, transparent)',
+          background: '#fff',
         }}>
-          <span style={{ fontSize: '11px', color: 'var(--text-muted, #888)', flexShrink: 0 }}>🔍</span>
+          <span style={{ fontSize: '11px', color: '#999', flexShrink: 0 }}>🔍</span>
           <input
             type="text"
             value={searchQuery}
@@ -120,7 +120,7 @@ export function ShareWith({ studyId }: ShareWithProps) {
             autoComplete="off"
             style={{
               flex: 1, border: 'none', outline: 'none',
-              background: 'transparent', color: 'inherit', fontSize: '11px',
+              background: 'transparent', color: '#111', fontSize: '11px',
               minWidth: 0,
             }}
           />

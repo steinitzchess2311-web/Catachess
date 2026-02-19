@@ -71,6 +71,133 @@
   gap: 12px;
 }
 
+/* ── Bell / notification ───────────────────────── */
+
+.bell-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.bell-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  cursor: pointer;
+  color: #5f6368;
+  transition: background 0.15s, color 0.15s;
+}
+
+.bell-btn:hover {
+  background: #f1f3f4;
+  color: #202124;
+}
+
+.bell-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #e53935;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.bell-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 300px;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 1100;
+  overflow: hidden;
+}
+
+.bell-dropdown-header {
+  padding: 12px 16px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.bell-empty {
+  padding: 20px 16px;
+  font-size: 14px;
+  color: #aaa;
+  text-align: center;
+}
+
+.bell-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+  border-bottom: 1px solid #f5f5f5;
+  gap: 2px;
+}
+
+.bell-item:hover {
+  background: #f0f4ff;
+}
+
+.bell-item-sender {
+  font-size: 13px;
+  font-weight: 600;
+  color: #202124;
+}
+
+.bell-item-content {
+  font-size: 13px;
+  color: #5f6368;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 268px;
+}
+
+.bell-open-chat {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a73e8;
+  text-align: center;
+  transition: background 0.12s;
+}
+
+.bell-open-chat:hover {
+  background: #f0f4ff;
+}
+
 /* ── Analysis dropdown ──────────────────────────── */
 
 .nav-dropdown {

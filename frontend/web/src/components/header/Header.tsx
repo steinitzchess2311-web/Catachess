@@ -1,7 +1,9 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { BellIcon } from "@radix-ui/react-icons";
 import "./Header.css";
 import logoImage from "../../assets/logo.jpg";
+import { api } from '@ui/assets/api';
 
 interface HeaderProps {
   username: string | null;
@@ -9,12 +11,46 @@ interface HeaderProps {
   userRole?: string | null;  // User's role (admin, editor, etc.)
 }
 
+interface Notification {
+  id: string;
+  conversation_id: string;
+  sender_name: string | null;
+  content: string;
+  created_at: string;
+}
+
+const CATACHAT_URL = "https://catachat.catachess.com";
+
 const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
   const displayName = username?.trim() || 'Account';
   const rightClickCountRef = useRef(0);
   const rightClickTimerRef = useRef<number | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const [bellOpen, setBellOpen] = useState(false);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const bellRef = useRef<HTMLDivElement>(null);
+
+  // Fetch notifications when user is authed
+  useEffect(() => {
+    if (!isAuthed) return;
+    api.get('/api/catchat/notifications?limit=5')
+      .then((data: Notification[]) => setNotifications(data))
+      .catch(() => {/* silent — bell just shows empty */});
+  }, [isAuthed]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!bellOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (bellRef.current && !bellRef.current.contains(e.target as Node)) {
+        setBellOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [bellOpen]);
 
   const handleLogoContextMenu = () => {
     rightClickCountRef.current += 1;
@@ -39,6 +75,11 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
   const handleLogoClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     // Always navigate to home page
     // No special logic needed - let default Link behavior handle it
+  };
+
+  const handleNotificationClick = () => {
+    setBellOpen(false);
+    window.open(CATACHAT_URL, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -68,6 +109,42 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
         </nav>
       </div>
       <div className="header-right">
+        {isAuthed && (
+          <div className="bell-wrapper" ref={bellRef}>
+            <button
+              className="bell-btn"
+              aria-label="Messages"
+              onClick={() => setBellOpen(o => !o)}
+            >
+              <BellIcon width={20} height={20} />
+              {notifications.length > 0 && (
+                <span className="bell-badge">{notifications.length}</span>
+              )}
+            </button>
+            {bellOpen && (
+              <div className="bell-dropdown">
+                <div className="bell-dropdown-header">Messages</div>
+                {notifications.length === 0 ? (
+                  <div className="bell-empty">No new messages</div>
+                ) : (
+                  notifications.map(n => (
+                    <button
+                      key={n.id}
+                      className="bell-item"
+                      onClick={handleNotificationClick}
+                    >
+                      <span className="bell-item-sender">{n.sender_name ?? 'Someone'}</span>
+                      <span className="bell-item-content">{n.content}</span>
+                    </button>
+                  ))
+                )}
+                <button className="bell-open-chat" onClick={handleNotificationClick}>
+                  Open catachat →
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         {isAuthed ? (
           <Link to="/account" className="username" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {displayName}

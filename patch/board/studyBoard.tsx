@@ -19,10 +19,6 @@ const CIRCLE_COLOR_CSS: Record<ShapeColor, string> = {
   yellow: 'rgba(255, 200, 0, 0.6)',
 };
 
-const CSS_TO_SHAPE_COLOR: Record<string, ShapeColor> = Object.fromEntries(
-  Object.entries(SHAPE_COLOR_CSS).map(([k, v]) => [v, k as ShapeColor])
-);
-
 export interface StudyBoardProps {
   className?: string;
   boardWidth?: number;
@@ -99,30 +95,103 @@ export function StudyBoard({ className, boardWidth = 500 }: StudyBoardProps) {
 
   // ── Shape state ──────────────────────────────────────────────────────────────
   // localShapes is the single source of truth for the current node's shapes.
-  // It is initialised from node.shapes on navigation and updated by user interaction.
-  //
-  // FEEDBACK-LOOP GUARD:
-  //   Whenever we call setLocalShapes(), displayArrows (useMemo) gets a new
-  //   reference → customArrows prop changes → react-chessboard calls clearArrows()
-  //   → onArrowsChange([]) fires. suppressArrowChange is set to true before any
-  //   setLocalShapes call so that spurious onArrowsChange([]) is ignored.
   const [localShapes, setLocalShapes] = useState<Shape[]>([]);
   const localShapesRef = useRef<Shape[]>([]);
   localShapesRef.current = localShapes;
-  const suppressArrowChange = useRef(false);
 
-  // Load node's shapes whenever the cursor moves to a different node.
+  // Load node's shapes when the cursor moves to a different node.
   useEffect(() => {
     const node = state.tree.nodes[state.cursorNodeId];
-    suppressArrowChange.current = true;
     setLocalShapes(node?.shapes ?? []);
   }, [state.cursorNodeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const displayArrows = useMemo<[string, string, string][]>(() => {
-    return localShapes
+  // ── Custom arrow drawing ─────────────────────────────────────────────────────
+  // We use areArrowsAllowed={false} and handle arrow drawing ourselves via mouse
+  // events on the wrapper div. This gives us clean toggle semantics (re-draw = delete)
+  // and avoids the react-chessboard customArrows/onArrowsChange feedback loop.
+  const boardWrapperRef = useRef<HTMLDivElement>(null);
+  const rightDragFromRef = useRef<string | null>(null);
+  const [inProgressArrow, setInProgressArrow] = useState<[string, string, string] | null>(null);
+
+  // Convert a mouse event's client coordinates to a board square ("e4", "d5", …).
+  const getSquare = useCallback(
+    (e: React.MouseEvent): string | null => {
+      const rect = boardWrapperRef.current?.getBoundingClientRect();
+      if (!rect) return null;
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const sz = boardWidth / 8;
+      if (x < 0 || y < 0 || x > boardWidth || y > boardWidth) return null;
+      const fi = Math.floor(x / sz);
+      const ri = Math.floor(y / sz);
+      if (fi < 0 || fi > 7 || ri < 0 || ri > 7) return null;
+      const file = orientation === 'black' ? 7 - fi : fi;
+      const rank = orientation === 'black' ? ri : 7 - ri;
+      return (
+        String.fromCharCode('a'.charCodeAt(0) + file) +
+        String.fromCharCode('1'.charCodeAt(0) + rank)
+      );
+    },
+    [boardWidth, orientation]
+  );
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 2) return;
+      rightDragFromRef.current = getSquare(e);
+    },
+    [getSquare]
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!(e.buttons & 2) || !rightDragFromRef.current) {
+        setInProgressArrow(null);
+        return;
+      }
+      const to = getSquare(e);
+      setInProgressArrow(
+        to && to !== rightDragFromRef.current
+          ? [rightDragFromRef.current, to, SHAPE_COLOR_CSS.green]
+          : null
+      );
+    },
+    [getSquare]
+  );
+
+  const handleMouseUp = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 2) return;
+      const from = rightDragFromRef.current;
+      rightDragFromRef.current = null;
+      setInProgressArrow(null);
+      if (!from) return;
+      const to = getSquare(e);
+      if (!to || to === from) return; // same square → circle, handled by onSquareRightClick
+
+      const current = localShapesRef.current;
+      const idx = current.findIndex(
+        (s): s is ShapeArrow => s.type === 'arrow' && s.from === from && s.to === to
+      );
+      // Toggle: re-drawing an existing arrow deletes it; new arrow is added.
+      const newShapes: Shape[] =
+        idx >= 0
+          ? current.filter((_, i) => i !== idx)
+          : [...current, { type: 'arrow', color: 'green', from, to } as ShapeArrow];
+      setLocalShapes(newShapes);
+      setShapes(state.cursorNodeId, newShapes);
+    },
+    [getSquare, state.cursorNodeId, setShapes]
+  );
+
+  // ── Display values derived from localShapes ──────────────────────────────────
+
+  const allDisplayArrows = useMemo<[string, string, string][]>(() => {
+    const stored = localShapes
       .filter((s): s is ShapeArrow => s.type === 'arrow')
-      .map((s) => [s.from, s.to, SHAPE_COLOR_CSS[s.color]]);
-  }, [localShapes]);
+      .map((s): [string, string, string] => [s.from, s.to, SHAPE_COLOR_CSS[s.color]]);
+    return inProgressArrow ? [...stored, inProgressArrow] : stored;
+  }, [localShapes, inProgressArrow]);
 
   const displaySquareStyles = useMemo<Record<string, React.CSSProperties>>(() => {
     const styles: Record<string, React.CSSProperties> = {};
@@ -134,54 +203,19 @@ export function StudyBoard({ className, boardWidth = 500 }: StudyBoardProps) {
     return styles;
   }, [localShapes]);
 
-  // Called by react-chessboard when user finishes drawing an arrow (right-click drag).
-  // `arrows` contains only the user-drawn arrows, NOT the customArrows we passed in.
-  // We merge them with any already-stored arrows so stored shapes are never lost.
-  const onArrowsChange = useCallback(
-    (arrows: [string, string, string?][]) => {
-      if (suppressArrowChange.current) {
-        suppressArrowChange.current = false;
-        return;
-      }
-      const current = localShapesRef.current;
-      const circles = current.filter((s): s is ShapeCircle => s.type === 'circle');
-      const existingArrows = current.filter((s): s is ShapeArrow => s.type === 'arrow');
-
-      const drawnArrows: ShapeArrow[] = arrows.map(([from, to, color]) => ({
-        type: 'arrow',
-        color: (color ? (CSS_TO_SHAPE_COLOR[color] ?? 'green') : 'green') as ShapeColor,
-        from: from as string,
-        to: to as string,
-      }));
-
-      // Union: keep all stored arrows + append any newly drawn ones (dedup by from+to).
-      const merged = [...existingArrows];
-      for (const drawn of drawnArrows) {
-        if (!merged.some((a) => a.from === drawn.from && a.to === drawn.to)) {
-          merged.push(drawn);
-        }
-      }
-
-      const newShapes = [...circles, ...merged];
-      suppressArrowChange.current = true; // guard against the re-render feedback
-      setLocalShapes(newShapes);
-      setShapes(state.cursorNodeId, newShapes);
-    },
-    [state.cursorNodeId, setShapes]
-  );
-
-  // Right-click on a square (no drag) → toggle a green circle on that square.
+  // Right-click on same square (no drag) → toggle a green circle.
+  // react-chessboard fires onSquareRightClick for same-square right-clicks regardless
+  // of areArrowsAllowed, so this path is independent from our drag handlers above.
   const onSquareRightClick = useCallback(
     (square: string) => {
       const current = localShapesRef.current;
       const idx = current.findIndex(
         (s): s is ShapeCircle => s.type === 'circle' && s.square === square
       );
-      const newShapes =
+      const newShapes: Shape[] =
         idx >= 0
           ? current.filter((_, i) => i !== idx)
           : [...current, { type: 'circle', color: 'green', square } as ShapeCircle];
-      suppressArrowChange.current = true;
       setLocalShapes(newShapes);
       setShapes(state.cursorNodeId, newShapes);
     },
@@ -211,7 +245,15 @@ export function StudyBoard({ className, boardWidth = 500 }: StudyBoardProps) {
       className={`study-board-container ${className || ''}`}
       style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: boardWidth }}
     >
-      <div className="study-board-wrapper" style={{ width: boardWidth, height: boardWidth }}>
+      <div
+        ref={boardWrapperRef}
+        className="study-board-wrapper"
+        style={{ width: boardWidth, height: boardWidth }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onContextMenu={(e) => e.preventDefault()}
+      >
         <Chessboard
           id="study-board"
           position={state.currentFen}
@@ -221,11 +263,10 @@ export function StudyBoard({ className, boardWidth = 500 }: StudyBoardProps) {
           customDarkSquareStyle={{ backgroundColor: '#779954' }}
           customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
           animationDuration={200}
-          customArrows={displayArrows}
+          customArrows={allDisplayArrows}
           customSquareStyles={displaySquareStyles}
-          onArrowsChange={onArrowsChange}
           onSquareRightClick={onSquareRightClick}
-          areArrowsAllowed={true}
+          areArrowsAllowed={false}
         />
       </div>
       <div className="study-board-nav">

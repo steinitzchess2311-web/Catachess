@@ -26,6 +26,7 @@ def get_notifications(
     db: Session = Depends(get_db),
 ):
     uid = current_user.id
+    # Fetch a larger batch so we can deduplicate by sender
     rows = db.execute(
         select(Message)
         .join(Conversation, Message.conversation_id == Conversation.id)
@@ -34,8 +35,18 @@ def get_notifications(
             Message.sender_id != uid,
         )
         .order_by(Message.created_at.desc())
-        .limit(limit)
+        .limit(limit * 20)
     ).scalars().all()
+
+    # Keep only the latest message per sender
+    seen_senders: set = set()
+    unique: list = []
+    for m in rows:
+        if m.sender_id not in seen_senders:
+            seen_senders.add(m.sender_id)
+            unique.append(m)
+            if len(unique) == limit:
+                break
 
     return [
         MessageResponse(
@@ -46,5 +57,5 @@ def get_notifications(
             content=m.content,
             created_at=m.created_at,
         )
-        for m in rows
+        for m in unique
     ]

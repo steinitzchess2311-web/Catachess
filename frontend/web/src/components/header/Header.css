@@ -198,6 +198,33 @@
   background: #f0f4ff;
 }
 
+/* Broadcast pinned item */
+.bell-item--broadcast {
+  background: #fffbf0;
+  border-left: 3px solid #f59e0b;
+}
+
+.bell-item--broadcast:hover {
+  background: #fef3c7;
+}
+
+.bell-item-broadcast-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #d97706;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 1px;
+}
+
+/* Seen (already clicked) items are dimmed */
+.bell-item--seen {
+  opacity: 0.45;
+}
+
 /* ── Analysis dropdown ──────────────────────────── */
 
 .nav-dropdown {

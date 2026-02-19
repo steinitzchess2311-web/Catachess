@@ -416,7 +416,7 @@ class NodeService:
 
         acl = await self.acl_repo.get_acl(node_id, actor_id)
         if not node.owner_id == actor_id:
-            if acl is None or not PermissionPolicy.can_read(
+            if not PermissionPolicy.can_read(
                 self._node_to_model(node), actor_id, self._acl_to_model(acl)
             ):
                 raise PermissionDeniedError("Cannot read this node")

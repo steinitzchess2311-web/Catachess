@@ -8,6 +8,9 @@ class PermissionPolicy:
     def can_read(node: NodeModel, user_id: str, acl: ACLModel | None) -> bool:
         if node.owner_id == user_id:
             return True
+        vis = getattr(node.visibility, 'value', node.visibility)
+        if vis == 'public':
+            return True
         if acl is not None and acl.can_read():
             return True
         return False

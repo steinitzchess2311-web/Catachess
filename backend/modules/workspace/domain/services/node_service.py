@@ -479,8 +479,10 @@ class NodeService:
             layout=node.layout,
         )
 
-    def _acl_to_model(self, acl: ACL):
+    def _acl_to_model(self, acl: ACL | None):
         """Convert ORM ACL to domain model."""
+        if acl is None:
+            return None
         permission = (
             acl.permission
             if isinstance(acl.permission, Permission)

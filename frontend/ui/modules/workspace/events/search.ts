@@ -49,11 +49,16 @@ export function scoreMatch(title: string, query: string) {
 
 export async function fetchAllNodes(state: WorkspaceState) {
     if (state.allNodesCache) return state.allNodesCache;
+    const baseUrl = state.mode === 'public'
+        ? '/api/v1/workspace/public-nodes'
+        : state.mode === 'shared'
+        ? '/api/v1/workspace/shared-nodes'
+        : '/api/v1/workspace/nodes';
     const collected: any[] = [];
     const queue: string[] = ['root'];
     while (queue.length) {
         const parentId = queue.shift() as string;
-        const response = await api.get(`/api/v1/workspace/nodes?parent_id=${parentId}`);
+        const response = await api.get(`${baseUrl}?parent_id=${parentId}`);
         const nodes = (response?.nodes || []) as any[];
         collected.push(...nodes);
         nodes.forEach((node) => {

@@ -67,7 +67,12 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
     if (options.initialTopFolderName) {
         // Navigate to the named top-level folder (from URL slug)
         try {
-            const response = await api.get('/api/v1/workspace/nodes?parent_id=root');
+            const rootUrl = state.mode === 'public'
+                ? '/api/v1/workspace/public-nodes?parent_id=root'
+                : state.mode === 'shared'
+                ? '/api/v1/workspace/shared-nodes?parent_id=root'
+                : '/api/v1/workspace/nodes?parent_id=root';
+            const response = await api.get(rootUrl);
             const slug = options.initialTopFolderName!;
             const folder = (response.nodes as any[])?.find(
                 (n) => n.node_type === 'folder' && (

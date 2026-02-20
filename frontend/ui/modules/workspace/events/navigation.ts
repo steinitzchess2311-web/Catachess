@@ -102,6 +102,13 @@ export async function resolvePath(
         return;
     }
 
+    const listEndpointMap: Record<string, string> = {
+        root: '/api/v1/workspace/nodes',
+        public: '/api/v1/workspace/public-nodes',
+        shared: '/api/v1/workspace/shared-nodes',
+    };
+    const listEndpoint = listEndpointMap[parts[0]] ?? '/api/v1/workspace/nodes';
+
     let parentId = 'root';
     for (let i = 1; i < parts.length; i += 1) {
         const segment = parts[i];
@@ -113,7 +120,7 @@ export async function resolvePath(
             return;
         }
 
-        const response = await api.get(`/api/v1/workspace/nodes?parent_id=${parentId}`);
+        const response = await api.get(`${listEndpoint}?parent_id=${parentId}`);
         const nodes = (response?.nodes || []) as any[];
         const match = nodes.find((node) => node.title === name);
         if (!match) {

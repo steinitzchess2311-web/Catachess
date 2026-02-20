@@ -13,6 +13,12 @@ export async function initializeToFolder(
 ) {
     if (startParentId && startParentId !== 'root') {
         // Navigate to specific folder
+        if (state.mode !== 'private') {
+            // Public/shared modes have no auth-free single-node endpoint.
+            // Fall back to root; normal navigation will take over from there.
+            await navigateToFolder('root', 'root');
+            return;
+        }
         try {
             console.log(`[WORKSPACE] Initializing to folder: ${startParentId}`);
             const node = await api.get(`/api/v1/workspace/nodes/${startParentId}`);

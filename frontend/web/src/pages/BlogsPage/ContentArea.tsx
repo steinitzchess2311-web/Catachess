@@ -136,9 +136,6 @@ const ContentArea: React.FC<ContentAreaProps> = ({
         borderRadius: "12px",
         padding: "40px",
         boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-        height: "calc(100vh - 260px)",  // Adjusted for BlogHeader
-        maxHeight: "calc(100vh - 260px)",
-        overflowY: "auto",  // Enable vertical scrolling
       }}
     >
       {/* Article Detail View */}

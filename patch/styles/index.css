@@ -6,12 +6,11 @@
 }
 
 .patch-study-page {
-  display: flex;
-  flex-direction: column;
-  height: calc(100vh - 100px);
+  min-height: calc(100vh - 100px);
+  height: auto;
   padding: 16px;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .patch-study-header {
@@ -170,11 +169,11 @@
 
 .patch-study-layout {
   display: flex;
-  flex: 1;
+  height: calc(100vh - 280px);
+  min-height: 420px;
   gap: 16px;
   border-radius: 16px;
   padding: 16px;
-  min-height: 0;
   overflow: hidden;
   box-sizing: border-box;
   background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);

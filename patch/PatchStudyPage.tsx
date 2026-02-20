@@ -8,6 +8,7 @@ import { StudySidebar } from './sidebar/StudySidebar';
 import { CommentBox } from './commentbox';
 import { api } from '@ui/assets/api';
 import { TerminalLauncher } from './modules/terminal';
+import { StudyErrorBoundary } from './components/ErrorBoundary';
 import { ExplorerPanel } from './modules/explorer';
 import { useChapters } from './chapters/useChapters';
 import { NewChapterModal } from './chapters/NewChapterModal';
@@ -462,9 +463,11 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
 
 export function PatchStudyPage(props: PatchStudyPageProps) {
   return (
-    <StudyProvider>
-      <StudyPageContent {...props} />
-    </StudyProvider>
+    <StudyErrorBoundary>
+      <StudyProvider>
+        <StudyPageContent {...props} />
+      </StudyProvider>
+    </StudyErrorBoundary>
   );
 }
 

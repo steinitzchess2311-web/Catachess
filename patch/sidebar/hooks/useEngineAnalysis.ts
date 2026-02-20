@@ -49,6 +49,7 @@ export function useEngineAnalysis({
 
   const inFlightRef = useRef(false);
   const pollRef = useRef<number | null>(null);
+  const debounceRef = useRef<number | null>(null);
   const nextAllowedRef = useRef<number>(0);
   const currentFenRef = useRef<string>(fen);
   const lastPrecomputeParamsRef = useRef<{
@@ -118,30 +119,30 @@ export function useEngineAnalysis({
     }
   };
 
-  // Main analysis effect with polling
+  // Main analysis effect with debounce + polling.
+  // Debounce: wait 150 ms before starting so rapid FEN changes (arrow-key
+  // navigation) don't thrash the engine with start/stop cycles.
   useEffect(() => {
     if (!enabled) return;
 
-    // When fen/multipv changes: immediately stop the running engine and
-    // release the inFlight lock so the new position can start right away.
     stopAnalysis();
     inFlightRef.current = false;
     cancelPrecompute();
     lastPrecomputeParamsRef.current = { fen, multipv };
 
-    analyzePosition(fen);
-    if (pollRef.current) window.clearInterval(pollRef.current);
-    pollRef.current = window.setInterval(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; }
+
+    debounceRef.current = window.setTimeout(() => {
       analyzePosition(fen);
-    }, 2000);
+      pollRef.current = window.setInterval(() => analyzePosition(fen), 2000);
+    }, 150);
 
     return () => {
+      if (debounceRef.current) { window.clearTimeout(debounceRef.current); debounceRef.current = null; }
       stopAnalysis();
       inFlightRef.current = false;
-      if (pollRef.current) {
-        window.clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
+      if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; }
     };
   }, [enabled, fen, multipv]);
 

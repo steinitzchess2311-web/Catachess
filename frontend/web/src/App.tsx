@@ -497,7 +497,7 @@ function Layout() {
     <UserContext.Provider value={{ username, userRole, userId }}>
       <Header username={username} isAuthed={authed} userRole={userRole} />
       <main>
-        <ChunkErrorBoundary key={location.key}>
+        <ChunkErrorBoundary key={location.pathname}>
         <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
           <Route path="/" element={<HomePage />} />

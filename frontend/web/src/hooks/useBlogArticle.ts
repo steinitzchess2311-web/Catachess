@@ -21,7 +21,7 @@ interface UseBlogArticleReturn {
  */
 export function useBlogArticle(articleId: string | undefined): UseBlogArticleReturn {
   const [article, setArticle] = useState<BlogArticle | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !!articleId);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {

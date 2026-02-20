@@ -273,7 +273,8 @@ function StudyBoardInner({ className }: StudyBoardProps) {
           </button>
         </div>
         <button type="button" className="study-board-nav-flip" onClick={toggleFlip} title="Flip board">
-          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1L4 4.5h2.25v6H4L7.5 14l3.5-3.5H8.75v-6H11L7.5 1z" fill="currentColor"/></svg>
+          <svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M7.5 1L4 4.5h2.25v6H4L7.5 14l3.5-3.5H8.75v-6H11L7.5 1z" fill="currentColor"/></svg>
+          Flip
         </button>
       </div>
     </div>

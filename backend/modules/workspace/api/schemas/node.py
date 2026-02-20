@@ -78,6 +78,7 @@ class NodeResponse(BaseModel):
     title: str
     description: str | None
     owner_id: str
+    owner_username: str | None = None
     visibility: Visibility
     parent_id: str | None
     path: str

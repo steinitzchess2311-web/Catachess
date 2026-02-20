@@ -33,3 +33,12 @@ class UserRepository:
             .limit(limit)
         )
         return list(result.scalars().all())
+
+    async def get_usernames_by_ids(self, user_ids: list[str]) -> dict[str, str]:
+        """Batch-fetch {user_id: username} for a list of IDs."""
+        if not user_ids:
+            return {}
+        result = await self.session.execute(
+            select(User).where(User.id.in_(user_ids))
+        )
+        return {u.id: u.username for u in result.scalars().all() if u.username}

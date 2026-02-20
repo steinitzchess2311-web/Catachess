@@ -54,11 +54,16 @@ export function renderItems(
         itemDiv.querySelector('.item-title')!.textContent = node.title;
         const errorEl = itemDiv.querySelector('.item-error') as HTMLElement;
 
-        // Display date based on current sort key
-        const dateToDisplay = state.sortKey === 'created' ? node.created_at : node.updated_at;
-        const date = new Date(dateToDisplay).toLocaleDateString();
-        const dateLabel = state.sortKey === 'created' ? 'Created' : 'Modified';
-        itemDiv.querySelector('.item-meta')!.textContent = `${dateLabel}: ${date}`;
+        // Public root view: show "by <username>" if available; otherwise fall back to date
+        const isPublicRoot = state.mode === 'public' && state.currentParentId === 'root';
+        if (isPublicRoot && node.owner_username) {
+            itemDiv.querySelector('.item-meta')!.textContent = `by ${node.owner_username}`;
+        } else {
+            const dateToDisplay = state.sortKey === 'created' ? node.created_at : node.updated_at;
+            const date = new Date(dateToDisplay).toLocaleDateString();
+            const dateLabel = state.sortKey === 'created' ? 'Created' : 'Modified';
+            itemDiv.querySelector('.item-meta')!.textContent = `${dateLabel}: ${date}`;
+        }
 
         itemDiv.addEventListener('click', (event) => {
             if (event.button !== 0) return;

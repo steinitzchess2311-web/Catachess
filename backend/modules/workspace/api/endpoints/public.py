@@ -9,6 +9,7 @@ from modules.workspace.api.deps import get_current_user_id
 from modules.workspace.api.schemas.node import NodeListResponse, NodeResponse
 from modules.workspace.db.session import get_session
 from modules.workspace.db.repos.node_repo import NodeRepository
+from modules.workspace.db.repos.user_repo import UserRepository
 
 router = APIRouter(prefix="/public", tags=["public"])
 
@@ -60,8 +61,22 @@ async def list_public_nodes(
     """
     repo = NodeRepository(session)
     nodes = await repo.get_public_nodes(parent_id=parent_id)
+
+    # At root view, attach owner_username so the frontend can show "by <user>"
+    is_root = parent_id is None or str(parent_id).startswith("root")
+    username_map: dict[str, str] = {}
+    if is_root and nodes:
+        owner_ids = list({n.owner_id for n in nodes})
+        username_map = await UserRepository(session).get_usernames_by_ids(owner_ids)
+
+    def _to_response(n: any) -> NodeResponse:
+        base = NodeResponse.model_validate(n)
+        if is_root:
+            return base.model_copy(update={"owner_username": username_map.get(n.owner_id)})
+        return base
+
     return NodeListResponse(
-        nodes=[NodeResponse.model_validate(n) for n in nodes],
+        nodes=[_to_response(n) for n in nodes],
         total=len(nodes),
     )
 

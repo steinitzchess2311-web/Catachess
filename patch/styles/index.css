@@ -1285,7 +1285,6 @@
 .patch-chapter-list__item:hover {
   background: #f8f9fa;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
-  transform: translateX(2px);
 }
 
 .patch-chapter-list__item.is-active {
@@ -1400,6 +1399,7 @@
 
 .patch-chapter-list__delete {
   margin-left: auto;
+  flex-shrink: 0;
   width: 26px;
   height: 26px;
   border: none;

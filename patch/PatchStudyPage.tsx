@@ -290,7 +290,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         }
 
         if (cancelled) return;
-        await loadChapterTree(chapter.id);
+        await handleSelectChapter(chapter.id);
       } catch (e) {
         if (cancelled) return;
         setError('LOAD_ERROR', e instanceof Error ? e.message : 'Failed to enter study');

@@ -271,7 +271,7 @@ function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
         const next = context.topFolder
           ? `${base}/${toSlug(context.topFolder)}/${studyId}`
           : `/${studyId}`;
-        navigateRef.current(next);
+        window.location.href = next;
       },
     });
   }, [mode]); // ONLY depend on mode — navigate is accessed via ref to avoid spurious re-inits

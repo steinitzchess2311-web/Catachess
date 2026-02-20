@@ -67,18 +67,22 @@ export function StudySidebar({
     };
   }, [cacheManager]);
 
-  // Memoize formatted lines to avoid expensive UCI->SAN conversion on every render
+  // Memoize formatted lines to avoid expensive UCI->SAN conversion on every render.
+  // Must use analysisFen (the FEN that produced these lines), NOT state.currentFen.
+  // Using state.currentFen would cause a race: lines from the old position applied to
+  // the new FEN → chess.js throws "Invalid move" inside useMemo → white screen.
   const formattedLines = useMemo(() => {
-    if (engineAnalysis.lines.length === 0) return [];
+    if (!engineAnalysis.analysisFen || engineAnalysis.lines.length === 0) return [];
+    const fen = engineAnalysis.analysisFen;
     return engineAnalysis.lines.map((line) => {
-      const sanLine = uciLineToSan(line.pv || [], state.currentFen);
+      const sanLine = uciLineToSan(line.pv || [], fen);
       const sanMoves = sanLine
         .map((step) => step.san)
         .filter((move): move is string => Boolean(move));
-      const sanText = formatSanWithMoveNumbers(sanMoves, state.currentFen);
+      const sanText = formatSanWithMoveNumbers(sanMoves, fen);
       return { ...line, sanText };
     });
-  }, [engineAnalysis.lines, state.currentFen]);
+  }, [engineAnalysis.lines, engineAnalysis.analysisFen]);
 
   // Imitator handlers
   const handleAddCoach = () => {

@@ -121,8 +121,10 @@ async function loadWorker(): Promise<Worker> {
     let worker: Worker | null = null;
     let settled = false;
     const scriptUrl = resolveScriptUrl();
-    const wasmUrl = resolveWasmUrl();
-    const workerUrl = `${scriptUrl}#${encodeURIComponent(wasmUrl)},worker`;
+    // stockfish-lite-single.js detects Worker mode via `onmessage` presence +
+    // absence of window.document; it derives the WASM URL automatically from
+    // the script path (replaces .js with .wasm). No hash fragment needed.
+    const workerUrl = scriptUrl;
 
     const cleanup = () => {
       if (!worker) return;
@@ -171,7 +173,7 @@ async function loadWorker(): Promise<Worker> {
       worker.postMessage('uci');
       timeoutId = window.setTimeout(() => {
         fail('Stockfish WASM worker initialization timeout');
-      }, 4000);
+      }, 10000);
     } catch {
       fail('Stockfish WASM worker creation failed');
     }

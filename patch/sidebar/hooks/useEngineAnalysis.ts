@@ -16,6 +16,8 @@ export interface UseEngineAnalysisOptions {
 
 export interface UseEngineAnalysisResult {
   lines: EngineLine[];
+  /** FEN that the current lines were computed for — null until first result arrives */
+  analysisFen: string | null;
   status: 'idle' | 'running' | 'ready' | 'error';
   error: string | null;
   lastUpdated: number | null;
@@ -35,6 +37,7 @@ export function useEngineAnalysis({
   multipv,
 }: UseEngineAnalysisOptions): UseEngineAnalysisResult {
   const [lines, setLines] = useState<EngineLine[]>([]);
+  const [analysisFen, setAnalysisFen] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'running' | 'ready' | 'error'>('idle');
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
@@ -72,6 +75,7 @@ export function useEngineAnalysis({
       // Ignore stale updates if FEN has changed
       if (currentFenRef.current !== targetFen) return;
       setLines(analysis.lines);
+      setAnalysisFen(targetFen);
       setSource(analysis.source);
       setCurrentDepth(depth);
       setLastUpdated(Date.now());
@@ -89,6 +93,7 @@ export function useEngineAnalysis({
       // Only apply if FEN hasn't changed and WASM hasn't already updated with a deeper result
       if (currentFenRef.current === targetFen) {
         setLines(result.lines);
+        setAnalysisFen(targetFen);
         setSource(result.source);
         setEngineOrigin(result.origin ?? null);
         if (result.currentDepth) setCurrentDepth(result.currentDepth);
@@ -150,6 +155,7 @@ export function useEngineAnalysis({
     setStatus('idle');
     setHealth('down');
     setLines([]);
+    setAnalysisFen(null);
     setError(null);
     setLastUpdated(null);
     setSource(null);
@@ -162,6 +168,7 @@ export function useEngineAnalysis({
   useEffect(() => {
     if (!enabled) return;
     setLines([]);
+    setAnalysisFen(null);
     setStatus('idle');
     setError(null);
     setSource(null);
@@ -172,6 +179,7 @@ export function useEngineAnalysis({
 
   return {
     lines,
+    analysisFen,
     status,
     error,
     lastUpdated,

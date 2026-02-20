@@ -56,7 +56,13 @@ export function uciLineToSan(uciMoves: string[], startFen: string): UciToSanResu
       break;
     }
 
-    const move = board.move(parsed);
+    let move;
+    try {
+      move = board.move(parsed);
+    } catch (e: any) {
+      results.push({ san: null, fenAfter: null, error: e?.message || 'Illegal move' });
+      break;
+    }
     if (!move) {
       results.push({ san: null, fenAfter: null, error: 'Illegal move' });
       break;

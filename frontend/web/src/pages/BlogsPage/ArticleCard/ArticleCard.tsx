@@ -35,6 +35,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
   const [currentCategory, setCurrentCategory] = useState(article.category);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [isChangingCategory, setIsChangingCategory] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+  const categoryChipRef = useRef<HTMLButtonElement>(null);
   const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
   // Refs for dialog positioning and click-outside detection
@@ -52,9 +54,10 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
   useEffect(() => {
     if (!showCategoryDropdown) return;
     const handleClickOutside = (event: MouseEvent) => {
-      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
-        setShowCategoryDropdown(false);
-      }
+      const target = event.target as Node;
+      const inDropdown = categoryDropdownRef.current?.contains(target);
+      const inChip = categoryChipRef.current?.contains(target);
+      if (!inDropdown && !inChip) setShowCategoryDropdown(false);
     };
     const timeoutId = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
@@ -300,15 +303,18 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
 
             {/* Category Tag — clickable for editors in my-published view */}
             {canChangeCategory && (
-              <div
-                ref={categoryDropdownRef}
-                style={{ position: "relative", marginBottom: "10px" }}
-              >
+              <div style={{ position: "relative", marginBottom: "10px" }}>
                 <button
+                  ref={categoryChipRef}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    if (!isChangingCategory) setShowCategoryDropdown(prev => !prev);
+                    if (isChangingCategory) return;
+                    if (!showCategoryDropdown && categoryChipRef.current) {
+                      const rect = categoryChipRef.current.getBoundingClientRect();
+                      setDropdownPos({ top: rect.bottom + 6, left: rect.left });
+                    }
+                    setShowCategoryDropdown(prev => !prev);
                   }}
                   style={{
                     display: "inline-flex",
@@ -353,16 +359,17 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
 
                 {showCategoryDropdown && (
                   <div
+                    ref={categoryDropdownRef}
                     style={{
-                      position: "absolute",
-                      top: "calc(100% + 6px)",
-                      left: 0,
+                      position: "fixed",
+                      top: dropdownPos.top,
+                      left: dropdownPos.left,
                       background: "#fff",
                       borderRadius: "10px",
                       boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
                       border: "1px solid rgba(139, 115, 85, 0.15)",
                       overflow: "hidden",
-                      zIndex: 100,
+                      zIndex: 9999,
                       minWidth: "160px",
                     }}
                   >

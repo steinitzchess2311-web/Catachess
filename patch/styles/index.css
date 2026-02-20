@@ -41,7 +41,7 @@
 
 /* When expanded: pull the button up into the bottom of the header card */
 .patch-study-header-wrap:not(.is-collapsed) + .patch-study-toggle-bar {
-  margin-top: -24px;
+  margin-top: -34px;
 }
 
 .patch-study-toggle-btn {

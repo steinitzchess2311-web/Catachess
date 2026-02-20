@@ -12,6 +12,7 @@ export interface ArticleCardProps {
   viewMode?: ViewMode;
   onDelete?: (articleId: string) => void;
   onPinToggle?: (articleId: string) => void;
+  onCategoryChange?: (articleId: string, newCategory: string) => void;
 }
 
 export interface ArticleImageProps {
@@ -56,7 +57,15 @@ export interface DeleteConfirmDialogProps {
 
 export const CATEGORY_LABELS: { [key: string]: string } = {
   'about': 'Our Stories',
-  'function': 'Function',
+  'function': 'Functions Intro',
+  'devlog': 'Developer Logs',
   'allblogs': 'Blog',
   'user': 'User'
 };
+
+export const SELECTABLE_CATEGORIES = [
+  { id: 'about', label: 'Our Stories' },
+  { id: 'function', label: 'Functions Intro' },
+  { id: 'devlog', label: 'Developer Logs' },
+  { id: 'user', label: 'User' },
+];

@@ -12,8 +12,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { TrashIcon, DrawingPinFilledIcon } from "@radix-ui/react-icons";
-import { ArticleCardProps } from "./types";
+import { TrashIcon, DrawingPinFilledIcon, ChevronDownIcon, CheckIcon } from "@radix-ui/react-icons";
+import { ArticleCardProps, CATEGORY_LABELS, SELECTABLE_CATEGORIES } from "./types";
 import { blogApi } from "../../../utils/blogApi";
 import ArticleImage from "./ArticleImage";
 import ArticleContent from "./ArticleContent";
@@ -26,11 +26,16 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
   viewMode = 'articles',
   onDelete,
   onPinToggle,
+  onCategoryChange,
 }) => {
   // State
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPinning, setIsPinning] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [currentCategory, setCurrentCategory] = useState(article.category);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [isChangingCategory, setIsChangingCategory] = useState(false);
+  const categoryDropdownRef = useRef<HTMLDivElement>(null);
 
   // Refs for dialog positioning and click-outside detection
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -40,6 +45,42 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
     userRole === 'admin' ||
     (userRole === 'editor' && (viewMode === 'drafts' || viewMode === 'my-published'));
   const canPin = userRole === 'admin';
+  const canChangeCategory =
+    (userRole === 'editor' || userRole === 'admin') && viewMode === 'my-published';
+
+  // Handle click outside category dropdown
+  useEffect(() => {
+    if (!showCategoryDropdown) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target as Node)) {
+        setShowCategoryDropdown(false);
+      }
+    };
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 0);
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCategoryDropdown]);
+
+  const handleCategorySelect = async (e: React.MouseEvent, categoryId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (categoryId === currentCategory || isChangingCategory) return;
+    setShowCategoryDropdown(false);
+    setIsChangingCategory(true);
+    try {
+      await blogApi.updateArticle(article.id, { category: categoryId });
+      setCurrentCategory(categoryId);
+      if (onCategoryChange) onCategoryChange(article.id, categoryId);
+    } catch (error) {
+      console.error('Failed to change category:', error);
+    } finally {
+      setIsChangingCategory(false);
+    }
+  };
 
   // Handle click outside dialog to close it
   useEffect(() => {
@@ -256,6 +297,115 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
               title={article.title}
               subtitle={article.subtitle}
             />
+
+            {/* Category Tag — clickable for editors in my-published view */}
+            {canChangeCategory && (
+              <div
+                ref={categoryDropdownRef}
+                style={{ position: "relative", marginBottom: "10px" }}
+              >
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!isChangingCategory) setShowCategoryDropdown(prev => !prev);
+                  }}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "5px",
+                    padding: "4px 10px",
+                    borderRadius: "20px",
+                    border: "1px solid rgba(139, 115, 85, 0.3)",
+                    background: showCategoryDropdown
+                      ? "rgba(139, 115, 85, 0.12)"
+                      : "rgba(139, 115, 85, 0.06)",
+                    color: "#8b7355",
+                    fontSize: "0.78rem",
+                    fontWeight: 500,
+                    cursor: isChangingCategory ? "wait" : "pointer",
+                    transition: "all 0.15s ease",
+                    letterSpacing: "0.01em",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!showCategoryDropdown)
+                      e.currentTarget.style.background = "rgba(139, 115, 85, 0.12)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!showCategoryDropdown)
+                      e.currentTarget.style.background = "rgba(139, 115, 85, 0.06)";
+                  }}
+                >
+                  <span>
+                    {isChangingCategory
+                      ? "Saving…"
+                      : (CATEGORY_LABELS[currentCategory] || currentCategory)}
+                  </span>
+                  <ChevronDownIcon
+                    width={12}
+                    height={12}
+                    style={{
+                      transform: showCategoryDropdown ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 0.15s ease",
+                    }}
+                  />
+                </button>
+
+                {showCategoryDropdown && (
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: "calc(100% + 6px)",
+                      left: 0,
+                      background: "#fff",
+                      borderRadius: "10px",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
+                      border: "1px solid rgba(139, 115, 85, 0.15)",
+                      overflow: "hidden",
+                      zIndex: 100,
+                      minWidth: "160px",
+                    }}
+                  >
+                    {SELECTABLE_CATEGORIES.map((cat) => {
+                      const isActive = cat.id === currentCategory;
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={(e) => handleCategorySelect(e, cat.id)}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            padding: "9px 14px",
+                            border: "none",
+                            background: isActive ? "rgba(139, 115, 85, 0.08)" : "transparent",
+                            color: isActive ? "#8b7355" : "#444",
+                            fontSize: "0.83rem",
+                            fontWeight: isActive ? 600 : 400,
+                            cursor: isActive ? "default" : "pointer",
+                            textAlign: "left",
+                            transition: "background 0.12s ease",
+                            gap: "8px",
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isActive)
+                              e.currentTarget.style.background = "rgba(139, 115, 85, 0.06)";
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isActive)
+                              e.currentTarget.style.background = "transparent";
+                          }}
+                        >
+                          <span>{cat.label}</span>
+                          {isActive && <CheckIcon width={14} height={14} />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
 
             <ArticleMeta
               authorName={article.author_name}

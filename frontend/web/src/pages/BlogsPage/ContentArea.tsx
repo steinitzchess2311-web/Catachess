@@ -106,6 +106,15 @@ const ContentArea: React.FC<ContentAreaProps> = ({
     }
   };
 
+  // Handle category change
+  const handleCategoryChange = (articleId: string, newCategory: string) => {
+    setMyArticles(prev =>
+      prev.map(article =>
+        article.id === articleId ? { ...article, category: newCategory } : article
+      )
+    );
+  };
+
   // Handle pin toggle
   const handlePinToggle = (articleId: string) => {
     // Refresh to get updated pin status
@@ -176,6 +185,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({
                     viewMode={viewMode}
                     onDelete={handleDelete}
                     onPinToggle={handlePinToggle}
+                    onCategoryChange={handleCategoryChange}
                   />
                 ))}
               </div>

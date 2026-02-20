@@ -43,6 +43,7 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
     const categoryMap: { [key: string]: string | undefined } = {
       'about': 'about',
       'function': 'function',
+      'devlog': 'devlog',
       'allblogs': 'official',  // Chessortag Official - all official blogs
       'user': 'user',  // Community category
     };

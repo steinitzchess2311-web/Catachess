@@ -28,9 +28,10 @@ const CIRCLE_COLOR_CSS: Record<ShapeColor, string> = {
 
 export interface StudyBoardProps {
   className?: string;
+  isLocked?: boolean;
 }
 
-function StudyBoardInner({ className }: StudyBoardProps) {
+function StudyBoardInner({ className, isLocked }: StudyBoardProps) {
   const { state, addMove, setError, selectNode, setShapes } = useStudy();
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
   const [sizeRef, boardWidth] = useBoardSize(500);
@@ -244,15 +245,16 @@ function StudyBoardInner({ className }: StudyBoardProps) {
         ref={sizeRef}
         className="study-board-wrapper"
         style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+        onMouseDown={isLocked ? undefined : handleMouseDown}
+        onMouseMove={isLocked ? undefined : handleMouseMove}
+        onMouseUp={isLocked ? undefined : handleMouseUp}
         onContextMenu={(e) => e.preventDefault()}
       >
         <Chessboard
           id="study-board"
           position={state.currentFen}
-          onPieceDrop={onPieceDrop}
+          onPieceDrop={isLocked ? undefined : onPieceDrop}
+          isDraggablePiece={isLocked ? () => false : undefined}
           boardWidth={boardWidth}
           boardOrientation={orientation}
           customDarkSquareStyle={{ backgroundColor: '#779954' }}
@@ -260,7 +262,7 @@ function StudyBoardInner({ className }: StudyBoardProps) {
           animationDuration={150}
           customArrows={allDisplayArrows}
           customSquareStyles={displaySquareStyles}
-          onSquareRightClick={onSquareRightClick}
+          onSquareRightClick={isLocked ? undefined : onSquareRightClick}
           areArrowsAllowed={false}
         />
       </div>

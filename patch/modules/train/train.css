@@ -1,0 +1,184 @@
+/* ─── Train Mode Overlay Modal ─────────────────────────────────────────────── */
+
+.train-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.train-modal {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px 28px;
+  max-width: 420px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.train-modal-title {
+  margin: 0 0 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.train-modal-body {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.55;
+}
+
+.train-modal-tip {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.train-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+/* ─── Train Panel ───────────────────────────────────────────────────────────── */
+
+.train-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #f9fafb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.train-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #1e3a5f;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.train-panel-title {
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.train-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+  min-height: 0;
+}
+
+.train-panel-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.train-submit-hint {
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* ─── Buttons ───────────────────────────────────────────────────────────────── */
+
+.train-btn {
+  padding: 6px 14px;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.train-btn-primary {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.train-btn-primary:hover {
+  background: #1d4ed8;
+}
+
+.train-btn-secondary {
+  background: #fff;
+  color: #374151;
+  border-color: #d1d5db;
+}
+
+.train-btn-secondary:hover {
+  background: #f3f4f6;
+}
+
+.train-btn-exit {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+.train-btn-exit:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.train-btn-submit {
+  width: 100%;
+  background: #16a34a;
+  color: #fff;
+  border-color: #16a34a;
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.train-btn-submit:hover:not(.is-disabled) {
+  background: #15803d;
+}
+
+.train-btn-submit.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ─── Train mode badge on the tab ──────────────────────────────────────────── */
+
+.patch-sidebar-tab.is-train-active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+/* ─── Board locked overlay hint ────────────────────────────────────────────── */
+
+.train-board-locked-hint {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(30, 58, 95, 0.85);
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 10;
+}

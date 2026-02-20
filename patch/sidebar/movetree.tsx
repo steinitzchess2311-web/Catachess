@@ -496,9 +496,12 @@ interface MoveItemProps {
 function moveItemPropsAreEqual(prev: MoveItemProps, next: MoveItemProps): boolean {
   const prevActive = prev.cursorNodeId === prev.nodeId;
   const nextActive = next.cursorNodeId === next.nodeId;
+  const prevNode = prev.nodes[prev.nodeId];
+  const nextNode = next.nodes[next.nodeId];
   return (
     prevActive === nextActive &&
-    prev.nodes[prev.nodeId] === next.nodes[next.nodeId] &&
+    prevNode === nextNode &&
+    (prevNode?.trained ?? false) === (nextNode?.trained ?? false) &&
     prev.isMainline === next.isMainline &&
     prev.prefix === next.prefix &&
     prev.onSelect === next.onSelect &&
@@ -519,6 +522,8 @@ const MoveItem = React.memo(function MoveItem({
   if (!node) return null;
 
   const isActive = cursorNodeId === nodeId;
+  const trainedColor = '#2563eb';
+  const inactiveColor = node.trained ? trainedColor : (isMainline ? '#000' : '#444');
 
   return (
     <div
@@ -541,7 +546,7 @@ const MoveItem = React.memo(function MoveItem({
         borderRadius: '3px',
         cursor: 'pointer',
         backgroundColor: isActive ? '#3b82f6' : 'transparent',
-        color: isActive ? 'white' : (isMainline ? '#000' : '#444'),
+        color: isActive ? 'white' : inactiveColor,
         fontWeight: isMainline ? 'bold' : 'normal',
         border: isActive ? 'none' : '1px solid transparent',
         transition: 'all 0.1s',

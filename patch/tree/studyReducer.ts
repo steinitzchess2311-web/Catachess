@@ -46,6 +46,8 @@ export interface StudyStateSnapshot {
   lastSavedAt: number | null;
   isSaving: boolean;
   lastSavedHash: string | null;
+  isTrainMode: boolean;
+  trainEngineUnlocked: boolean;
 }
 
 export interface StudyState extends StudyStateSnapshot {
@@ -73,7 +75,10 @@ export type StudyAction =
   | { type: 'SET_LOADING'; isLoading: boolean }
   | { type: 'MARK_SAVED'; timestamp: number; hash: string }
   | { type: 'SET_SAVING'; isSaving: boolean }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  | { type: 'ENTER_TRAIN_MODE' }
+  | { type: 'EXIT_TRAIN_MODE' }
+  | { type: 'SUBMIT_TRAIN'; mergedTree: StudyTreeData };
 
 // =============================================================================
 // Initial state
@@ -96,6 +101,8 @@ export const initialSnapshot: StudyStateSnapshot = {
   lastSavedAt: null,
   isSaving: false,
   lastSavedHash: null,
+  isTrainMode: false,
+  trainEngineUnlocked: false,
 };
 
 export const initialState: StudyState = {
@@ -326,6 +333,15 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
 
     case 'RESET':
       return initialState;
+
+    case 'ENTER_TRAIN_MODE':
+      return { ...state, isTrainMode: true };
+
+    case 'EXIT_TRAIN_MODE':
+      return { ...state, isTrainMode: false };
+
+    case 'SUBMIT_TRAIN':
+      return { ...state, isTrainMode: false, trainEngineUnlocked: true, tree: action.mergedTree, isDirty: true };
 
     default:
       return state;

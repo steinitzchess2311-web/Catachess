@@ -40,6 +40,9 @@ export interface StudyContextValue {
   undo: () => void;
   saveTree: () => Promise<void>;
   loadTreeFromServer: () => Promise<void>;
+  enterTrainMode: () => void;
+  exitTrainMode: () => void;
+  submitTrain: (mergedTree: StudyTreeData) => void;
 }
 
 const defaultContextValue: StudyContextValue = {
@@ -60,6 +63,9 @@ const defaultContextValue: StudyContextValue = {
   undo: () => {},
   saveTree: async () => {},
   loadTreeFromServer: async () => {},
+  enterTrainMode: () => {},
+  exitTrainMode: () => {},
+  submitTrain: () => {},
 };
 
 const StudyContext = createContext<StudyContextValue>(defaultContextValue);
@@ -169,6 +175,12 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   const loadTreeFromServer = useCallback(async () => {}, []);
 
+  const enterTrainMode = useCallback(() => dispatch({ type: 'ENTER_TRAIN_MODE' }), []);
+  const exitTrainMode = useCallback(() => dispatch({ type: 'EXIT_TRAIN_MODE' }), []);
+  const submitTrain = useCallback((mergedTree: StudyTreeData) => {
+    dispatch({ type: 'SUBMIT_TRAIN', mergedTree });
+  }, []);
+
   const value: StudyContextValue = {
     state,
     replayPath,
@@ -187,6 +199,9 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     undo,
     saveTree,
     loadTreeFromServer,
+    enterTrainMode,
+    exitTrainMode,
+    submitTrain,
   };
 
   return <StudyContext.Provider value={value}>{children}</StudyContext.Provider>;

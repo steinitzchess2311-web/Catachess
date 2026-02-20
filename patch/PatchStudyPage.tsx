@@ -13,6 +13,7 @@ import { StudyErrorBoundary } from './components/ErrorBoundary';
 import { ExplorerPanel } from './modules/explorer';
 import { useChapters } from './chapters/useChapters';
 import { NewChapterModal } from './chapters/NewChapterModal';
+import { TrainPanel, TrainEntryModal } from './modules/train';
 
 export interface PatchStudyPageProps {
   className?: string;
@@ -28,7 +29,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const { id, topFolder } = useParams<{ id?: string; topFolder?: string }>();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { state, clearError, setError, loadStudy, saveTree, addMove } = useStudy();
+  const { state, clearError, setError, loadStudy, saveTree, addMove, enterTrainMode, exitTrainMode } = useStudy();
 
   const {
     chapters,
@@ -53,6 +54,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [rightbarWidth, setRightbarWidth] = useState<number>(280);
   const [rightPanelTab, setRightPanelTab] = useState<'tree' | 'explorer'>('tree');
+  const [showTrainModal, setShowTrainModal] = useState(false);
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState<string>('');
@@ -371,20 +373,22 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         </button>
       </div>
 
-      <div className="patch-study-layout" ref={layoutRef}>
-        <div className="patch-study-sidebar">
-          <StudySidebar
-            chapters={chapters}
-            currentChapterId={state.chapterId}
-            onSelectChapter={handleSelectChapter}
-            onCreateChapter={() => setIsCreateModalOpen(true)}
-            onRenameChapter={handleRenameChapter}
-            onDeleteChapter={handleDeleteChapter}
-            onReorderChapters={handleReorderChapters}
-          />
-        </div>
+      <div className={`patch-study-layout${state.isTrainMode ? ' is-train-mode' : ''}`} ref={layoutRef}>
+        {!state.isTrainMode && (
+          <div className="patch-study-sidebar">
+            <StudySidebar
+              chapters={chapters}
+              currentChapterId={state.chapterId}
+              onSelectChapter={handleSelectChapter}
+              onCreateChapter={() => setIsCreateModalOpen(true)}
+              onRenameChapter={handleRenameChapter}
+              onDeleteChapter={handleDeleteChapter}
+              onReorderChapters={handleReorderChapters}
+            />
+          </div>
+        )}
         <div className="patch-study-main">
-          <StudyBoard />
+          <StudyBoard isLocked={state.isTrainMode} />
         </div>
         <div
           className="patch-study-splitter"
@@ -394,42 +398,55 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
           aria-label="Resize move tree panel"
         />
         <div className="patch-study-rightbar" style={{ width: `${rightbarWidth}px` }}>
-          <div className="patch-right-panel">
-            <div className="patch-sidebar-tabs">
-              <button
-                type="button"
-                className={`patch-sidebar-tab${rightPanelTab === 'tree' ? ' is-active' : ''}`}
-                onClick={() => setRightPanelTab('tree')}
-              >
-                Moves
-              </button>
-              <button
-                type="button"
-                className={`patch-sidebar-tab${rightPanelTab === 'explorer' ? ' is-active' : ''}`}
-                onClick={() => setRightPanelTab('explorer')}
-              >
-                Explorer
-              </button>
+          {state.isTrainMode ? (
+            <TrainPanel />
+          ) : (
+            <div className="patch-right-panel">
+              <div className="patch-sidebar-tabs">
+                <button
+                  type="button"
+                  className={`patch-sidebar-tab${rightPanelTab === 'tree' ? ' is-active' : ''}`}
+                  onClick={() => setRightPanelTab('tree')}
+                >
+                  Moves
+                </button>
+                <button
+                  type="button"
+                  className={`patch-sidebar-tab${rightPanelTab === 'explorer' ? ' is-active' : ''}`}
+                  onClick={() => setRightPanelTab('explorer')}
+                >
+                  Explorer
+                </button>
+                <button
+                  type="button"
+                  className="patch-sidebar-tab"
+                  onClick={() => setShowTrainModal(true)}
+                >
+                  Train
+                </button>
+              </div>
+              <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+                {rightPanelTab === 'tree' ? (
+                  <MoveTree />
+                ) : (
+                  <ExplorerPanel fen={state.currentFen} onMoveSelect={addMove} />
+                )}
+              </div>
+              {rightPanelTab === 'tree' && <ForkWidget />}
             </div>
-            <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
-              {rightPanelTab === 'tree' ? (
-                <MoveTree />
-              ) : (
-                <ExplorerPanel fen={state.currentFen} onMoveSelect={addMove} />
-              )}
-            </div>
-            {rightPanelTab === 'tree' && <ForkWidget />}
-          </div>
+          )}
         </div>
       </div>
 
-      <div className="patch-study-footer-row">
-        <div className="patch-study-footer-spacer" />
-        <div className="patch-study-footer-box">
-          <CommentBox />
+      {!state.isTrainMode && (
+        <div className="patch-study-footer-row">
+          <div className="patch-study-footer-spacer" />
+          <div className="patch-study-footer-box">
+            <CommentBox />
+          </div>
+          <div className="patch-study-footer-spacer" />
         </div>
-        <div className="patch-study-footer-spacer" />
-      </div>
+      )}
 
       {isCreateModalOpen && id && (
         <NewChapterModal
@@ -469,6 +486,16 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
             </div>
           </div>
         </div>
+      )}
+
+      {showTrainModal && (
+        <TrainEntryModal
+          onCancel={() => setShowTrainModal(false)}
+          onConfirm={() => {
+            setShowTrainModal(false);
+            enterTrainMode();
+          }}
+        />
       )}
 
       <TerminalLauncher />

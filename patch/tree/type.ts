@@ -106,6 +106,12 @@ export interface StudyNode {
    * null / undefined means no clock data.
    */
   clock?: number | null;
+
+  /**
+   * Whether this node was submitted from train mode.
+   * true = shown in blue in the move tree.
+   */
+  trained?: boolean;
 }
 
 /**

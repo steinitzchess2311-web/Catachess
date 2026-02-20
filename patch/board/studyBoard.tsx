@@ -258,13 +258,23 @@ function StudyBoardInner({ className }: StudyBoardProps) {
         />
       </div>
       <div className="study-board-nav">
-        <div className="study-board-nav-group">
-          <button type="button" className="study-board-nav-button" onClick={moveToStart}>|&lt;</button>
-          <button type="button" className="study-board-nav-button" onClick={moveToPrev}>&lt;</button>
-          <button type="button" className="study-board-nav-button" onClick={moveToNext}>&gt;</button>
-          <button type="button" className="study-board-nav-button" onClick={moveToEnd}>&gt;|</button>
-          <button type="button" className="study-board-nav-button" onClick={toggleFlip}>Flip</button>
+        <div className="study-board-nav-center">
+          <button type="button" className="study-board-nav-button" onClick={moveToStart} title="Start">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="2" height="10" rx="1" fill="currentColor"/><path d="M13 3L6 7l7 4V3z" fill="currentColor"/></svg>
+          </button>
+          <button type="button" className="study-board-nav-button" onClick={moveToPrev} title="Previous">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 3L4 7l6 4V3z" fill="currentColor"/></svg>
+          </button>
+          <button type="button" className="study-board-nav-button" onClick={moveToNext} title="Next">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 3l6 4-6 4V3z" fill="currentColor"/></svg>
+          </button>
+          <button type="button" className="study-board-nav-button" onClick={moveToEnd} title="End">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="11" y="2" width="2" height="10" rx="1" fill="currentColor"/><path d="M1 3l7 4-7 4V3z" fill="currentColor"/></svg>
+          </button>
         </div>
+        <button type="button" className="study-board-nav-flip" onClick={toggleFlip} title="Flip board">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none"><path d="M7.5 1L4 4.5h2.25v6H4L7.5 14l3.5-3.5H8.75v-6H11L7.5 1z" fill="currentColor"/></svg>
+        </button>
       </div>
     </div>
   );

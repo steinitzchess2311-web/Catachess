@@ -170,12 +170,11 @@
 
 .patch-study-layout {
   display: flex;
-  flex: 0 0 600px;
+  flex: 1;
   gap: 16px;
   border-radius: 16px;
   padding: 16px;
   min-height: 0;
-  height: 600px;
   overflow: hidden;
   box-sizing: border-box;
   background: linear-gradient(135deg, #ffffff 0%, #fafbfc 100%);

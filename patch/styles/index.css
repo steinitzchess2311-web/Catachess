@@ -44,6 +44,17 @@
   margin-top: -34px;
 }
 
+/* Expanded: button is transparent until hovered */
+.patch-study-header-wrap:not(.is-collapsed) + .patch-study-toggle-bar .patch-study-toggle-btn {
+  background: transparent;
+  color: #aaa;
+}
+
+.patch-study-header-wrap:not(.is-collapsed) + .patch-study-toggle-bar .patch-study-toggle-btn:hover {
+  background: #d8d8d8;
+  color: #333;
+}
+
 .patch-study-toggle-btn {
   display: flex;
   align-items: center;

@@ -15,17 +15,17 @@ export function useBoardSize(fallback = 500): [React.RefObject<HTMLDivElement>, 
     const el = containerRef.current;
     if (!el) return;
 
-    // Sync initial measurement before first paint
-    const initial = el.getBoundingClientRect().width;
-    if (initial > 0) setSize(Math.floor(initial));
+    const measure = () => {
+      const { width, height } = el.getBoundingClientRect();
+      const s = Math.floor(Math.min(width || fallback, height || fallback));
+      if (s > 0) setSize(s);
+    };
 
-    const obs = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width;
-      if (w && w > 0) setSize(Math.floor(w));
-    });
+    measure();
+    const obs = new ResizeObserver(measure);
     obs.observe(el);
     return () => obs.disconnect();
-  }, []);
+  }, [fallback]);
 
   return [containerRef, size];
 }

@@ -3,6 +3,7 @@ import { Chessboard } from 'react-chessboard';
 import { useStudy } from '../studyContext';
 import { getMoveSan } from '../chessJS/replay';
 import { StudyTree } from '../tree/StudyTree';
+import { useBoardSize } from './useBoardSize';
 import type { Shape, ShapeArrow, ShapeCircle, ShapeColor } from '../tree/type';
 
 const SHAPE_COLOR_CSS: Record<ShapeColor, string> = {
@@ -21,12 +22,12 @@ const CIRCLE_COLOR_CSS: Record<ShapeColor, string> = {
 
 export interface StudyBoardProps {
   className?: string;
-  boardWidth?: number;
 }
 
-function StudyBoardInner({ className, boardWidth = 500 }: StudyBoardProps) {
+function StudyBoardInner({ className }: StudyBoardProps) {
   const { state, addMove, setError, selectNode, setShapes } = useStudy();
   const [orientation, setOrientation] = useState<'white' | 'black'>('white');
+  const [sizeRef, boardWidth] = useBoardSize(500);
 
   const toggleFlip = useCallback(() => {
     setOrientation((prev) => (prev === 'white' ? 'black' : 'white'));
@@ -104,13 +105,12 @@ function StudyBoardInner({ className, boardWidth = 500 }: StudyBoardProps) {
   }, [state.cursorNodeId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Custom arrow drawing ─────────────────────────────────────────────────────
-  const boardWrapperRef = useRef<HTMLDivElement>(null);
   const rightDragFromRef = useRef<string | null>(null);
   const [inProgressArrow, setInProgressArrow] = useState<[string, string, string] | null>(null);
 
   const getSquare = useCallback(
     (e: React.MouseEvent): string | null => {
-      const rect = boardWrapperRef.current?.getBoundingClientRect();
+      const rect = sizeRef.current?.getBoundingClientRect();
       if (!rect) return null;
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
@@ -231,12 +231,12 @@ function StudyBoardInner({ className, boardWidth = 500 }: StudyBoardProps) {
   return (
     <div
       className={`study-board-container ${className || ''}`}
-      style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: boardWidth }}
+      style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', height: '100%' }}
     >
       <div
-        ref={boardWrapperRef}
+        ref={sizeRef}
         className="study-board-wrapper"
-        style={{ width: boardWidth, height: boardWidth }}
+        style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

@@ -1,5 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
+import {
+  TrackPreviousIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  TrackNextIcon,
+} from '@radix-ui/react-icons';
 import { useStudy } from '../studyContext';
 import { getMoveSan } from '../chessJS/replay';
 import { StudyTree } from '../tree/StudyTree';
@@ -231,8 +237,9 @@ function StudyBoardInner({ className }: StudyBoardProps) {
   return (
     <div
       className={`study-board-container ${className || ''}`}
-      style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', height: '100%' }}
+      style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}
     >
+      {/* Wrapper fills remaining space; sizeRef measures min(w,h) for boardWidth */}
       <div
         ref={sizeRef}
         className="study-board-wrapper"
@@ -257,23 +264,23 @@ function StudyBoardInner({ className }: StudyBoardProps) {
           areArrowsAllowed={false}
         />
       </div>
-      <div className="study-board-nav">
+      {/* Nav bar constrained to boardWidth so Flip aligns to board's right edge */}
+      <div className="study-board-nav" style={{ width: boardWidth, alignSelf: 'center' }}>
         <div className="study-board-nav-center">
           <button type="button" className="study-board-nav-button" onClick={moveToStart} title="Start">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="2" height="10" rx="1" fill="currentColor"/><path d="M13 3L6 7l7 4V3z" fill="currentColor"/></svg>
+            <TrackPreviousIcon width={16} height={16} />
           </button>
           <button type="button" className="study-board-nav-button" onClick={moveToPrev} title="Previous">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 3L4 7l6 4V3z" fill="currentColor"/></svg>
+            <ArrowLeftIcon width={16} height={16} />
           </button>
           <button type="button" className="study-board-nav-button" onClick={moveToNext} title="Next">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M4 3l6 4-6 4V3z" fill="currentColor"/></svg>
+            <ArrowRightIcon width={16} height={16} />
           </button>
           <button type="button" className="study-board-nav-button" onClick={moveToEnd} title="End">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="11" y="2" width="2" height="10" rx="1" fill="currentColor"/><path d="M1 3l7 4-7 4V3z" fill="currentColor"/></svg>
+            <TrackNextIcon width={16} height={16} />
           </button>
         </div>
         <button type="button" className="study-board-nav-flip" onClick={toggleFlip} title="Flip board">
-          <svg width="13" height="13" viewBox="0 0 15 15" fill="none"><path d="M7.5 1L4 4.5h2.25v6H4L7.5 14l3.5-3.5H8.75v-6H11L7.5 1z" fill="currentColor"/></svg>
           Flip
         </button>
       </div>

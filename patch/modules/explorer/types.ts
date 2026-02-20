@@ -3,30 +3,6 @@
 // Base URL: https://database.catachess.com
 // ============================================================
 
-export type ExplorerTab = 'masters' | 'lichess' | 'player';
-
-// ---- Speed / Rating enums --------------------------------
-
-export type SpeedType =
-  | 'ultraBullet'
-  | 'bullet'
-  | 'blitz'
-  | 'rapid'
-  | 'classical'
-  | 'correspondence';
-
-export const SPEED_LABELS: Record<SpeedType, string> = {
-  ultraBullet: 'UltraBullet',
-  bullet: 'Bullet',
-  blitz: 'Blitz',
-  rapid: 'Rapid',
-  classical: 'Classical',
-  correspondence: 'Corr.',
-};
-
-export const RATING_VALUES = [0, 1000, 1200, 1400, 1600, 1800, 2000, 2200, 2500] as const;
-export type RatingValue = (typeof RATING_VALUES)[number];
-
 // ---- API response types ----------------------------------
 
 export interface GamePlayer {
@@ -36,11 +12,12 @@ export interface GamePlayer {
 
 export interface GameRef {
   id: string;
+  uci?: string;            // present in topGames entries from the API
   white: GamePlayer;
   black: GamePlayer;
   winner: 'white' | 'black' | null;
   year?: number | null;
-  month?: string | null;
+  month?: string | null;   // "YYYY-MM"
 }
 
 export interface MoveEntry {
@@ -51,6 +28,7 @@ export interface MoveEntry {
   black: number;
   averageRating: number | null;
   game: GameRef | null;
+  opening?: { eco: string; name: string } | null;
 }
 
 export interface ExplorerResponse {
@@ -63,48 +41,11 @@ export interface ExplorerResponse {
   opening: null;
 }
 
-/** Emitted on /player NDJSON stream before the final result is ready */
-export interface QueueStatus {
-  queuePosition: number;
-}
-
 // ---- Filter types ----------------------------------------
 
 export interface MastersFilters {
   since?: number; // year e.g. 2020
   until?: number;
-}
-
-export interface LichessFilters {
-  speeds: SpeedType[];
-  ratings: RatingValue[];
-  since?: string; // "YYYY-MM"
-  until?: string;
-}
-
-export interface PlayerFilters {
-  player: string;
-  color: 'white' | 'black';
-  speeds: SpeedType[];
-  since?: string;
-  until?: string;
-}
-
-export type PlayerLoadStatus = 'idle' | 'loading' | 'indexing' | 'ready' | 'error';
-
-// ---- Type guards -----------------------------------------
-
-export function isQueueStatus(obj: unknown): obj is QueueStatus {
-  return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    'queuePosition' in obj &&
-    !('moves' in obj)
-  );
-}
-
-export function isExplorerResponse(obj: unknown): obj is ExplorerResponse {
-  return typeof obj === 'object' && obj !== null && 'moves' in obj && Array.isArray((obj as ExplorerResponse).moves);
 }
 
 // ---- Utility ---------------------------------------------

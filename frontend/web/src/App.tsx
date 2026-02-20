@@ -8,7 +8,6 @@ import {
   useLocation,
   useNavigate,
   useParams,
-  useSearchParams,
 } from "react-router-dom";
 import type { WorkspaceMode } from "@ui/modules/workspace/events/types";
 import { api } from "@ui/assets/api";
@@ -239,19 +238,21 @@ function SignupPage() {
 function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const { pathname } = useLocation();
-  // Capture initial URL state at mount time (refs don't trigger re-renders)
-  const initSearchParams = useRef(searchParams);
-  const initPathname = useRef(pathname);
+  // useNavigate() recreates its function on every URL change (it depends on useLocation internally).
+  // Storing it in a ref means callbacks always have the latest navigate without triggering re-init.
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
 
   useEffect(() => {
     if (!containerRef.current) return;
     containerRef.current.innerHTML = "";
-    const parentId = initSearchParams.current.get("parent") || undefined;
+    // Re-read the current URL when the effect runs (mode prop changed = new route).
+    const currentPath = window.location.pathname;
+    const currentSearch = window.location.search;
+    const parentId = new URLSearchParams(currentSearch).get("parent") || undefined;
     // path: /workspace/{mode}/{topFolderSlug?}
     // parts: ['workspace', mode, topFolderSlug?]
-    const parts = initPathname.current.split("/").filter(Boolean);
+    const parts = currentPath.split("/").filter(Boolean);
     const topFolderSlug = parts.length >= 3 ? decodeURIComponent(parts[2]) : undefined;
 
     initWorkspace(containerRef.current, {
@@ -262,7 +263,7 @@ function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
         const base = `/workspace/${newMode}`;
         const next = topFolder ? `${base}/${toSlug(topFolder)}` : base;
         if (window.location.pathname !== next) {
-          navigate(next, { replace: true });
+          navigateRef.current(next, { replace: true });
         }
       },
       onOpenStudy: (studyId, context) => {
@@ -270,10 +271,10 @@ function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
         const next = context.topFolder
           ? `${base}/${toSlug(context.topFolder)}/${studyId}`
           : `/${studyId}`;
-        navigate(next);
+        navigateRef.current(next);
       },
     });
-  }, [navigate, mode]); // only re-init on mode change (component remounts for mode switch)
+  }, [mode]); // ONLY depend on mode — navigate is accessed via ref to avoid spurious re-inits
 
   return (
     <div>

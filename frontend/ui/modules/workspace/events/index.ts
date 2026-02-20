@@ -28,6 +28,11 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
     // Apply initial mode (updates state.mode + root breadcrumb label)
     if (options.initialMode) {
         setMode(state, options.initialMode);
+        // Sync the active class on mode buttons to match the initialMode
+        container.querySelectorAll('.mode-btn').forEach((btn) => {
+            const el = btn as HTMLElement;
+            el.classList.toggle('active', el.dataset.mode === options.initialMode);
+        });
     }
 
     // 4. Create roots

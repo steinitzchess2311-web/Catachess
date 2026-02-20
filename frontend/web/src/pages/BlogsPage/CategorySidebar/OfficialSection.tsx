@@ -15,6 +15,7 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
   const officialSubItems = [
     { id: "about", label: "Our Stories" },
     { id: "function", label: "Functions Intro" },
+    { id: "devlog", label: "Developer Logs" },
   ];
 
   // Check if any official category is active (including allblogs)

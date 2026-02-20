@@ -11,6 +11,7 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { TrashIcon, DrawingPinFilledIcon, ChevronDownIcon, CheckIcon } from "@radix-ui/react-icons";
 import { ArticleCardProps, CATEGORY_LABELS, SELECTABLE_CATEGORIES } from "./types";
@@ -357,7 +358,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                   />
                 </button>
 
-                {showCategoryDropdown && (
+                {showCategoryDropdown && createPortal(
                   <div
                     ref={categoryDropdownRef}
                     style={{
@@ -409,7 +410,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                         </button>
                       );
                     })}
-                  </div>
+                  </div>,
+                  document.body
                 )}
               </div>
             )}

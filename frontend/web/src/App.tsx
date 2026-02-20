@@ -286,6 +286,84 @@ function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
 
 const AccountPage = React.lazy(() => import("../AccountPage"));
 
+// ─── Chunk-load resilience ────────────────────────────────────────────────────
+
+function isChunkLoadError(error: Error): boolean {
+  const msg = error?.message ?? '';
+  return (
+    /Failed to fetch dynamically imported module/.test(msg) ||
+    /Importing a module script failed/.test(msg) ||
+    /Loading chunk \d+ failed/.test(msg) ||
+    error.name === 'ChunkLoadError'
+  );
+}
+
+class ChunkErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError(): { hasError: boolean } {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error): void {
+    if (!isChunkLoadError(error)) return;
+    try {
+      const key = `__ckr_${window.location.pathname}__`;
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        window.location.reload();
+      }
+    } catch { /* sessionStorage unavailable */ }
+  }
+
+  render() {
+    if (!this.state.hasError) return this.props.children;
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        justifyContent: 'center', minHeight: '60vh', gap: '12px', color: '#888',
+      }}>
+        <span style={{ fontSize: '14px' }}>Failed to load page</span>
+        <button
+          type="button"
+          onClick={() => {
+            try { sessionStorage.removeItem(`__ckr_${window.location.pathname}__`); } catch {}
+            window.location.reload();
+          }}
+          style={{
+            padding: '6px 18px', border: '1px solid #888', borderRadius: '6px',
+            background: 'none', cursor: 'pointer', fontSize: '13px', color: '#888',
+          }}
+        >
+          Refresh page
+        </button>
+      </div>
+    );
+  }
+}
+
+function PageLoadingFallback() {
+  return (
+    <>
+      <style>{`@keyframes _ck_bar{0%{left:-40%}100%{left:110%}}`}</style>
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0,
+        height: '2px', zIndex: 9999, overflow: 'hidden',
+      }}>
+        <div style={{
+          position: 'absolute', top: 0, height: '100%', width: '40%',
+          background: 'linear-gradient(90deg, transparent, #818cf8, transparent)',
+          animation: '_ck_bar 1.1s ease-in-out infinite',
+        }} />
+      </div>
+      <div style={{ minHeight: 'calc(100vh - 60px)' }} />
+    </>
+  );
+}
+
 function DynamicIdRoute() {
   const { id } = useParams<{ id: string }>();
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -419,7 +497,8 @@ function Layout() {
     <UserContext.Provider value={{ username, userRole, userId }}>
       <Header username={username} isAuthed={authed} userRole={userRole} />
       <main>
-        <Suspense fallback={<div style={{ minHeight: '100vh' }} />}>
+        <ChunkErrorBoundary key={location.key}>
+        <Suspense fallback={<PageLoadingFallback />}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
@@ -473,6 +552,7 @@ function Layout() {
           <Route path="*" element={<div>404</div>} />
         </Routes>
         </Suspense>
+        </ChunkErrorBoundary>
       </main>
       <Footer />
       <TerminalLauncher customCommands={[catamazeCommand]} />

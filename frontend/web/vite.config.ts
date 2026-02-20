@@ -34,5 +34,17 @@ export default defineConfig({
     commonjsOptions: {
       include: [/node_modules/],
     },
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('/node_modules/react/') || id.includes('/node_modules/react-dom/') || id.includes('/node_modules/react-router')) {
+            return 'vendor-react';
+          }
+          if (id.includes('/node_modules/chess.js') || id.includes('/node_modules/react-chessboard')) {
+            return 'vendor-chess';
+          }
+        },
+      },
+    },
   },
 });

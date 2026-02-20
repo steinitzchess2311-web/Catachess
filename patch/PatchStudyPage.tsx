@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
 import { StudyProvider, useStudy } from './studyContext';
 import { StudyBoard } from './board/studyBoard';
 import { MoveTree } from './sidebar/movetree';
@@ -46,6 +47,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     extractChapters,
   } = useChapters(id);
 
+  const [headerExpanded, setHeaderExpanded] = useState(true);
   const [studyTitle, setStudyTitle] = useState<string>('');
   const [breadcrumbs, setBreadcrumbs] = useState<Breadcrumb[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -302,58 +304,71 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className={`patch-study-page ${className || ''}`}>
-      <div className="patch-study-header">
-        {isEditingTitle ? (
-          <div className="patch-study-title-edit">
-            <input
-              ref={titleInputRef}
-              type="text"
-              className="patch-study-title-input"
-              value={draftTitle}
-              onChange={(e) => { setDraftTitle(e.target.value); if (!e.target.value.includes('/')) setTitleError(null); }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') { e.preventDefault(); commitEditingTitle(); }
-                if (e.key === 'Escape') { e.preventDefault(); cancelEditingTitle(); }
-              }}
-              onBlur={cancelEditingTitle}
-            />
-            {titleError && <span className="patch-study-title-error">{titleError}</span>}
+      <div className={`patch-study-header-wrap${headerExpanded ? '' : ' is-collapsed'}`}>
+        <div className="patch-study-header">
+          {isEditingTitle ? (
+            <div className="patch-study-title-edit">
+              <input
+                ref={titleInputRef}
+                type="text"
+                className="patch-study-title-input"
+                value={draftTitle}
+                onChange={(e) => { setDraftTitle(e.target.value); if (!e.target.value.includes('/')) setTitleError(null); }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); commitEditingTitle(); }
+                  if (e.key === 'Escape') { e.preventDefault(); cancelEditingTitle(); }
+                }}
+                onBlur={cancelEditingTitle}
+              />
+              {titleError && <span className="patch-study-title-error">{titleError}</span>}
+            </div>
+          ) : (
+            <h2 className="patch-study-title" onDoubleClick={startEditingTitle} title="Double-click to rename">
+              {studyTitle || 'Study'}
+            </h2>
+          )}
+          <div className="patch-study-breadcrumb">
+            {breadcrumbs.map((crumb, index) => (
+              <React.Fragment key={crumb.id}>
+                {index > 0 && <span className="breadcrumb-separator">/</span>}
+                {index === breadcrumbs.length - 1 ? (
+                  <span className="breadcrumb-item current" title="Current study">{crumb.title}</span>
+                ) : (
+                  <button
+                    type="button"
+                    className="breadcrumb-item clickable"
+                    onClick={() => handleBreadcrumbClick(crumb, index)}
+                    title="Click to navigate"
+                  >
+                    {crumb.title}
+                  </button>
+                )}
+              </React.Fragment>
+            ))}
           </div>
-        ) : (
-          <h2 className="patch-study-title" onDoubleClick={startEditingTitle} title="Double-click to rename">
-            {studyTitle || 'Study'}
-          </h2>
-        )}
-        <div className="patch-study-breadcrumb">
-          {breadcrumbs.map((crumb, index) => (
-            <React.Fragment key={crumb.id}>
-              {index > 0 && <span className="breadcrumb-separator">/</span>}
-              {index === breadcrumbs.length - 1 ? (
-                <span className="breadcrumb-item current" title="Current study">{crumb.title}</span>
-              ) : (
-                <button
-                  type="button"
-                  className="breadcrumb-item clickable"
-                  onClick={() => handleBreadcrumbClick(crumb, index)}
-                  title="Click to navigate"
-                >
-                  {crumb.title}
-                </button>
-              )}
-            </React.Fragment>
-          ))}
+          <div className="patch-study-actions">
+            <button
+              type="button"
+              className="patch-study-save-button"
+              onClick={saveAll}
+              disabled={state.isSaving || !hasUnsavedChanges}
+            >
+              {state.isSaving ? 'Saving...' : hasUnsavedChanges ? 'Save' : 'Saved'}
+            </button>
+          </div>
+          <div className="patch-study-save-status">{savedLabel}</div>
         </div>
-        <div className="patch-study-actions">
-          <button
-            type="button"
-            className="patch-study-save-button"
-            onClick={saveAll}
-            disabled={state.isSaving || !hasUnsavedChanges}
-          >
-            {state.isSaving ? 'Saving...' : hasUnsavedChanges ? 'Save' : 'Saved'}
-          </button>
-        </div>
-        <div className="patch-study-save-status">{savedLabel}</div>
+      </div>
+
+      <div className="patch-study-toggle-bar">
+        <button
+          type="button"
+          className="patch-study-toggle-btn"
+          onClick={() => setHeaderExpanded(v => !v)}
+          title={headerExpanded ? 'Collapse header' : 'Expand header'}
+        >
+          {headerExpanded ? <ChevronUpIcon width={14} height={14} /> : <ChevronDownIcon width={14} height={14} />}
+        </button>
       </div>
 
       <div className="patch-study-layout" ref={layoutRef}>

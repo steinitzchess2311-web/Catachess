@@ -13,6 +13,48 @@
   overflow-y: auto;
 }
 
+.patch-study-header-wrap {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 240ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.patch-study-header-wrap.is-collapsed {
+  grid-template-rows: 0fr;
+}
+
+.patch-study-header-wrap > .patch-study-header {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.patch-study-toggle-bar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 18px;
+  margin-bottom: 8px;
+}
+
+.patch-study-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 18px;
+  border: none;
+  border-radius: 6px;
+  background: #e8e8e8;
+  color: #999;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.patch-study-toggle-btn:hover {
+  background: #d8d8d8;
+  color: #333;
+}
+
 .patch-study-header {
   margin-bottom: 16px;
   padding: 2px 12px;

@@ -1764,7 +1764,7 @@
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #3a5070;
+  color: #888;
   user-select: none;
 }
 
@@ -1806,7 +1806,7 @@
   flex: 1;
   font-weight: 600;
   font-size: 12.5px;
-  color: #c8d4e0;
+  color: #000;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1817,7 +1817,7 @@
   flex-shrink: 0;
   font-size: 11px;
   font-weight: 500;
-  color: #3a5070;
+  color: #666;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
@@ -1828,15 +1828,14 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border-top: 1px solid #1c2530;
-  border-bottom: 1px solid #1c2530;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .game-card__result-rule {
   flex: 1;
   height: 1px;
-  background: currentColor;
-  opacity: 0.15;
+  background: #ccc;
 }
 
 .game-card__result-text {
@@ -1846,9 +1845,9 @@
   font-variant-numeric: tabular-nums;
 }
 
-.game-card__result--white .game-card__result-text { color: #d8dfe8; }
-.game-card__result--black .game-card__result-text { color: #607080; }
-.game-card__result--draw  .game-card__result-text { color: #7a8f9f; }
+.game-card__result--white .game-card__result-text { color: #111; }
+.game-card__result--black .game-card__result-text { color: #111; }
+.game-card__result--draw  .game-card__result-text { color: #111; }
 
 /* Tournament meta */
 .game-card__meta {
@@ -1860,14 +1859,14 @@
 
 .game-card__event {
   font-size: 11.5px;
-  color: #607080;
+  color: #444;
   line-height: 1.45;
   font-style: italic;
 }
 
 .game-card__date {
   font-size: 11px;
-  color: #3a5070;
+  color: #888;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }

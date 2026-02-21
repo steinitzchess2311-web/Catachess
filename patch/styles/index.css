@@ -1750,34 +1750,27 @@
   color: #9ca3af;
 }
 
-/* ── Game Card (TWIC-style) ───────────────────────────────────────────────── */
+/* ── Game Card (TWIC-style, no background) ───────────────────────────────── */
 
 .game-card {
-  margin: 14px 12px;
   padding: 0;
-  border-radius: 10px;
-  background: #161b24;
-  border: 1px solid #222c3c;
-  overflow: hidden;
   font-size: 13px;
 }
 
 /* Source badge */
 .game-card__source {
-  padding: 7px 14px 6px;
-  font-size: 9.5px;
+  padding: 10px 14px 6px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #4a6080;
-  background: #0f141c;
-  border-bottom: 1px solid #1e2a3a;
+  color: #3a5070;
   user-select: none;
 }
 
 /* Players block */
 .game-card__players {
-  padding: 14px 14px 10px;
+  padding: 8px 14px 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1799,21 +1792,21 @@
 }
 
 .game-card__dot--white {
-  background: #e8e8e8;
-  box-shadow: inset 0 -1px 2px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.5);
+  background: #d8d8d8;
+  box-shadow: inset 0 -1px 2px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.5);
 }
 
 .game-card__dot--black {
-  background: #1a1a1a;
-  border: 1.5px solid #3a3a3a;
-  box-shadow: inset 0 1px 2px rgba(255,255,255,0.06), 0 1px 3px rgba(0,0,0,0.6);
+  background: #111;
+  border: 1.5px solid #404040;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.05), 0 1px 4px rgba(0,0,0,0.7);
 }
 
 .game-card__name {
   flex: 1;
   font-weight: 600;
   font-size: 12.5px;
-  color: #d1dae8;
+  color: #c8d4e0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1824,7 +1817,7 @@
   flex-shrink: 0;
   font-size: 11px;
   font-weight: 500;
-  color: #4a6080;
+  color: #3a5070;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
@@ -1835,15 +1828,15 @@
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border-top: 1px solid #1e2a3a;
-  border-bottom: 1px solid #1e2a3a;
+  border-top: 1px solid #1c2530;
+  border-bottom: 1px solid #1c2530;
 }
 
 .game-card__result-rule {
   flex: 1;
   height: 1px;
   background: currentColor;
-  opacity: 0.18;
+  opacity: 0.15;
 }
 
 .game-card__result-text {
@@ -1853,28 +1846,28 @@
   font-variant-numeric: tabular-nums;
 }
 
-.game-card__result--white .game-card__result-text { color: #e2e8f0; }
-.game-card__result--black .game-card__result-text { color: #718096; }
-.game-card__result--draw  .game-card__result-text { color: #8fa3b8; }
+.game-card__result--white .game-card__result-text { color: #d8dfe8; }
+.game-card__result--black .game-card__result-text { color: #607080; }
+.game-card__result--draw  .game-card__result-text { color: #7a8f9f; }
 
 /* Tournament meta */
 .game-card__meta {
-  padding: 10px 14px 12px;
+  padding: 10px 14px 4px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .game-card__event {
   font-size: 11.5px;
-  color: #7a90a8;
+  color: #607080;
   line-height: 1.45;
   font-style: italic;
 }
 
 .game-card__date {
   font-size: 11px;
-  color: #4a6080;
+  color: #3a5070;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
@@ -1883,31 +1876,15 @@
 
 .game-output-bar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
   padding: 6px 8px;
   width: 100%;
   box-sizing: border-box;
 }
 
+/* Extends .study-fen-wrap — adds flex:1 so it fills available width */
 .game-output-fen-wrap {
   flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 6px;
   min-width: 0;
-}
-
-.game-output-fen-wrap .study-fen-box {
-  flex: 1;
-  min-width: 0;
-  resize: none;
-  height: 32px;
-  padding: 6px 8px;
-  font-size: 11px;
-  line-height: 1.3;
-}
-
-.game-output-actions {
-  flex-shrink: 0;
 }

@@ -216,7 +216,8 @@ function GameOutputBar({ game }: { game: GameDetail }) {
 
   return (
     <div className="game-output-bar">
-      <div className="game-output-fen-wrap">
+      {/* Use .study-fen-wrap (position:relative) so .is-inline absolute button works */}
+      <div className="study-fen-wrap game-output-fen-wrap">
         <textarea className="study-fen-box" readOnly value={fen || ''} />
         <button
           type="button"
@@ -227,11 +228,9 @@ function GameOutputBar({ game }: { game: GameDetail }) {
           {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Failed' : 'Copy FEN'}
         </button>
       </div>
-      <div className="game-output-actions">
-        <button type="button" className="study-fen-button" onClick={handleExportPgn}>
-          Export PGN
-        </button>
-      </div>
+      <button type="button" className="study-fen-button" onClick={handleExportPgn}>
+        Export PGN
+      </button>
     </div>
   );
 }

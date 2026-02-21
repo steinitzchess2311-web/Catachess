@@ -41,6 +41,7 @@ const TranslatePage = React.lazy(() => import("./pages/translate"));
 const PlayersIndex = React.lazy(() => import("@patch/modules/tagger/pages/PlayersIndex"));
 const PlayerDetail = React.lazy(() => import("@patch/modules/tagger/pages/PlayerDetail"));
 const PatchStudyPage = React.lazy(() => import("@patch/PatchStudyPage").then(m => ({ default: m.PatchStudyPage })));
+const GameViewerPage = React.lazy(() => import("@patch/game/GameViewerPage").then(m => ({ default: m.GameViewerPage })));
 const BoardEditorPage = React.lazy(() => import("@patch/modules/board_editor").then(m => ({ default: m.BoardEditorPage })));
 const AnalysisPage = React.lazy(() => import("./pages/analysis/AnalysisPage").then(m => ({ default: m.AnalysisPage })));
 
@@ -545,6 +546,9 @@ function Layout() {
           {/* Legacy study routes (backward compat) */}
           <Route path="/workspace/:id" element={<Protected>{USE_PATCH_STUDY ? <PatchStudyPage /> : <WorkspacePage />}</Protected>} />
           <Route path="/patch/workspace/:id" element={<Protected><PatchStudyPage /></Protected>} />
+
+          {/* Game viewer — must precede the /:id catch-all */}
+          <Route path="/game/:id" element={<GameViewerPage />} />
 
           {/* Root-level study (UUID) or username — distinguished at runtime */}
           <Route path="/:id" element={<Protected><DynamicIdRoute /></Protected>} />

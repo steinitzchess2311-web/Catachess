@@ -41,6 +41,11 @@ export interface ExplorerResponse {
   opening: null;
 }
 
+export interface GameDetail extends GameRef {
+  event: string | null;
+  moves: string | null; // space-separated UCI, e.g. "e2e4 e7e5 g1f3"
+}
+
 // ---- Filter types ----------------------------------------
 
 export interface MastersFilters {

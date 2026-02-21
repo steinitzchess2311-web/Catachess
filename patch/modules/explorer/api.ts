@@ -1,4 +1,4 @@
-import type { ExplorerResponse, MastersFilters } from './types';
+import type { ExplorerResponse, MastersFilters, GameDetail } from './types';
 
 const BASE = 'https://database.catachess.com';
 
@@ -23,6 +23,15 @@ export async function fetchMasters(
   if (options?.topGames != null) url.searchParams.set('topGames', String(options.topGames));
 
   const res = await fetch(url.toString(), { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchGame(id: string, signal?: AbortSignal): Promise<GameDetail> {
+  const res = await fetch(`${BASE}/game/${id}`, { signal });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     throw new Error(body?.detail ?? `HTTP ${res.status}`);

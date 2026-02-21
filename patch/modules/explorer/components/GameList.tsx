@@ -29,7 +29,12 @@ export function GameList({ games, label }: GameListProps) {
           <div
             key={g.id}
             className={`explorer-game ${accentClass}`}
-            style={{ animationDelay: `${i * 35}ms` }}
+            style={{ animationDelay: `${i * 35}ms`, cursor: 'pointer' }}
+            role="button"
+            tabIndex={0}
+            title="Open game"
+            onClick={() => window.open(`/game/${g.id}`, '_blank', 'noopener')}
+            onKeyDown={(e) => e.key === 'Enter' && window.open(`/game/${g.id}`, '_blank', 'noopener')}
           >
             <div className="explorer-game__body">
               <div className="explorer-game__row">

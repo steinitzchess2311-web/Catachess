@@ -10,63 +10,67 @@ import { useEngineAnalysis } from '../sidebar/hooks/useEngineAnalysis';
 import { uciLineToSan } from '../chessJS/uci';
 import { getTurn } from '../chessJS/fen';
 import { formatSanWithMoveNumbers } from '../sidebar/utils/formatters';
+import { exportPgn } from '../pgn/export';
 import { fetchGame } from '../modules/explorer/api';
 import type { GameDetail } from '../modules/explorer/types';
 import { uciMovesToTree } from './uciToTree';
 
 // =============================================================================
-// Game metadata panel
+// Game info card — TWIC-style
 // =============================================================================
 
-function GameInfoPanel({ game }: { game: GameDetail }) {
+function GameInfoCard({ game }: { game: GameDetail }) {
   const resultText =
     game.winner === 'white' ? '1–0'
     : game.winner === 'black' ? '0–1'
     : '½–½';
 
-  const accentClass =
-    game.winner === 'white' ? 'game-info--white-wins'
-    : game.winner === 'black' ? 'game-info--black-wins'
-    : 'game-info--draw';
+  const resultClass =
+    game.winner === 'white' ? 'game-card__result--white'
+    : game.winner === 'black' ? 'game-card__result--black'
+    : 'game-card__result--draw';
 
   const dateStr = game.month ?? (game.year != null && game.year > 100 ? String(game.year) : null);
 
   return (
-    <div className={`game-info-panel ${accentClass}`}>
-      <div className="game-info-result">{resultText}</div>
+    <div className="game-card">
+      <div className="game-card__source">TWIC Database</div>
 
-      <div className="game-info-players">
-        <div className="game-info-player">
-          <span className="game-info-piece game-info-piece--white">♔</span>
-          <div className="game-info-player-body">
-            <span className="game-info-name">{game.white.name}</span>
-            {game.white.rating != null && (
-              <span className="game-info-rating">{game.white.rating}</span>
-            )}
-          </div>
+      <div className="game-card__players">
+        <div className="game-card__player">
+          <span className="game-card__dot game-card__dot--white" />
+          <span className="game-card__name">{game.white.name}</span>
+          {game.white.rating != null && (
+            <span className="game-card__rating">{game.white.rating}</span>
+          )}
         </div>
-        <div className="game-info-player">
-          <span className="game-info-piece game-info-piece--black">♚</span>
-          <div className="game-info-player-body">
-            <span className="game-info-name">{game.black.name}</span>
-            {game.black.rating != null && (
-              <span className="game-info-rating">{game.black.rating}</span>
-            )}
-          </div>
+        <div className="game-card__player">
+          <span className="game-card__dot game-card__dot--black" />
+          <span className="game-card__name">{game.black.name}</span>
+          {game.black.rating != null && (
+            <span className="game-card__rating">{game.black.rating}</span>
+          )}
         </div>
       </div>
 
-      <div className="game-info-meta">
-        {game.event && <div className="game-info-event">{game.event}</div>}
-        {dateStr && <div className="game-info-date">{dateStr}</div>}
+      <div className={`game-card__result ${resultClass}`}>
+        <span className="game-card__result-rule" />
+        <span className="game-card__result-text">{resultText}</span>
+        <span className="game-card__result-rule" />
       </div>
+
+      {(game.event || dateStr) && (
+        <div className="game-card__meta">
+          {game.event && <span className="game-card__event">{game.event}</span>}
+          {dateStr && <span className="game-card__date">{dateStr}</span>}
+        </div>
+      )}
     </div>
   );
 }
 
 // =============================================================================
-// Left sidebar — tabs: Info | Analysis
-// Must be inside StudyProvider (needs currentFen for engine)
+// Left sidebar — Game | Analysis tabs
 // =============================================================================
 
 function GameSidebar({ game }: { game: GameDetail }) {
@@ -113,7 +117,7 @@ function GameSidebar({ game }: { game: GameDetail }) {
         </button>
       </div>
 
-      {activeTab === 'info' && <GameInfoPanel game={game} />}
+      {activeTab === 'info' && <GameInfoCard game={game} />}
 
       {activeTab === 'analysis' && (
         <div className="patch-analysis-scroll">
@@ -142,6 +146,97 @@ function GameSidebar({ game }: { game: GameDetail }) {
 }
 
 // =============================================================================
+// Bottom output bar — FEN + local PGN export
+// =============================================================================
+
+function GameOutputBar({ game }: { game: GameDetail }) {
+  const { state } = useStudy();
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
+  const fen = state.currentFen;
+
+  useEffect(() => {
+    if (copyState === 'idle') return;
+    const t = window.setTimeout(() => setCopyState('idle'), 1500);
+    return () => window.clearTimeout(t);
+  }, [copyState]);
+
+  const handleCopyFen = async () => {
+    if (!fen) return;
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(fen);
+      } else {
+        const el = document.createElement('textarea');
+        el.value = fen;
+        el.style.position = 'absolute';
+        el.style.left = '-9999px';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      }
+      setCopyState('copied');
+    } catch {
+      setCopyState('error');
+    }
+  };
+
+  const handleExportPgn = () => {
+    const white = game.white.name + (game.white.rating != null ? ` (${game.white.rating})` : '');
+    const black = game.black.name + (game.black.rating != null ? ` (${game.black.rating})` : '');
+    const result =
+      game.winner === 'white' ? '1-0'
+      : game.winner === 'black' ? '0-1'
+      : '1/2-1/2';
+
+    const headers: Record<string, string> = {
+      White: white,
+      Black: black,
+      Result: result,
+    };
+    if (game.event) headers['Event'] = game.event;
+    if (game.year != null && game.year > 100) headers['Date'] = String(game.year);
+
+    const { pgn } = exportPgn(state.tree, headers, {
+      includeComments: true,
+      includeNags: true,
+      includeVariations: true,
+    });
+
+    const blob = new Blob([pgn], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${game.id}.pgn`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="game-output-bar">
+      <div className="game-output-fen-wrap">
+        <textarea className="study-fen-box" readOnly value={fen || ''} />
+        <button
+          type="button"
+          className="study-fen-button is-inline"
+          onClick={handleCopyFen}
+          disabled={!fen}
+        >
+          {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Failed' : 'Copy FEN'}
+        </button>
+      </div>
+      <div className="game-output-actions">
+        <button type="button" className="study-fen-button" onClick={handleExportPgn}>
+          Export PGN
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
 // Inner content — must live inside StudyProvider
 // =============================================================================
 
@@ -154,13 +249,11 @@ function GameViewerContent({ game }: { game: GameDetail }) {
   const rightbarMin = 220;
   const rightbarMax = 520;
 
-  // Load game tree once when game data arrives
   useEffect(() => {
     const tree = uciMovesToTree(game.moves);
     loadTree(tree);
   }, [game, loadTree]);
 
-  // Rightbar resize
   const startResize = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsResizing(true);
@@ -189,17 +282,14 @@ function GameViewerContent({ game }: { game: GameDetail }) {
   return (
     <div className="patch-study-page game-viewer-page">
       <div className="patch-study-layout" ref={layoutRef}>
-        {/* Left: game info + engine analysis */}
         <div className="patch-study-sidebar">
           <GameSidebar game={game} />
         </div>
 
-        {/* Center: board — draggable, all changes are local only */}
         <div className="patch-study-main">
           <StudyBoard />
         </div>
 
-        {/* Resize handle */}
         <div
           className="patch-study-splitter"
           onPointerDown={startResize}
@@ -208,12 +298,20 @@ function GameViewerContent({ game }: { game: GameDetail }) {
           aria-label="Resize move tree panel"
         />
 
-        {/* Right: move tree */}
         <div className="patch-study-rightbar" style={{ width: rightbarWidth }}>
           <div className="patch-right-panel">
             <MoveTree />
           </div>
         </div>
+      </div>
+
+      {/* Bottom output bar */}
+      <div className="patch-study-footer-row">
+        <div className="patch-study-footer-spacer" />
+        <div className="patch-study-footer-box">
+          <GameOutputBar game={game} />
+        </div>
+        <div className="patch-study-footer-spacer" />
       </div>
     </div>
   );
@@ -247,7 +345,7 @@ function ErrorScreen({ message }: { message: string }) {
 }
 
 // =============================================================================
-// Outer shell — fetches game, mounts StudyProvider
+// Outer shell
 // =============================================================================
 
 function GameViewerShell() {

@@ -1750,89 +1750,164 @@
   color: #9ca3af;
 }
 
-/* ── Game Info Panel ──────────────────────────────────────────────────────── */
+/* ── Game Card (TWIC-style) ───────────────────────────────────────────────── */
 
-.game-info-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px;
-  height: 100%;
-  box-sizing: border-box;
+.game-card {
+  margin: 14px 12px;
+  padding: 0;
+  border-radius: 10px;
+  background: #161b24;
+  border: 1px solid #222c3c;
+  overflow: hidden;
   font-size: 13px;
 }
 
-.game-info-result {
-  font-size: 22px;
+/* Source badge */
+.game-card__source {
+  padding: 7px 14px 6px;
+  font-size: 9.5px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: #e2e8f0;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #2d3748;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4a6080;
+  background: #0f141c;
+  border-bottom: 1px solid #1e2a3a;
+  user-select: none;
 }
 
-.game-info--white-wins .game-info-result { color: #f0f0f0; }
-.game-info--black-wins .game-info-result { color: #94a3b8; }
-.game-info--draw      .game-info-result { color: #a3b5c6; }
-
-.game-info-players {
+/* Players block */
+.game-card__players {
+  padding: 14px 14px 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.game-info-player {
+.game-card__player {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.game-info-piece {
-  font-size: 18px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.game-info-piece--white { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.6)); }
-.game-info-piece--black { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8)) invert(1); }
-
-.game-info-player-body {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+  gap: 9px;
   min-width: 0;
 }
 
-.game-info-name {
+/* Color dots */
+.game-card__dot {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+}
+
+.game-card__dot--white {
+  background: #e8e8e8;
+  box-shadow: inset 0 -1px 2px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.game-card__dot--black {
+  background: #1a1a1a;
+  border: 1.5px solid #3a3a3a;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.06), 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.game-card__name {
+  flex: 1;
   font-weight: 600;
-  color: #e2e8f0;
+  font-size: 12.5px;
+  color: #d1dae8;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: 0.01em;
 }
 
-.game-info-rating {
+.game-card__rating {
+  flex-shrink: 0;
   font-size: 11px;
-  color: #64748b;
+  font-weight: 500;
+  color: #4a6080;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Result band */
+.game-card__result {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid #1e2a3a;
+  border-bottom: 1px solid #1e2a3a;
+}
+
+.game-card__result-rule {
+  flex: 1;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.18;
+}
+
+.game-card__result-text {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums;
 }
 
-.game-info-meta {
+.game-card__result--white .game-card__result-text { color: #e2e8f0; }
+.game-card__result--black .game-card__result-text { color: #718096; }
+.game-card__result--draw  .game-card__result-text { color: #8fa3b8; }
+
+/* Tournament meta */
+.game-card__meta {
+  padding: 10px 14px 12px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding-top: 12px;
-  border-top: 1px solid #2d3748;
+  gap: 3px;
 }
 
-.game-info-event {
-  color: #94a3b8;
-  font-size: 12px;
-  line-height: 1.4;
+.game-card__event {
+  font-size: 11.5px;
+  color: #7a90a8;
+  line-height: 1.45;
+  font-style: italic;
 }
 
-.game-info-date {
-  color: #64748b;
+.game-card__date {
   font-size: 11px;
+  color: #4a6080;
   font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* ── Game Output Bar ──────────────────────────────────────────────────────── */
+
+.game-output-bar {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.game-output-fen-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.game-output-fen-wrap .study-fen-box {
+  flex: 1;
+  min-width: 0;
+  resize: none;
+  height: 32px;
+  padding: 6px 8px;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.game-output-actions {
+  flex-shrink: 0;
 }

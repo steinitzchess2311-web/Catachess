@@ -230,7 +230,7 @@ async def get_articles(
     stmt = stmt.order_by(
         BlogArticle.is_pinned.desc(),
         BlogArticle.pin_order.desc(),
-        BlogArticle.published_at.desc()
+        BlogArticle.created_at.desc()
     )
 
     # Count total

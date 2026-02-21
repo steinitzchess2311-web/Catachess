@@ -1,15 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { StudyProvider, useStudy } from '../studyContext';
 import { StudyBoard } from '../board/studyBoard';
 import { MoveTree } from '../sidebar/movetree';
 import { StudyErrorBoundary } from '../components/ErrorBoundary';
+import { AnalysisSettings } from '../sidebar/components/AnalysisSettings';
+import { AnalysisPanel } from '../sidebar/components/AnalysisPanel';
+import { useEngineAnalysis } from '../sidebar/hooks/useEngineAnalysis';
+import { uciLineToSan } from '../chessJS/uci';
+import { getTurn } from '../chessJS/fen';
+import { formatSanWithMoveNumbers } from '../sidebar/utils/formatters';
 import { fetchGame } from '../modules/explorer/api';
 import type { GameDetail } from '../modules/explorer/types';
 import { uciMovesToTree } from './uciToTree';
 
 // =============================================================================
-// Game metadata panel (left sidebar)
+// Game metadata panel
 // =============================================================================
 
 function GameInfoPanel({ game }: { game: GameDetail }) {
@@ -59,6 +65,83 @@ function GameInfoPanel({ game }: { game: GameDetail }) {
 }
 
 // =============================================================================
+// Left sidebar — tabs: Info | Analysis
+// Must be inside StudyProvider (needs currentFen for engine)
+// =============================================================================
+
+function GameSidebar({ game }: { game: GameDetail }) {
+  const { state } = useStudy();
+  const [activeTab, setActiveTab] = useState<'info' | 'analysis'>('info');
+  const [multipv, setMultipv] = useState(3);
+  const [engineEnabled, setEngineEnabled] = useState(false);
+
+  const engineAnalysis = useEngineAnalysis({
+    enabled: activeTab === 'analysis' && engineEnabled,
+    fen: state.currentFen,
+    multipv,
+  });
+
+  const formattedLines = useMemo(() => {
+    if (!engineAnalysis.analysisFen || engineAnalysis.lines.length === 0) return [];
+    const fen = engineAnalysis.analysisFen;
+    return engineAnalysis.lines.map((line) => {
+      const sanLine = uciLineToSan(line.pv || [], fen);
+      const sanMoves = sanLine
+        .map((step) => step.san)
+        .filter((move): move is string => Boolean(move));
+      const sanText = formatSanWithMoveNumbers(sanMoves, fen);
+      return { ...line, sanText };
+    });
+  }, [engineAnalysis.lines, engineAnalysis.analysisFen]);
+
+  return (
+    <div className="patch-sidebar-content">
+      <div className="patch-sidebar-tabs">
+        <button
+          type="button"
+          className={`patch-sidebar-tab${activeTab === 'info' ? ' is-active' : ''}`}
+          onClick={() => setActiveTab('info')}
+        >
+          Game
+        </button>
+        <button
+          type="button"
+          className={`patch-sidebar-tab${activeTab === 'analysis' ? ' is-active' : ''}`}
+          onClick={() => setActiveTab('analysis')}
+        >
+          Analysis
+        </button>
+      </div>
+
+      {activeTab === 'info' && <GameInfoPanel game={game} />}
+
+      {activeTab === 'analysis' && (
+        <div className="patch-analysis-scroll">
+          <AnalysisSettings
+            currentDepth={engineAnalysis.currentDepth}
+            nps={engineAnalysis.nps}
+            multipv={multipv}
+            onMultipvChange={setMultipv}
+            engineEnabled={engineEnabled}
+            onEngineEnabledChange={setEngineEnabled}
+          />
+          <AnalysisPanel
+            engineEnabled={engineEnabled}
+            lines={formattedLines}
+            status={engineAnalysis.status}
+            health={engineAnalysis.health}
+            error={engineAnalysis.error}
+            lastUpdated={engineAnalysis.lastUpdated}
+            engineOrigin={engineAnalysis.engineOrigin}
+            turn={getTurn(state.currentFen) ?? 'w'}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// =============================================================================
 // Inner content — must live inside StudyProvider
 // =============================================================================
 
@@ -71,7 +154,7 @@ function GameViewerContent({ game }: { game: GameDetail }) {
   const rightbarMin = 220;
   const rightbarMax = 520;
 
-  // Load game tree once when the game data arrives
+  // Load game tree once when game data arrives
   useEffect(() => {
     const tree = uciMovesToTree(game.moves);
     loadTree(tree);
@@ -106,14 +189,14 @@ function GameViewerContent({ game }: { game: GameDetail }) {
   return (
     <div className="patch-study-page game-viewer-page">
       <div className="patch-study-layout" ref={layoutRef}>
-        {/* Left: game metadata */}
+        {/* Left: game info + engine analysis */}
         <div className="patch-study-sidebar">
-          <GameInfoPanel game={game} />
+          <GameSidebar game={game} />
         </div>
 
-        {/* Center: board (locked — no drag/edit) */}
+        {/* Center: board — draggable, all changes are local only */}
         <div className="patch-study-main">
-          <StudyBoard isLocked={true} />
+          <StudyBoard />
         </div>
 
         {/* Resize handle */}
@@ -164,7 +247,7 @@ function ErrorScreen({ message }: { message: string }) {
 }
 
 // =============================================================================
-// Outer shell — fetches game, then renders inside StudyProvider
+// Outer shell — fetches game, mounts StudyProvider
 // =============================================================================
 
 function GameViewerShell() {

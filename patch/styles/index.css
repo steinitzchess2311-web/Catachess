@@ -1739,6 +1739,10 @@
   padding-top: 16px;
 }
 
+.game-viewer-page .patch-study-footer-box {
+  height: auto;
+}
+
 .game-viewer-loading,
 .game-viewer-error {
   display: flex;
@@ -1754,6 +1758,7 @@
 
 .game-card {
   padding: 0;
+  font-family: 'Google Sans', 'Roboto', -apple-system, sans-serif;
   font-size: 13px;
 }
 

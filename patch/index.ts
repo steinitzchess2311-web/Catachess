@@ -45,8 +45,8 @@ export {
 } from './tree/cursor';
 
 // PGN (placeholder functions)
-export { parsePgn, detectGames, parseMultiplePgn } from './pgn/import';
-export { exportToPgn, exportMainlineToPgn, formatPgnHeaders } from './pgn/export';
+export { importPgn, detectGames, parseMultiplePgn } from './pgn/import';
+export { exportPgn, exportMainlineToPgn, formatPgnHeaders } from './pgn/export';
 
 // Chess.js replay utilities
 export {

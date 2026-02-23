@@ -1,8 +1,7 @@
 .home-page {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  min-height: 80vh;
   padding: 1rem 2rem 3rem;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }

@@ -54,12 +54,14 @@ const HomePage: React.FC = () => {
       <div className="home-container">
         {/* Welcome Section */}
         <div className="welcome-section">
-          <img src={logoImage} alt="Catachess Logo" className="welcome-logo" />
-          <h1 className="welcome-title">Welcome to Catachess!</h1>
-          <p className="welcome-subtitle">
-            Best Training Platform{' '}
-            <Link to="/about" className="why-link">(why?)</Link>
-          </p>
+          <div className="welcome-brand">
+            <img src={logoImage} alt="Catachess Logo" className="welcome-logo" />
+            <h1 className="welcome-title">Welcome to Catachess!</h1>
+          </div>
+          <div className="welcome-taglines">
+            <p className="tagline-amateurs">Best platform for amateurs</p>
+            <p className="tagline-coaches">Best choice for Coaches</p>
+          </div>
         </div>
 
         <div className="home-content">

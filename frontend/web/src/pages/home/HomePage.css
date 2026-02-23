@@ -14,7 +14,7 @@
 
 /* Welcome Section */
 .welcome-section {
-  text-align: center;
+  padding-left: 3rem;
   margin-bottom: 3rem;
   animation: fadeInDown 0.8s ease-out;
 }
@@ -30,10 +30,17 @@
   }
 }
 
+.welcome-brand {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
 .welcome-logo {
-  height: 120px;
+  height: 80px;
   width: auto;
-  margin-bottom: 1.5rem;
+  flex-shrink: 0;
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.1));
   animation: float 3s ease-in-out infinite;
 }
@@ -43,36 +50,52 @@
     transform: translateY(0px);
   }
   50% {
-    transform: translateY(-10px);
+    transform: translateY(-8px);
   }
 }
 
 .welcome-title {
-  font-size: 3rem;
+  font-size: 2.75rem;
   font-weight: 800;
   color: #2d1f5c;
-  margin: 0 0 0.75rem 0;
+  margin: 0;
   letter-spacing: -1px;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
 }
 
-.welcome-subtitle {
-  font-size: 1.25rem;
-  color: #5f6368;
+.welcome-taglines {
+  display: flex;
+  gap: 1.5rem;
+  padding-left: 0.25rem;
+}
+
+.tagline-amateurs,
+.tagline-coaches {
   margin: 0;
-  font-weight: 400;
-}
-
-.why-link {
-  color: #1a73e8;
-  text-decoration: none;
+  font-size: 1rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
-.why-link:hover {
-  color: #1557b0;
-  text-decoration: underline;
+.tagline-amateurs {
+  color: #1a73e8;
+}
+
+.tagline-amateurs::before {
+  content: '♟';
+  font-size: 1.1rem;
+}
+
+.tagline-coaches {
+  color: #d4af37;
+}
+
+.tagline-coaches::before {
+  content: '👑';
+  font-size: 1rem;
 }
 
 .home-content {
@@ -454,15 +477,11 @@
 /* Responsive */
 @media (max-width: 1024px) {
   .welcome-logo {
-    height: 100px;
+    height: 70px;
   }
 
   .welcome-title {
-    font-size: 2.5rem;
-  }
-
-  .welcome-subtitle {
-    font-size: 1.1rem;
+    font-size: 2.25rem;
   }
 
   .home-content {
@@ -484,18 +503,21 @@
 @media (max-width: 768px) {
   .welcome-section {
     margin-bottom: 2rem;
+    padding-left: 1rem;
   }
 
   .welcome-logo {
-    height: 80px;
+    height: 60px;
   }
 
   .welcome-title {
-    font-size: 2rem;
+    font-size: 1.75rem;
+    white-space: normal;
   }
 
-  .welcome-subtitle {
-    font-size: 1rem;
+  .welcome-taglines {
+    flex-direction: column;
+    gap: 0.4rem;
   }
 
   .section-title,
@@ -556,16 +578,16 @@
     padding: 1.5rem 1rem 2rem;
   }
 
+  .welcome-section {
+    padding-left: 0.5rem;
+  }
+
   .welcome-logo {
-    height: 70px;
+    height: 50px;
   }
 
   .welcome-title {
-    font-size: 1.75rem;
-  }
-
-  .welcome-subtitle {
-    font-size: 0.95rem;
+    font-size: 1.5rem;
   }
 
   .section-title,

@@ -44,6 +44,9 @@ const PatchStudyPage = React.lazy(() => import("@patch/PatchStudyPage").then(m =
 const GameViewerPage = React.lazy(() => import("@patch/game/GameViewerPage").then(m => ({ default: m.GameViewerPage })));
 const BoardEditorPage = React.lazy(() => import("@patch/modules/board_editor").then(m => ({ default: m.BoardEditorPage })));
 const AnalysisPage = React.lazy(() => import("./pages/analysis/AnalysisPage").then(m => ({ default: m.AnalysisPage })));
+const PlayPage = React.lazy(() => import("@patch/modules/user_games").then(m => ({ default: m.PlayPage })));
+const LiveGamePage = React.lazy(() => import("@patch/modules/user_games").then(m => ({ default: m.LiveGamePage })));
+const AnalyzeGamePage = React.lazy(() => import("@patch/modules/user_games").then(m => ({ default: m.AnalyzeGamePage })));
 
 // Entry switch configuration: default to patch unless explicitly disabled
 const USE_PATCH_STUDY = import.meta.env.VITE_USE_PATCH_STUDY !== "false";
@@ -540,6 +543,11 @@ function Layout() {
           {/* Legacy study routes (backward compat) */}
           <Route path="/workspace/:id" element={<Protected>{USE_PATCH_STUDY ? <PatchStudyPage /> : <WorkspacePage />}</Protected>} />
           <Route path="/patch/workspace/:id" element={<Protected><PatchStudyPage /></Protected>} />
+
+          {/* Games — 大厅 + 实时对局 + 赛后分析 */}
+          <Route path="/play" element={<PlayPage username={username} />} />
+          <Route path="/chess/:gameId" element={<LiveGamePage username={username} />} />
+          <Route path="/chess/:gameId/analyze" element={<AnalyzeGamePage />} />
 
           {/* Game viewer — must precede the /:id catch-all */}
           <Route path="/game/:id" element={<GameViewerPage />} />

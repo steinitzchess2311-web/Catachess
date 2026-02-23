@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { StudyProvider, useStudy } from '../studyContext';
 import { StudyBoard } from '../board/studyBoard';
 import { MoveTree } from '../sidebar/movetree';
@@ -16,6 +16,7 @@ import type { GameDetail } from '../modules/explorer/types';
 import { uciMovesToTree } from './uciToTree';
 import { ExplorerPanel } from '../modules/explorer';
 import { TrainPanel, TrainEntryModal } from '../modules/train';
+import { StudyPickerModal } from '../components/StudyPickerModal';
 
 // =============================================================================
 // Game info card — TWIC-style
@@ -243,11 +244,18 @@ function GameOutputBar({ game }: { game: GameDetail }) {
 
 function GameViewerContent({ game }: { game: GameDetail }) {
   const { state, loadTree, addMove, enterTrainMode } = useStudy();
+  const navigate = useNavigate();
   const layoutRef = useRef<HTMLDivElement>(null);
   const [rightbarWidth, setRightbarWidth] = useState(280);
   const [isResizing, setIsResizing] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState<'tree' | 'explorer'>('tree');
   const [showTrainModal, setShowTrainModal] = useState(false);
+  const [showPicker, setShowPicker] = useState(false);
+
+  const handleSendNavigate = useCallback(
+    (studyId: string) => navigate(`/workspace/private/${studyId}`),
+    [navigate],
+  );
 
   const rightbarMin = 220;
   const rightbarMax = 520;
@@ -330,6 +338,15 @@ function GameViewerContent({ game }: { game: GameDetail }) {
                 >
                   Train
                 </button>
+                {/* Send to Study 入口 */}
+                <button
+                  type="button"
+                  className="patch-sidebar-tab analysis-send-btn"
+                  onClick={() => setShowPicker(true)}
+                  title="Save this game to a study chapter"
+                >
+                  Save to Study
+                </button>
               </div>
               <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
                 {rightPanelTab === 'tree' ? (
@@ -361,6 +378,15 @@ function GameViewerContent({ game }: { game: GameDetail }) {
             setShowTrainModal(false);
             enterTrainMode();
           }}
+        />
+      )}
+
+      {/* Send to Study 弹窗 */}
+      {showPicker && (
+        <StudyPickerModal
+          currentTree={state.tree}
+          onClose={() => setShowPicker(false)}
+          onNavigate={handleSendNavigate}
         />
       )}
     </div>

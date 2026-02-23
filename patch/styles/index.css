@@ -1892,3 +1892,4 @@
   flex: 1;
   min-width: 0;
 }
+@import "../modules/user_games/user_games.css";

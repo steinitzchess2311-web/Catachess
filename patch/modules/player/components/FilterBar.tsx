@@ -11,22 +11,22 @@ interface Props {
 }
 
 const COLOR_OPTS: { value: ColorFilter; label: string }[] = [
-  { value: 'any',   label: '不限颜色' },
-  { value: 'white', label: '执白' },
-  { value: 'black', label: '执黑' },
+  { value: 'any',   label: 'Any' },
+  { value: 'white', label: 'White' },
+  { value: 'black', label: 'Black' },
 ];
 
 const RESULT_OPTS: { value: ResultFilter | ''; label: string }[] = [
-  { value: '',      label: '不限结果' },
-  { value: 'white', label: '白胜' },
-  { value: 'black', label: '黑胜' },
-  { value: 'draw',  label: '平局' },
+  { value: '',      label: 'Any' },
+  { value: 'white', label: '1–0' },
+  { value: 'black', label: '0–1' },
+  { value: 'draw',  label: '½–½' },
 ];
 
 const SORT_OPTS: { value: SortOrder; label: string }[] = [
-  { value: 'elo_desc',  label: 'Elo 高→低' },
-  { value: 'year_desc', label: '最新优先' },
-  { value: 'year_asc',  label: '最早优先' },
+  { value: 'elo_desc',  label: 'Elo ↓' },
+  { value: 'year_desc', label: 'Newest' },
+  { value: 'year_asc',  label: 'Oldest' },
 ];
 
 export function FilterBar({ filters, onChange }: Props) {
@@ -38,7 +38,7 @@ export function FilterBar({ filters, onChange }: Props) {
     <div className="ps-filter-bar">
       {/* 颜色 chips */}
       <div className="ps-filter-group">
-        <span className="ps-filter-label">颜色</span>
+        <span className="ps-filter-label">Color</span>
         <div className="ps-chips">
           {COLOR_OPTS.map((o) => (
             <button
@@ -54,7 +54,7 @@ export function FilterBar({ filters, onChange }: Props) {
 
       {/* 结果 chips */}
       <div className="ps-filter-group">
-        <span className="ps-filter-label">结果</span>
+        <span className="ps-filter-label">Result</span>
         <div className="ps-chips">
           {RESULT_OPTS.map((o) => (
             <button
@@ -70,12 +70,12 @@ export function FilterBar({ filters, onChange }: Props) {
 
       {/* 年份范围 */}
       <div className="ps-filter-group">
-        <span className="ps-filter-label">年份</span>
+        <span className="ps-filter-label">Year</span>
         <div className="ps-filter-years">
           <input
             type="number"
             className="ps-year-input"
-            placeholder="从"
+            placeholder="From"
             min={1900}
             max={2030}
             value={filters.yearFrom}
@@ -85,7 +85,7 @@ export function FilterBar({ filters, onChange }: Props) {
           <input
             type="number"
             className="ps-year-input"
-            placeholder="至"
+            placeholder="To"
             min={1900}
             max={2030}
             value={filters.yearTo}
@@ -96,7 +96,7 @@ export function FilterBar({ filters, onChange }: Props) {
 
       {/* 排序 */}
       <div className="ps-filter-group ps-filter-group--sort">
-        <span className="ps-filter-label">排序</span>
+        <span className="ps-filter-label">Sort</span>
         <div className="ps-chips">
           {SORT_OPTS.map((o) => (
             <button

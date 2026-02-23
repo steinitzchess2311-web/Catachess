@@ -99,7 +99,7 @@ export function GameList({ games, loading, error, hasMore, total, onLoadMore }: 
       {/* 到底了 */}
       {!hasMore && !loading && games.length > 0 && (
         <div className="ps-status ps-status--end">
-          共 {total} 局
+          {total} games total
         </div>
       )}
     </div>

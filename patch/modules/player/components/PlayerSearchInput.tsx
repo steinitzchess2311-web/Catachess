@@ -95,7 +95,7 @@ export function PlayerSearchInput({ onSearch, initialValue = '' }: Props) {
           ref={inputRef}
           className="ps-search-input"
           type="text"
-          placeholder="搜索棋手，如 Carlsen"
+          placeholder="Search player, e.g. Carlsen"
           value={input}
           autoComplete="off"
           spellCheck={false}
@@ -110,7 +110,7 @@ export function PlayerSearchInput({ onSearch, initialValue = '' }: Props) {
         {input && (
           <button
             className="ps-search-clear"
-            aria-label="清空"
+            aria-label="Clear"
             onClick={() => {
               setInput('');
               setOpen(false);
@@ -127,7 +127,7 @@ export function PlayerSearchInput({ onSearch, initialValue = '' }: Props) {
           className="ps-search-btn"
           onClick={() => { if (input.trim()) { setOpen(false); onSearch(input.trim()); } }}
         >
-          搜索
+          Search
         </button>
       </div>
 
@@ -136,7 +136,7 @@ export function PlayerSearchInput({ onSearch, initialValue = '' }: Props) {
           {loading && suggestions.length === 0 && (
             <li className="ps-dropdown-loading">
               <span className="ps-spinner" />
-              搜索中…
+              Searching…
             </li>
           )}
           {suggestions.map((s: PlayerSuggestion, i) => (
@@ -149,7 +149,7 @@ export function PlayerSearchInput({ onSearch, initialValue = '' }: Props) {
               onMouseEnter={() => setActiveIdx(i)}
             >
               <span className="ps-dropdown-name">{s.name}</span>
-              <span className="ps-dropdown-games">{formatGames(s.games)} 局</span>
+              <span className="ps-dropdown-games">{formatGames(s.games)} games</span>
             </li>
           ))}
         </ul>

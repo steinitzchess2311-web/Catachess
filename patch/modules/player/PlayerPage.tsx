@@ -61,10 +61,10 @@ const PlayerPage: React.FC = () => {
       <div className="ps-hero">
         <HeroIllustration />
         <div className="ps-hero-content">
-          <p className="ps-hero-eyebrow">Master Database · 460 万局</p>
-          <h1 className="ps-hero-title">棋手对局检索</h1>
+          <p className="ps-hero-eyebrow">Master Database · 4.6 Million Games</p>
+          <h1 className="ps-hero-title">Player Game Search</h1>
           <p className="ps-hero-desc">
-            搜索任意大师棋手的全部对局，按年份、结果、颜色精确筛选。
+            Search any master player's complete game history. Filter by year, result, and color.
           </p>
           <PlayerSearchInput onSearch={handleSearch} />
         </div>
@@ -80,7 +80,7 @@ const PlayerPage: React.FC = () => {
                 <div className="ps-results-title">
                   <span className="ps-results-player">{player}</span>
                   {!loading && games.length > 0 && (
-                    <span className="ps-results-count">· {total}{hasMore ? '+' : ''} 局</span>
+                    <span className="ps-results-count">· {total}{hasMore ? '+' : ''} games</span>
                   )}
                 </div>
                 <FilterBar filters={filters} onChange={handleFiltersChange} />
@@ -91,8 +91,8 @@ const PlayerPage: React.FC = () => {
             {!loading && !error && player && games.length === 0 && (
               <div className="ps-empty">
                 <span className="ps-empty-icon">♟</span>
-                <p>未找到符合条件的对局</p>
-                <p className="ps-empty-hint">尝试修改过滤条件，或检查棋手姓名拼写</p>
+                <p>No games found</p>
+                <p className="ps-empty-hint">Try adjusting the filters or check the player name spelling</p>
               </div>
             )}
 

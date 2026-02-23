@@ -22,9 +22,9 @@ function AnalysisPageContent() {
   const [rightbarWidth, setRightbarWidth] = useState(280);
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
-  // Auto-open Explorer tab when arriving with player filter
+  // Auto-open Explorer tab when arriving with player filter or ?tab=explorer
   const [rightPanelTab, setRightPanelTab] = useState<'tree' | 'explorer'>(
-    playerFilter.length > 0 ? 'explorer' : 'tree',
+    playerFilter.length > 0 || searchParams.get('tab') === 'explorer' ? 'explorer' : 'tree',
   );
   const [boardWidth, setBoardWidth] = useState(500);
   const layoutRef = useRef<HTMLDivElement | null>(null);

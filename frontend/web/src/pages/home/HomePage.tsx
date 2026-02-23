@@ -1,9 +1,19 @@
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { api } from "@ui/assets/api";
 import logoImage from "../../assets/logo.jpg";
 import "./HomePage.css";
 import { useUser } from "../../contexts/UserContext";
+import {
+  LayersIcon,
+  TargetIcon,
+  ReaderIcon,
+  ChatBubbleIcon,
+  MagnifyingGlassIcon,
+  BarChartIcon,
+  DesktopIcon,
+  PersonIcon,
+} from "@radix-ui/react-icons";
 
 interface UserStatistics {
   total_online_seconds: number;
@@ -11,15 +21,43 @@ interface UserStatistics {
   total_online_hours: number;
 }
 
+interface HpCardProps {
+  to?: string;
+  href?: string;
+  icon: React.ReactNode;
+  label: string;
+  tooltip: string;
+  disabled?: boolean;
+}
+
+const HpCard: React.FC<HpCardProps> = ({ to, href, icon, label, tooltip, disabled }) => {
+  const [show, setShow] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const inner = (
+    <div
+      ref={ref}
+      className={`hp-card${disabled ? " hp-card--disabled" : ""}`}
+      onMouseEnter={() => !disabled && setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <div className="hp-card-icon">{icon}</div>
+      <span className="hp-card-label">{label}</span>
+      {disabled && <span className="hp-coming-badge">Soon</span>}
+      {show && !disabled && (
+        <div className="hp-tooltip">{tooltip}</div>
+      )}
+    </div>
+  );
+
+  if (disabled) return inner;
+  if (href) return <a href={href} target="_blank" rel="noopener noreferrer" className="hp-card-link">{inner}</a>;
+  if (to) return <Link to={to} className="hp-card-link">{inner}</Link>;
+  return inner;
+};
 
 const HomePage: React.FC = () => {
-  const navigate = useNavigate();
   const { username } = useUser();
-  const [statistics, setStatistics] = useState<UserStatistics>({
-    total_online_seconds: 0,
-    total_moves_count: 0,
-    total_online_hours: 0,
-  });
   const [loading, setLoading] = useState(true);
   const [isAuthed, setIsAuthed] = useState(false);
 
@@ -27,32 +65,23 @@ const HomePage: React.FC = () => {
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('catachess_token') || sessionStorage.getItem('catachess_token');
-        if (!token) {
-          setIsAuthed(false);
-          setLoading(false);
-          return;
-        }
-
-        const statsResponse = await api.get("/user/statistics");
-        setStatistics(statsResponse);
+        if (!token) { setIsAuthed(false); setLoading(false); return; }
+        await api.get("/user/statistics");
         setIsAuthed(true);
-      } catch (error) {
-        console.error("Failed to fetch user data:", error);
+      } catch {
         setIsAuthed(false);
       } finally {
         setLoading(false);
       }
     };
-
     fetchUserData();
   }, []);
-
-  const displayHours = Math.round(statistics.total_online_hours * 10) / 10;
 
   return (
     <div className="home-page">
       <div className="home-container">
-        {/* Welcome Section */}
+
+        {/* Welcome */}
         <div className="welcome-section">
           <div className="welcome-brand">
             <img src={logoImage} alt="Catachess Logo" className="welcome-logo" />
@@ -64,89 +93,102 @@ const HomePage: React.FC = () => {
           </div>
         </div>
 
-        <div className="home-content">
-          {false && (
-          <div className="left-section">
-            {loading ? (
-              <div className="stats-container">
-                <h2 className="stats-title">Loading...</h2>
+        {/* Grid */}
+        <div className="hp-grid">
+
+          {/* Row 1: Study Chess + Community */}
+          <div className="hp-row">
+            <div className="hp-section">
+              <p className="hp-section-label">Study Chess</p>
+              <div className="hp-cards">
+                <HpCard
+                  to="/workspace/private"
+                  icon={<LayersIcon width={28} height={28} />}
+                  label="WORKSPACE"
+                  tooltip="Your online chessbase — share, organize your chess study"
+                />
+                <HpCard
+                  to="/play"
+                  icon={<TargetIcon width={28} height={28} />}
+                  label="GAMES"
+                  tooltip="Not just chess games — have to be out of your expectation!"
+                />
               </div>
-            ) : isAuthed ? (
-              <div className="stats-container">
-                <h2 className="stats-title">
-                  Track your progress!
-                </h2>
+            </div>
 
-                <div className="stats-layout">
-                  <div className="stat-item-compact">
-                    <div className="stat-icon-compact">⏱️</div>
-                    <div className="stat-content-compact">
-                      <p className="stat-label">Study Time</p>
-                      <p className="stat-value-large">{displayHours}h</p>
-                    </div>
-                  </div>
-
-                  <div className="stat-item-compact">
-                    <div className="stat-icon-compact">♟️</div>
-                    <div className="stat-content-compact">
-                      <p className="stat-label">Moves</p>
-                      <p className="stat-value-large">{statistics.total_moves_count}</p>
-                    </div>
-                  </div>
-                </div>
+            <div className="hp-section">
+              <p className="hp-section-label">Community</p>
+              <div className="hp-cards">
+                <HpCard
+                  to="/blogs"
+                  icon={<ReaderIcon width={28} height={28} />}
+                  label="BLOGS"
+                  tooltip="Read and share chess articles, analysis, and ideas"
+                />
+                <HpCard
+                  href="https://catachat.catachess.com"
+                  icon={<ChatBubbleIcon width={28} height={28} />}
+                  label="CATACHAT"
+                  tooltip="Chat with the chess community in real time"
+                />
               </div>
-            ) : (
-              <div className="stats-container stats-container-login" onClick={() => navigate('/login')}>
-                <h2 className="stats-title">
-                  Start via login!
-                </h2>
-                <div className="login-message">
-                  <p className="login-text">Your best option for chess studying!</p>
-                </div>
-              </div>
-            )}
-          </div>
-
-          )}
-          {/* Quick Start Cards */}
-          <div className="quick-start-grid">
-            {/* Go to Workspace */}
-            <Link to="/workspace/private" className="quick-start-card">
-              <div className="card-icon">📁</div>
-              <h3 className="card-title">Go to Workspace</h3>
-              <p className="card-description">
-                Access your chess studies and analysis workspace
-              </p>
-            </Link>
-
-            {/* Translate Material */}
-            <Link to="/translate" className="quick-start-card">
-              <div className="card-icon">🌐</div>
-              <h3 className="card-title">Translate Material</h3>
-              <p className="card-description">
-                Translate chess notation and terminology
-              </p>
-            </Link>
-
-            {/* View Blogs */}
-            <Link to="/blogs" className="quick-start-card">
-              <div className="card-icon">📝</div>
-              <h3 className="card-title">View Blogs</h3>
-              <p className="card-description">
-                Read chess articles and analysis
-              </p>
-            </Link>
-
-            {/* Prepare Against Opponent - Placeholder */}
-            <div className="quick-start-card quick-start-card-disabled">
-              <div className="card-icon">🎯</div>
-              <h3 className="card-title">Prepare Against Opponent</h3>
-              <p className="card-description">
-                Coming soon: Analyze opponent games and prepare openings
-              </p>
-              <span className="card-badge">Coming Soon</span>
             </div>
           </div>
+
+          {/* Row 2: HUGE Database + Coach Tools */}
+          <div className="hp-row">
+            <div className="hp-section">
+              <p className="hp-section-label">HUGE Database</p>
+              <div className="hp-cards">
+                <HpCard
+                  to="/players"
+                  icon={<MagnifyingGlassIcon width={28} height={28} />}
+                  label="SEARCH PLAYERS"
+                  tooltip="Explore any player's game history and statistics"
+                />
+                <HpCard
+                  to="/analysis?tab=explorer"
+                  icon={<BarChartIcon width={28} height={28} />}
+                  label="ANALYSIS"
+                  tooltip="Dive into millions of games with the opening explorer"
+                />
+              </div>
+            </div>
+
+            <div className="hp-section">
+              <p className="hp-section-label">Coach Tools</p>
+              <div className="hp-cards">
+                <HpCard
+                  icon={<DesktopIcon width={28} height={28} />}
+                  label="CLASSROOM"
+                  tooltip=""
+                  disabled
+                />
+                <HpCard
+                  icon={<PersonIcon width={28} height={28} />}
+                  label="STUDENTS"
+                  tooltip=""
+                  disabled
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Powerful Utils — commented out */}
+          {/*
+          <div className="hp-section">
+            <p className="hp-section-label">Powerful Utils</p>
+            <div className="hp-cards">
+              <HpCard
+                to="/translate"
+                icon={<GlobeIcon width={28} height={28} />}
+                label="TRANSLATE"
+                tooltip="Translate chess notation and study material instantly"
+              />
+            </div>
+          </div>
+          */}
+
         </div>
       </div>
     </div>

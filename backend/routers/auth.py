@@ -86,7 +86,7 @@ class RegisterRequest(BaseModel):
     identifier: str
     identifier_type: str = "email"
     password: str
-    username: str | None = None
+    username: str
     # SECURITY: role is NOT accepted from client - all new users are students
     # Teacher role must be assigned by administrators after registration
 

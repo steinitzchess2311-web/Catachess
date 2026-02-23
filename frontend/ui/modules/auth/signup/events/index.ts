@@ -74,7 +74,7 @@ export function initSignup(container: HTMLElement) {
                 identifier: userEmail,
                 identifier_type: 'email',
                 password: password,
-                username: username || undefined
+                username: username
             });
             
             showStep2();

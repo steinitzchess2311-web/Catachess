@@ -64,7 +64,6 @@ const HomePage: React.FC = () => {
 
         <div className="home-content">
           {false && (
-          {/* Left Section - Study Statistics */}
           <div className="left-section">
             {loading ? (
               <div className="stats-container">

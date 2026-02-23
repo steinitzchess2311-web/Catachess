@@ -110,7 +110,10 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
     setLoading(true);
     setNotFound(false);
     fetchPublicProfile(cleanUsername)
-      .then(setProfile)
+      .then((data) => {
+        setProfile(data);
+        setNotFound(false);
+      })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false));
   }, [cleanUsername]);

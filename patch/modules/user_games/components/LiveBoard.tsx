@@ -10,7 +10,7 @@
 
 import React, { useCallback, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
-import { useBoardSize } from '../../board/useBoardSize';
+import { useBoardSize } from '@patch/board/useBoardSize';
 import type { PlayerColor } from '../types';
 
 interface LiveBoardProps {

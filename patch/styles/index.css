@@ -1,4 +1,5 @@
 /* Patch Study Page Styles */
+@import "../modules/user_games/user_games.css";
 
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateX(6px); }
@@ -1892,4 +1893,3 @@
   flex: 1;
   min-width: 0;
 }
-@import "../modules/user_games/user_games.css";

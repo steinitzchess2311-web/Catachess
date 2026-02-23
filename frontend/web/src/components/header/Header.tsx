@@ -155,7 +155,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
               <Link to="/board-editor" className="nav-dropdown-item">Board Editor</Link>
             </div>
           </div>
-          <Link to="/sponsorship" className="nav-link" style={{ color: '#ff8c00', fontWeight: 600 }}>Sponsorship</Link>
+          {/* <Link to="/sponsorship" className="nav-link" style={{ color: '#ff8c00', fontWeight: 600 }}>Sponsorship</Link> */}
         </nav>
       </div>
       <div className="header-right">

@@ -516,7 +516,7 @@ function Layout() {
             element={<PlayersIndex />}
           />
           <Route
-            path="/players/:id"
+            path="/players1/:id"
             element={
               <Protected>
                 <PlayerDetail />

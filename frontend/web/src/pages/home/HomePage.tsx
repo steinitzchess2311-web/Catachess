@@ -63,6 +63,7 @@ const HomePage: React.FC = () => {
         </div>
 
         <div className="home-content">
+          {false && (
           {/* Left Section - Study Statistics */}
           <div className="left-section">
             {loading ? (
@@ -105,6 +106,7 @@ const HomePage: React.FC = () => {
             )}
           </div>
 
+          )}
           {/* Right Section - Quick Start */}
           <div className="right-section">
             <div className="quick-start-container">

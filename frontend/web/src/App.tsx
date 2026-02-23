@@ -289,6 +289,8 @@ function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
 }
 
 const AccountPage = React.lazy(() => import("../AccountPage"));
+const PublicProfilePage = React.lazy(() => import("@patch/modules/user_profile").then(m => ({ default: m.PublicProfilePage })));
+const EditProfilePage = React.lazy(() => import("@patch/modules/user_profile").then(m => ({ default: m.EditProfilePage })));
 
 // ─── Chunk-load resilience ────────────────────────────────────────────────────
 
@@ -374,7 +376,8 @@ function DynamicIdRoute() {
   if (id && UUID_RE.test(id)) {
     return <PatchStudyPage />;
   }
-  return <AccountPage />;
+  // /@username → 公开资料页
+  return null;
 }
 
 function WorkspacePage() {
@@ -552,7 +555,13 @@ function Layout() {
           {/* Game viewer — must precede the /:id catch-all */}
           <Route path="/game/:id" element={<GameViewerPage />} />
 
-          {/* Root-level study (UUID) or username — distinguished at runtime */}
+          {/* 用户设置（编辑资料）— 需登录 */}
+          <Route path="/settings" element={<Protected><EditProfilePage currentUsername={username} /></Protected>} />
+
+          {/* 公开个人主页 /@username — 所有人可见 */}
+          <Route path="/@:username" element={<PublicProfilePage currentUsername={username} />} />
+
+          {/* Root-level study UUID — distinguished at runtime */}
           <Route path="/:id" element={<Protected><DynamicIdRoute /></Protected>} />
 
           <Route path="*" element={<div>404</div>} />

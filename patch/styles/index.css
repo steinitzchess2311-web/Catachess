@@ -1,5 +1,6 @@
 /* Patch Study Page Styles */
 @import "../modules/user_games/user_games.css";
+@import "../modules/user_profile/user_profile.css";
 
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateX(6px); }

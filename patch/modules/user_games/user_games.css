@@ -50,40 +50,23 @@
   padding: 0;
 }
 
-.ug-play-layout {
-  display: grid;
-  grid-template-columns: 380px 1fr;
-  gap: 0;
+/* 大厅居中布局（历史记录已移到个人主页）*/
+.ug-play-lobby-centered {
   flex: 1;
-  min-height: 0;
-  max-width: 1100px;
-  margin: 40px auto;
-  padding: 0 24px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.ug-play-lobby-col {
-  padding-right: 32px;
-  border-right: 1px solid #e8e8e4;
-}
-
-.ug-play-history-col {
-  padding-left: 32px;
   display: flex;
-  flex-direction: column;
-  gap: 0;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px 80px;
 }
 
-.ug-play-history-header {
-  margin-bottom: 16px;
-}
-
-.ug-play-history-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1a1a2e;
-  margin: 0;
+.ug-play-lobby-centered .ug-lobby {
+  width: 100%;
+  max-width: 440px;
+  background: #fff;
+  border: 1px solid #e8e8e4;
+  border-radius: 16px;
+  padding: 36px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
 }
 
 /* ================================================================

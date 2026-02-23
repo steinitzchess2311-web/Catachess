@@ -3,6 +3,9 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 export default defineConfig({
+  define: {
+    'process.env': {},
+  },
   plugins: [react()],
   resolve: {
     alias: {
@@ -15,7 +18,7 @@ export default defineConfig({
     dedupe: ["react", "react-dom", "react-router-dom", "chess.js", "react-chessboard"],
   },
   optimizeDeps: {
-    include: ["react", "react-dom", "react-router-dom", "chess.js", "react-chessboard"],
+    include: ["react", "react-dom", "react-router-dom", "chess.js", "react-chessboard", "@radix-ui/react-icons"],
   },
   server: {
     fs: {

@@ -13,7 +13,10 @@
 
 /* Welcome Section */
 .welcome-section {
-  padding-left: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 3rem;
   margin-bottom: 1.5rem;
   animation: fadeInDown 0.8s ease-out;
 }
@@ -54,7 +57,7 @@
 }
 
 .welcome-title {
-  font-size: 2.75rem;
+  font-size: 3.25rem;
   font-weight: 800;
   color: #2d1f5c;
   margin: 0;
@@ -66,7 +69,8 @@
 .welcome-taglines {
   display: flex;
   gap: 1.5rem;
-  padding-left: 0.25rem;
+  justify-content: center;
+  margin-bottom: 2.5rem;
 }
 
 .tagline-amateurs,
@@ -77,6 +81,15 @@
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.tagline-amateurs:hover,
+.tagline-coaches:hover {
+  opacity: 0.75;
+  text-decoration: underline;
 }
 
 .tagline-amateurs {
@@ -492,7 +505,7 @@
 @media (max-width: 768px) {
   .welcome-section {
     margin-bottom: 2rem;
-    padding-left: 1rem;
+    padding-top: 2rem;
   }
 
   .welcome-logo {
@@ -568,7 +581,7 @@
   }
 
   .welcome-section {
-    padding-left: 0.5rem;
+    padding-top: 1.5rem;
   }
 
   .welcome-logo {

@@ -59,8 +59,8 @@ const HomePage: React.FC = () => {
             <h1 className="welcome-title">Welcome to Catachess!</h1>
           </div>
           <div className="welcome-taglines">
-            <p className="tagline-amateurs">Best platform for amateurs</p>
-            <p className="tagline-coaches">Best choice for Coaches</p>
+            <Link to="/about" className="tagline-amateurs">Best platform for amateurs</Link>
+            <Link to="/about" className="tagline-coaches">Best choice for Coaches</Link>
           </div>
         </div>
 

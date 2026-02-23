@@ -147,6 +147,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
           <Link to="/workspace/private" className="nav-link">Workspace</Link>
           <Link to="/translate" className="nav-link">Translator</Link>
           <Link to="/blogs" className="nav-link">Blogs</Link>
+          <Link to="/players" className="nav-link">Players</Link>
           <div className="nav-dropdown">
             <span className="nav-link nav-link--dropdown">Analysis</span>
             <div className="nav-dropdown-menu">

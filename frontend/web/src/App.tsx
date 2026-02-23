@@ -38,7 +38,7 @@ const AboutPage = React.lazy(() => import("./pages/aboutPage/AboutPage"));
 const BlogsPage = React.lazy(() => import("./pages/BlogsPage"));
 const SponsorshipPage = React.lazy(() => import("./pages/SponsorshipPage/SponsorshipPage"));
 const TranslatePage = React.lazy(() => import("./pages/translate"));
-const PlayersIndex = React.lazy(() => import("@patch/modules/tagger/pages/PlayersIndex"));
+const PlayersIndex = React.lazy(() => import("@patch/modules/player/PlayerPage"));
 const PlayerDetail = React.lazy(() => import("@patch/modules/tagger/pages/PlayerDetail"));
 const PatchStudyPage = React.lazy(() => import("@patch/PatchStudyPage").then(m => ({ default: m.PatchStudyPage })));
 const GameViewerPage = React.lazy(() => import("@patch/game/GameViewerPage").then(m => ({ default: m.GameViewerPage })));
@@ -513,11 +513,7 @@ function Layout() {
           <Route path="/translate" element={<TranslatePage />} />
           <Route
             path="/players"
-            element={
-              <Protected>
-                <PlayersIndex />
-              </Protected>
-            }
+            element={<PlayersIndex />}
           />
           <Route
             path="/players/:id"

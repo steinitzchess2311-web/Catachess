@@ -1,15 +1,21 @@
 /**
- * DraftTree.tsx - Editable draft move tree for train mode.
+ * DraftTree.tsx - Draft move tree for train mode.
  *
- * Mirrors MoveBranch/MoveItem pattern from movetree.tsx but with:
- * - Inline input at leaf nodes for adding moves
- * - Delete button per node
- * - Comment textarea per node
- * - Real-time move validation (green/red border)
+ * Layout mirrors study movetree.tsx:
+ *   - White/black paired grid (2-column)
+ *   - Variation indentation with collapse/expand
+ *
+ * Key differences from movetree:
+ *   - Uses DraftNode (local state), no useStudy() context
+ *   - No cursor navigation
+ *   - '+' on non-leaf nodes opens a MoveInput for adding a variation
+ *   - Always-visible MoveInput at each branch leaf for extending the line
+ *   - '×' delete button on every node
+ *   - Root-level '+' button for adding alternative first moves
  */
 
-import React, { useState, useCallback, useRef } from 'react';
-import type { DraftNode, UseDraftTreeReturn } from './useDraftTree';
+import React, { useState, useCallback } from 'react';
+import type { DraftNode, UseDraftTreeReturn, AddMoveResult } from './useDraftTree';
 import { validateMove } from '../../chessJS/replay';
 import { getStartPlyFromFen } from './trainUtils';
 
@@ -18,25 +24,22 @@ import { getStartPlyFromFen } from './trainUtils';
 interface MoveInputProps {
   parentId: string;
   parentFen: string;
-  onConfirm: (parentId: string, san: string) => { ok: boolean; san: string | null; error: string | null };
+  onConfirm: (parentId: string, san: string) => AddMoveResult;
+  onCancel?: () => void;
+  autoFocus?: boolean;
 }
 
-function MoveInput({ parentId, parentFen, onConfirm }: MoveInputProps) {
+function MoveInput({ parentId, parentFen, onConfirm, onCancel, autoFocus = false }: MoveInputProps) {
   const [value, setValue] = useState('');
   const [isValid, setIsValid] = useState<boolean | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  const validate = useCallback((san: string) => {
-    if (!san.trim()) {
-      setIsValid(null);
-      setErrorMsg(null);
-      return;
-    }
+  const validate = (san: string) => {
+    if (!san.trim()) { setIsValid(null); setErrorMsg(null); return; }
     const result = validateMove(parentFen, san.trim());
     setIsValid(result.valid);
     setErrorMsg(result.valid ? null : (result.error || 'Invalid move'));
-  }, [parentFen]);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
@@ -63,6 +66,7 @@ function MoveInput({ parentId, parentFen, onConfirm }: MoveInputProps) {
       setValue('');
       setIsValid(null);
       setErrorMsg(null);
+      onCancel?.();
     }
   };
 
@@ -71,7 +75,8 @@ function MoveInput({ parentId, parentFen, onConfirm }: MoveInputProps) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
       <input
-        ref={inputRef}
+        // eslint-disable-next-line jsx-a11y/no-autofocus
+        autoFocus={autoFocus}
         type="text"
         value={value}
         onChange={handleChange}
@@ -89,7 +94,10 @@ function MoveInput({ parentId, parentFen, onConfirm }: MoveInputProps) {
         }}
       />
       {errorMsg && (
-        <span style={{ fontSize: 11, color: '#dc2626', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={errorMsg}>
+        <span
+          style={{ fontSize: 11, color: '#dc2626', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          title={errorMsg}
+        >
           {errorMsg}
         </span>
       )}
@@ -97,200 +105,490 @@ function MoveInput({ parentId, parentFen, onConfirm }: MoveInputProps) {
   );
 }
 
-// ─── DraftNodeItem ────────────────────────────────────────────────────────────
+// ─── DraftMoveItem ────────────────────────────────────────────────────────────
 
-interface DraftNodeItemProps {
+interface DraftMoveItemProps {
   nodeId: string;
   nodes: Record<string, DraftNode>;
-  nodeFen: Map<string, string>;
-  prefix: string;
-  depth: number;
-  onAddMove: (parentId: string, san: string) => { ok: boolean; san: string | null; error: string | null };
+  isMainline: boolean;
+  prefix?: string;
   onDelete: (nodeId: string) => void;
-  onSetComment: (nodeId: string, comment: string) => void;
+  /** Called when user clicks '+'; pass nodeId to open variation input for this node */
+  onAddVariation: (nodeId: string) => void;
 }
 
-function DraftNodeItem({
+function DraftMoveItem({
   nodeId,
   nodes,
-  nodeFen,
-  prefix,
-  depth,
-  onAddMove,
+  isMainline,
+  prefix = '',
   onDelete,
-  onSetComment,
-}: DraftNodeItemProps) {
+  onAddVariation,
+}: DraftMoveItemProps) {
   const node = nodes[nodeId];
   if (!node) return null;
 
-  const [showComment, setShowComment] = useState(false);
-  const currentFen = nodeFen.get(nodeId) ?? '';
   const isLeaf = node.children.length === 0;
 
   return (
-    <div style={{ marginLeft: depth > 0 ? 12 : 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-        {/* Move badge */}
-        <span
-          style={{
-            padding: '2px 6px',
-            borderRadius: 3,
-            backgroundColor: '#eff6ff',
-            color: '#2563eb',
-            fontWeight: 600,
-            fontFamily: 'monospace',
-            fontSize: 13,
-            border: '1px solid #bfdbfe',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {prefix}{node.san}
-        </span>
+    <div
+      className="move-item"
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 2,
+        padding: '1px 2px',
+        margin: '1px',
+        borderRadius: 3,
+        whiteSpace: 'nowrap',
+      }}
+    >
+      {/* Move text */}
+      <span
+        style={{
+          padding: '2px 5px',
+          borderRadius: 3,
+          fontWeight: isMainline ? 'bold' : 'normal',
+          color: isMainline ? '#000' : '#444',
+          userSelect: 'none',
+        }}
+      >
+        {prefix && <span style={{ marginRight: 3 }}>{prefix}</span>}
+        <span>{node.san}</span>
+        {node.comment && (
+          <span style={{ marginLeft: 3, opacity: 0.6 }} title={node.comment}>💬</span>
+        )}
+      </span>
 
-        {/* Comment toggle */}
+      {/* + button: add variation from this node's resulting position (non-leaf only) */}
+      {!isLeaf && (
         <button
           type="button"
-          onClick={() => setShowComment((v) => !v)}
-          title={showComment ? 'Hide comment' : 'Add/edit comment'}
-          style={iconBtnStyle}
-        >
-          {node.comment ? '💬' : '+'}
-        </button>
-
-        {/* Delete button */}
-        <button
-          type="button"
-          onClick={() => onDelete(nodeId)}
-          title="Delete this move and subtree"
-          style={{ ...iconBtnStyle, color: '#dc2626' }}
-        >
-          ×
-        </button>
-      </div>
-
-      {/* Inline comment */}
-      {showComment && (
-        <textarea
-          value={node.comment}
-          onChange={(e) => onSetComment(nodeId, e.target.value)}
-          placeholder="Add a comment..."
-          rows={2}
+          title="Add variation from this position"
+          onClick={() => onAddVariation(nodeId)}
           style={{
-            marginTop: 4,
-            width: '100%',
-            maxWidth: 260,
-            fontSize: 12,
-            padding: '3px 6px',
-            borderRadius: 3,
+            padding: '0 4px',
+            fontSize: 11,
+            lineHeight: '16px',
             border: '1px solid #d1d5db',
-            resize: 'vertical',
+            borderRadius: 3,
+            background: '#f9fafb',
+            color: '#6b7280',
+            cursor: 'pointer',
           }}
-        />
+        >
+          +
+        </button>
       )}
 
-      {/* Children */}
-      {node.children.map((childId, idx) => {
-        const childNode = nodes[childId];
-        if (!childNode) return null;
-        const childPrefix = idx === 0 ? '' : '(var) ';
-        return (
-          <DraftNodeItem
-            key={childId}
-            nodeId={childId}
-            nodes={nodes}
-            nodeFen={nodeFen}
-            prefix={childPrefix}
-            depth={depth + 1}
-            onAddMove={onAddMove}
-            onDelete={onDelete}
-            onSetComment={onSetComment}
-          />
-        );
-      })}
-
-      {/* Input at leaf nodes */}
-      {isLeaf && currentFen && (
-        <div style={{ marginLeft: depth > 0 ? 12 : 0, marginTop: 2 }}>
-          <MoveInput
-            parentId={nodeId}
-            parentFen={currentFen}
-            onConfirm={onAddMove}
-          />
-        </div>
-      )}
+      {/* × delete button */}
+      <button
+        type="button"
+        title="Delete this move and all following moves in this branch"
+        onClick={() => onDelete(nodeId)}
+        style={{
+          padding: '0 4px',
+          fontSize: 11,
+          lineHeight: '16px',
+          border: '1px solid #fca5a5',
+          borderRadius: 3,
+          background: '#fef2f2',
+          color: '#dc2626',
+          cursor: 'pointer',
+        }}
+      >
+        ×
+      </button>
     </div>
   );
 }
 
-const iconBtnStyle: React.CSSProperties = {
-  padding: '1px 5px',
-  border: '1px solid #d1d5db',
-  borderRadius: 3,
-  background: 'white',
-  cursor: 'pointer',
-  fontSize: 12,
-  lineHeight: 1.4,
-};
+// ─── DraftMoveBranch ─────────────────────────────────────────────────────────
 
-// ─── DraftTree (root) ─────────────────────────────────────────────────────────
+interface DraftMoveBranchProps {
+  startNodeId: string;
+  nodes: Record<string, DraftNode>;
+  nodeFen: Map<string, string>;
+  depth: number;
+  startPly: number;
+  isMainline: boolean;
+  collapsedVariations: Set<string>;
+  activeInputId: string | null;
+  onToggleVariation: (nodeId: string) => void;
+  onAddMove: (parentId: string, san: string) => AddMoveResult;
+  onDelete: (nodeId: string) => void;
+  onSetActiveInput: (nodeId: string | null) => void;
+}
+
+function DraftMoveBranch({
+  startNodeId,
+  nodes,
+  nodeFen,
+  depth,
+  startPly,
+  isMainline,
+  collapsedVariations,
+  activeInputId,
+  onToggleVariation,
+  onAddMove,
+  onDelete,
+  onSetActiveInput,
+}: DraftMoveBranchProps) {
+  if (!startNodeId || !nodes[startNodeId]) return null;
+
+  /**
+   * Renders existing variation children of nodeId (children[1..n]) plus,
+   * if activeInputId === nodeId, a MoveInput for adding a new variation.
+   */
+  const renderVariationsWithInput = (nodeId: string, ply: number) => {
+    const node = nodes[nodeId];
+    const variationIds = node?.children.slice(1) ?? [];
+    const hasActiveInput = activeInputId === nodeId;
+    const parentFen = nodeFen.get(nodeId);
+
+    if (variationIds.length === 0 && !hasActiveInput) return null;
+
+    return (
+      <div
+        key={`vars-${nodeId}`}
+        className="variations"
+        style={{
+          fontSize: '12.6px',
+          color: '#555',
+          marginTop: '4px',
+          marginBottom: '4px',
+          borderLeft: '2px solid #ddd',
+          paddingLeft: '8px',
+          marginLeft: '12px',
+        }}
+      >
+        {variationIds.map((vId) => (
+          <div key={vId} className="variation-wrapper" style={{ marginBottom: '4px' }}>
+            <button
+              type="button"
+              onClick={() => onToggleVariation(vId)}
+              style={{
+                marginRight: '6px',
+                padding: '0 6px',
+                border: '1px solid #ccc',
+                background: '#fff',
+                cursor: 'pointer',
+              }}
+            >
+              {collapsedVariations.has(vId) ? '+' : '-'}
+            </button>
+            <span style={{ color: '#888', marginRight: '4px' }}>(variation)</span>
+            {!collapsedVariations.has(vId) && (
+              <DraftMoveBranch
+                startNodeId={vId}
+                nodes={nodes}
+                nodeFen={nodeFen}
+                depth={depth + 1}
+                startPly={ply}
+                isMainline={false}
+                collapsedVariations={collapsedVariations}
+                activeInputId={activeInputId}
+                onToggleVariation={onToggleVariation}
+                onAddMove={onAddMove}
+                onDelete={onDelete}
+                onSetActiveInput={onSetActiveInput}
+              />
+            )}
+          </div>
+        ))}
+
+        {hasActiveInput && parentFen && (
+          <div style={{ marginTop: 4 }}>
+            <MoveInput
+              parentId={nodeId}
+              parentFen={parentFen}
+              autoFocus
+              onConfirm={(pid, san) => {
+                const result = onAddMove(pid, san);
+                if (result.ok) onSetActiveInput(null);
+                return result;
+              }}
+              onCancel={() => onSetActiveInput(null)}
+            />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const lines: React.ReactNode[] = [];
+  const lineStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: 'max-content max-content',
+    gap: '6px',
+    marginBottom: '4px',
+    alignItems: 'center',
+  };
+
+  let currentId: string | null = startNodeId;
+  let ply = startPly;
+  let lastId: string | null = null;
+
+  while (currentId) {
+    const currentNode = nodes[currentId];
+    if (!currentNode) break;
+
+    lastId = currentId;
+    const isWhite = ply % 2 === 1;
+    const moveNumber = Math.floor((ply + 1) / 2);
+
+    if (isWhite) {
+      const whiteNode = currentNode;
+      const blackId = whiteNode.children[0] || null;
+      const blackNode = blackId ? nodes[blackId] : null;
+
+      if (blackNode) {
+        // White + black pair
+        lines.push(
+          <div key={`line-pair-${currentId}`} className="move-line" style={lineStyle}>
+            <DraftMoveItem
+              nodeId={whiteNode.id}
+              nodes={nodes}
+              isMainline={isMainline}
+              prefix={`${moveNumber}.`}
+              onDelete={onDelete}
+              onAddVariation={onSetActiveInput}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <DraftMoveItem
+                nodeId={blackNode.id}
+                nodes={nodes}
+                isMainline={isMainline}
+                prefix={`${moveNumber}...`}
+                onDelete={onDelete}
+                onAddVariation={onSetActiveInput}
+              />
+            </div>
+          </div>
+        );
+        lines.push(renderVariationsWithInput(whiteNode.id, ply + 1));
+        lines.push(renderVariationsWithInput(blackNode.id, ply + 2));
+
+        lastId = blackNode.id;
+        currentId = blackNode.children[0] || null;
+        ply += 2;
+      } else {
+        // White is leaf of mainline
+        lines.push(
+          <div key={`line-white-${currentId}`} className="move-line" style={lineStyle}>
+            <DraftMoveItem
+              nodeId={whiteNode.id}
+              nodes={nodes}
+              isMainline={isMainline}
+              prefix={`${moveNumber}.`}
+              onDelete={onDelete}
+              onAddVariation={onSetActiveInput}
+            />
+            <div />
+          </div>
+        );
+        lines.push(renderVariationsWithInput(whiteNode.id, ply + 1));
+        currentId = null;
+      }
+    } else {
+      // Starts with black (odd startPly)
+      const blackNode = currentNode;
+      lines.push(
+        <div key={`line-black-${currentId}`} className="move-line" style={lineStyle}>
+          <div />
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <DraftMoveItem
+              nodeId={blackNode.id}
+              nodes={nodes}
+              isMainline={isMainline}
+              prefix={`${moveNumber}...`}
+              onDelete={onDelete}
+              onAddVariation={onSetActiveInput}
+            />
+          </div>
+        </div>
+      );
+      lines.push(renderVariationsWithInput(blackNode.id, ply + 1));
+      currentId = blackNode.children[0] || null;
+      ply += 1;
+    }
+  }
+
+  // Always-visible MoveInput at the leaf of this branch
+  if (lastId) {
+    const lastNode = nodes[lastId];
+    const isLeaf = lastNode && lastNode.children.length === 0;
+    const leafFen = nodeFen.get(lastId);
+    if (isLeaf && leafFen) {
+      lines.push(
+        <div key={`leaf-input-${lastId}`} style={{ marginTop: 4 }}>
+          <MoveInput
+            parentId={lastId}
+            parentFen={leafFen}
+            onConfirm={onAddMove}
+          />
+        </div>
+      );
+    }
+  }
+
+  return (
+    <div className="move-branch" style={{ marginLeft: depth > 0 ? '12px' : '0' }}>
+      {lines}
+    </div>
+  );
+}
+
+// ─── DraftTree ────────────────────────────────────────────────────────────────
 
 export interface DraftTreeProps {
   draft: UseDraftTreeReturn;
 }
 
 export function DraftTree({ draft }: DraftTreeProps) {
-  const { nodes, nodeFen, rootId, startFen, addMove, setComment, deleteNode } = draft;
+  const [collapsedVariations, setCollapsedVariations] = useState<Set<string>>(new Set());
+  const [activeInputId, setActiveInputId] = useState<string | null>(null);
+
+  const { nodes, nodeFen, rootId, startFen, addMove, deleteNode } = draft;
   const root = nodes[rootId];
   const rootFen = nodeFen.get(rootId) ?? startFen;
   const startPly = getStartPlyFromFen(startFen);
 
+  const toggleVariation = useCallback((nodeId: string) => {
+    setCollapsedVariations((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) next.delete(nodeId);
+      else next.add(nodeId);
+      return next;
+    });
+  }, []);
+
   if (!root) return null;
 
-  // Root has no SAN — show inline input for first move
-  const hasChildren = root.children.length > 0;
+  // Empty tree: show initial MoveInput
+  if (root.children.length === 0) {
+    return (
+      <div style={{ padding: '8px', fontSize: 14, fontFamily: 'sans-serif' }}>
+        <MoveInput parentId={rootId} parentFen={rootFen} onConfirm={addMove} />
+        <p style={{ marginTop: 8, fontSize: 11, color: '#9ca3af' }}>
+          Type a move and press Enter to start your draft.
+        </p>
+      </div>
+    );
+  }
+
+  const hasRootAlternatives = root.children.length > 1;
 
   return (
-    <div style={{ padding: '8px', fontSize: 13, fontFamily: 'sans-serif' }}>
-      <div style={{ fontWeight: 600, marginBottom: 8, color: '#374151', borderBottom: '1px solid #e5e7eb', paddingBottom: 4 }}>
-        Draft Moves
+    <div style={{ padding: '8px', fontSize: 14, fontFamily: 'sans-serif', overflowY: 'auto' }}>
+
+      {/* Header with '+' button for alternative first moves */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 6,
+        paddingBottom: 4,
+        borderBottom: '1px solid #e5e7eb',
+      }}>
+        <span style={{ fontWeight: 600, color: '#374151', fontSize: 13 }}>Draft Moves</span>
+        <button
+          type="button"
+          title="Add alternative first move"
+          onClick={() => setActiveInputId((prev) => prev === rootId ? null : rootId)}
+          style={{
+            padding: '0 5px',
+            fontSize: 11,
+            lineHeight: '16px',
+            border: '1px solid #d1d5db',
+            borderRadius: 3,
+            background: activeInputId === rootId ? '#dbeafe' : '#f9fafb',
+            color: '#6b7280',
+            cursor: 'pointer',
+          }}
+        >
+          +
+        </button>
       </div>
 
-      {/* Children of root */}
-      {root.children.map((childId) => {
-        const childNode = nodes[childId];
-        if (!childNode) return null;
-        const isWhite = ((startPly - 1) % 2) === 0;
-        const moveNumber = Math.ceil(startPly / 2);
-        const prefix = isWhite ? `${moveNumber}. ` : `${moveNumber}... `;
-        return (
-          <DraftNodeItem
-            key={childId}
-            nodeId={childId}
-            nodes={nodes}
-            nodeFen={nodeFen}
-            prefix={prefix}
-            depth={0}
-            onAddMove={addMove}
-            onDelete={deleteNode}
-            onSetComment={setComment}
-          />
-        );
-      })}
+      {/* Root-level alternative first moves */}
+      {(hasRootAlternatives || activeInputId === rootId) && (
+        <div style={{
+          fontSize: '12.6px',
+          color: '#555',
+          marginBottom: '8px',
+          borderLeft: '2px solid #ddd',
+          paddingLeft: '8px',
+          marginLeft: '12px',
+        }}>
+          {root.children.slice(1).map((vId) => (
+            <div key={vId} style={{ marginBottom: 4 }}>
+              <button
+                type="button"
+                onClick={() => toggleVariation(vId)}
+                style={{
+                  marginRight: '6px',
+                  padding: '0 6px',
+                  border: '1px solid #ccc',
+                  background: '#fff',
+                  cursor: 'pointer',
+                }}
+              >
+                {collapsedVariations.has(vId) ? '+' : '-'}
+              </button>
+              <span style={{ color: '#888', marginRight: 4 }}>(variation)</span>
+              {!collapsedVariations.has(vId) && (
+                <DraftMoveBranch
+                  startNodeId={vId}
+                  nodes={nodes}
+                  nodeFen={nodeFen}
+                  depth={1}
+                  startPly={startPly}
+                  isMainline={false}
+                  collapsedVariations={collapsedVariations}
+                  activeInputId={activeInputId}
+                  onToggleVariation={toggleVariation}
+                  onAddMove={addMove}
+                  onDelete={deleteNode}
+                  onSetActiveInput={setActiveInputId}
+                />
+              )}
+            </div>
+          ))}
 
-      {/* Input for root (first move) when no children yet */}
-      {!hasChildren && (
-        <MoveInput
-          parentId={rootId}
-          parentFen={rootFen}
-          onConfirm={addMove}
-        />
+          {activeInputId === rootId && (
+            <div style={{ marginTop: 4 }}>
+              <MoveInput
+                parentId={rootId}
+                parentFen={rootFen}
+                autoFocus
+                onConfirm={(pid, san) => {
+                  const result = addMove(pid, san);
+                  if (result.ok) setActiveInputId(null);
+                  return result;
+                }}
+                onCancel={() => setActiveInputId(null)}
+              />
+            </div>
+          )}
+        </div>
       )}
 
-      {!hasChildren && (
-        <p style={{ marginTop: 8, fontSize: 11, color: '#9ca3af' }}>
-          Type a move and press Enter to add it to your draft.
-        </p>
-      )}
+      {/* Main line */}
+      <DraftMoveBranch
+        startNodeId={root.children[0]}
+        nodes={nodes}
+        nodeFen={nodeFen}
+        depth={0}
+        startPly={startPly}
+        isMainline={true}
+        collapsedVariations={collapsedVariations}
+        activeInputId={activeInputId}
+        onToggleVariation={toggleVariation}
+        onAddMove={addMove}
+        onDelete={deleteNode}
+        onSetActiveInput={setActiveInputId}
+      />
     </div>
   );
 }

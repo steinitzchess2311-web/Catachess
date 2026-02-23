@@ -58,31 +58,6 @@ export async function fetchMastersGames(
   return res.json();
 }
 
-export interface PlayerStatsResponse {
-  wins: number;
-  draws: number;
-  losses: number;
-  total: number;
-}
-
-/** /masters/stats — win/draw/loss counts from the player's perspective */
-export async function fetchMastersStats(
-  fen: string,
-  players: string[],
-  signal?: AbortSignal,
-): Promise<PlayerStatsResponse> {
-  const url = new URL(`${BASE}/masters/stats`);
-  url.searchParams.set('fen', fen);
-  players.forEach(p => url.searchParams.append('player', p));
-
-  const res = await fetch(url.toString(), { signal });
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    throw new Error(body?.detail ?? `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
 export async function fetchGame(id: string, signal?: AbortSignal): Promise<GameDetail> {
   const res = await fetch(`${BASE}/game/${id}`, { signal });
   if (!res.ok) {

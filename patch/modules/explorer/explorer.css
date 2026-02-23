@@ -223,16 +223,6 @@
   transition: width 0.25s ease;
 }
 
-/* Player-perspective win bar (wins / draws / losses) */
-.explorer-winbar--player .explorer-winbar__wins {
-  background: #5b7bff;
-  transition: width 0.25s ease;
-}
-
-.explorer-winbar--player .explorer-winbar__losses {
-  background: #e05555;
-  transition: width 0.25s ease;
-}
 
 /* ---- Move table ---------------------------------------------- */
 

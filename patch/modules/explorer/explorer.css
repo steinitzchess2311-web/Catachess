@@ -59,6 +59,22 @@
   flex-wrap: wrap;
 }
 
+/* When player filter is active, year inputs are paused (backend ignores them) */
+.explorer-filters--paused .explorer-filter-row {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.explorer-filter-paused-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  color: #5b7bff;
+  padding-top: 2px;
+  line-height: 1.4;
+}
+
 .explorer-filter-label {
   font-size: 11px;
   color: #999;

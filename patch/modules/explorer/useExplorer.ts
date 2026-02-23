@@ -41,7 +41,13 @@ export interface UseExplorerResult {
 
 const DEFAULT_MASTERS: MastersFilters = {};
 
-export function useExplorer(fen: string): UseExplorerResult {
+/**
+ * Fetches /masters for move stats + aggregate counts.
+ * When `players` is non-empty, all stats are scoped to those players.
+ * Year filters (since/until) are silently skipped when players are active
+ * (the backend ignores them in that mode anyway).
+ */
+export function useExplorer(fen: string, players: string[] = []): UseExplorerResult {
   const [mastersFilters, setMastersFilters] = useStoredState<MastersFilters>(
     'explorer.masters',
     DEFAULT_MASTERS,
@@ -55,7 +61,10 @@ export function useExplorer(fen: string): UseExplorerResult {
   const abortRef = useRef<AbortController | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const cacheKey = `masters:${fen}:${JSON.stringify(mastersFilters)}`;
+  // Cache key: fen + year filters (only relevant when no player filter) + players
+  const playersKey = players.join('\0');
+  const filtersKey = players.length === 0 ? JSON.stringify(mastersFilters) : '{}';
+  const cacheKey   = `masters:${fen}:${filtersKey}:${playersKey}`;
 
   useEffect(() => {
     if (!fen) return;
@@ -82,7 +91,7 @@ export function useExplorer(fen: string): UseExplorerResult {
       setLoading(true);
       setError(null);
 
-      fetchMasters(fen, mastersFilters, controller.signal)
+      fetchMasters(fen, mastersFilters, players, controller.signal)
         .then((result) => {
           cacheRef.current.set(cacheKey, result);
           setData(result);

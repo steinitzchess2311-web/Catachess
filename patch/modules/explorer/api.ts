@@ -12,13 +12,19 @@ export interface FetchMastersOptions {
 export async function fetchMasters(
   fen: string,
   filters: MastersFilters,
+  players: string[] = [],
   signal?: AbortSignal,
   options?: FetchMastersOptions,
 ): Promise<ExplorerResponse> {
   const url = new URL(`${BASE}/masters`);
   url.searchParams.set('fen', fen);
-  if (filters.since != null) url.searchParams.set('since', String(filters.since));
-  if (filters.until != null) url.searchParams.set('until', String(filters.until));
+  // player= filter (when present, backend ignores since/until)
+  players.forEach(p => url.searchParams.append('player', p));
+  // year filters — only sent when no player filter (backend ignores them otherwise)
+  if (players.length === 0) {
+    if (filters.since != null) url.searchParams.set('since', String(filters.since));
+    if (filters.until != null) url.searchParams.set('until', String(filters.until));
+  }
   if (options?.movesCount != null) url.searchParams.set('moves', String(options.movesCount));
   if (options?.topGames != null) url.searchParams.set('topGames', String(options.topGames));
 

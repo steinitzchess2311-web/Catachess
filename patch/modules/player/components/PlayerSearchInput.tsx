@@ -7,7 +7,10 @@ import { usePlayerAutocomplete } from '../hooks/usePlayerAutocomplete';
 import type { PlayerSuggestion } from '../types';
 
 interface Props {
-  onSearch: (name: string) => void;
+  /** Search button / Enter — goes to player list view */
+  onSearch: (query: string) => void;
+  /** Autocomplete item click — goes directly to games view */
+  onPickPlayer: (exactName: string) => void;
   initialValue?: string;
 }
 
@@ -17,7 +20,7 @@ function formatGames(n: number): string {
   return String(n);
 }
 
-export function PlayerSearchInput({ onSearch, initialValue = '' }: Props) {
+export function PlayerSearchInput({ onSearch, onPickPlayer, initialValue = '' }: Props) {
   const [input, setInput] = useState(initialValue);
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
@@ -43,14 +46,15 @@ export function PlayerSearchInput({ onSearch, initialValue = '' }: Props) {
     setOpen(input.length >= 2);
   }, [input]);
 
+  // Autocomplete item selected → go directly to games
   const commit = useCallback(
     (name: string) => {
       setInput(name);
       setOpen(false);
       setActiveIdx(-1);
-      onSearch(name);
+      onPickPlayer(name);
     },
-    [onSearch],
+    [onPickPlayer],
   );
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {

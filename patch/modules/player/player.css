@@ -274,18 +274,31 @@
   gap: 20px;
 }
 
+/* ---- 结果标题行 -------------------------------------------- */
+
+.ps-results-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ps-results-title--query {
+  justify-content: space-between;
+  font-size: 15px;
+  color: #475569;
+}
+
+.ps-results-title--query strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
 /* ---- 结果头部（棋手名 + 过滤器）------------------------------ */
 
 .ps-results-header {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.ps-results-title {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
 }
 
 .ps-results-player {
@@ -300,6 +313,124 @@
   color: #94a3b8;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---- 返回按钮 ----------------------------------------------- */
+
+.ps-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.12s;
+}
+
+.ps-back-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+  transform: translateX(-2px);
+}
+
+/* ================================================================
+   棋手卡片网格
+   ================================================================ */
+
+.ps-pgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.ps-pcard {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1.5px solid #f1f5f9;
+  border-radius: 14px;
+  padding: 16px 14px 16px 16px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  animation: ps-card-in 0.2s ease-out both;
+  transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.ps-pcard:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.09);
+  transform: translateY(-2px);
+}
+
+.ps-pcard__icon {
+  font-size: 22px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #334155;
+  line-height: 1;
+}
+
+.ps-pcard--skeleton .ps-pcard__icon {
+  font-size: 0;
+}
+
+.ps-pcard__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ps-pcard__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ps-pcard__games {
+  font-size: 12px;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
+}
+
+.ps-pcard__arrow {
+  color: #cbd5e1;
+  flex-shrink: 0;
+  transition: color 0.15s, transform 0.15s;
+}
+
+.ps-pcard:hover .ps-pcard__arrow {
+  color: #64748b;
+  transform: translateX(2px);
+}
+
+/* skeleton */
+.ps-pcard--skeleton {
+  pointer-events: none;
+  cursor: default;
+  animation: none;
+}
+
+.ps-skel--pname  { height: 13px; width: 120px; }
+.ps-skel--pgames { height: 11px; width: 60px; }
 
 /* ================================================================
    过滤器栏

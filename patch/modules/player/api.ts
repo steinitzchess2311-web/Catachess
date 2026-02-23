@@ -41,6 +41,9 @@ export async function fetchSearchGames(
   if (filters.playerResult) {
     url.searchParams.set('player_result', filters.playerResult);
   }
+  if (filters.colorResult) {
+    url.searchParams.set('result', filters.colorResult);
+  }
   if (filters.yearFrom) {
     url.searchParams.set('year_from', filters.yearFrom);
   }

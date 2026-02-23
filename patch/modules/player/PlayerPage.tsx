@@ -1,14 +1,18 @@
 // ============================================================
 // PlayerPage — master player search
 //
-// View state machine:
-//   idle     — nothing searched yet
-//   players  — showing player cards after a query
-//   games    — showing game list for a specific player
+// Routes:
+//   /players          — search / idle
+//   /players/:name    — game list for a specific player
+//                       (name = encodeURIComponent of DB name)
+//
+// Navigation uses React Router location.state to carry back-
+// navigation context so the search results are restored when
+// the user presses ← from a player's game list.
 // ============================================================
 
 import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import './player.css';
 import { PlayerSearchInput } from './components/PlayerSearchInput';
 import { PlayerCardGrid } from './components/PlayerCardGrid';
@@ -19,12 +23,19 @@ import { fetchPlayerSuggestions } from './api';
 import { DEFAULT_FILTERS } from './types';
 import type { SearchFilters, PlayerSuggestion } from './types';
 
-// ---- View state ----
+// ---- Location state shapes ----
+
+interface BackState {
+  prevQuery: string;
+  prevList: PlayerSuggestion[];
+}
+
+// ---- View state machine ----
 
 type ViewState =
   | { kind: 'idle' }
   | { kind: 'players'; query: string; list: PlayerSuggestion[]; loading: boolean }
-  | { kind: 'games';   player: string; prevQuery: string; prevList: PlayerSuggestion[] };
+  | { kind: 'games';   player: string };
 
 // ---- Hero illustration ----
 
@@ -151,17 +162,29 @@ function ExploreBar({ selectedNames, onClear, onExplore }: ExploreBarProps) {
 
 const PlayerPage: React.FC = () => {
   const navigate = useNavigate();
-  const [view, setView] = useState<ViewState>({ kind: 'idle' });
+  const { name: nameParam } = useParams<{ name?: string }>();
+  const location = useLocation();
+
+  // Lazy init: URL param → games view; location.state → restored search results
+  const [view, setView] = useState<ViewState>(() => {
+    if (nameParam) {
+      return { kind: 'games', player: decodeURIComponent(nameParam) };
+    }
+    const s = location.state as BackState | null;
+    if (s?.prevQuery) {
+      return { kind: 'players', query: s.prevQuery, list: s.prevList, loading: false };
+    }
+    return { kind: 'idle' };
+  });
+
   const [selectedNames, setSelectedNames] = useState<string[]>([]);
 
   // Search button / Enter → fetch player list
   const handleSearch = useCallback(async (query: string) => {
     const q = query.trim();
     if (!q) return;
-
     setView({ kind: 'players', query: q, list: [], loading: true });
     setSelectedNames([]);
-
     try {
       const data = await fetchPlayerSuggestions(q, 30);
       setView({ kind: 'players', query: q, list: data.players, loading: false });
@@ -170,36 +193,39 @@ const PlayerPage: React.FC = () => {
     }
   }, []);
 
-  // Autocomplete dropdown click → skip player list, go straight to games
+  // Navigate to a player's game list, carrying search context for back navigation
+  const goToPlayer = useCallback((name: string, backState?: BackState) => {
+    navigate('/players/' + encodeURIComponent(name), {
+      state: backState ?? null,
+    });
+  }, [navigate]);
+
+  // Autocomplete dropdown pick → go straight to games (no prior search results)
   const handlePickPlayer = useCallback((exactName: string) => {
-    setView(prev => ({
-      kind: 'games',
-      player: exactName,
-      prevQuery: prev.kind === 'players' ? prev.query : exactName,
-      prevList:  prev.kind === 'players' ? prev.list  : [],
-    }));
-  }, []);
+    goToPlayer(exactName);
+  }, [goToPlayer]);
 
-  // Player card body click → go to games for single player
+  // Player card body click → go to games, pass current results as back context
   const handleSelectPlayer = useCallback((name: string) => {
-    setView(prev => ({
-      kind: 'games',
-      player: name,
-      prevQuery: prev.kind === 'players' ? prev.query : name,
-      prevList:  prev.kind === 'players' ? prev.list  : [],
-    }));
-  }, []);
+    const backState: BackState | undefined =
+      view.kind === 'players'
+        ? { prevQuery: view.query, prevList: view.list }
+        : undefined;
+    goToPlayer(name, backState);
+  }, [view, goToPlayer]);
 
-  // Back button → restore player list
+  // Back button → restore search results if available, else go to /players
   const handleBack = useCallback(() => {
-    setView(prev =>
-      prev.kind === 'games'
-        ? { kind: 'players', query: prev.prevQuery, list: prev.prevList, loading: false }
-        : { kind: 'idle' },
-    );
-  }, []);
+    const s = location.state as BackState | null;
+    if (s?.prevQuery) {
+      // Navigate to /players and restore search results via location.state
+      navigate('/players', { state: s });
+    } else {
+      navigate('/players');
+    }
+  }, [navigate, location.state]);
 
-  // Toggle player name in multi-select
+  // Toggle player name in multi-select (for ExploreBar)
   const handleToggle = useCallback((name: string) => {
     setSelectedNames(prev =>
       prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name],

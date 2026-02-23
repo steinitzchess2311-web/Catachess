@@ -1,9 +1,9 @@
 // ============================================================
-// FilterBar — 颜色、结果、年份、排序过滤器
+// FilterBar — color, outcome, score, year, sort filters
 // ============================================================
 
 import React from 'react';
-import type { SearchFilters, ColorFilter, PlayerResult, SortOrder } from '../types';
+import type { SearchFilters, ColorFilter, PlayerResult, ColorResult, SortOrder } from '../types';
 
 interface Props {
   filters: SearchFilters;
@@ -16,11 +16,20 @@ const COLOR_OPTS: { value: ColorFilter; label: string }[] = [
   { value: 'black', label: 'Black' },
 ];
 
-const RESULT_OPTS: { value: PlayerResult | ''; label: string }[] = [
+// Player-perspective: did the player win/lose/draw?
+const OUTCOME_OPTS: { value: PlayerResult | ''; label: string }[] = [
   { value: '',      label: 'Any' },
   { value: 'win',   label: 'Win' },
   { value: 'loss',  label: 'Loss' },
   { value: 'draw',  label: 'Draw' },
+];
+
+// Color-perspective: which side won on the board?
+const SCORE_OPTS: { value: ColorResult | ''; label: string }[] = [
+  { value: '',       label: 'Any' },
+  { value: 'white',  label: '1–0' },
+  { value: 'black',  label: '0–1' },
+  { value: 'draw',   label: '½–½' },
 ];
 
 const SORT_OPTS: { value: SortOrder; label: string }[] = [
@@ -36,11 +45,11 @@ export function FilterBar({ filters, onChange }: Props) {
 
   return (
     <div className="ps-filter-bar">
-      {/* 颜色 chips */}
+      {/* Color chips */}
       <div className="ps-filter-group">
         <span className="ps-filter-label">Color</span>
         <div className="ps-chips">
-          {COLOR_OPTS.map((o) => (
+          {COLOR_OPTS.map(o => (
             <button
               key={o.value}
               className={`ps-chip${filters.color === o.value ? ' is-active' : ''}`}
@@ -52,11 +61,11 @@ export function FilterBar({ filters, onChange }: Props) {
         </div>
       </div>
 
-      {/* 结果 chips (棋手视角：Win / Loss / Draw) */}
+      {/* Outcome chips — player perspective (Win / Loss / Draw) */}
       <div className="ps-filter-group">
-        <span className="ps-filter-label">Result</span>
+        <span className="ps-filter-label">Outcome</span>
         <div className="ps-chips">
-          {RESULT_OPTS.map((o) => (
+          {OUTCOME_OPTS.map(o => (
             <button
               key={o.value}
               className={`ps-chip${filters.playerResult === o.value ? ' is-active' : ''}`}
@@ -68,7 +77,23 @@ export function FilterBar({ filters, onChange }: Props) {
         </div>
       </div>
 
-      {/* 年份范围 */}
+      {/* Score chips — color perspective (1–0 / 0–1 / ½–½) */}
+      <div className="ps-filter-group">
+        <span className="ps-filter-label">Score</span>
+        <div className="ps-chips">
+          {SCORE_OPTS.map(o => (
+            <button
+              key={o.value}
+              className={`ps-chip${filters.colorResult === o.value ? ' is-active' : ''}`}
+              onClick={() => set('colorResult', o.value as SearchFilters['colorResult'])}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Year range */}
       <div className="ps-filter-group">
         <span className="ps-filter-label">Year</span>
         <div className="ps-filter-years">
@@ -79,7 +104,7 @@ export function FilterBar({ filters, onChange }: Props) {
             min={1900}
             max={2030}
             value={filters.yearFrom}
-            onChange={(e) => set('yearFrom', e.target.value)}
+            onChange={e => set('yearFrom', e.target.value)}
           />
           <span className="ps-year-sep">—</span>
           <input
@@ -89,16 +114,16 @@ export function FilterBar({ filters, onChange }: Props) {
             min={1900}
             max={2030}
             value={filters.yearTo}
-            onChange={(e) => set('yearTo', e.target.value)}
+            onChange={e => set('yearTo', e.target.value)}
           />
         </div>
       </div>
 
-      {/* 排序 */}
+      {/* Sort */}
       <div className="ps-filter-group ps-filter-group--sort">
         <span className="ps-filter-label">Sort</span>
         <div className="ps-chips">
-          {SORT_OPTS.map((o) => (
+          {SORT_OPTS.map(o => (
             <button
               key={o.value}
               className={`ps-chip${filters.sort === o.value ? ' is-active' : ''}`}

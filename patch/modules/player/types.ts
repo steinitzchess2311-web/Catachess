@@ -29,22 +29,27 @@ export interface GamesListResponse {
   next_cursor: string | null;
 }
 
-export type SortOrder = 'elo_desc' | 'year_desc' | 'year_asc';
-export type ColorFilter = 'any' | 'white' | 'black';
+export type SortOrder    = 'elo_desc' | 'year_desc' | 'year_asc';
+export type ColorFilter  = 'any' | 'white' | 'black';
+/** Player-perspective result: did THIS player win / lose / draw? */
 export type PlayerResult = 'win' | 'loss' | 'draw';
+/** Color-perspective score: which side won on the board? */
+export type ColorResult  = 'white' | 'black' | 'draw';
 
 export interface SearchFilters {
-  color: ColorFilter;
-  playerResult: PlayerResult | '';
-  yearFrom: string;
-  yearTo: string;
-  sort: SortOrder;
+  color:        ColorFilter;
+  playerResult: PlayerResult | '';   // player_result= (AND with colorResult)
+  colorResult:  ColorResult  | '';   // result=        (AND with playerResult)
+  yearFrom:     string;
+  yearTo:       string;
+  sort:         SortOrder;
 }
 
 export const DEFAULT_FILTERS: SearchFilters = {
-  color: 'any',
+  color:        'any',
   playerResult: '',
-  yearFrom: '',
-  yearTo: '',
-  sort: 'elo_desc',
+  colorResult:  '',
+  yearFrom:     '',
+  yearTo:       '',
+  sort:         'elo_desc',
 };

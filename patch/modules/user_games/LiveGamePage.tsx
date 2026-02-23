@@ -10,6 +10,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Chess } from 'chess.js';
+import { abortGame } from './api';
 import { usePlayerId } from './hooks/useGuestId';
 import { useGameWs } from './hooks/useGameWs';
 import { LiveBoard } from './components/LiveBoard';
@@ -98,7 +99,6 @@ export function LiveGamePage({ username }: LiveGamePageProps) {
   // ---- 中止对局 ----------------------------------------------
   const handleAbort = useCallback(async () => {
     if (!gameId) return;
-    const { abortGame } = await import('./api');
     try {
       await abortGame(gameId, myId);
     } catch {

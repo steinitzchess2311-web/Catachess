@@ -14,6 +14,8 @@ import { exportPgn } from '../pgn/export';
 import { fetchGame } from '../modules/explorer/api';
 import type { GameDetail } from '../modules/explorer/types';
 import { uciMovesToTree } from './uciToTree';
+import { ExplorerPanel } from '../modules/explorer';
+import { TrainPanel, TrainEntryModal } from '../modules/train';
 
 // =============================================================================
 // Game info card — TWIC-style
@@ -240,10 +242,12 @@ function GameOutputBar({ game }: { game: GameDetail }) {
 // =============================================================================
 
 function GameViewerContent({ game }: { game: GameDetail }) {
-  const { loadTree } = useStudy();
+  const { state, loadTree, addMove, enterTrainMode } = useStudy();
   const layoutRef = useRef<HTMLDivElement>(null);
   const [rightbarWidth, setRightbarWidth] = useState(280);
   const [isResizing, setIsResizing] = useState(false);
+  const [rightPanelTab, setRightPanelTab] = useState<'tree' | 'explorer'>('tree');
+  const [showTrainModal, setShowTrainModal] = useState(false);
 
   const rightbarMin = 220;
   const rightbarMax = 520;
@@ -298,20 +302,65 @@ function GameViewerContent({ game }: { game: GameDetail }) {
         />
 
         <div className="patch-study-rightbar" style={{ width: rightbarWidth }}>
-          <div className="patch-right-panel">
-            <MoveTree />
-          </div>
+          {state.isTrainMode ? (
+            <TrainPanel />
+          ) : (
+            <div className="patch-right-panel">
+              <div className="patch-sidebar-tabs">
+                <button
+                  type="button"
+                  className={`patch-sidebar-tab${rightPanelTab === 'tree' ? ' is-active' : ''}`}
+                  onClick={() => setRightPanelTab('tree')}
+                >
+                  Moves
+                </button>
+                <button
+                  type="button"
+                  className={`patch-sidebar-tab${rightPanelTab === 'explorer' ? ' is-active' : ''}`}
+                  onClick={() => setRightPanelTab('explorer')}
+                >
+                  Explorer
+                </button>
+                <button
+                  type="button"
+                  className="patch-sidebar-tab"
+                  onClick={() => setShowTrainModal(true)}
+                >
+                  Train
+                </button>
+              </div>
+              <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
+                {rightPanelTab === 'tree' ? (
+                  <MoveTree />
+                ) : (
+                  <ExplorerPanel fen={state.currentFen} onMoveSelect={addMove} />
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Bottom output bar */}
-      <div className="patch-study-footer-row">
-        <div className="patch-study-footer-spacer" />
-        <div className="patch-study-footer-box">
-          <GameOutputBar game={game} />
+      {/* Bottom output bar — hidden in train mode */}
+      {!state.isTrainMode && (
+        <div className="patch-study-footer-row">
+          <div className="patch-study-footer-spacer" />
+          <div className="patch-study-footer-box">
+            <GameOutputBar game={game} />
+          </div>
+          <div className="patch-study-footer-spacer" />
         </div>
-        <div className="patch-study-footer-spacer" />
-      </div>
+      )}
+
+      {showTrainModal && (
+        <TrainEntryModal
+          onCancel={() => setShowTrainModal(false)}
+          onConfirm={() => {
+            setShowTrainModal(false);
+            enterTrainMode();
+          }}
+        />
+      )}
     </div>
   );
 }

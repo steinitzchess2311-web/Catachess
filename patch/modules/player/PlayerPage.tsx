@@ -244,7 +244,6 @@ const PlayerPage: React.FC = () => {
     <div className="ps-page">
       {/* Hero */}
       <div className="ps-hero">
-        <HeroIllustration />
         <div className="ps-hero-content">
           <p className="ps-hero-eyebrow">TWIC database - 4.6 million games</p>
           <h1 className="ps-hero-title">Search Players</h1>

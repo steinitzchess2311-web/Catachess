@@ -3,7 +3,7 @@
   align-items: center;
   justify-content: center;
   min-height: 80vh;
-  padding: 2rem 2rem 3rem;
+  padding: 1rem 2rem 3rem;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
 }
 
@@ -15,7 +15,7 @@
 /* Welcome Section */
 .welcome-section {
   padding-left: 3rem;
-  margin-bottom: 3rem;
+  margin-bottom: 1.5rem;
   animation: fadeInDown 0.8s ease-out;
 }
 
@@ -84,18 +84,8 @@
   color: #1a73e8;
 }
 
-.tagline-amateurs::before {
-  content: '♟';
-  font-size: 1.1rem;
-}
-
 .tagline-coaches {
   color: #d4af37;
-}
-
-.tagline-coaches::before {
-  content: '👑';
-  font-size: 1rem;
 }
 
 .home-content {

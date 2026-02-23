@@ -93,9 +93,10 @@ interface PublicProfilePageProps {
 }
 
 export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
-  const { username } = useParams<{ username: string }>();
+  // 路由参数名可能是 :username（旧）或 :id（当前 /:id 路由），兼容两种
+  const params = useParams<{ username?: string; id?: string }>();
   const navigate = useNavigate();
-  const cleanUsername = username?.replace(/^@/, '') ?? '';
+  const cleanUsername = (params.username ?? params.id ?? '').replace(/^@/, '');
 
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [loading, setLoading] = useState(true);

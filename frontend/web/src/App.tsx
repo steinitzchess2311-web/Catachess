@@ -370,13 +370,17 @@ function PageLoadingFallback() {
   );
 }
 
-function DynamicIdRoute() {
+// RR v6 不支持 /@:username 这种前缀动态段，所以 /@xxx 会命中 /:id。
+// 这里统一处理：UUID → 棋谱页（需登录），@username → 公开资料页，其余 → null
+function DynamicIdRoute({ currentUsername }: { currentUsername: string | null }) {
   const { id } = useParams<{ id: string }>();
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (id && UUID_RE.test(id)) {
-    return <PatchStudyPage />;
+    return <Protected><PatchStudyPage /></Protected>;
   }
-  // /@username → 公开资料页
+  if (id?.startsWith('@')) {
+    return <PublicProfilePage currentUsername={currentUsername} />;
+  }
   return null;
 }
 
@@ -558,11 +562,9 @@ function Layout() {
           {/* 用户设置（编辑资料）— 需登录 */}
           <Route path="/settings" element={<Protected><EditProfilePage currentUsername={username} /></Protected>} />
 
-          {/* 公开个人主页 /@username — 所有人可见 */}
-          <Route path="/@:username" element={<PublicProfilePage currentUsername={username} />} />
-
-          {/* Root-level study UUID — distinguished at runtime */}
-          <Route path="/:id" element={<Protected><DynamicIdRoute /></Protected>} />
+          {/* /:id — UUID → 棋谱页（需登录），@username → 公开资料页（无需登录）
+               RR v6 不支持 /@:username 形式，需在组件内分流 */}
+          <Route path="/:id" element={<DynamicIdRoute currentUsername={username} />} />
 
           <Route path="*" element={<div>404</div>} />
         </Routes>

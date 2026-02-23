@@ -106,49 +106,43 @@ const HomePage: React.FC = () => {
           </div>
 
           )}
-          {/* Right Section - Quick Start */}
-          <div className="right-section">
-            <div className="quick-start-container">
-              <h2 className="stats-title">Quick Start!</h2>
+          {/* Quick Start Cards */}
+          <div className="quick-start-grid">
+            {/* Go to Workspace */}
+            <Link to="/workspace/private" className="quick-start-card">
+              <div className="card-icon">📁</div>
+              <h3 className="card-title">Go to Workspace</h3>
+              <p className="card-description">
+                Access your chess studies and analysis workspace
+              </p>
+            </Link>
 
-              <div className="quick-start-grid">
-                {/* Go to Workspace */}
-                <Link to="/workspace/private" className="quick-start-card">
-                  <div className="card-icon">📁</div>
-                  <h3 className="card-title">Go to Workspace</h3>
-                  <p className="card-description">
-                    Access your chess studies and analysis workspace
-                  </p>
-                </Link>
+            {/* Translate Material */}
+            <Link to="/translate" className="quick-start-card">
+              <div className="card-icon">🌐</div>
+              <h3 className="card-title">Translate Material</h3>
+              <p className="card-description">
+                Translate chess notation and terminology
+              </p>
+            </Link>
 
-                {/* Translate Material */}
-                <Link to="/translate" className="quick-start-card">
-                  <div className="card-icon">🌐</div>
-                  <h3 className="card-title">Translate Material</h3>
-                  <p className="card-description">
-                    Translate chess notation and terminology
-                  </p>
-                </Link>
+            {/* View Blogs */}
+            <Link to="/blogs" className="quick-start-card">
+              <div className="card-icon">📝</div>
+              <h3 className="card-title">View Blogs</h3>
+              <p className="card-description">
+                Read chess articles and analysis
+              </p>
+            </Link>
 
-                {/* View Blogs */}
-                <Link to="/blogs" className="quick-start-card">
-                  <div className="card-icon">📝</div>
-                  <h3 className="card-title">View Blogs</h3>
-                  <p className="card-description">
-                    Read chess articles and analysis
-                  </p>
-                </Link>
-
-                {/* Prepare Against Opponent - Placeholder */}
-                <div className="quick-start-card quick-start-card-disabled">
-                  <div className="card-icon">🎯</div>
-                  <h3 className="card-title">Prepare Against Opponent</h3>
-                  <p className="card-description">
-                    Coming soon: Analyze opponent games and prepare openings
-                  </p>
-                  <span className="card-badge">Coming Soon</span>
-                </div>
-              </div>
+            {/* Prepare Against Opponent - Placeholder */}
+            <div className="quick-start-card quick-start-card-disabled">
+              <div className="card-icon">🎯</div>
+              <h3 className="card-title">Prepare Against Opponent</h3>
+              <p className="card-description">
+                Coming soon: Analyze opponent games and prepare openings
+              </p>
+              <span className="card-badge">Coming Soon</span>
             </div>
           </div>
         </div>

@@ -113,6 +113,7 @@ interface DraftMoveItemProps {
   isMainline: boolean;
   prefix?: string;
   onDelete: (nodeId: string) => void;
+  onSetComment: (nodeId: string, comment: string) => void;
   /** Called when user clicks '+'; pass nodeId to open variation input for this node */
   onAddVariation: (nodeId: string) => void;
 }
@@ -123,82 +124,121 @@ function DraftMoveItem({
   isMainline,
   prefix = '',
   onDelete,
+  onSetComment,
   onAddVariation,
 }: DraftMoveItemProps) {
   const node = nodes[nodeId];
+  const [showComment, setShowComment] = useState(false);
   if (!node) return null;
 
   const isLeaf = node.children.length === 0;
 
   return (
-    <div
-      className="move-item"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 2,
-        padding: '1px 2px',
-        margin: '1px',
-        borderRadius: 3,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {/* Move text */}
-      <span
+    <div className="move-item" style={{ margin: '1px 0' }}>
+      <div
         style={{
-          padding: '2px 5px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          padding: '1px 2px',
           borderRadius: 3,
-          fontWeight: isMainline ? 'bold' : 'normal',
-          color: isMainline ? '#000' : '#444',
-          userSelect: 'none',
+          whiteSpace: 'nowrap',
         }}
       >
-        {prefix && <span style={{ marginRight: 3 }}>{prefix}</span>}
-        <span>{node.san}</span>
-        {node.comment && (
-          <span style={{ marginLeft: 3, opacity: 0.6 }} title={node.comment}>💬</span>
-        )}
-      </span>
+        {/* Move text */}
+        <span
+          style={{
+            padding: '2px 5px',
+            borderRadius: 3,
+            fontWeight: isMainline ? 'bold' : 'normal',
+            color: isMainline ? '#000' : '#444',
+            userSelect: 'none',
+          }}
+        >
+          {prefix && <span style={{ marginRight: 3 }}>{prefix}</span>}
+          <span>{node.san}</span>
+        </span>
 
-      {/* + button: add variation from this node's resulting position (non-leaf only) */}
-      {!isLeaf && (
+        {/* Comment toggle button */}
         <button
           type="button"
-          title="Add variation from this position"
-          onClick={() => onAddVariation(nodeId)}
+          onClick={() => setShowComment((v) => !v)}
+          title={showComment ? 'Hide comment' : 'Add/edit comment'}
           style={{
             padding: '0 4px',
             fontSize: 11,
             lineHeight: '16px',
             border: '1px solid #d1d5db',
             borderRadius: 3,
-            background: '#f9fafb',
+            background: showComment ? '#fef9c3' : '#f9fafb',
             color: '#6b7280',
             cursor: 'pointer',
           }}
         >
-          +
+          {node.comment ? '💬' : '+'}
         </button>
-      )}
 
-      {/* × delete button */}
-      <button
-        type="button"
-        title="Delete this move and all following moves in this branch"
-        onClick={() => onDelete(nodeId)}
-        style={{
-          padding: '0 4px',
-          fontSize: 11,
-          lineHeight: '16px',
-          border: '1px solid #fca5a5',
-          borderRadius: 3,
-          background: '#fef2f2',
-          color: '#dc2626',
-          cursor: 'pointer',
-        }}
-      >
-        ×
-      </button>
+        {/* + button: add variation from this node's resulting position (non-leaf only) */}
+        {!isLeaf && (
+          <button
+            type="button"
+            title="Add variation from this position"
+            onClick={() => onAddVariation(nodeId)}
+            style={{
+              padding: '0 4px',
+              fontSize: 11,
+              lineHeight: '16px',
+              border: '1px solid #d1d5db',
+              borderRadius: 3,
+              background: '#f9fafb',
+              color: '#6b7280',
+              cursor: 'pointer',
+            }}
+          >
+            ⑂
+          </button>
+        )}
+
+        {/* × delete button */}
+        <button
+          type="button"
+          title="Delete this move and all following moves in this branch"
+          onClick={() => onDelete(nodeId)}
+          style={{
+            padding: '0 4px',
+            fontSize: 11,
+            lineHeight: '16px',
+            border: '1px solid #fca5a5',
+            borderRadius: 3,
+            background: '#fef2f2',
+            color: '#dc2626',
+            cursor: 'pointer',
+          }}
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Inline comment textarea */}
+      {showComment && (
+        <textarea
+          value={node.comment}
+          onChange={(e) => onSetComment(nodeId, e.target.value)}
+          placeholder="Add a comment..."
+          rows={2}
+          style={{
+            marginTop: 4,
+            width: '100%',
+            maxWidth: 260,
+            fontSize: 12,
+            padding: '3px 6px',
+            borderRadius: 3,
+            border: '1px solid #d1d5db',
+            resize: 'vertical',
+            display: 'block',
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -217,6 +257,7 @@ interface DraftMoveBranchProps {
   onToggleVariation: (nodeId: string) => void;
   onAddMove: (parentId: string, san: string) => AddMoveResult;
   onDelete: (nodeId: string) => void;
+  onSetComment: (nodeId: string, comment: string) => void;
   onSetActiveInput: (nodeId: string | null) => void;
 }
 
@@ -232,6 +273,7 @@ function DraftMoveBranch({
   onToggleVariation,
   onAddMove,
   onDelete,
+  onSetComment,
   onSetActiveInput,
 }: DraftMoveBranchProps) {
   if (!startNodeId || !nodes[startNodeId]) return null;
@@ -291,6 +333,7 @@ function DraftMoveBranch({
                 onToggleVariation={onToggleVariation}
                 onAddMove={onAddMove}
                 onDelete={onDelete}
+                onSetComment={onSetComment}
                 onSetActiveInput={onSetActiveInput}
               />
             )}
@@ -352,6 +395,7 @@ function DraftMoveBranch({
               isMainline={isMainline}
               prefix={`${moveNumber}.`}
               onDelete={onDelete}
+              onSetComment={onSetComment}
               onAddVariation={onSetActiveInput}
             />
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -382,6 +426,7 @@ function DraftMoveBranch({
               isMainline={isMainline}
               prefix={`${moveNumber}.`}
               onDelete={onDelete}
+              onSetComment={onSetComment}
               onAddVariation={onSetActiveInput}
             />
             <div />
@@ -403,6 +448,7 @@ function DraftMoveBranch({
               isMainline={isMainline}
               prefix={`${moveNumber}...`}
               onDelete={onDelete}
+              onSetComment={onSetComment}
               onAddVariation={onSetActiveInput}
             />
           </div>
@@ -449,7 +495,7 @@ export function DraftTree({ draft }: DraftTreeProps) {
   const [collapsedVariations, setCollapsedVariations] = useState<Set<string>>(new Set());
   const [activeInputId, setActiveInputId] = useState<string | null>(null);
 
-  const { nodes, nodeFen, rootId, startFen, addMove, deleteNode } = draft;
+  const { nodes, nodeFen, rootId, startFen, addMove, deleteNode, setComment } = draft;
   const root = nodes[rootId];
   const rootFen = nodeFen.get(rootId) ?? startFen;
   const startPly = getStartPlyFromFen(startFen);
@@ -550,6 +596,7 @@ export function DraftTree({ draft }: DraftTreeProps) {
                   onToggleVariation={toggleVariation}
                   onAddMove={addMove}
                   onDelete={deleteNode}
+                  onSetComment={setComment}
                   onSetActiveInput={setActiveInputId}
                 />
               )}
@@ -587,6 +634,7 @@ export function DraftTree({ draft }: DraftTreeProps) {
         onToggleVariation={toggleVariation}
         onAddMove={addMove}
         onDelete={deleteNode}
+        onSetComment={setComment}
         onSetActiveInput={setActiveInputId}
       />
     </div>

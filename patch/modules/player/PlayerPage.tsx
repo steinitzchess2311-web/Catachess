@@ -246,11 +246,8 @@ const PlayerPage: React.FC = () => {
       <div className="ps-hero">
         <HeroIllustration />
         <div className="ps-hero-content">
-          <p className="ps-hero-eyebrow">Master Database · 4.6 Million Games</p>
-          <h1 className="ps-hero-title">Player Game Search</h1>
-          <p className="ps-hero-desc">
-            Search any master player's complete game history. Filter by year, result, and color.
-          </p>
+          <p className="ps-hero-eyebrow">TWIC database - 4.6 million games</p>
+          <h1 className="ps-hero-title">Search Players</h1>
           <PlayerSearchInput
             onSearch={handleSearch}
             onPickPlayer={handlePickPlayer}

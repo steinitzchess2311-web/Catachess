@@ -285,12 +285,14 @@ function GameViewerContent({ game }: { game: GameDetail }) {
   return (
     <div className="patch-study-page game-viewer-page">
       <div className="patch-study-layout" ref={layoutRef}>
-        <div className="patch-study-sidebar">
-          <GameSidebar game={game} />
-        </div>
+        {!state.isTrainMode && (
+          <div className="patch-study-sidebar">
+            <GameSidebar game={game} />
+          </div>
+        )}
 
         <div className="patch-study-main">
-          <StudyBoard />
+          <StudyBoard isLocked={state.isTrainMode} />
         </div>
 
         <div

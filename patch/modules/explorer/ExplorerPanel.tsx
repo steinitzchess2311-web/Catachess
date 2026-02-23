@@ -5,11 +5,16 @@ import { FilterBar } from './components/FilterBar';
 import { MoveTable } from './components/MoveTable';
 import { GameList } from './components/GameList';
 import { WinBar } from './components/WinBar';
+import { PositionGameList } from './components/PositionGameList';
+import { PlayerFilterBadge } from './components/PlayerFilterBadge';
 import { totalGames, formatGames } from './types';
 
 interface ExplorerPanelProps {
   fen: string;
   onMoveSelect: (san: string) => void;
+  /** When set, the game list is filtered to these player name variants */
+  playerFilter?: string[];
+  onClearPlayerFilter?: () => void;
 }
 
 function LoadingDots() {
@@ -22,16 +27,23 @@ function LoadingDots() {
   );
 }
 
-export function ExplorerPanel({ fen, onMoveSelect }: ExplorerPanelProps) {
+export function ExplorerPanel({ fen, onMoveSelect, playerFilter, onClearPlayerFilter }: ExplorerPanelProps) {
   const { data, loading, error, mastersFilters, setMastersFilters } = useExplorer(fen);
 
-  const total     = data ? totalGames(data) : 0;
-  const topGames  = data?.topGames    ?? [];
+  const total    = data ? totalGames(data) : 0;
+  const topGames = data?.topGames ?? [];
+
+  const hasPlayerFilter = (playerFilter?.length ?? 0) > 0;
 
   return (
     <div className="explorer-panel">
       <div className="explorer-body">
         <FilterBar filters={mastersFilters} onChange={setMastersFilters} />
+
+        {/* Active player filter badge */}
+        {hasPlayerFilter && playerFilter && onClearPlayerFilter && (
+          <PlayerFilterBadge players={playerFilter} onClear={onClearPlayerFilter} />
+        )}
 
         {loading && <LoadingDots />}
 
@@ -48,8 +60,13 @@ export function ExplorerPanel({ fen, onMoveSelect }: ExplorerPanelProps) {
           <MoveTable moves={data.moves} onMoveClick={onMoveSelect} />
         )}
 
-        {!loading && topGames.length > 0 && (
-          <GameList games={topGames} label="Top games" />
+        {/* Game list: player-filtered (infinite scroll) vs. top games */}
+        {hasPlayerFilter && playerFilter ? (
+          <PositionGameList fen={fen} players={playerFilter} />
+        ) : (
+          !loading && topGames.length > 0 && (
+            <GameList games={topGames} label="Top games" />
+          )
         )}
       </div>
     </div>

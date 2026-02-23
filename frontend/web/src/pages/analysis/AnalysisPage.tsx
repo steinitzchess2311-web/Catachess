@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { StudyProvider, useStudy } from '@patch/studyContext';
 import { StudyBoard } from '@patch/board/studyBoard';
 import { MoveTree } from '@patch/sidebar/movetree';
@@ -11,11 +11,21 @@ import './analysis.css';
 
 function AnalysisPageContent() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { state, loadTree, addMove } = useStudy();
+
+  // Player filter passed in via URL: ?player=A&player=B
+  const playerFilter = searchParams.getAll('player');
+  const clearPlayerFilter = useCallback(() => {
+    setSearchParams(new URLSearchParams());
+  }, [setSearchParams]);
   const [rightbarWidth, setRightbarWidth] = useState(280);
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
-  const [rightPanelTab, setRightPanelTab] = useState<'tree' | 'explorer'>('tree');
+  // Auto-open Explorer tab when arriving with player filter
+  const [rightPanelTab, setRightPanelTab] = useState<'tree' | 'explorer'>(
+    playerFilter.length > 0 ? 'explorer' : 'tree',
+  );
   const [boardWidth, setBoardWidth] = useState(500);
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const mainRef = useRef<HTMLDivElement | null>(null);
@@ -123,7 +133,12 @@ function AnalysisPageContent() {
               {rightPanelTab === 'tree' ? (
                 <MoveTree />
               ) : (
-                <ExplorerPanel fen={state.currentFen} onMoveSelect={addMove} />
+                <ExplorerPanel
+                  fen={state.currentFen}
+                  onMoveSelect={addMove}
+                  playerFilter={playerFilter.length > 0 ? playerFilter : undefined}
+                  onClearPlayerFilter={clearPlayerFilter}
+                />
               )}
             </div>
           </div>

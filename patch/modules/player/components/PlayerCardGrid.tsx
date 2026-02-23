@@ -1,5 +1,6 @@
 // ============================================================
-// PlayerCardGrid — 棋手搜索结果卡片列表
+// PlayerCardGrid — player search result cards
+// Supports single-click (→ games view) + checkbox multi-select
 // ============================================================
 
 import React from 'react';
@@ -9,7 +10,12 @@ interface Props {
   query: string;
   players: PlayerSuggestion[];
   loading: boolean;
+  /** Single-click on main card body → open games for this player */
   onSelect: (name: string) => void;
+  /** Multi-select state (names currently checked) */
+  selectedNames: string[];
+  /** Toggle a player in/out of selection */
+  onToggle: (name: string) => void;
 }
 
 function formatGames(n: number): string {
@@ -30,7 +36,15 @@ function SkeletonPlayerCard() {
   );
 }
 
-export function PlayerCardGrid({ query, players, loading, onSelect }: Props) {
+function CheckIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  );
+}
+
+export function PlayerCardGrid({ query, players, loading, onSelect, selectedNames, onToggle }: Props) {
   if (loading) {
     return (
       <div className="ps-pgrid">
@@ -53,23 +67,44 @@ export function PlayerCardGrid({ query, players, loading, onSelect }: Props) {
 
   return (
     <div className="ps-pgrid">
-      {players.map((p, i) => (
-        <button
-          key={p.name}
-          className="ps-pcard"
-          style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}
-          onClick={() => onSelect(p.name)}
-        >
-          <div className="ps-pcard__icon" aria-hidden>♟</div>
-          <div className="ps-pcard__body">
-            <span className="ps-pcard__name">{p.name}</span>
-            <span className="ps-pcard__games">{formatGames(p.games)} games</span>
+      {players.map((p, i) => {
+        const isSelected = selectedNames.includes(p.name);
+        return (
+          <div
+            key={p.name}
+            className={`ps-pcard${isSelected ? ' is-selected' : ''}`}
+            style={{ animationDelay: `${Math.min(i, 10) * 40}ms` }}
+          >
+            {/* Checkbox toggle — stops propagation so main click still works */}
+            <button
+              type="button"
+              className={`ps-pcard__checkbox${isSelected ? ' is-checked' : ''}`}
+              onClick={e => { e.stopPropagation(); onToggle(p.name); }}
+              aria-pressed={isSelected}
+              aria-label={isSelected ? `Deselect ${p.name}` : `Select ${p.name} for multi-player filter`}
+              title={isSelected ? 'Remove from selection' : 'Add to selection'}
+            >
+              {isSelected ? <CheckIcon /> : null}
+            </button>
+
+            {/* Main body — click opens games */}
+            <button
+              type="button"
+              className="ps-pcard__main"
+              onClick={() => onSelect(p.name)}
+            >
+              <div className="ps-pcard__icon" aria-hidden>♟</div>
+              <div className="ps-pcard__body">
+                <span className="ps-pcard__name">{p.name}</span>
+                <span className="ps-pcard__games">{formatGames(p.games)} games</span>
+              </div>
+              <svg className="ps-pcard__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
           </div>
-          <svg className="ps-pcard__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </button>
-      ))}
+        );
+      })}
     </div>
   );
 }

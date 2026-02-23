@@ -461,3 +461,78 @@
   padding: 24px 8px;
   line-height: 1.6;
 }
+
+/* ---- Player filter badge ---------------------------------------- */
+
+.explorer-player-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0f4ff;
+  border: 1px solid #c7d7ff;
+  border-radius: 8px;
+  padding: 6px 8px 6px 10px;
+}
+
+.explorer-player-filter__icon {
+  font-size: 12px;
+  color: #5b7bff;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.explorer-player-filter__label {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2e4aff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.explorer-player-filter__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: rgba(46, 74, 255, 0.1);
+  border-radius: 50%;
+  cursor: pointer;
+  color: #5b7bff;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+  padding: 0;
+}
+
+.explorer-player-filter__clear:hover {
+  background: rgba(46, 74, 255, 0.22);
+  color: #2e4aff;
+}
+
+/* ---- Position game list (player-filtered, infinite scroll) ------ */
+
+.explorer-pgames-header {
+  padding: 2px 0;
+}
+
+.explorer-pgames-sort {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.explorer-pgames-sentinel {
+  height: 1px;
+  width: 100%;
+}
+
+.explorer-pgames-end {
+  font-size: 11px;
+  color: #ccc;
+  text-align: center;
+  padding: 10px 4px 6px;
+}

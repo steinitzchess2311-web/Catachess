@@ -353,17 +353,14 @@
   gap: 12px;
 }
 
+/* Card container — flex row: [checkbox] [main body] */
 .ps-pcard {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  align-items: stretch;
   background: #fff;
   border: 1.5px solid #f1f5f9;
   border-radius: 14px;
-  padding: 16px 14px 16px 16px;
-  cursor: pointer;
-  text-align: left;
-  font-family: inherit;
+  overflow: hidden;
   animation: ps-card-in 0.2s ease-out both;
   transition: box-shadow 0.15s, border-color 0.15s, transform 0.15s;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -373,6 +370,64 @@
   border-color: #cbd5e1;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.09);
   transform: translateY(-2px);
+}
+
+/* Selected state */
+.ps-pcard.is-selected {
+  border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2), 0 2px 8px rgba(99, 102, 241, 0.12);
+  background: #fafaff;
+}
+
+/* Checkbox button on the left */
+.ps-pcard__checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-right: 1.5px solid #f1f5f9;
+  background: transparent;
+  cursor: pointer;
+  color: #c7d2fe;
+  padding: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.ps-pcard__checkbox:hover {
+  background: #f5f3ff;
+  color: #6366f1;
+}
+
+.ps-pcard__checkbox.is-checked {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #fff;
+}
+
+.ps-pcard.is-selected .ps-pcard__checkbox {
+  border-color: #a5b4fc;
+}
+
+/* Main clickable area (icon + body + arrow) */
+.ps-pcard__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 14px 16px 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+
+.ps-pcard__main:hover {
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .ps-pcard__icon {
@@ -422,7 +477,7 @@
   transition: color 0.15s, transform 0.15s;
 }
 
-.ps-pcard:hover .ps-pcard__arrow {
+.ps-pcard__main:hover .ps-pcard__arrow {
   color: #64748b;
   transform: translateX(2px);
 }
@@ -789,6 +844,118 @@
   font-size: 13px !important;
   font-weight: 400 !important;
   color: #94a3b8 !important;
+}
+
+/* ---- Results title right side ---------------------------------- */
+
+.ps-results-title-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ps-results-selected {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6366f1;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  border-radius: 999px;
+  padding: 2px 10px;
+}
+
+/* ================================================================
+   Floating explore bar (multi-select CTA)
+   ================================================================ */
+
+.ps-explore-bar {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #0f172a;
+  border-radius: 999px;
+  padding: 10px 12px 10px 18px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 500;
+  animation: ps-bar-in 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  white-space: nowrap;
+}
+
+@keyframes ps-bar-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(16px) scale(0.95); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0)     scale(1);    }
+}
+
+.ps-explore-bar__info {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.ps-explore-bar__icon {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1;
+}
+
+.ps-explore-bar__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ps-explore-bar__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.ps-explore-bar__clear:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.ps-explore-bar__btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.12s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+}
+
+.ps-explore-bar__btn:hover {
+  background: #4f46e5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.5);
+}
+
+.ps-explore-bar__btn:active {
+  transform: translateY(0);
 }
 
 /* ================================================================

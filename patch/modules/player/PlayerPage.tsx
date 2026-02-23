@@ -1,5 +1,5 @@
 // ============================================================
-// PlayerPage — 棋手对局检索主页
+// PlayerPage — master player search
 //
 // View state machine:
 //   idle     — nothing searched yet
@@ -8,6 +8,7 @@
 // ============================================================
 
 import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './player.css';
 import { PlayerSearchInput } from './components/PlayerSearchInput';
 import { PlayerCardGrid } from './components/PlayerCardGrid';
@@ -96,10 +97,61 @@ function GamesView({ player, onBack }: GamesViewProps) {
   );
 }
 
+// ---- Explore bar (floating CTA when players are selected) ----
+
+interface ExploreBarProps {
+  selectedNames: string[];
+  onClear: () => void;
+  onExplore: () => void;
+}
+
+function ExploreBar({ selectedNames, onClear, onExplore }: ExploreBarProps) {
+  if (selectedNames.length === 0) return null;
+
+  const label = selectedNames.length === 1
+    ? selectedNames[0]
+    : `${selectedNames[0]} +${selectedNames.length - 1}`;
+
+  return (
+    <div className="ps-explore-bar" role="toolbar" aria-label="Player selection actions">
+      <div className="ps-explore-bar__info">
+        <span className="ps-explore-bar__icon" aria-hidden>♟</span>
+        <span className="ps-explore-bar__label" title={selectedNames.join(', ')}>
+          {label}
+        </span>
+        <button
+          type="button"
+          className="ps-explore-bar__clear"
+          onClick={onClear}
+          aria-label="Clear selection"
+          title="Clear selection"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden>
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+      <button
+        type="button"
+        className="ps-explore-bar__btn"
+        onClick={onExplore}
+      >
+        Explore openings
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
 // ---- Main page ----
 
 const PlayerPage: React.FC = () => {
+  const navigate = useNavigate();
   const [view, setView] = useState<ViewState>({ kind: 'idle' });
+  const [selectedNames, setSelectedNames] = useState<string[]>([]);
 
   // Search button / Enter → fetch player list
   const handleSearch = useCallback(async (query: string) => {
@@ -107,6 +159,7 @@ const PlayerPage: React.FC = () => {
     if (!q) return;
 
     setView({ kind: 'players', query: q, list: [], loading: true });
+    setSelectedNames([]);
 
     try {
       const data = await fetchPlayerSuggestions(q, 30);
@@ -126,7 +179,7 @@ const PlayerPage: React.FC = () => {
     }));
   }, []);
 
-  // Player card click → go to games
+  // Player card body click → go to games for single player
   const handleSelectPlayer = useCallback((name: string) => {
     setView(prev => ({
       kind: 'games',
@@ -144,6 +197,21 @@ const PlayerPage: React.FC = () => {
         : { kind: 'idle' },
     );
   }, []);
+
+  // Toggle player name in multi-select
+  const handleToggle = useCallback((name: string) => {
+    setSelectedNames(prev =>
+      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name],
+    );
+  }, []);
+
+  // Navigate to analysis with selected player names as URL params
+  const handleExplore = useCallback(() => {
+    if (selectedNames.length === 0) return;
+    const params = new URLSearchParams();
+    selectedNames.forEach(n => params.append('player', n));
+    navigate(`/analysis?${params.toString()}`);
+  }, [navigate, selectedNames]);
 
   return (
     <div className="ps-page">
@@ -170,13 +238,22 @@ const PlayerPage: React.FC = () => {
             <div className="ps-results-inner">
               <div className="ps-results-title ps-results-title--query">
                 <span>Results for "<strong>{view.query}</strong>"</span>
-                <span className="ps-results-count">{view.list.length} players</span>
+                <div className="ps-results-title-right">
+                  {selectedNames.length > 0 && (
+                    <span className="ps-results-selected">
+                      {selectedNames.length} selected
+                    </span>
+                  )}
+                  <span className="ps-results-count">{view.list.length} players</span>
+                </div>
               </div>
               <PlayerCardGrid
                 query={view.query}
                 players={view.list}
                 loading={view.loading}
                 onSelect={handleSelectPlayer}
+                selectedNames={selectedNames}
+                onToggle={handleToggle}
               />
             </div>
           )}
@@ -186,6 +263,13 @@ const PlayerPage: React.FC = () => {
           )}
         </div>
       )}
+
+      {/* Floating explore bar — shown when multi-select is active */}
+      <ExploreBar
+        selectedNames={selectedNames}
+        onClear={() => setSelectedNames([])}
+        onExplore={handleExplore}
+      />
     </div>
   );
 };

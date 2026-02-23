@@ -53,6 +53,27 @@ export interface MastersFilters {
   until?: number;
 }
 
+// ---- /masters/games response types ---------------------------
+
+export type SortOrder = 'elo_desc' | 'year_desc' | 'year_asc';
+
+export interface GameListItem {
+  id: string;
+  white: string;
+  black: string;
+  white_elo: number | null;
+  black_elo: number | null;
+  avg_elo: number | null;
+  result: 'white' | 'black' | 'draw';
+  year: number | null;
+  event: string | null;
+}
+
+export interface GamesListResponse {
+  games: GameListItem[];
+  next_cursor: string | null;
+}
+
 // ---- Utility ---------------------------------------------
 
 export function totalGames(data: { white: number; draws: number; black: number }): number {

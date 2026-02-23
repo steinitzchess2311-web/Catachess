@@ -1,4 +1,4 @@
-import type { ExplorerResponse, MastersFilters, GameDetail } from './types';
+import type { ExplorerResponse, MastersFilters, GameDetail, GamesListResponse, SortOrder } from './types';
 
 const BASE = 'https://database.catachess.com';
 
@@ -21,6 +21,28 @@ export async function fetchMasters(
   if (filters.until != null) url.searchParams.set('until', String(filters.until));
   if (options?.movesCount != null) url.searchParams.set('moves', String(options.movesCount));
   if (options?.topGames != null) url.searchParams.set('topGames', String(options.topGames));
+
+  const res = await fetch(url.toString(), { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+/** /masters/games — 局面内对局列表，支持多棋手过滤 + cursor 分页 */
+export async function fetchMastersGames(
+  fen: string,
+  players: string[],
+  sort: SortOrder,
+  cursor: string | null,
+  signal?: AbortSignal,
+): Promise<GamesListResponse> {
+  const url = new URL(`${BASE}/masters/games`);
+  url.searchParams.set('fen', fen);
+  url.searchParams.set('sort', sort);
+  players.forEach(p => url.searchParams.append('player', p));
+  if (cursor) url.searchParams.set('cursor', cursor);
 
   const res = await fetch(url.toString(), { signal });
   if (!res.ok) {

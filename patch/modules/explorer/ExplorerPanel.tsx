@@ -3,7 +3,6 @@ import './explorer.css';
 import { useExplorer } from './useExplorer';
 import { FilterBar } from './components/FilterBar';
 import { MoveTable } from './components/MoveTable';
-import { GameList } from './components/GameList';
 import { WinBar } from './components/WinBar';
 import { PositionGameList } from './components/PositionGameList';
 import { PlayerFilterBadge } from './components/PlayerFilterBadge';
@@ -30,8 +29,7 @@ function LoadingDots() {
 export function ExplorerPanel({ fen, onMoveSelect, playerFilter, onClearPlayerFilter }: ExplorerPanelProps) {
   const { data, loading, error, mastersFilters, setMastersFilters } = useExplorer(fen);
 
-  const total    = data ? totalGames(data) : 0;
-  const topGames = data?.topGames ?? [];
+  const total = data ? totalGames(data) : 0;
 
   const hasPlayerFilter = (playerFilter?.length ?? 0) > 0;
 
@@ -60,14 +58,9 @@ export function ExplorerPanel({ fen, onMoveSelect, playerFilter, onClearPlayerFi
           <MoveTable moves={data.moves} onMoveClick={onMoveSelect} />
         )}
 
-        {/* Game list: player-filtered (infinite scroll) vs. top games */}
-        {hasPlayerFilter && playerFilter ? (
-          <PositionGameList fen={fen} players={playerFilter} />
-        ) : (
-          !loading && topGames.length > 0 && (
-            <GameList games={topGames} label="Top games" />
-          )
-        )}
+        {/* Game list: always uses /masters/games (infinite scroll + sort)
+            players=[] → full database; players=[...] → filtered by player */}
+        <PositionGameList fen={fen} players={playerFilter ?? []} />
       </div>
     </div>
   );

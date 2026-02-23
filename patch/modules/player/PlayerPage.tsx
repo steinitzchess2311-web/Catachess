@@ -136,6 +136,7 @@ function ExploreBar({ selectedNames, onClear, onExplore }: ExploreBarProps) {
         type="button"
         className="ps-explore-bar__btn"
         onClick={onExplore}
+        title="Open opening explorer in Analysis Board"
       >
         Explore openings
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

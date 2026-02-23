@@ -1,18 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './explorer.css';
 import { useExplorer } from './useExplorer';
 import { FilterBar } from './components/FilterBar';
 import { MoveTable } from './components/MoveTable';
 import { WinBar } from './components/WinBar';
 import { PositionGameList } from './components/PositionGameList';
-import { PlayerFilterBadge } from './components/PlayerFilterBadge';
+import { PlayerFilterRow } from './components/PlayerFilterRow';
 import { totalGames, formatGames } from './types';
 
 interface ExplorerPanelProps {
   fen: string;
   onMoveSelect: (san: string) => void;
-  /** Player name variants to filter by. Empty / undefined = full database. */
+  /** Initial player name variants from URL. Empty / undefined = full database. */
   playerFilter?: string[];
+  /** Called when all players are cleared — lets the parent sync URL params. */
   onClearPlayerFilter?: () => void;
 }
 
@@ -27,12 +28,36 @@ function LoadingDots() {
 }
 
 export function ExplorerPanel({ fen, onMoveSelect, playerFilter, onClearPlayerFilter }: ExplorerPanelProps) {
-  const hasPlayerFilter = (playerFilter?.length ?? 0) > 0;
-  const players = hasPlayerFilter ? playerFilter! : [];
+  // Internal player state — initialized from URL prop, then fully owned here
+  const [players, setPlayers] = useState<string[]>(playerFilter ?? []);
 
-  // /masters — move stats + win counts, scoped to players or full DB
+  // Sync when the URL-provided prop changes (e.g. navigating to /analysis?player=X)
+  const propKey = (playerFilter ?? []).join('\0');
+  const prevPropKey = useRef(propKey);
+  useEffect(() => {
+    if (prevPropKey.current !== propKey) {
+      prevPropKey.current = propKey;
+      setPlayers(playerFilter ?? []);
+    }
+  });
+
+  // When all players are removed, notify parent so URL params can be cleared
+  const onClearRef = useRef(onClearPlayerFilter);
+  useEffect(() => { onClearRef.current = onClearPlayerFilter; });
+
+  const addPlayer = useCallback((name: string) => {
+    setPlayers(prev => prev.includes(name) ? prev : [...prev, name]);
+  }, []);
+
+  const removePlayer = useCallback((name: string) => {
+    setPlayers(prev => {
+      const next = prev.filter(p => p !== name);
+      if (next.length === 0) onClearRef.current?.();
+      return next;
+    });
+  }, []);
+
   const { data, loading, error, mastersFilters, setMastersFilters } = useExplorer(fen, players);
-
   const total = data ? totalGames(data) : 0;
 
   return (
@@ -41,12 +66,14 @@ export function ExplorerPanel({ fen, onMoveSelect, playerFilter, onClearPlayerFi
         <FilterBar
           filters={mastersFilters}
           onChange={setMastersFilters}
-          playerFilterActive={hasPlayerFilter}
+          playerFilterActive={players.length > 0}
         />
 
-        {hasPlayerFilter && onClearPlayerFilter && (
-          <PlayerFilterBadge players={players} onClear={onClearPlayerFilter} />
-        )}
+        <PlayerFilterRow
+          players={players}
+          onAdd={addPlayer}
+          onRemove={removePlayer}
+        />
 
         {loading && <LoadingDots />}
 

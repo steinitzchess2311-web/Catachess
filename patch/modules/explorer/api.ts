@@ -58,6 +58,28 @@ export async function fetchMastersGames(
   return res.json();
 }
 
+export interface PlayerSuggestion {
+  name: string;
+  games: number;
+}
+
+/** /search/players — player name prefix autocomplete */
+export async function fetchPlayerSuggestions(
+  q: string,
+  limit = 8,
+  signal?: AbortSignal,
+): Promise<{ players: PlayerSuggestion[] }> {
+  const url = new URL(`${BASE}/search/players`);
+  url.searchParams.set('q', q);
+  url.searchParams.set('limit', String(limit));
+  const res = await fetch(url.toString(), { signal });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(body?.detail ?? `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
 export async function fetchGame(id: string, signal?: AbortSignal): Promise<GameDetail> {
   const res = await fetch(`${BASE}/game/${id}`, { signal });
   if (!res.ok) {

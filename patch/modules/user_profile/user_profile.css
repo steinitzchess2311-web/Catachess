@@ -261,11 +261,12 @@
   color: #4338ca;
 }
 
-.up-ext-link__icon {
-  font-size: 16px;
-  width: 22px;
-  text-align: center;
+.up-ext-link__img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
   flex-shrink: 0;
+  border-radius: 4px;
 }
 
 /* 评级详情表 */

@@ -33,7 +33,7 @@ function RatingBlock({ label, value }: { label: string; value: number | null }) 
 
 // ---- 外部链接按钮 -------------------------------------------
 
-function ExternalLink({ href, label, icon }: { href: string; label: string; icon: string }) {
+function ExternalLink({ href, label, imgSrc }: { href: string; label: string; imgSrc: string }) {
   return (
     <a
       href={href}
@@ -41,7 +41,7 @@ function ExternalLink({ href, label, icon }: { href: string; label: string; icon
       rel="noopener noreferrer"
       className="up-ext-link"
     >
-      <span className="up-ext-link__icon">{icon}</span>
+      <img src={imgSrc} alt={label} className="up-ext-link__img" />
       <span>{label}</span>
     </a>
   );
@@ -208,14 +208,14 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
                     <ExternalLink
                       href={`https://lichess.org/@/${profile.lichess_username}`}
                       label={profile.lichess_username}
-                      icon="♞"
+                      imgSrc="/assets/lichess.png"
                     />
                   )}
                   {profile.chesscom_username && (
                     <ExternalLink
                       href={`https://chess.com/member/${profile.chesscom_username}`}
                       label={profile.chesscom_username}
-                      icon="♛"
+                      imgSrc="/assets/chess-com.png"
                     />
                   )}
                 </div>

@@ -1,8 +1,10 @@
 // ============================================================
 // PlayerSearchInput — 带 autocomplete 下拉的搜索框
+// 下拉用 Portal 渲染到 body，避免被 overflow:hidden 的祖先裁剪
 // ============================================================
 
 import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { usePlayerAutocomplete } from '../hooks/usePlayerAutocomplete';
 import type { PlayerSuggestion } from '../types';
 
@@ -20,14 +22,25 @@ function formatGames(n: number): string {
   return String(n);
 }
 
+interface DropdownRect { top: number; left: number; width: number; }
+
 export function PlayerSearchInput({ onSearch, onPickPlayer, initialValue = '' }: Props) {
   const [input, setInput] = useState(initialValue);
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
+  const [dropdownRect, setDropdownRect] = useState<DropdownRect | null>(null);
+
   const wrapRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const { suggestions, loading } = usePlayerAutocomplete(input);
+
+  // 计算下拉框位置（相对 viewport，用 fixed 定位）
+  const updateRect = useCallback(() => {
+    if (!wrapRef.current) return;
+    const r = wrapRef.current.getBoundingClientRect();
+    setDropdownRect({ top: r.bottom + 8, left: r.left, width: r.width });
+  }, []);
 
   // 点击外部关闭
   useEffect(() => {
@@ -40,11 +53,27 @@ export function PlayerSearchInput({ onSearch, onPickPlayer, initialValue = '' }:
     return () => document.removeEventListener('pointerdown', onPointerDown);
   }, []);
 
+  // 滚动/resize 时更新位置
+  useEffect(() => {
+    if (!open) return;
+    window.addEventListener('scroll', updateRect, true);
+    window.addEventListener('resize', updateRect);
+    return () => {
+      window.removeEventListener('scroll', updateRect, true);
+      window.removeEventListener('resize', updateRect);
+    };
+  }, [open, updateRect]);
+
   // input 变化时展开、重置索引
   useEffect(() => {
     setActiveIdx(-1);
-    setOpen(input.length >= 2);
-  }, [input]);
+    if (input.length >= 2) {
+      updateRect();
+      setOpen(true);
+    } else {
+      setOpen(false);
+    }
+  }, [input, updateRect]);
 
   // Autocomplete item selected → go directly to games
   const commit = useCallback(
@@ -84,7 +113,41 @@ export function PlayerSearchInput({ onSearch, onPickPlayer, initialValue = '' }:
     }
   }
 
-  const showDropdown = open && (suggestions.length > 0 || loading);
+  const showDropdown = open && dropdownRect && (suggestions.length > 0 || loading);
+
+  const dropdown = showDropdown && dropdownRect ? createPortal(
+    <ul
+      className="ps-dropdown"
+      role="listbox"
+      style={{
+        position: 'fixed',
+        top: dropdownRect.top,
+        left: dropdownRect.left,
+        width: dropdownRect.width,
+      }}
+    >
+      {loading && suggestions.length === 0 && (
+        <li className="ps-dropdown-loading">
+          <span className="ps-spinner" />
+          Searching…
+        </li>
+      )}
+      {suggestions.map((s: PlayerSuggestion, i) => (
+        <li
+          key={s.name}
+          className={`ps-dropdown-item${i === activeIdx ? ' is-active' : ''}`}
+          role="option"
+          aria-selected={i === activeIdx}
+          onPointerDown={(e) => { e.preventDefault(); commit(s.name); }}
+          onMouseEnter={() => setActiveIdx(i)}
+        >
+          <span className="ps-dropdown-name">{s.name}</span>
+          <span className="ps-dropdown-games">{formatGames(s.games)} games</span>
+        </li>
+      ))}
+    </ul>,
+    document.body,
+  ) : null;
 
   return (
     <div className="ps-search-wrap" ref={wrapRef}>
@@ -106,10 +169,13 @@ export function PlayerSearchInput({ onSearch, onPickPlayer, initialValue = '' }:
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (input.length >= 2 && suggestions.length > 0) setOpen(true);
+            if (input.length >= 2 && suggestions.length > 0) {
+              updateRect();
+              setOpen(true);
+            }
           }}
           aria-autocomplete="list"
-          aria-expanded={showDropdown}
+          aria-expanded={!!showDropdown}
         />
         {input && (
           <button
@@ -135,29 +201,7 @@ export function PlayerSearchInput({ onSearch, onPickPlayer, initialValue = '' }:
         </button>
       </div>
 
-      {showDropdown && (
-        <ul className="ps-dropdown" role="listbox">
-          {loading && suggestions.length === 0 && (
-            <li className="ps-dropdown-loading">
-              <span className="ps-spinner" />
-              Searching…
-            </li>
-          )}
-          {suggestions.map((s: PlayerSuggestion, i) => (
-            <li
-              key={s.name}
-              className={`ps-dropdown-item${i === activeIdx ? ' is-active' : ''}`}
-              role="option"
-              aria-selected={i === activeIdx}
-              onPointerDown={(e) => { e.preventDefault(); commit(s.name); }}
-              onMouseEnter={() => setActiveIdx(i)}
-            >
-              <span className="ps-dropdown-name">{s.name}</span>
-              <span className="ps-dropdown-games">{formatGames(s.games)} games</span>
-            </li>
-          ))}
-        </ul>
-      )}
+      {dropdown}
     </div>
   );
 }

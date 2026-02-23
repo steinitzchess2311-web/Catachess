@@ -179,21 +179,26 @@
    ---------------------------------------------------------------- */
 
 .ps-dropdown {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  right: 0;
+  /* position/top/left/width set inline via Portal */
   background: #1e293b;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-y: auto;
+  max-height: 320px;
   list-style: none;
   margin: 0;
   padding: 4px;
-  z-index: 100;
+  z-index: 1200; /* above header (1000) and dropdowns (1100) */
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
   animation: ps-fade-in 0.12s ease-out;
 }
+
+.ps-dropdown::-webkit-scrollbar { width: 4px; }
+.ps-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+}
+.ps-dropdown::-webkit-scrollbar-track { background: transparent; }
 
 @keyframes ps-fade-in {
   from { opacity: 0; transform: translateY(-6px); }

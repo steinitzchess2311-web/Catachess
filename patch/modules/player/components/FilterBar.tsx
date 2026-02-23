@@ -3,7 +3,7 @@
 // ============================================================
 
 import React from 'react';
-import type { SearchFilters, ColorFilter, ResultFilter, SortOrder } from '../types';
+import type { SearchFilters, ColorFilter, PlayerResult, SortOrder } from '../types';
 
 interface Props {
   filters: SearchFilters;
@@ -16,11 +16,11 @@ const COLOR_OPTS: { value: ColorFilter; label: string }[] = [
   { value: 'black', label: 'Black' },
 ];
 
-const RESULT_OPTS: { value: ResultFilter | ''; label: string }[] = [
+const RESULT_OPTS: { value: PlayerResult | ''; label: string }[] = [
   { value: '',      label: 'Any' },
-  { value: 'white', label: '1–0' },
-  { value: 'black', label: '0–1' },
-  { value: 'draw',  label: '½–½' },
+  { value: 'win',   label: 'Win' },
+  { value: 'loss',  label: 'Loss' },
+  { value: 'draw',  label: 'Draw' },
 ];
 
 const SORT_OPTS: { value: SortOrder; label: string }[] = [
@@ -52,15 +52,15 @@ export function FilterBar({ filters, onChange }: Props) {
         </div>
       </div>
 
-      {/* 结果 chips */}
+      {/* 结果 chips (棋手视角：Win / Loss / Draw) */}
       <div className="ps-filter-group">
         <span className="ps-filter-label">Result</span>
         <div className="ps-chips">
           {RESULT_OPTS.map((o) => (
             <button
               key={o.value}
-              className={`ps-chip${filters.result === o.value ? ' is-active' : ''}`}
-              onClick={() => set('result', o.value as SearchFilters['result'])}
+              className={`ps-chip${filters.playerResult === o.value ? ' is-active' : ''}`}
+              onClick={() => set('playerResult', o.value as SearchFilters['playerResult'])}
             >
               {o.label}
             </button>

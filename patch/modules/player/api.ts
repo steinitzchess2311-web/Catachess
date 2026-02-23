@@ -38,8 +38,8 @@ export async function fetchSearchGames(
   if (filters.color && filters.color !== 'any') {
     url.searchParams.set('color', filters.color);
   }
-  if (filters.result) {
-    url.searchParams.set('result', filters.result);
+  if (filters.playerResult) {
+    url.searchParams.set('player_result', filters.playerResult);
   }
   if (filters.yearFrom) {
     url.searchParams.set('year_from', filters.yearFrom);

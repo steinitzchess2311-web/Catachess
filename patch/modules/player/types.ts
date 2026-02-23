@@ -31,11 +31,11 @@ export interface GamesListResponse {
 
 export type SortOrder = 'elo_desc' | 'year_desc' | 'year_asc';
 export type ColorFilter = 'any' | 'white' | 'black';
-export type ResultFilter = 'white' | 'black' | 'draw';
+export type PlayerResult = 'win' | 'loss' | 'draw';
 
 export interface SearchFilters {
   color: ColorFilter;
-  result: ResultFilter | '';
+  playerResult: PlayerResult | '';
   yearFrom: string;
   yearTo: string;
   sort: SortOrder;
@@ -43,7 +43,7 @@ export interface SearchFilters {
 
 export const DEFAULT_FILTERS: SearchFilters = {
   color: 'any',
-  result: '',
+  playerResult: '',
   yearFrom: '',
   yearTo: '',
   sort: 'elo_desc',

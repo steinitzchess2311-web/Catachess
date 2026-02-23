@@ -93,10 +93,11 @@ Error 400: { "error": "cannot_join_own_game" }
 
 ---
 
-## 4. Public user profile endpoint
+## 4. Public user profile endpoint ✅ DONE
 
-Currently `GET /user/profile` only returns the **current authenticated user's** profile.
-We need a public endpoint for `/@username` pages.
+~~Currently `GET /user/profile` only returns the **current authenticated user's** profile.~~
+Implemented: `GET /user/profile/{username}` (no auth) in `backend/routers/user_profile.py`.
+Also added `get_user_by_username()` in `backend/services/user_service.py`.
 
 ```
 GET /user/profile/{username}   (no auth required)

@@ -16,7 +16,7 @@ import uuid
 
 from core.db.deps import get_db
 from core.security.current_user import get_current_user
-from services.user_service import get_user_by_id, update_user_profile
+from services.user_service import get_user_by_id, get_user_by_username, update_user_profile
 from models.user import User
 from core.log.log_api import logger
 
@@ -73,6 +73,22 @@ class UpdateProfileRequest(BaseModel):
     self_intro: str | None = Field(None, max_length=5000, description="Self introduction")
 
 
+class PublicProfileResponse(BaseModel):
+    """公开资料——不含敏感字段（identifier、role、is_verified 等）"""
+    username: str
+    fide_title: str | None = None
+    fide_rating: int | None = None
+    cfc_rating: int | None = None
+    ecf_rating: int | None = None
+    chinese_athlete_title: str | None = None
+    lichess_username: str | None = None
+    chesscom_username: str | None = None
+    self_intro: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
 class UserLookupResponse(BaseModel):
     """Minimal user info for starting a catachat conversation."""
     id: str
@@ -80,7 +96,7 @@ class UserLookupResponse(BaseModel):
 
 
 @router.get("/by-username/{username}", response_model=UserLookupResponse)
-def get_user_by_username(
+def lookup_user_by_username(
     username: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -92,6 +108,51 @@ def get_user_by_username(
     if not user or not user.username:
         raise HTTPException(status_code=404, detail="User not found")
     return UserLookupResponse(id=str(user.id), username=user.username)
+
+
+@router.get("/profile/{username}", response_model=PublicProfileResponse)
+def get_public_profile(
+    username: str,
+    db: Session = Depends(get_db),
+):
+    """
+    获取指定用户的公开资料（无需登录）。
+
+    任何人都可以访问，不含敏感字段（identifier、role 等）。
+    用于 /@username 个人主页展示。
+
+    Args:
+        username: 要查询的用户名
+        db: 数据库会话（自动注入）
+
+    Returns:
+        PublicProfileResponse — 公开可见的棋手信息
+
+    Raises:
+        404: 用户不存在
+    """
+    logger.info(f"Public profile request: username={username}")
+
+    user = get_user_by_username(db, username)
+    if not user:
+        logger.info(f"Public profile not found: {username}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    logger.info(f"Public profile returned: {user.username}")
+    return PublicProfileResponse(
+        username=user.username,
+        fide_title=user.fide_title,
+        fide_rating=user.fide_rating,
+        cfc_rating=user.cfc_rating,
+        ecf_rating=user.ecf_rating,
+        chinese_athlete_title=user.chinese_athlete_title,
+        lichess_username=user.lichess_username,
+        chesscom_username=user.chesscom_username,
+        self_intro=user.self_intro,
+    )
 
 
 @router.get("/profile", response_model=UserProfileResponse)

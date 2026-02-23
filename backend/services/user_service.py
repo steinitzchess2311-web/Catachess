@@ -152,6 +152,26 @@ def get_user_by_id(db: Session, user_id: uuid.UUID | str) -> User | None:
     return user
 
 
+def get_user_by_username(db: Session, username: str) -> User | None:
+    """
+    Get user by username (case-insensitive).
+
+    Args:
+        db: Database session
+        username: Username to look up
+
+    Returns:
+        User object if found, None otherwise
+    """
+    logger.debug(f"Looking up user by username: {username}")
+    user = db.query(User).filter(User.username.ilike(username)).first()
+    if user:
+        logger.debug(f"User found: {user.username}")
+    else:
+        logger.debug(f"User not found by username: {username}")
+    return user
+
+
 def update_user_profile(db: Session, user_id: uuid.UUID | str, update_data: dict) -> User | None:
     """
     Update user profile with provided data.

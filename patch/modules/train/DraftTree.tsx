@@ -385,34 +385,52 @@ function DraftMoveBranch({
       const blackId = whiteNode.children[0] || null;
       const blackNode = blackId ? nodes[blackId] : null;
 
-      if (blackNode) {
-        // White + black pair
+      // Split the pair into individual rows when either node has sibling
+      // variations (or an active input), so each variation/input block
+      // appears directly below its branching move.
+      const shouldSplitPair = (
+        whiteNode.children.length > 1 ||
+        (blackNode !== null && blackNode.children.length > 1) ||
+        activeInputId === whiteNode.id ||
+        (blackNode !== null && activeInputId === blackNode.id)
+      );
+
+      if (shouldSplitPair) {
+        // White alone
         lines.push(
-          <div key={`line-pair-${currentId}`} className="move-line" style={lineStyle}>
-            <DraftMoveItem
-              nodeId={whiteNode.id}
-              nodes={nodes}
-              isMainline={isMainline}
-              prefix={`${moveNumber}.`}
-              onDelete={onDelete}
-              onSetComment={onSetComment}
-              onAddVariation={onSetActiveInput}
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <DraftMoveItem
-                nodeId={blackNode.id}
-                nodes={nodes}
-                isMainline={isMainline}
-                prefix={`${moveNumber}...`}
-                onDelete={onDelete}
-                onAddVariation={onSetActiveInput}
-              />
-            </div>
+          <div key={`line-white-${currentId}`} className="move-line" style={lineStyle}>
+            <DraftMoveItem nodeId={whiteNode.id} nodes={nodes} isMainline={isMainline} prefix={`${moveNumber}.`} onDelete={onDelete} onSetComment={onSetComment} onAddVariation={onSetActiveInput} />
+            <div />
           </div>
         );
         lines.push(renderVariationsWithInput(whiteNode.id, ply + 1));
-        lines.push(renderVariationsWithInput(blackNode.id, ply + 2));
-
+        if (blackNode) {
+          // Black alone
+          lines.push(
+            <div key={`line-black-${blackNode.id}`} className="move-line" style={lineStyle}>
+              <div />
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <DraftMoveItem nodeId={blackNode.id} nodes={nodes} isMainline={isMainline} prefix={`${moveNumber}...`} onDelete={onDelete} onSetComment={onSetComment} onAddVariation={onSetActiveInput} />
+              </div>
+            </div>
+          );
+          lines.push(renderVariationsWithInput(blackNode.id, ply + 2));
+          lastId = blackNode.id;
+          currentId = blackNode.children[0] || null;
+          ply += 2;
+        } else {
+          currentId = null;
+        }
+      } else if (blackNode) {
+        // Normal pair (no variations, no active input)
+        lines.push(
+          <div key={`line-pair-${currentId}`} className="move-line" style={lineStyle}>
+            <DraftMoveItem nodeId={whiteNode.id} nodes={nodes} isMainline={isMainline} prefix={`${moveNumber}.`} onDelete={onDelete} onSetComment={onSetComment} onAddVariation={onSetActiveInput} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <DraftMoveItem nodeId={blackNode.id} nodes={nodes} isMainline={isMainline} prefix={`${moveNumber}...`} onDelete={onDelete} onSetComment={onSetComment} onAddVariation={onSetActiveInput} />
+            </div>
+          </div>
+        );
         lastId = blackNode.id;
         currentId = blackNode.children[0] || null;
         ply += 2;
@@ -420,15 +438,7 @@ function DraftMoveBranch({
         // White is leaf of mainline
         lines.push(
           <div key={`line-white-${currentId}`} className="move-line" style={lineStyle}>
-            <DraftMoveItem
-              nodeId={whiteNode.id}
-              nodes={nodes}
-              isMainline={isMainline}
-              prefix={`${moveNumber}.`}
-              onDelete={onDelete}
-              onSetComment={onSetComment}
-              onAddVariation={onSetActiveInput}
-            />
+            <DraftMoveItem nodeId={whiteNode.id} nodes={nodes} isMainline={isMainline} prefix={`${moveNumber}.`} onDelete={onDelete} onSetComment={onSetComment} onAddVariation={onSetActiveInput} />
             <div />
           </div>
         );

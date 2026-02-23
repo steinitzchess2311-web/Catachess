@@ -362,90 +362,80 @@ const MoveBranch = React.memo(function MoveBranch({
         ply === startPly &&
         (rootNode?.children.length || 0) > 1;
 
+      // Split the pair into individual rows when either node has sibling
+      // variations, so each variation block appears directly below its
+      // branching move rather than floating between two full-move pairs.
+      const shouldSplitPair = !hasRootVariations && (
+        whiteNode.children.length > 1 ||
+        (blackNode !== null && blackNode.children.length > 1)
+      );
+
       if (hasRootVariations) {
         lines.push(
           <div key={`line-white-${currentId}`} className="move-line" style={lineStyle}>
-            <MoveItem
-              nodeId={whiteNode.id}
-              nodes={nodes}
-              cursorNodeId={cursorNodeId}
-              onSelect={onSelect}
-              isMainline={isMainline}
-              prefix={`${moveNumber}.`}
-              onContextMenu={onContextMenu}
-            />
+            <MoveItem nodeId={whiteNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}.`} onContextMenu={onContextMenu} />
             <div />
           </div>
         );
         lines.push(renderVariations(rootId!, 1, rootNode!.children.slice(1)));
-      } else if (blackNode) {
-        lines.push(
-          <div key={`line-pair-${currentId}`} className="move-line" style={lineStyle}>
-            <MoveItem
-              nodeId={whiteNode.id}
-              nodes={nodes}
-              cursorNodeId={cursorNodeId}
-              onSelect={onSelect}
-              isMainline={isMainline}
-              prefix={`${moveNumber}.`}
-              onContextMenu={onContextMenu}
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <MoveItem
-                nodeId={blackNode.id}
-                nodes={nodes}
-                cursorNodeId={cursorNodeId}
-                onSelect={onSelect}
-                isMainline={isMainline}
-                prefix={`${moveNumber}...`}
-                onContextMenu={onContextMenu}
-              />
-            </div>
-          </div>
-        );
-      } else {
-        lines.push(
-          <div key={`line-white-${currentId}`} className="move-line" style={lineStyle}>
-            <MoveItem
-              nodeId={whiteNode.id}
-              nodes={nodes}
-              cursorNodeId={cursorNodeId}
-              onSelect={onSelect}
-              isMainline={isMainline}
-              prefix={`${moveNumber}.`}
-              onContextMenu={onContextMenu}
-            />
-            <div />
-          </div>
-        );
-      }
-
-      if (blackNode) {
-        if (hasRootVariations) {
+        if (blackNode) {
           lines.push(
             <div key={`line-black-${blackNode.id}`} className="move-line" style={lineStyle}>
               <div />
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <MoveItem
-                  nodeId={blackNode.id}
-                  nodes={nodes}
-                  cursorNodeId={cursorNodeId}
-                  onSelect={onSelect}
-                  isMainline={isMainline}
-                  prefix={`${moveNumber}...`}
-                  onContextMenu={onContextMenu}
-                />
+                <MoveItem nodeId={blackNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}...`} onContextMenu={onContextMenu} />
               </div>
             </div>
           );
+          lines.push(renderVariations(whiteNode.id, ply + 1));
+          lines.push(renderVariations(blackNode.id, ply + 2));
+          currentId = blackNode.children[0] || null;
+          ply += 2;
+        } else {
+          lines.push(renderVariations(whiteNode.id, ply + 1));
+          currentId = null;
         }
-
+      } else if (shouldSplitPair) {
+        lines.push(
+          <div key={`line-white-${currentId}`} className="move-line" style={lineStyle}>
+            <MoveItem nodeId={whiteNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}.`} onContextMenu={onContextMenu} />
+            <div />
+          </div>
+        );
         lines.push(renderVariations(whiteNode.id, ply + 1));
-        lines.push(renderVariations(blackNode.id, ply + 2));
-
+        if (blackNode) {
+          lines.push(
+            <div key={`line-black-${blackNode.id}`} className="move-line" style={lineStyle}>
+              <div />
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <MoveItem nodeId={blackNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}...`} onContextMenu={onContextMenu} />
+              </div>
+            </div>
+          );
+          lines.push(renderVariations(blackNode.id, ply + 2));
+          currentId = blackNode.children[0] || null;
+          ply += 2;
+        } else {
+          currentId = null;
+        }
+      } else if (blackNode) {
+        lines.push(
+          <div key={`line-pair-${currentId}`} className="move-line" style={lineStyle}>
+            <MoveItem nodeId={whiteNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}.`} onContextMenu={onContextMenu} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <MoveItem nodeId={blackNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}...`} onContextMenu={onContextMenu} />
+            </div>
+          </div>
+        );
         currentId = blackNode.children[0] || null;
         ply += 2;
       } else {
+        lines.push(
+          <div key={`line-white-${currentId}`} className="move-line" style={lineStyle}>
+            <MoveItem nodeId={whiteNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}.`} onContextMenu={onContextMenu} />
+            <div />
+          </div>
+        );
         currentId = null;
       }
     } else {

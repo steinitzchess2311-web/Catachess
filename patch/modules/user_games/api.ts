@@ -16,7 +16,11 @@ import type {
 // ---- 业务错误（含服务端 error code）--------------------------
 
 export class GameApiError extends Error {
-  constructor(public readonly code: string, message: string) {
+  constructor(
+    public readonly code: string,
+    message: string,
+    public readonly currentGameId?: string,
+  ) {
     super(message);
     this.name = 'GameApiError';
   }
@@ -37,7 +41,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const code: string = body?.detail?.error ?? 'unknown';
     const message: string =
       body?.detail?.message ?? body?.message ?? `HTTP ${res.status}`;
-    throw new GameApiError(code, message);
+    const currentGameId: string | undefined = body?.detail?.current_game_id;
+    throw new GameApiError(code, message, currentGameId);
   }
 
   return res.json();

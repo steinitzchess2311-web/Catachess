@@ -7,6 +7,7 @@
 // ============================================================
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { GameApiError, abortGame, createGame, createOpenGame, getGameDetail } from '../api';
 import type { TimeControl } from '../types';
 
@@ -105,12 +106,15 @@ export function GameLobby({ myId, onGameCreated }: GameLobbyProps) {
   // ---- 模式切换 -----------------------------------------------
   const [mode, setMode] = useState<LobbyMode>('friend');
 
+  const navigate = useNavigate();
+
   // ---- vs Friend state ----------------------------------------
   const [opponentId, setOpponentId] = useState('');
   const [colorPref, setColorPref] = useState<'white' | 'black' | 'random'>('random');
   const [friendTc, setFriendTc] = useState<TimeControl>({ initial: 300, increment: 3 });
   const [friendLoading, setFriendLoading] = useState(false);
   const [friendError, setFriendError] = useState<string | null>(null);
+  const [friendBlockedGameId, setFriendBlockedGameId] = useState<string | null>(null);
 
   // ---- Open Game state ----------------------------------------
   const [openTc, setOpenTc] = useState<TimeControl>({ initial: 300, increment: 3 });
@@ -119,6 +123,7 @@ export function GameLobby({ myId, onGameCreated }: GameLobbyProps) {
   const [copied, setCopied] = useState(false);
   const [countdown, setCountdown] = useState(OPEN_GAME_TIMEOUT_SEC);
   const [openError, setOpenError] = useState<string | null>(null);
+  const [openBlockedGameId, setOpenBlockedGameId] = useState<string | null>(null);
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -134,14 +139,17 @@ export function GameLobby({ myId, onGameCreated }: GameLobbyProps) {
     }
     setFriendLoading(true);
     setFriendError(null);
+    setFriendBlockedGameId(null);
     try {
       const game = await createGame(myId, opponent, friendTc, colorPref);
       onGameCreated(game.game_id);
     } catch (err) {
-      const msg = err instanceof GameApiError && err.code === 'user_already_in_game'
-        ? 'You are already in an active game.'
-        : err instanceof Error ? err.message : 'Failed to create game.';
-      setFriendError(msg);
+      if (err instanceof GameApiError && err.code === 'user_already_in_game') {
+        setFriendError('You are already in an active game.');
+        setFriendBlockedGameId(err.currentGameId ?? null);
+      } else {
+        setFriendError(err instanceof Error ? err.message : 'Failed to create game.');
+      }
       setFriendLoading(false);
     }
   };
@@ -150,16 +158,19 @@ export function GameLobby({ myId, onGameCreated }: GameLobbyProps) {
   const handleCreateOpen = async () => {
     setOpenPhase('creating');
     setOpenError(null);
+    setOpenBlockedGameId(null);
     try {
       const res = await createOpenGame(myId, openTc);
       setOpenGameId(res.game_id);
       setCountdown(OPEN_GAME_TIMEOUT_SEC);
       setOpenPhase('waiting');
     } catch (err) {
-      const msg = err instanceof GameApiError && err.code === 'user_already_in_game'
-        ? 'You are already in an active game.'
-        : err instanceof Error ? err.message : 'Failed to create game link.';
-      setOpenError(msg);
+      if (err instanceof GameApiError && err.code === 'user_already_in_game') {
+        setOpenError('You are already in an active game.');
+        setOpenBlockedGameId(err.currentGameId ?? null);
+      } else {
+        setOpenError(err instanceof Error ? err.message : 'Failed to create game link.');
+      }
       setOpenPhase('idle');
     }
   };
@@ -304,7 +315,20 @@ export function GameLobby({ myId, onGameCreated }: GameLobbyProps) {
             showColor
           />
 
-          {friendError && <div className="ug-lobby__error">{friendError}</div>}
+          {friendError && (
+            <div className="ug-lobby__error">
+              {friendError}
+              {friendBlockedGameId && (
+                <button
+                  type="button"
+                  className="ug-lobby__goto-game"
+                  onClick={() => navigate(`/chess/${friendBlockedGameId}`)}
+                >
+                  Go to your game →
+                </button>
+              )}
+            </div>
+          )}
 
           <button
             type="submit"
@@ -331,7 +355,20 @@ export function GameLobby({ myId, onGameCreated }: GameLobbyProps) {
                 onSelectTc={setOpenTc}
                 showColor={false}
               />
-              {openError && <div className="ug-lobby__error">{openError}</div>}
+              {openError && (
+                <div className="ug-lobby__error">
+                  {openError}
+                  {openBlockedGameId && (
+                    <button
+                      type="button"
+                      className="ug-lobby__goto-game"
+                      onClick={() => navigate(`/chess/${openBlockedGameId}`)}
+                    >
+                      Go to your game →
+                    </button>
+                  )}
+                </div>
+              )}
               <button
                 type="button"
                 className="ug-lobby__submit"

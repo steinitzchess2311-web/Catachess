@@ -22,6 +22,7 @@ export function renderItems(
 ) {
     const sortedNodes = sortNodes(state, nodes);
     state.currentNodes = sortedNodes;
+    elements.itemsGrid.classList.remove('is-loading');
     elements.itemsGrid.innerHTML = '';
 
     // Insert New Folder / New Study cards as first two grid items (private mode only)
@@ -201,6 +202,27 @@ export function renderItems(
         card.style.setProperty('--enter-delay', `${delay}ms`);
         card.classList.add('grid-item--enter');
     });
+}
+
+export function renderLoadingItems(state: WorkspaceState, elements: WorkspaceElements) {
+    const count = state.mode === 'private' ? 8 : 6;
+    elements.itemsGrid.innerHTML = '';
+    elements.itemsGrid.classList.add('is-loading');
+
+    const fragment = document.createDocumentFragment();
+    for (let i = 0; i < count; i += 1) {
+        const card = document.createElement('div');
+        card.className = 'grid-item grid-item--skeleton';
+        card.innerHTML = `
+            <div class="skeleton-icon" aria-hidden="true"></div>
+            <div class="item-info">
+                <div class="skeleton-title" aria-hidden="true"></div>
+                <div class="skeleton-meta" aria-hidden="true"></div>
+            </div>
+        `;
+        fragment.appendChild(card);
+    }
+    elements.itemsGrid.appendChild(fragment);
 }
 
 export function renderReactComponents(

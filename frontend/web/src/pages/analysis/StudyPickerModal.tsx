@@ -28,6 +28,7 @@ export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPick
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isUnauthed, setIsUnauthed] = useState(false);
   const [showNewStudyInput, setShowNewStudyInput] = useState(false);
   const [newStudyTitle, setNewStudyTitle] = useState('');
   const newStudyInputRef = useRef<HTMLInputElement | null>(null);
@@ -37,6 +38,7 @@ export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPick
   const fetchNodes = useCallback(async (parentId: string) => {
     setIsLoading(true);
     setError(null);
+    setIsUnauthed(false);
     try {
       const param = parentId === 'root' ? 'root' : parentId;
       const response = await api.get(`/api/v1/workspace/nodes?parent_id=${param}`);
@@ -45,7 +47,11 @@ export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPick
       );
       setNodes(rawNodes);
     } catch (e) {
-      setError('Failed to load folders. Please try again.');
+      if (e instanceof Error && e.message === 'Unauthorized') {
+        setIsUnauthed(true);
+      } else {
+        setError('Failed to load folders. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -155,6 +161,13 @@ export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPick
 
         {/* Node list */}
         <div className="picker-body">
+          {isUnauthed && (
+            <div className="picker-unauthed">
+              <span className="picker-unauthed-icon">🔒</span>
+              <p className="picker-unauthed-text">Log in to save to a study</p>
+              <a href="/login" className="picker-unauthed-link">Go to Login →</a>
+            </div>
+          )}
           {isLoading && <div className="picker-loading">Loading...</div>}
           {!isLoading && nodes.length === 0 && (
             <div className="picker-empty">No folders or studies here.</div>

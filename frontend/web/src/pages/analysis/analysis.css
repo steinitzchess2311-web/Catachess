@@ -382,6 +382,40 @@
   background: #eef2ff;
 }
 
+.picker-unauthed {
+  padding: 36px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.picker-unauthed-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.picker-unauthed-text {
+  font-family: 'Inter', 'Space Grotesk', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.picker-unauthed-link {
+  font-family: 'Inter', 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #2563eb;
+  text-decoration: none;
+}
+
+.picker-unauthed-link:hover {
+  text-decoration: underline;
+}
+
 .picker-empty {
   padding: 32px 20px;
   text-align: center;

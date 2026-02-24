@@ -37,17 +37,23 @@ export function GameResultOverlay({
   const isLose = myColor !== null && result.winner !== null && result.winner !== myColor;
   const isDraw = result.winner === null;
 
-  const headline = isDraw
+  const isAborted = result.reason === 'aborted';
+
+  const headline = isAborted
+    ? 'Game Aborted'
+    : isDraw
     ? 'Draw'
     : isWin
     ? 'You Win!'
     : isLose
     ? 'You Lose'
-    : result.result; // 观战者显示原始结果字符串
+    : result.result;
 
-  const reasonText = REASON_LABEL[result.reason] ?? '';
+  const reasonText = isAborted ? '' : (REASON_LABEL[result.reason] ?? '');
 
-  const headlineClass = isDraw
+  const headlineClass = isAborted
+    ? 'ug-result__headline--draw'
+    : isDraw
     ? 'ug-result__headline--draw'
     : isWin
     ? 'ug-result__headline--win'
@@ -70,13 +76,15 @@ export function GameResultOverlay({
 
         {/* 操作按钮 */}
         <div className="ug-result__actions">
-          <button
-            type="button"
-            className="ug-result__btn ug-result__btn--primary"
-            onClick={handleAnalyze}
-          >
-            Analyze
-          </button>
+          {!isAborted && (
+            <button
+              type="button"
+              className="ug-result__btn ug-result__btn--primary"
+              onClick={handleAnalyze}
+            >
+              Analyze
+            </button>
+          )}
           <button
             type="button"
             className="ug-result__btn ug-result__btn--secondary"

@@ -278,6 +278,57 @@ function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
         window.location.href = next;
       },
     });
+
+    // When not logged in on private/shared workspace:
+    // 1. Inject a guest banner into #test-sign-container (below the sort bar)
+    // 2. Disable the New Folder / New Study cards
+    let observer: MutationObserver | null = null;
+    if ((mode === "private" || mode === "shared") && !isAuthed()) {
+      const loginHref = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+
+      const applyGuestUI = (root: HTMLElement) => {
+        // Inject banner into #test-sign-container if not already done
+        const signContainer = root.querySelector<HTMLElement>("#test-sign-container");
+        if (signContainer && !signContainer.querySelector(".guest-banner")) {
+          const banner = document.createElement("div");
+          banner.className = "guest-banner";
+          banner.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: linear-gradient(135deg, #fdf8ee 0%, #f7edcc 100%);
+            border-left: 4px solid #c9a84c;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin: 0 0 var(--space-md, 16px) 0;
+            box-shadow: 0 2px 8px rgba(180,140,60,0.12);
+            font-size: 15px;
+            font-family: 'Space Grotesk', 'Inter', sans-serif;
+            color: #7a5c1e;
+          `;
+          banner.innerHTML = `
+            <span>Log in to create folders or studies.</span>
+            <a href="${loginHref}" style="color:#b07d20;font-weight:700;text-decoration:none;border-bottom:1px solid #b07d20;padding-bottom:1px;">Log in →</a>
+          `;
+          signContainer.appendChild(banner);
+        }
+        // Disable new-item-cards
+        root.querySelectorAll<HTMLElement>(".new-item-card").forEach((card) => {
+          card.style.opacity = "0.35";
+          card.style.pointerEvents = "none";
+          card.style.cursor = "not-allowed";
+        });
+      };
+
+      observer = new MutationObserver(() => {
+        if (containerRef.current) applyGuestUI(containerRef.current);
+      });
+      observer.observe(containerRef.current, { childList: true, subtree: true });
+    }
+
+    return () => {
+      observer?.disconnect();
+    };
   }, [mode]); // ONLY depend on mode — navigate is accessed via ref to avoid spurious re-inits
 
   return (
@@ -535,17 +586,17 @@ function Layout() {
           <Route path="/workspace-select" element={<Navigate to="/workspace/private" replace />} />
 
           {/* Study routes — must precede workspace wildcard */}
-          <Route path="/workspace/private/:topFolder/:id" element={<Protected><PatchStudyPage /></Protected>} />
-          <Route path="/workspace/public/:topFolder/:id" element={<Protected><PatchStudyPage /></Protected>} />
-          <Route path="/workspace/shared/:topFolder/:id" element={<Protected><PatchStudyPage /></Protected>} />
+          <Route path="/workspace/private/:topFolder/:id" element={<PatchStudyPage />} />
+          <Route path="/workspace/public/:topFolder/:id" element={<PatchStudyPage />} />
+          <Route path="/workspace/shared/:topFolder/:id" element={<PatchStudyPage />} />
 
           {/* Workspace browser — wildcard covers /workspace/{mode} and /workspace/{mode}/{topFolder} */}
-          <Route path="/workspace/private/*" element={<Protected><WorkspaceSelect mode="private" /></Protected>} />
-          <Route path="/workspace/public/*" element={<Protected><WorkspaceSelect mode="public" /></Protected>} />
-          <Route path="/workspace/shared/*" element={<Protected><WorkspaceSelect mode="shared" /></Protected>} />
+          <Route path="/workspace/private/*" element={<WorkspaceSelect mode="private" />} />
+          <Route path="/workspace/public/*" element={<WorkspaceSelect mode="public" />} />
+          <Route path="/workspace/shared/*" element={<WorkspaceSelect mode="shared" />} />
 
-          {/* /workspace → redirect to private */}
-          <Route path="/workspace" element={<Navigate to="/workspace/private" replace />} />
+          {/* /workspace → redirect based on auth state */}
+          <Route path="/workspace" element={<Navigate to={isAuthed() ? "/workspace/private" : "/workspace/public"} replace />} />
 
           {/* Legacy study routes (backward compat) */}
           <Route path="/workspace/:id" element={<Protected>{USE_PATCH_STUDY ? <PatchStudyPage /> : <WorkspacePage />}</Protected>} />

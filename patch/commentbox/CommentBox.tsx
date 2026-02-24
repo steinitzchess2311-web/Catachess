@@ -96,18 +96,37 @@ export function CommentBox() {
           />
         ) : (
           <div className="study-info-panel">
-            <div className="study-fen-wrap">
-              <textarea className="study-fen-box" readOnly value={fen || 'FEN unavailable'} />
-              <button
-                type="button" className="study-fen-button is-inline"
-                onClick={handleCopyFen} disabled={!fen}
-              >
-                {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy FEN'}
-              </button>
+            <div className="study-output-card">
+              <div className="study-output-card-header">
+                <span className="study-output-card-label">Current FEN</span>
+                <button
+                  type="button"
+                  className="study-fen-button study-output-copy-btn"
+                  onClick={handleCopyFen}
+                  disabled={!fen}
+                >
+                  {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy FEN'}
+                </button>
+              </div>
+              <textarea className="study-fen-box study-output-fen-box" readOnly value={fen || 'FEN unavailable'} />
             </div>
-            <div className="study-fen-actions">
-              <button type="button" className="study-fen-button" onClick={() => handleExport('study')}   disabled={!state.studyId}>Export Study PGN</button>
-              <button type="button" className="study-fen-button" onClick={() => handleExport('chapter')} disabled={!state.studyId || !state.chapterId}>Export Chapter PGN</button>
+            <div className="study-fen-actions study-output-actions">
+              <button
+                type="button"
+                className="study-fen-button study-output-action-btn"
+                onClick={() => handleExport('study')}
+                disabled={!state.studyId}
+              >
+                Export Study PGN
+              </button>
+              <button
+                type="button"
+                className="study-fen-button study-output-action-btn"
+                onClick={() => handleExport('chapter')}
+                disabled={!state.studyId || !state.chapterId}
+              >
+                Export Chapter PGN
+              </button>
             </div>
           </div>
         )}

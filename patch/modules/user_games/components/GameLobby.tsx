@@ -1,108 +1,73 @@
 // ============================================================
-// GameLobby — 创建新对局表单
-// 支持指定对手、时间控制、颜色偏好
+// GameLobby — 创建新对局
+//
+// 两种模式：
+//   "vs Friend"  — 指定对手 ID，双方直接进入
+//   "Open Game"  — 生成可分享链接，任何人均可通过链接加入
 // ============================================================
 
-import React, { useState } from 'react';
-import { createGame } from '../api';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { GameApiError, abortGame, createGame, createOpenGame, getGameDetail } from '../api';
 import type { TimeControl } from '../types';
 
-// 预设时间控制选项
-const TIME_PRESETS: Array<{ label: string; tc: TimeControl }> = [
-  { label: '1+0  Bullet',    tc: { initial: 60,  increment: 0 } },
-  { label: '2+1  Bullet',    tc: { initial: 120, increment: 1 } },
-  { label: '3+0  Blitz',     tc: { initial: 180, increment: 0 } },
-  { label: '3+2  Blitz',     tc: { initial: 180, increment: 2 } },
-  { label: '5+0  Blitz',     tc: { initial: 300, increment: 0 } },
-  { label: '5+3  Blitz',     tc: { initial: 300, increment: 3 } },
-  { label: '10+0 Rapid',     tc: { initial: 600, increment: 0 } },
-  { label: '10+5 Rapid',     tc: { initial: 600, increment: 5 } },
-  { label: '15+10 Classical',tc: { initial: 900, increment: 10 } },
+// ---- 时间控制预设 -------------------------------------------
+
+const TIME_PRESETS: Array<{ label: string; short: string; tc: TimeControl }> = [
+  { label: 'Bullet',    short: '1+0',   tc: { initial: 60,  increment: 0 } },
+  { label: 'Bullet',    short: '2+1',   tc: { initial: 120, increment: 1 } },
+  { label: 'Blitz',     short: '3+0',   tc: { initial: 180, increment: 0 } },
+  { label: 'Blitz',     short: '3+2',   tc: { initial: 180, increment: 2 } },
+  { label: 'Blitz',     short: '5+0',   tc: { initial: 300, increment: 0 } },
+  { label: 'Blitz',     short: '5+3',   tc: { initial: 300, increment: 3 } },
+  { label: 'Rapid',     short: '10+0',  tc: { initial: 600, increment: 0 } },
+  { label: 'Rapid',     short: '10+5',  tc: { initial: 600, increment: 5 } },
+  { label: 'Classical', short: '15+10', tc: { initial: 900, increment: 10 } },
 ];
+
+// ---- Props --------------------------------------------------
 
 interface GameLobbyProps {
   myId: string;
-  /** 创建成功后返回 game_id */
+  /** 创建成功并可进入对局后的回调 */
   onGameCreated: (gameId: string) => void;
 }
 
-export function GameLobby({ myId, onGameCreated }: GameLobbyProps) {
-  const [opponentId, setOpponentId] = useState('');
-  const [selectedTc, setSelectedTc] = useState<TimeControl>({ initial: 300, increment: 3 });
-  const [colorPref, setColorPref] = useState<'white' | 'black' | 'random'>('random');
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+// ---- 子组件：时间控制 + 颜色偏好（两个模式共用）------------
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const opponent = opponentId.trim();
-    if (!opponent) return;
-    if (opponent === myId) {
-      setError("You can't play against yourself.");
-      return;
-    }
+interface TcColorPickerProps {
+  selectedTc: TimeControl;
+  onSelectTc: (tc: TimeControl) => void;
+  colorPref?: 'white' | 'black' | 'random';
+  onSelectColor?: (c: 'white' | 'black' | 'random') => void;
+  showColor: boolean;
+}
 
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const game = await createGame(myId, opponent, selectedTc, colorPref);
-      onGameCreated(game.game_id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create game.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+function TcColorPicker({ selectedTc, onSelectTc, colorPref, onSelectColor, showColor }: TcColorPickerProps) {
   return (
-    <div className="ug-lobby">
-      <h2 className="ug-lobby__title">New Game</h2>
-      <p className="ug-lobby__subtitle">
-        Enter your opponent's username to challenge them.
-      </p>
-
-      <form className="ug-lobby__form" onSubmit={handleSubmit}>
-        {/* 对手 ID */}
-        <div className="ug-lobby__field">
-          <label className="ug-lobby__label" htmlFor="opponent-id">
-            Opponent
-          </label>
-          <input
-            id="opponent-id"
-            type="text"
-            className="ug-lobby__input"
-            placeholder="Username"
-            value={opponentId}
-            onChange={(e) => setOpponentId(e.target.value)}
-            autoComplete="off"
-            autoFocus
-          />
+    <>
+      <div className="ug-lobby__field">
+        <label className="ug-lobby__label">Time Control</label>
+        <div className="ug-lobby__tc-grid">
+          {TIME_PRESETS.map((p) => {
+            const active =
+              p.tc.initial === selectedTc.initial &&
+              p.tc.increment === selectedTc.increment;
+            return (
+              <button
+                key={`${p.tc.initial}-${p.tc.increment}`}
+                type="button"
+                className={`ug-lobby__tc-btn ${active ? 'ug-lobby__tc-btn--active' : ''}`}
+                onClick={() => onSelectTc(p.tc)}
+              >
+                <span className="ug-lobby__tc-time">{p.short}</span>
+                <span className="ug-lobby__tc-cat">{p.label}</span>
+              </button>
+            );
+          })}
         </div>
+      </div>
 
-        {/* 时间控制 */}
-        <div className="ug-lobby__field">
-          <label className="ug-lobby__label">Time Control</label>
-          <div className="ug-lobby__tc-grid">
-            {TIME_PRESETS.map((p) => {
-              const active =
-                p.tc.initial === selectedTc.initial &&
-                p.tc.increment === selectedTc.increment;
-              return (
-                <button
-                  key={p.label}
-                  type="button"
-                  className={`ug-lobby__tc-btn ${active ? 'ug-lobby__tc-btn--active' : ''}`}
-                  onClick={() => setSelectedTc(p.tc)}
-                >
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 颜色偏好 */}
+      {showColor && colorPref !== undefined && onSelectColor && (
         <div className="ug-lobby__field">
           <label className="ug-lobby__label">Play as</label>
           <div className="ug-lobby__color-row">
@@ -111,28 +76,337 @@ export function GameLobby({ myId, onGameCreated }: GameLobbyProps) {
                 key={c}
                 type="button"
                 className={`ug-lobby__color-btn ${colorPref === c ? 'ug-lobby__color-btn--active' : ''}`}
-                onClick={() => setColorPref(c)}
+                onClick={() => onSelectColor(c)}
                 aria-label={c}
               >
-                {c === 'white' ? '♔' : c === 'black' ? '♚' : '⚖'}
+                <span className="ug-lobby__color-icon">
+                  {c === 'white' ? '♔' : c === 'black' ? '♚' : '⚖'}
+                </span>
                 <span>{c.charAt(0).toUpperCase() + c.slice(1)}</span>
               </button>
             ))}
           </div>
         </div>
+      )}
+    </>
+  );
+}
 
-        {/* 错误提示 */}
-        {error && <div className="ug-lobby__error">{error}</div>}
+// ---- 主组件 -------------------------------------------------
 
-        {/* 提交 */}
+type LobbyMode = 'friend' | 'open';
+
+/** open game 内部阶段 */
+type OpenPhase = 'idle' | 'creating' | 'waiting' | 'expired';
+
+const OPEN_GAME_TIMEOUT_SEC = 600; // 10 分钟
+
+export function GameLobby({ myId, onGameCreated }: GameLobbyProps) {
+  // ---- 模式切换 -----------------------------------------------
+  const [mode, setMode] = useState<LobbyMode>('friend');
+
+  // ---- vs Friend state ----------------------------------------
+  const [opponentId, setOpponentId] = useState('');
+  const [colorPref, setColorPref] = useState<'white' | 'black' | 'random'>('random');
+  const [friendTc, setFriendTc] = useState<TimeControl>({ initial: 300, increment: 3 });
+  const [friendLoading, setFriendLoading] = useState(false);
+  const [friendError, setFriendError] = useState<string | null>(null);
+
+  // ---- Open Game state ----------------------------------------
+  const [openTc, setOpenTc] = useState<TimeControl>({ initial: 300, increment: 3 });
+  const [openPhase, setOpenPhase] = useState<OpenPhase>('idle');
+  const [openGameId, setOpenGameId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [countdown, setCountdown] = useState(OPEN_GAME_TIMEOUT_SEC);
+  const [openError, setOpenError] = useState<string | null>(null);
+
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ---- vs Friend: 提交 ----------------------------------------
+  const handleFriendSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const opponent = opponentId.trim();
+    if (!opponent) return;
+    if (opponent === myId) {
+      setFriendError("You can't play against yourself.");
+      return;
+    }
+    setFriendLoading(true);
+    setFriendError(null);
+    try {
+      const game = await createGame(myId, opponent, friendTc, colorPref);
+      onGameCreated(game.game_id);
+    } catch (err) {
+      const msg = err instanceof GameApiError && err.code === 'user_already_in_game'
+        ? 'You are already in an active game.'
+        : err instanceof Error ? err.message : 'Failed to create game.';
+      setFriendError(msg);
+      setFriendLoading(false);
+    }
+  };
+
+  // ---- Open Game: 创建 ----------------------------------------
+  const handleCreateOpen = async () => {
+    setOpenPhase('creating');
+    setOpenError(null);
+    try {
+      const res = await createOpenGame(myId, openTc);
+      setOpenGameId(res.game_id);
+      setCountdown(OPEN_GAME_TIMEOUT_SEC);
+      setOpenPhase('waiting');
+    } catch (err) {
+      const msg = err instanceof GameApiError && err.code === 'user_already_in_game'
+        ? 'You are already in an active game.'
+        : err instanceof Error ? err.message : 'Failed to create game link.';
+      setOpenError(msg);
+      setOpenPhase('idle');
+    }
+  };
+
+  // ---- Open Game: 轮询对手是否加入 ---------------------------
+  useEffect(() => {
+    if (openPhase !== 'waiting' || !openGameId) return;
+
+    pollRef.current = setInterval(async () => {
+      try {
+        const game = await getGameDetail(openGameId);
+        if (game.status === 'waiting' || game.status === 'ongoing') {
+          clearInterval(pollRef.current!);
+          clearInterval(countdownRef.current!);
+          onGameCreated(openGameId);
+        } else if (game.status === 'aborted' || game.status === 'completed') {
+          clearInterval(pollRef.current!);
+          clearInterval(countdownRef.current!);
+          setOpenPhase('expired');
+        }
+      } catch { /* network blip, ignore */ }
+    }, 2000);
+
+    return () => clearInterval(pollRef.current!);
+  }, [openPhase, openGameId, onGameCreated]);
+
+  // ---- Open Game: 倒计时 -------------------------------------
+  useEffect(() => {
+    if (openPhase !== 'waiting') return;
+
+    countdownRef.current = setInterval(() => {
+      setCountdown((n) => {
+        if (n <= 1) {
+          clearInterval(countdownRef.current!);
+          clearInterval(pollRef.current!);
+          setOpenPhase('expired');
+          return 0;
+        }
+        return n - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(countdownRef.current!);
+  }, [openPhase]);
+
+  // ---- Open Game: 取消/中止 ----------------------------------
+  const handleCancelOpen = useCallback(async () => {
+    clearInterval(pollRef.current!);
+    clearInterval(countdownRef.current!);
+    if (openGameId) {
+      try { await abortGame(openGameId, myId); } catch { /* ignore */ }
+    }
+    setOpenPhase('idle');
+    setOpenGameId(null);
+    setCopied(false);
+  }, [openGameId, myId]);
+
+  // ---- 复制链接 -----------------------------------------------
+  const shareUrl = openGameId
+    ? `${window.location.origin}/chess/${openGameId}/join`
+    : '';
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // 回退：选择文本
+    }
+  };
+
+  // ---- 倒计时格式化 -------------------------------------------
+  const mins = String(Math.floor(countdown / 60)).padStart(2, '0');
+  const secs = String(countdown % 60).padStart(2, '0');
+  const countdownStr = `${mins}:${secs}`;
+  const isUrgent = countdown <= 60;
+
+  // ---- 切换模式时重置 ----------------------------------------
+  const switchMode = (m: LobbyMode) => {
+    if (m === mode) return;
+    setMode(m);
+    setFriendError(null);
+    setOpenError(null);
+  };
+
+  // ================================================================
+  // Render
+  // ================================================================
+
+  return (
+    <div className="ug-lobby">
+      <h2 className="ug-lobby__title">New Game</h2>
+
+      {/* 模式选项卡 */}
+      <div className="ug-lobby__tabs" role="tablist">
         <button
-          type="submit"
-          className="ug-lobby__submit"
-          disabled={isLoading || !opponentId.trim()}
+          role="tab"
+          type="button"
+          aria-selected={mode === 'friend'}
+          className={`ug-lobby__tab ${mode === 'friend' ? 'ug-lobby__tab--active' : ''}`}
+          onClick={() => switchMode('friend')}
         >
-          {isLoading ? 'Creating...' : 'Challenge'}
+          vs Friend
         </button>
-      </form>
+        <button
+          role="tab"
+          type="button"
+          aria-selected={mode === 'open'}
+          className={`ug-lobby__tab ${mode === 'open' ? 'ug-lobby__tab--active' : ''}`}
+          onClick={() => switchMode('open')}
+        >
+          Share Link
+        </button>
+      </div>
+
+      {/* ---- vs Friend ---- */}
+      {mode === 'friend' && (
+        <form className="ug-lobby__form" onSubmit={handleFriendSubmit}>
+          <div className="ug-lobby__field">
+            <label className="ug-lobby__label" htmlFor="opponent-id">
+              Opponent username
+            </label>
+            <input
+              id="opponent-id"
+              type="text"
+              className="ug-lobby__input"
+              placeholder="Enter username"
+              value={opponentId}
+              onChange={(e) => setOpponentId(e.target.value)}
+              autoComplete="off"
+              autoFocus
+              disabled={friendLoading}
+            />
+          </div>
+
+          <TcColorPicker
+            selectedTc={friendTc}
+            onSelectTc={setFriendTc}
+            colorPref={colorPref}
+            onSelectColor={setColorPref}
+            showColor
+          />
+
+          {friendError && <div className="ug-lobby__error">{friendError}</div>}
+
+          <button
+            type="submit"
+            className="ug-lobby__submit"
+            disabled={friendLoading || !opponentId.trim()}
+          >
+            {friendLoading ? 'Creating…' : 'Challenge'}
+          </button>
+        </form>
+      )}
+
+      {/* ---- Open Game ---- */}
+      {mode === 'open' && (
+        <div className="ug-lobby__form">
+          {/* idle — 选时间控制，生成链接 */}
+          {openPhase === 'idle' && (
+            <>
+              <p className="ug-lobby__open-hint">
+                Generate a link and share it with anyone — they can join without an account.
+                The server randomly assigns colors.
+              </p>
+              <TcColorPicker
+                selectedTc={openTc}
+                onSelectTc={setOpenTc}
+                showColor={false}
+              />
+              {openError && <div className="ug-lobby__error">{openError}</div>}
+              <button
+                type="button"
+                className="ug-lobby__submit"
+                onClick={handleCreateOpen}
+              >
+                Create Link
+              </button>
+            </>
+          )}
+
+          {/* creating — 旋转中 */}
+          {openPhase === 'creating' && (
+            <div className="ug-lobby__open-spinner-wrap">
+              <div className="ug-lobby__spinner" />
+              <span>Generating link…</span>
+            </div>
+          )}
+
+          {/* waiting — 等待对手 */}
+          {openPhase === 'waiting' && (
+            <div className="ug-lobby__open-waiting">
+              <p className="ug-lobby__open-waiting__label">Share this link</p>
+
+              <div className="ug-lobby__link-row">
+                <input
+                  className="ug-lobby__link-input"
+                  readOnly
+                  value={shareUrl}
+                  onFocus={(e) => e.target.select()}
+                />
+                <button
+                  type="button"
+                  className={`ug-lobby__link-copy ${copied ? 'ug-lobby__link-copy--copied' : ''}`}
+                  onClick={handleCopy}
+                  title="Copy link"
+                >
+                  {copied ? '✓ Copied' : 'Copy'}
+                </button>
+              </div>
+
+              <div className="ug-lobby__open-status">
+                <div className="ug-lobby__spinner ug-lobby__spinner--sm" />
+                <span>Waiting for opponent…</span>
+              </div>
+
+              <div className={`ug-lobby__open-countdown ${isUrgent ? 'ug-lobby__open-countdown--urgent' : ''}`}>
+                Link expires in <strong>{countdownStr}</strong>
+              </div>
+
+              <button
+                type="button"
+                className="ug-lobby__cancel"
+                onClick={handleCancelOpen}
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          {/* expired */}
+          {openPhase === 'expired' && (
+            <div className="ug-lobby__open-expired">
+              <span className="ug-lobby__open-expired__icon">⏱</span>
+              <p>The link expired before anyone joined.</p>
+              <button
+                type="button"
+                className="ug-lobby__submit"
+                onClick={() => { setOpenPhase('idle'); setOpenGameId(null); }}
+              >
+                Create New Link
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

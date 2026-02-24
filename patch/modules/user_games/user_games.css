@@ -81,13 +81,54 @@
   font-size: 22px;
   font-weight: 800;
   color: #1a1a2e;
-  margin: 0 0 6px;
+  margin: 0 0 20px;
 }
 
-.ug-lobby__subtitle {
+/* ---- 模式选项卡 ---- */
+
+.ug-lobby__tabs {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid #e0e0dc;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+.ug-lobby__tab {
+  flex: 1;
+  padding: 9px 16px;
   font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  border: none;
+  background: none;
   color: #888;
-  margin: 0 0 28px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+
+.ug-lobby__tab + .ug-lobby__tab {
+  border-left: 1.5px solid #e0e0dc;
+}
+
+.ug-lobby__tab:hover:not(.ug-lobby__tab--active) {
+  background: #f8f8f4;
+  color: #444;
+}
+
+.ug-lobby__tab--active {
+  background: #f0f1ff;
+  color: #4338ca;
+}
+
+/* Open Game 提示文字 */
+.ug-lobby__open-hint {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.55;
+  margin: 0 0 4px;
 }
 
 .ug-lobby__form {
@@ -138,18 +179,31 @@
 
 .ug-lobby__tc-btn {
   padding: 8px 6px;
-  font-size: 12px;
   font-family: inherit;
-  font-weight: 500;
   border: 1.5px solid #e0e0dc;
   border-radius: 8px;
   background: #fff;
   color: #555;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s, color 0.15s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.ug-lobby__tc-time {
+  font-size: 13px;
+  font-weight: 700;
+  color: inherit;
+}
+
+.ug-lobby__tc-cat {
+  font-size: 10px;
+  font-weight: 500;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .ug-lobby__tc-btn:hover {
@@ -161,7 +215,10 @@
   border-color: #818cf8;
   background: #f0f1ff;
   color: #4338ca;
-  font-weight: 700;
+}
+
+.ug-lobby__tc-btn--active .ug-lobby__tc-cat {
+  color: #818cf8;
 }
 
 /* 颜色偏好 */
@@ -177,7 +234,6 @@
   align-items: center;
   gap: 4px;
   padding: 10px 8px;
-  font-size: 11px;
   font-family: inherit;
   font-weight: 500;
   border: 1.5px solid #e0e0dc;
@@ -188,8 +244,15 @@
   transition: border-color 0.15s, background 0.15s;
 }
 
-.ug-lobby__color-btn:first-child { font-size: 22px; }
-.ug-lobby__color-btn > span { font-size: 11px; }
+.ug-lobby__color-icon {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.ug-lobby__color-btn > span:last-child {
+  font-size: 11px;
+  text-transform: capitalize;
+}
 
 .ug-lobby__color-btn:hover {
   border-color: #818cf8;
@@ -199,6 +262,163 @@
   border-color: #818cf8;
   background: #f0f1ff;
   color: #4338ca;
+}
+
+/* ---- Open Game 面板 ---- */
+
+.ug-lobby__open-spinner-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 24px 0;
+  color: #888;
+  font-size: 14px;
+}
+
+/* 通用旋转加载器 */
+.ug-lobby__spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e0e0dc;
+  border-top-color: #4338ca;
+  border-radius: 50%;
+  animation: ug-spin 0.75s linear infinite;
+  flex-shrink: 0;
+}
+
+.ug-lobby__spinner--sm {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+@keyframes ug-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 等待面板 */
+.ug-lobby__open-waiting {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ug-lobby__open-waiting__label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #888;
+  margin: 0;
+}
+
+.ug-lobby__link-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.ug-lobby__link-input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  border: 1.5px solid #e0e0dc;
+  border-radius: 10px;
+  background: #f8f8f4;
+  color: #444;
+  outline: none;
+  cursor: text;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ug-lobby__link-copy {
+  padding: 0 18px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  border: 1.5px solid #818cf8;
+  border-radius: 10px;
+  background: #fff;
+  color: #4338ca;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.ug-lobby__link-copy:hover {
+  background: #f0f1ff;
+}
+
+.ug-lobby__link-copy--copied {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #16a34a;
+}
+
+.ug-lobby__open-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #555;
+}
+
+.ug-lobby__open-countdown {
+  font-size: 12px;
+  color: #888;
+}
+
+.ug-lobby__open-countdown strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.ug-lobby__open-countdown--urgent {
+  color: #ea580c;
+}
+
+.ug-lobby__cancel {
+  padding: 9px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 600;
+  border: 1.5px solid #e0e0dc;
+  border-radius: 10px;
+  background: none;
+  color: #888;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.ug-lobby__cancel:hover {
+  border-color: #aaa;
+  color: #444;
+}
+
+/* 过期状态 */
+.ug-lobby__open-expired {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  text-align: center;
+}
+
+.ug-lobby__open-expired__icon {
+  font-size: 32px;
+  opacity: 0.5;
+}
+
+.ug-lobby__open-expired p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
 }
 
 .ug-lobby__error {
@@ -913,6 +1133,219 @@
 @keyframes ug-btn-pulse {
   from { transform: scale(0.97); }
   to   { transform: scale(1); }
+}
+
+/* ================================================================
+   JoinGamePage — 通过分享链接加入
+   ================================================================ */
+
+.ug-join-page {
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 100px);
+}
+
+.ug-join-card {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #e8e8e4;
+  border-radius: 20px;
+  padding: 40px 36px;
+  box-shadow: 0 4px 32px rgba(0, 0, 0, 0.07);
+  animation: ug-page-in 0.35s ease-out both;
+}
+
+.ug-join-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.ug-join-icon {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.ug-join-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin: 0 0 6px;
+}
+
+.ug-join-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+}
+
+.ug-join-tc {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 14px;
+  background: #f8f8f4;
+  border-radius: 12px;
+}
+
+.ug-join-tc__time {
+  font-size: 26px;
+  font-weight: 800;
+  color: #1a1a2e;
+  font-variant-numeric: tabular-nums;
+}
+
+.ug-join-tc__cat {
+  font-size: 13px;
+  font-weight: 500;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ug-join-anon-note {
+  font-size: 12px;
+  color: #78716c;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  line-height: 1.5;
+  margin-bottom: 4px;
+}
+
+.ug-join-anon-note__link {
+  color: #1a73e8;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ug-join-anon-note__link:hover { text-decoration: underline; }
+
+.ug-join-btn {
+  width: 100%;
+  margin-top: 4px;
+}
+
+/* 各状态通用容器 */
+.ug-join-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 8px 0;
+}
+
+.ug-join-state--loading {
+  gap: 14px;
+  color: #888;
+  font-size: 14px;
+  padding: 20px 0;
+}
+
+.ug-join-state__icon {
+  font-size: 36px;
+  line-height: 1;
+  opacity: 0.6;
+}
+
+.ug-join-state h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0;
+}
+
+.ug-join-state p {
+  font-size: 14px;
+  color: #666;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.ug-join-state__msg {
+  font-size: 12px;
+  color: #dc2626;
+  background: #fef2f2;
+  border-radius: 8px;
+  padding: 8px 12px;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+/* 加入成功 */
+.ug-join-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.ug-join-success__check {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #f0fdf4;
+  border: 2px solid #86efac;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #16a34a;
+  font-weight: 700;
+  animation: ug-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes ug-pop-in {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
+
+.ug-join-color-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8f8f4;
+  border-radius: 10px;
+  padding: 10px 18px;
+  font-size: 14px;
+  color: #444;
+}
+
+.ug-join-color-icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.ug-join-color-icon--white {
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2));
+}
+
+.ug-join-color-icon--black {
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
+}
+
+.ug-join-vs {
+  font-size: 13px;
+  color: #888;
+  margin: 0;
+}
+
+.ug-join-redirect {
+  font-size: 13px;
+  color: #aaa;
+  margin: 0;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ================================================================

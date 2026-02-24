@@ -12,7 +12,7 @@ export interface TimeControl {
 
 // ---- 对局状态 ------------------------------------------------
 
-export type GameStatus = 'waiting' | 'ongoing' | 'completed' | 'aborted';
+export type GameStatus = 'open' | 'waiting' | 'ongoing' | 'completed' | 'aborted';
 
 export type PlayerColor = 'white' | 'black';
 
@@ -29,6 +29,22 @@ export type GameEndReason =
   | 'aborted';
 
 // ---- HTTP 响应类型 ------------------------------------------
+
+/** POST /api/game/create-open 的响应 */
+export interface CreateOpenGameResponse {
+  game_id: string;
+  status: 'open';
+  created_by: string;
+}
+
+/** POST /api/game/{game_id}/join 的响应 */
+export interface JoinGameResponse {
+  game_id: string;
+  white_player_id: string;
+  black_player_id: string;
+  /** 仅匿名加入时有值，前端必须持久化用于 WS 连接 */
+  anon_user_id: string | null;
+}
 
 /** POST /api/game/create 的响应 */
 export interface CreateGameResponse {
@@ -62,7 +78,10 @@ export interface CurrentGameResponse {
 export interface GameDetail {
   game_id: string;
   white_player_id: string;
-  black_player_id: string;
+  /** open 状态时为 null */
+  black_player_id: string | null;
+  /** 创建者 ID（open 对局时有意义）*/
+  created_by?: string;
   status: GameStatus;
   result: string | null;   // '1-0' | '0-1' | '1/2-1/2'
   end_reason: GameEndReason | null;

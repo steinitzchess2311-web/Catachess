@@ -11,7 +11,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Chess } from 'chess.js';
 import { abortGame } from './api';
-import { usePlayerId } from './hooks/useGuestId';
+import { getAnonIdForGame, getOrCreateGuestId } from './hooks/useGuestId';
 import { useGameWs } from './hooks/useGameWs';
 import { LiveBoard } from './components/LiveBoard';
 import { PlayerBar } from './components/PlayerBar';
@@ -30,8 +30,17 @@ export function LiveGamePage({ username }: LiveGamePageProps) {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
 
-  // 当前用户 ID（登录用 username，访客用 guest_xxx）
-  const myId = usePlayerId(username);
+  // 当前用户 ID，优先级：
+  //   1. 通过分享链接匿名加入时服务端返回的 anon_user_id（存于 sessionStorage）
+  //   2. 已登录 username
+  //   3. localStorage 中的 guest ID
+  const myId = useMemo(() => {
+    if (gameId) {
+      const anonId = getAnonIdForGame(gameId);
+      if (anonId) return anonId;
+    }
+    return username ?? getOrCreateGuestId();
+  }, [gameId, username]);
 
   const {
     state,

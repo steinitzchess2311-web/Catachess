@@ -42,3 +42,25 @@ export function usePlayerId(username: string | null): string {
     return getOrCreateGuestId();
   }, [username]);
 }
+
+// ---- 匿名加入对局的 ID（按 game 维度存储）-------------------
+// 通过分享链接匿名加入时，服务端返回 anon_user_id，
+// 前端必须按 gameId 保存，用于后续 WS 连接和断线重连。
+
+const ANON_GAME_PREFIX = 'cata_anon_';
+
+/** 保存匿名加入某局的 anon_user_id（存入 sessionStorage）*/
+export function saveAnonIdForGame(gameId: string, anonId: string): void {
+  try {
+    sessionStorage.setItem(ANON_GAME_PREFIX + gameId, anonId);
+  } catch { /* ignore */ }
+}
+
+/** 读取匿名加入某局保存的 ID，无则返回 null */
+export function getAnonIdForGame(gameId: string): string | null {
+  try {
+    return sessionStorage.getItem(ANON_GAME_PREFIX + gameId);
+  } catch {
+    return null;
+  }
+}

@@ -5,11 +5,22 @@
 
 import type {
   CreateGameResponse,
+  CreateOpenGameResponse,
   CurrentGameResponse,
   GameDetail,
   GameListResponse,
+  JoinGameResponse,
   TimeControl,
 } from './types';
+
+// ---- 业务错误（含服务端 error code）--------------------------
+
+export class GameApiError extends Error {
+  constructor(public readonly code: string, message: string) {
+    super(message);
+    this.name = 'GameApiError';
+  }
+}
 
 const BASE = 'https://gameserver.catachess.com';
 
@@ -22,11 +33,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    // 尽量解析错误 body，给出有意义的提示
     const body = await res.json().catch(() => null);
-    throw new Error(
-      body?.message ?? body?.detail ?? `HTTP ${res.status}`
-    );
+    const code: string = body?.detail?.error ?? 'unknown';
+    const message: string =
+      body?.detail?.message ?? body?.message ?? `HTTP ${res.status}`;
+    throw new GameApiError(code, message);
   }
 
   return res.json();
@@ -59,6 +70,39 @@ export async function createGame(
       time_control: timeControl,
       color_preference: colorPreference,
     }),
+  });
+}
+
+// ---- 创建开放对局（无需指定对手，生成分享链接）---------------
+
+export async function createOpenGame(
+  playerId: string,
+  timeControl: TimeControl = { initial: 300, increment: 3 },
+): Promise<CreateOpenGameResponse> {
+  return request<CreateOpenGameResponse>('/api/game/create-open', {
+    method: 'POST',
+    body: JSON.stringify({
+      player_id: playerId,
+      time_control: timeControl,
+    }),
+  });
+}
+
+// ---- 加入开放对局 -------------------------------------------
+
+/**
+ * 加入处于 open 状态的对局。
+ * - userId 有值 → 已登录/访客 ID
+ * - userId 为 undefined → 匿名，服务端生成 anon_user_id，
+ *   前端必须将其持久化用于 WS 连接
+ */
+export async function joinGame(
+  gameId: string,
+  userId?: string,
+): Promise<JoinGameResponse> {
+  return request<JoinGameResponse>(`/api/game/${gameId}/join`, {
+    method: 'POST',
+    body: JSON.stringify(userId ? { user_id: userId } : {}),
   });
 }
 

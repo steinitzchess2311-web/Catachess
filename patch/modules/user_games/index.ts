@@ -5,3 +5,4 @@
 export { PlayPage } from './PlayPage';
 export { LiveGamePage } from './LiveGamePage';
 export { AnalyzeGamePage } from './AnalyzeGamePage';
+export { JoinGamePage } from './JoinGamePage';

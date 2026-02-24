@@ -8,6 +8,8 @@ import { importPgn } from '@patch/pgn/import';
 import { ExplorerPanel } from '@patch/modules/explorer';
 import { AnalysisSidebar } from './AnalysisSidebar';
 import { StudyPickerModal } from './StudyPickerModal';
+import { OutputPanel } from '@patch/commentbox/OutputPanel';
+import { exportPgn } from '@patch/pgn/export';
 import './analysis.css';
 
 // ---- Location state 类型 ------------------------------------
@@ -93,6 +95,23 @@ function AnalysisPageContent() {
   const clearPlayerFilter = useCallback(() => {
     setSearchParams(new URLSearchParams());
   }, [setSearchParams]);
+
+  const handleExportPgn = useCallback(() => {
+    const { pgn } = exportPgn(state.tree, {}, {
+      includeComments: true,
+      includeNags: true,
+      includeVariations: true,
+    });
+    const blob = new Blob([pgn], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'analysis.pgn';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [state.tree]);
 
   const [rightbarWidth, setRightbarWidth] = useState(280);
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
@@ -238,6 +257,21 @@ function AnalysisPageContent() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ---- Output footer ---- */}
+      <div className="analysis-footer">
+        <OutputPanel
+          exportActions={
+            <button
+              type="button"
+              className="study-fen-button study-output-action-btn"
+              onClick={handleExportPgn}
+            >
+              Export PGN
+            </button>
+          }
+        />
       </div>
 
       {showPicker && (

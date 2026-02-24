@@ -6,7 +6,8 @@
   min-height: 100vh;
   padding: 16px;
   box-sizing: border-box;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 /* ── Header ─────────────────────────────────────── */
@@ -552,5 +553,17 @@
   color: #e74c3c;
   font-size: 13px;
   padding: 0 20px 8px;
+  flex-shrink: 0;
+}
+
+/* ── Output footer ──────────────────────────────── */
+
+.analysis-footer {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-1);
   flex-shrink: 0;
 }

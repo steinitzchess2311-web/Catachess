@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useStudy } from '../studyContext';
 import { ShareSettings } from './ShareSettings/index';
+import { OutputPanel } from './OutputPanel';
 
 export function CommentBox() {
   const { state, setComment } = useStudy();
@@ -8,35 +9,10 @@ export function CommentBox() {
 
   const [value,     setValue]     = useState(currentNode?.comment || '');
   const [activeTab, setActiveTab] = useState<'comment' | 'output' | 'settings'>('comment');
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
-
-  const fen = state.currentFen || '';
 
   useEffect(() => {
     setValue(currentNode?.comment || '');
   }, [currentNode?.comment, state.cursorNodeId]);
-
-  useEffect(() => {
-    if (copyState === 'idle') return;
-    const t = window.setTimeout(() => setCopyState('idle'), 1500);
-    return () => window.clearTimeout(t);
-  }, [copyState]);
-
-  const handleCopyFen = async () => {
-    if (!fen) return;
-    try {
-      if (navigator?.clipboard?.writeText) {
-        await navigator.clipboard.writeText(fen);
-      } else {
-        const el = document.createElement('textarea');
-        el.value = fen; el.style.position = 'absolute'; el.style.left = '-9999px';
-        document.body.appendChild(el); el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-      }
-      setCopyState('copied');
-    } catch { setCopyState('error'); }
-  };
 
   const downloadText = (filename: string, text: string) => {
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
@@ -95,40 +71,28 @@ export function CommentBox() {
             }}
           />
         ) : (
-          <div className="study-info-panel">
-            <div className="study-output-card">
-              <div className="study-output-card-header">
-                <span className="study-output-card-label">Current FEN</span>
+          <OutputPanel
+            exportActions={
+              <>
                 <button
                   type="button"
-                  className="study-fen-button study-output-copy-btn"
-                  onClick={handleCopyFen}
-                  disabled={!fen}
+                  className="study-fen-button study-output-action-btn"
+                  onClick={() => handleExport('study')}
+                  disabled={!state.studyId}
                 >
-                  {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Copy failed' : 'Copy FEN'}
+                  Export Study PGN
                 </button>
-              </div>
-              <textarea className="study-fen-box study-output-fen-box" readOnly value={fen || 'FEN unavailable'} />
-            </div>
-            <div className="study-fen-actions study-output-actions">
-              <button
-                type="button"
-                className="study-fen-button study-output-action-btn"
-                onClick={() => handleExport('study')}
-                disabled={!state.studyId}
-              >
-                Export Study PGN
-              </button>
-              <button
-                type="button"
-                className="study-fen-button study-output-action-btn"
-                onClick={() => handleExport('chapter')}
-                disabled={!state.studyId || !state.chapterId}
-              >
-                Export Chapter PGN
-              </button>
-            </div>
-          </div>
+                <button
+                  type="button"
+                  className="study-fen-button study-output-action-btn"
+                  onClick={() => handleExport('chapter')}
+                  disabled={!state.studyId || !state.chapterId}
+                >
+                  Export Chapter PGN
+                </button>
+              </>
+            }
+          />
         )}
       </div>
     </div>

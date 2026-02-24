@@ -331,7 +331,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
             )}
           </Link>
         ) : (
-          <Link to="/login" className="nav-link">Login</Link>
+          <Link to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`} className="nav-link">Login</Link>
         )}
       </div>
     </header>

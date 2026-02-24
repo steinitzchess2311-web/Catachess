@@ -4,6 +4,7 @@
 // ============================================================
 
 import React, { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { GameHistoryItem } from '../types';
 
 // 结果文本映射
@@ -46,9 +47,10 @@ function HistoryCard({ item, delay = 0 }: HistoryCardProps) {
   const label = resultLabel(item);
   const cls = resultClass(item);
   const opponent = item.opponent_id;
+  const navigate = useNavigate();
 
   const handleClick = () => {
-    window.open(`/chess/${item.game_id}`, '_blank', 'noopener');
+    navigate(`/chess/${item.game_id}`);
   };
 
   return (

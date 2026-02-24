@@ -189,10 +189,12 @@ export function useGameWs(
       setState((prev) => ({ ...prev, phase: 'disconnected', error: 'Connection error' }));
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       setState((prev) => {
         // 如果已经 over，不覆盖状态
         if (prev.phase === 'over') return prev;
+        // 4006 = game completed，转为 over 让 LiveGamePage 决定如何处理
+        if (event.code === 4006) return { ...prev, phase: 'over' };
         return { ...prev, phase: 'disconnected' };
       });
     };

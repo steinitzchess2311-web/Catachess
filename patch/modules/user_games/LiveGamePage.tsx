@@ -132,6 +132,15 @@ export function LiveGamePage({ username }: LiveGamePageProps) {
   const bottomActive = state.turn === bottomColor && state.phase === 'ongoing';
   const isOver = state.phase === 'over';
 
+  // ---- 已完成对局自动跳转分析页 ------------------------------
+  // phase=over 且没有通过 WS 收到任何数据（result=null, moves=0）
+  // 说明连接的是已结束的历史对局，直接跳分析页
+  useEffect(() => {
+    if (state.phase === 'over' && state.result === null && state.moves.length === 0 && gameId) {
+      navigate(`/chess/${gameId}/analyze`, { replace: true });
+    }
+  }, [state.phase, state.result, state.moves.length, gameId, navigate]);
+
   // ---- 连接状态渲染 ------------------------------------------
   if (state.phase === 'connecting') {
     return (

@@ -242,6 +242,7 @@ const PlayerPage: React.FC = () => {
           <section className="ps-idle-card" aria-label="Player search guidance">
             <h2 className="ps-idle-title">Start by searching a player</h2>
             <p className="ps-idle-desc">Enter a "," or space between LAST name and FIRST name</p>
+            <p className="ps-idle-try">Try it out:</p>
             <div className="ps-idle-quick">
               {IDLE_QUICK_LINKS.map((item) => (
                 <button

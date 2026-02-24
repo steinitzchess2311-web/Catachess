@@ -37,28 +37,14 @@ type ViewState =
   | { kind: 'players'; query: string; list: PlayerSuggestion[]; loading: boolean }
   | { kind: 'games';   player: string };
 
-// ---- Hero illustration ----
-
-function HeroIllustration() {
-  return (
-    <svg className="ps-hero-board" viewBox="0 0 120 120" fill="none" aria-hidden>
-      {[0,1,2,3,4,5,6,7].map(r =>
-        [0,1,2,3,4,5,6,7].map(c => (
-          <rect
-            key={`${r}-${c}`}
-            x={c * 15} y={r * 15} width={15} height={15}
-            fill={(r + c) % 2 === 0 ? 'rgba(255,255,255,0.08)' : 'transparent'}
-          />
-        ))
-      )}
-      <text x="22" y="48" fontSize="18" textAnchor="middle" fill="rgba(255,255,255,0.7)">♛</text>
-      <text x="52" y="78" fontSize="18" textAnchor="middle" fill="rgba(255,255,255,0.4)">♞</text>
-      <text x="82" y="38" fontSize="18" textAnchor="middle" fill="rgba(255,255,255,0.6)">♜</text>
-      <text x="37" y="103" fontSize="18" textAnchor="middle" fill="rgba(255,255,255,0.3)">♝</text>
-      <text x="97" y="68" fontSize="18" textAnchor="middle" fill="rgba(255,255,255,0.5)">♚</text>
-    </svg>
-  );
-}
+const IDLE_QUICK_SEARCHES = [
+  'Magnus Carlsen',
+  'Hikaru Nakamura',
+  'Ju Wenjun',
+  'Fabiano Caruana',
+  'Alireza Firouzja',
+  'Hou Yifan',
+];
 
 // ---- Games sub-view ----
 
@@ -253,6 +239,31 @@ const PlayerPage: React.FC = () => {
           />
         </div>
       </div>
+
+      {view.kind === 'idle' && (
+        <div className="ps-idle">
+          <div className="ps-idle-art" aria-hidden />
+          <section className="ps-idle-card" aria-label="Player search guidance">
+            <p className="ps-idle-eyebrow">Getting Started</p>
+            <h2 className="ps-idle-title">Start by searching a player</h2>
+            <p className="ps-idle-desc">
+              Search by full name for best results. You can open player games, compare styles, and jump to analysis.
+            </p>
+            <div className="ps-idle-quick">
+              {IDLE_QUICK_SEARCHES.map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  className="ps-idle-chip"
+                  onClick={() => handleSearch(name)}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* Results area */}
       {view.kind !== 'idle' && (

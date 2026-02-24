@@ -234,13 +234,27 @@ main {
 }
 
 .patch-study-save-button {
-  background: #2e6bff;
+  border: 1px solid #1d4ed8;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
   color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
+  border-radius: 10px;
+  padding: 7px 14px;
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.patch-study-save-button:hover:not(:disabled) {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  border-color: #1e40af;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.34);
+}
+
+.patch-study-save-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.24);
 }
 
 .patch-study-save-button:disabled {
@@ -344,23 +358,43 @@ main {
 }
 
 .patch-modal-button {
-  padding: 6px 12px;
-  border: 1px solid #ccc;
-  background: #fff;
-  border-radius: 6px;
+  padding: 7px 12px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 10px;
+  font-weight: 600;
   cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
 }
 
 .patch-modal-button.primary {
-  background: #2e6bff;
-  border-color: #2e6bff;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #1d4ed8;
   color: #fff;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
 }
 
 .patch-modal-button.secondary {
-  background: #f5f5f5;
-  border-color: #ddd;
-  color: #333;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.patch-modal-button:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.patch-modal-button.primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  border-color: #1e40af;
+}
+
+.patch-modal-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 
 .patch-modal-button:disabled {
@@ -408,9 +442,9 @@ main {
   gap: 4px;
   align-items: center;
   padding: 3px;
-  border: 1px solid #d8dee7;
+  border: 1px solid #c7d7f4;
   border-radius: 12px;
-  background: #f3f6fb;
+  background: #eaf1ff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
@@ -420,7 +454,7 @@ main {
   border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
-  color: #4b5563;
+  color: #35507a;
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.01em;
@@ -430,15 +464,15 @@ main {
 }
 
 .study-comment-tab:hover:not(.is-active) {
-  background: rgba(26, 115, 232, 0.08);
-  color: #334155;
+  background: rgba(37, 99, 235, 0.16);
+  color: #1e40af;
 }
 
 .study-comment-tab.is-active {
-  background: #fff;
-  color: #0f172a;
-  border-color: #c7d2e3;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(199, 210, 227, 0.65);
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  color: #fff;
+  border-color: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
 }
 
 .study-comment-tab:focus-visible {
@@ -487,16 +521,22 @@ main {
 
 .study-fen-button {
   padding: 6px 12px;
-  background: #fff;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
   border-radius: 6px;
   cursor: pointer;
   font-size: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.2s, transform 0.2s;
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.12);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .study-fen-button:hover:not(:disabled) {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.12);
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
   transform: translateY(-1px);
 }
 
@@ -564,11 +604,11 @@ main {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #d2dae6;
+  border: 1px solid #bfdbfe;
   border-radius: 10px;
-  background: #ffffff;
-  color: #1e293b;
-  box-shadow: none;
+  background: #eff6ff;
+  color: #1d4ed8;
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.12);
   font-size: 13px;
   font-weight: 600;
   padding: 8px 12px;
@@ -578,10 +618,10 @@ main {
 
 .study-fen-button.study-output-copy-btn:hover:not(:disabled),
 .study-fen-button.study-output-action-btn:hover:not(:disabled) {
-  background: #eff6ff;
-  border-color: #bfdbfe;
-  color: #1d4ed8;
-  box-shadow: none;
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
   transform: none;
 }
 
@@ -646,9 +686,9 @@ main {
   gap: 4px;
   align-items: center;
   padding: 3px;
-  border: 1px solid #d8dee7;
+  border: 1px solid #c7d7f4;
   border-radius: 12px;
-  background: #f3f6fb;
+  background: #eaf1ff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
@@ -658,7 +698,7 @@ main {
   min-height: 32px;
   padding: 0 14px;
   border-radius: 9px;
-  color: #4b5563;
+  color: #35507a;
   font-size: 13px;
   font-weight: 500;
   line-height: 1;
@@ -667,15 +707,15 @@ main {
 }
 
 .patch-sidebar-tab:hover:not(.is-active) {
-  background: rgba(26, 115, 232, 0.08);
-  color: #334155;
+  background: rgba(37, 99, 235, 0.16);
+  color: #1e40af;
 }
 
 .patch-sidebar-tab.is-active {
-  background: #fff;
-  color: #0f172a;
-  border-color: #c7d2e3;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(199, 210, 227, 0.65);
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  color: #fff;
+  border-color: #1d4ed8;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.28);
 }
 
 .patch-sidebar-tab:focus-visible {
@@ -1384,9 +1424,9 @@ main {
   justify-content: center;
   min-height: 32px;
   padding: 0 12px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  color: #fff;
+  border: 1px solid #1d4ed8;
   border-radius: 10px;
   font-size: 12px;
   font-weight: 600;
@@ -1396,9 +1436,10 @@ main {
 }
 
 .patch-chapter-list__new:hover {
-  background: #dbeafe;
-  border-color: #93c5fd;
-  color: #1e40af;
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  border-color: #1e40af;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.32);
 }
 
 .patch-chapter-list__new:active {
@@ -1658,11 +1699,25 @@ main {
 
 .patch-action-btn {
   padding: 6px 12px;
-  border: 1px solid #cfcfcf;
-  background: #fff;
-  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 12px;
+  font-weight: 600;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.patch-action-btn:hover:not(:disabled):not(.is-danger) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.patch-action-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
 }
 
 .patch-action-btn.is-danger {
@@ -1687,20 +1742,20 @@ main {
 
 .patch-chapter-list__import-fen {
   padding: 6px 12px;
-  border: 1px solid #cfcfcf;
-  background: #fff;
-  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 12px;
-  font-weight: 500;
-  color: #666;
+  font-weight: 600;
+  color: #1d4ed8;
   transition: all 0.2s;
 }
 
 .patch-chapter-list__import-fen:hover {
-  background: #f5f5f5;
-  border-color: #999;
-  color: #333;
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
 }
 
 .patch-action-card--wide {

@@ -22,6 +22,21 @@ interface StudyPickerModalProps {
 
 const patchBase = '/api/v1/workspace/studies/study-patch';
 
+function NodeIcon({ type }: { type: 'folder' | 'study' }) {
+  if (type === 'folder') {
+    return (
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+        <path fill="currentColor" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <path fill="currentColor" d="M16 6a4 4 0 1 1-8 0a4 4 0 0 1 8 0M12 11c-2.5 0-5 1.5-5 4v1h10v-1c0-2.5-2.5-4-5-4m-6 7h12v2H6z" />
+    </svg>
+  );
+}
+
 export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPickerModalProps) {
   const [breadcrumbs, setBreadcrumbs] = useState<BreadcrumbItem[]>([{ id: 'root', title: 'root' }]);
   const [nodes, setNodes] = useState<PickerNode[]>([]);
@@ -180,12 +195,12 @@ export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPick
                   className={`picker-node-item${node.node_type === 'study' ? ' is-study' : ''}`}
                   onClick={() => !isSending && handleNodeClick(node)}
                 >
-                  <span className="picker-node-icon">
-                    {node.node_type === 'folder' ? '📁' : '♟'}
+                  <span className={`picker-node-icon ${node.node_type === 'study' ? 'is-study' : 'is-folder'}`}>
+                    <NodeIcon type={node.node_type === 'folder' ? 'folder' : 'study'} />
                   </span>
                   <span className="picker-node-title">{node.title}</span>
                   {node.node_type === 'study' && (
-                    <span style={{ fontSize: 12, color: '#888', flexShrink: 0 }}>
+                    <span className="picker-node-hint">
                       {isSending ? 'Sending...' : 'Click to add chapter'}
                     </span>
                   )}

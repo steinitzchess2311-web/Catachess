@@ -201,66 +201,77 @@ async def export_study_pgn(
     r2_client: R2Client = Depends(get_r2_client),
     study_repo: StudyRepository = Depends(get_study_repo)
 ):
-    """Export all chapters in a study as concatenated PGN."""
-    logger.info("=" * 60)
-    logger.info(f"[EXPORT STUDY PGN] ENDPOINT CALLED")
-    logger.info(f"[EXPORT STUDY PGN] Study ID: {study_id}")
-    logger.info("=" * 60)
+    """Export all chapters in a study as concatenated PGN.
+
+    Chapters that have not yet been saved (no tree in R2) are skipped
+    gracefully; the response includes a `skipped_chapters` list so the
+    client can surface a warning when needed.
+    """
+    logger.info(f"[EXPORT STUDY PGN] study_id={study_id}")
 
     try:
-        logger.info(f"[EXPORT STUDY PGN] Fetching study metadata...")
         study = await study_repo.get_study_by_id(study_id)
-        study_title = getattr(study, 'title', None) or 'Study'
-        logger.info(f"[EXPORT STUDY PGN] Study title: {study_title}")
+        if not study:
+            raise HTTPException(status_code=404, detail=f"Study not found: {study_id}")
 
-        logger.info(f"[EXPORT STUDY PGN] Fetching chapters for study...")
+        study_title = getattr(study, 'title', None) or 'Study'
         chapters = await study_repo.get_chapters_for_study(study_id, order_by_order=True)
-        logger.info(f"[EXPORT STUDY PGN] Found {len(chapters) if chapters else 0} chapters")
+        logger.info(f"[EXPORT STUDY PGN] study='{study_title}', chapters={len(chapters) if chapters else 0}")
 
         if not chapters:
-            logger.info(f"[EXPORT STUDY PGN] No chapters found, returning empty PGN")
             safe_title = _sanitize_filename(study_title)
-            filename = f"{safe_title}.pgn"
-            return {"success": True, "pgn": "", "filename": filename}
+            return {"success": True, "pgn": "", "filename": f"{safe_title}.pgn", "skipped_chapters": []}
 
         pgn_blocks: list[str] = []
+        skipped_chapters: list[dict] = []
+
         for idx, chapter in enumerate(chapters):
-            logger.info(f"[EXPORT STUDY PGN] Processing chapter {idx + 1}/{len(chapters)}: {chapter.id}")
+            chapter_title = getattr(chapter, 'title', None) or f'Chapter {idx + 1}'
             key = R2Keys.chapter_tree_json(chapter.id)
-            logger.info(f"[EXPORT STUDY PGN] R2 Key: {key}")
 
-            exists = r2_client.exists(key)
-            logger.info(f"[EXPORT STUDY PGN] R2 key exists: {exists}")
+            if not r2_client.exists(key):
+                # Chapter exists in DB but has never been saved to the tree store.
+                # Skip it rather than aborting the entire export.
+                logger.warning(
+                    f"[EXPORT STUDY PGN] Skipping chapter '{chapter_title}' ({chapter.id}) — no tree in R2"
+                )
+                skipped_chapters.append({"id": chapter.id, "title": chapter_title})
+                continue
 
-            if not exists:
-                logger.error(f"[EXPORT STUDY PGN] Tree not found for chapter {chapter.id}")
-                raise HTTPException(status_code=404, detail=f"Tree not found for chapter {chapter.id}")
-
-            content = r2_client.download_json(key)
-            tree_data = json.loads(content)
-            tree = StudyTreeDTO(**tree_data)
-            pgn = _tree_to_pgn(tree, chapter)
-            logger.info(f"[EXPORT STUDY PGN] Chapter {idx + 1} PGN length: {len(pgn)}")
-            pgn_blocks.append(pgn)
+            try:
+                content = r2_client.download_json(key)
+                tree_data = json.loads(content)
+                tree = StudyTreeDTO(**tree_data)
+                pgn = _tree_to_pgn(tree, chapter)
+                pgn_blocks.append(pgn)
+                logger.info(f"[EXPORT STUDY PGN] chapter {idx + 1}/{len(chapters)} '{chapter_title}': {len(pgn)} chars")
+            except Exception as chapter_err:
+                # Corrupt / unreadable tree — skip with warning instead of aborting.
+                logger.error(
+                    f"[EXPORT STUDY PGN] Failed to export chapter '{chapter_title}' ({chapter.id}): {chapter_err}",
+                    exc_info=True
+                )
+                skipped_chapters.append({"id": chapter.id, "title": chapter_title, "error": str(chapter_err)})
 
         combined_pgn = "\n\n".join(pgn_blocks)
-        logger.info(f"[EXPORT STUDY PGN] Combined PGN length: {len(combined_pgn)}")
-
-        # Generate safe filename
         safe_title = _sanitize_filename(study_title)
         filename = f"{safe_title}.pgn"
-        logger.info(f"[EXPORT STUDY PGN] Generated filename: {filename}")
-        logger.info(f"[EXPORT STUDY PGN] Returning success response")
-        logger.info("=" * 60)
 
-        return {"success": True, "pgn": combined_pgn, "filename": filename}
-    except HTTPException as he:
-        logger.error(f"[EXPORT STUDY PGN] HTTPException: {he.status_code} - {he.detail}")
+        logger.info(
+            f"[EXPORT STUDY PGN] Done — {len(pgn_blocks)} exported, "
+            f"{len(skipped_chapters)} skipped, total {len(combined_pgn)} chars"
+        )
+        return {
+            "success": True,
+            "pgn": combined_pgn,
+            "filename": filename,
+            "skipped_chapters": skipped_chapters,
+        }
+
+    except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"[EXPORT STUDY PGN] Unexpected error: {type(e).__name__}")
-        logger.error(f"[EXPORT STUDY PGN] Error message: {str(e)}")
-        logger.error(f"[EXPORT STUDY PGN] Error details:", exc_info=True)
+        logger.error(f"[EXPORT STUDY PGN] Unexpected error: {type(e).__name__}: {e}", exc_info=True)
         return {"success": False, "error": str(e)}
 
 def _sanitize_filename(name: str) -> str:

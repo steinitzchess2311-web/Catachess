@@ -1383,31 +1383,35 @@ main {
   align-items: center;
   justify-content: center;
   min-height: 32px;
-  padding: 0 12px;
-  background: #eff6ff;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+  padding: 0 13px;
+  background: linear-gradient(180deg, #5f87d8 0%, #4b74c9 100%);
+  color: #fff;
+  border: 1px solid #446ab8;
   border-radius: 10px;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.01em;
   cursor: pointer;
-  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12), 0 3px 8px rgba(59, 96, 173, 0.24);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .patch-chapter-list__new:hover {
-  background: #dbeafe;
-  border-color: #93c5fd;
-  color: #1e40af;
+  background: linear-gradient(180deg, #567fcf 0%, #426abf 100%);
+  border-color: #3b5fa8;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.14), 0 5px 12px rgba(59, 96, 173, 0.28);
+  transform: translateY(-1px);
 }
 
 .patch-chapter-list__new:active {
-  background: #cfe2ff;
+  background: linear-gradient(180deg, #4f77c5 0%, #3f65b7 100%);
+  border-color: #36589b;
+  transform: translateY(0);
 }
 
 .patch-chapter-list__new:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
+  box-shadow: 0 0 0 3px rgba(94, 138, 219, 0.35), 0 2px 6px rgba(59, 96, 173, 0.3);
 }
 
 .patch-chapter-list__scroll {

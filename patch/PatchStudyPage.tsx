@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { useExplorerPlayers, loadPlayersFromStorage } from './modules/explorer/hooks/useExplorerPlayers';
 import { ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
 import { StudyProvider, useStudy } from './studyContext';
 import { StudyBoard } from './board/studyBoard';
@@ -47,6 +48,22 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     sortChapters,
     extractChapters,
   } = useChapters(id);
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlPlayers = searchParams.getAll('player');
+  const explorerPlayers = urlPlayers.length > 0 ? urlPlayers : loadPlayersFromStorage();
+  const onPlayersUrlChange = useCallback((next: string[]) => {
+    setSearchParams(prev => {
+      const updated = new URLSearchParams(prev);
+      updated.delete('player');
+      next.forEach(p => updated.append('player', p));
+      return updated;
+    }, { replace: true });
+  }, [setSearchParams]);
+  const { addPlayer, removePlayer } = useExplorerPlayers({
+    players: explorerPlayers,
+    onUrlChange: onPlayersUrlChange,
+  });
 
   const [headerExpanded, setHeaderExpanded] = useState(true);
   const [studyTitle, setStudyTitle] = useState<string>('');
@@ -429,7 +446,13 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
                 {rightPanelTab === 'tree' ? (
                   <MoveTree />
                 ) : (
-                  <ExplorerPanel fen={state.currentFen} onMoveSelect={addMove} />
+                  <ExplorerPanel
+                    fen={state.currentFen}
+                    onMoveSelect={addMove}
+                    players={explorerPlayers}
+                    onAddPlayer={addPlayer}
+                    onRemovePlayer={removePlayer}
+                  />
                 )}
               </div>
               {rightPanelTab === 'tree' && <ForkWidget />}

@@ -6,6 +6,7 @@ import { MoveTree } from '@patch/sidebar/movetree';
 import { createEmptyTree } from '@patch/tree/StudyTree';
 import { importPgn } from '@patch/pgn/import';
 import { ExplorerPanel } from '@patch/modules/explorer';
+import { useExplorerPlayers, loadPlayersFromStorage } from '@patch/modules/explorer/hooks/useExplorerPlayers';
 import { AnalysisSidebar } from './AnalysisSidebar';
 import { StudyPickerModal } from './StudyPickerModal';
 import { OutputPanel } from '@patch/commentbox/OutputPanel';
@@ -90,34 +91,63 @@ function AnalysisPageContent() {
   const pgn = locState.pgn;
   const gameContext = locState.gameContext;
 
-  // Player filter passed in via URL: ?player=A&player=B
-  const playerFilter = searchParams.getAll('player');
-  const clearPlayerFilter = useCallback(() => {
-    setSearchParams(new URLSearchParams());
+  // Player filter: URL is source of truth; localStorage is fallback for same-browser sessions.
+  // On first load, if URL has no players but localStorage does, restore from localStorage.
+  const urlPlayers = searchParams.getAll('player');
+  const players: string[] = urlPlayers.length > 0 ? urlPlayers : loadPlayersFromStorage();
+
+  const onPlayersUrlChange = useCallback((next: string[]) => {
+    setSearchParams(prev => {
+      const updated = new URLSearchParams(prev);
+      updated.delete('player');
+      next.forEach(p => updated.append('player', p));
+      return updated;
+    }, { replace: true });
   }, [setSearchParams]);
 
-  const handleExportPgn = useCallback(() => {
+  const { addPlayer, removePlayer } = useExplorerPlayers({
+    players,
+    onUrlChange: onPlayersUrlChange,
+  });
+
+  const [copyPgnState, setCopyPgnState] = useState<'idle' | 'copied' | 'error'>('idle');
+
+  useEffect(() => {
+    if (copyPgnState === 'idle') return;
+    const t = window.setTimeout(() => setCopyPgnState('idle'), 1500);
+    return () => window.clearTimeout(t);
+  }, [copyPgnState]);
+
+  const handleCopyPgn = useCallback(async () => {
     const { pgn } = exportPgn(state.tree, {}, {
       includeComments: true,
       includeNags: true,
       includeVariations: true,
     });
-    const blob = new Blob([pgn], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'analysis.pgn';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(pgn);
+      } else {
+        const el = document.createElement('textarea');
+        el.value = pgn;
+        el.style.position = 'absolute';
+        el.style.left = '-9999px';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+      }
+      setCopyPgnState('copied');
+    } catch {
+      setCopyPgnState('error');
+    }
   }, [state.tree]);
 
   const [rightbarWidth, setRightbarWidth] = useState(280);
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState<'tree' | 'explorer'>(
-    playerFilter.length > 0 || searchParams.get('tab') === 'explorer' ? 'explorer' : 'tree',
+    players.length > 0 || searchParams.get('tab') === 'explorer' ? 'explorer' : 'tree',
   );
   const [boardWidth, setBoardWidth] = useState(500);
   const layoutRef = useRef<HTMLDivElement | null>(null);
@@ -250,8 +280,9 @@ function AnalysisPageContent() {
                 <ExplorerPanel
                   fen={state.currentFen}
                   onMoveSelect={addMove}
-                  playerFilter={playerFilter.length > 0 ? playerFilter : undefined}
-                  onClearPlayerFilter={clearPlayerFilter}
+                  players={players}
+                  onAddPlayer={addPlayer}
+                  onRemovePlayer={removePlayer}
                 />
               )}
             </div>
@@ -266,9 +297,9 @@ function AnalysisPageContent() {
             <button
               type="button"
               className="study-fen-button study-output-action-btn"
-              onClick={handleExportPgn}
+              onClick={handleCopyPgn}
             >
-              Export PGN
+              {copyPgnState === 'copied' ? 'Copied' : copyPgnState === 'error' ? 'Copy failed' : 'Copy PGN'}
             </button>
           }
         />

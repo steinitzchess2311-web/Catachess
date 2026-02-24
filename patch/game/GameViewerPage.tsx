@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '../../frontend/web/src/pages/analysis/analysis.css';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useExplorerPlayers, loadPlayersFromStorage } from '../modules/explorer/hooks/useExplorerPlayers';
 import { StudyProvider, useStudy } from '../studyContext';
 import { StudyBoard } from '../board/studyBoard';
 import { MoveTree } from '../sidebar/movetree';
@@ -246,10 +247,26 @@ function GameOutputBar({ game }: { game: GameDetail }) {
 function GameViewerContent({ game }: { game: GameDetail }) {
   const { state, loadTree, addMove, enterTrainMode } = useStudy();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const layoutRef = useRef<HTMLDivElement>(null);
   const [rightbarWidth, setRightbarWidth] = useState(280);
   const [isResizing, setIsResizing] = useState(false);
   const [rightPanelTab, setRightPanelTab] = useState<'tree' | 'explorer'>('tree');
+
+  const urlPlayers = searchParams.getAll('player');
+  const explorerPlayers = urlPlayers.length > 0 ? urlPlayers : loadPlayersFromStorage();
+  const onPlayersUrlChange = useCallback((next: string[]) => {
+    setSearchParams(prev => {
+      const updated = new URLSearchParams(prev);
+      updated.delete('player');
+      next.forEach(p => updated.append('player', p));
+      return updated;
+    }, { replace: true });
+  }, [setSearchParams]);
+  const { addPlayer, removePlayer } = useExplorerPlayers({
+    players: explorerPlayers,
+    onUrlChange: onPlayersUrlChange,
+  });
   const [showTrainModal, setShowTrainModal] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -356,7 +373,13 @@ function GameViewerContent({ game }: { game: GameDetail }) {
                 {rightPanelTab === 'tree' ? (
                   <MoveTree />
                 ) : (
-                  <ExplorerPanel fen={state.currentFen} onMoveSelect={addMove} />
+                  <ExplorerPanel
+                    fen={state.currentFen}
+                    onMoveSelect={addMove}
+                    players={explorerPlayers}
+                    onAddPlayer={addPlayer}
+                    onRemovePlayer={removePlayer}
+                  />
                 )}
               </div>
             </div>

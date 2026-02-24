@@ -25,19 +25,7 @@ export function sortNodes(state: WorkspaceState, nodes: any[]): any[] {
     return sorted;
 }
 
-export async function refreshNodes(
-    state: WorkspaceState,
-    parentId: string,
-    renderItems: (nodes: any[]) => void,
-    renderLoadingItems?: () => void
-) {
-    let loadingTimer: ReturnType<typeof setTimeout> | null = null;
-    if (renderLoadingItems) {
-        loadingTimer = setTimeout(() => {
-            renderLoadingItems();
-        }, 120);
-    }
-
+export async function refreshNodes(state: WorkspaceState, parentId: string, renderItems: (nodes: any[]) => void) {
     let url: string;
     if (state.mode === 'public') {
         url = `/api/v1/workspace/public-nodes?parent_id=${parentId}`;
@@ -48,10 +36,8 @@ export async function refreshNodes(
     }
     try {
         const response = await api.get(url);
-        if (loadingTimer) clearTimeout(loadingTimer);
         renderItems(response.nodes);
     } catch (error) {
-        if (loadingTimer) clearTimeout(loadingTimer);
         console.error('Failed to fetch nodes:', error);
         renderItems([]);
     }

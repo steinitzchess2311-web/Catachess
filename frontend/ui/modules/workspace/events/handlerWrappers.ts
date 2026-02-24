@@ -5,7 +5,7 @@ import { clearCache } from './state';
 import { openCreateModal, openMoveModal, openDeleteConfirm, openMoveConfirm, openRenameModal, openNodeActions, openShareModal } from './modals';
 import { refreshNodes as doRefreshNodes } from './nodeOperations';
 import { navigateToFolder as doNavigateToFolder } from './navigation';
-import { renderItems as doRenderItems, renderLoadingItems as doRenderLoadingItems } from './rendering';
+import { renderItems as doRenderItems } from './rendering';
 
 export function createHandlerWrappers(
     state: WorkspaceState,
@@ -21,12 +21,7 @@ export function createHandlerWrappers(
 
     // refreshNodes implementation
     refreshNodes = async (parentId: string) => {
-        await doRefreshNodes(
-            state,
-            parentId,
-            renderItems,
-            () => doRenderLoadingItems(state, elements)
-        );
+        await doRefreshNodes(state, parentId, renderItems);
     };
 
     // renderItems implementation

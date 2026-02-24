@@ -79,7 +79,9 @@ export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPick
     setError(null);
     try {
       const now = new Date();
-      const chapterTitle = `Analysis ${now.toLocaleDateString()} ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      const dateStr = now.toLocaleDateString('en-CA'); // YYYY-MM-DD, no slashes
+      const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+      const chapterTitle = `Analysis ${dateStr} ${timeStr}`;
       const chapter = await api.post(`/api/v1/workspace/studies/${studyId}/chapters`, {
         title: chapterTitle,
       });

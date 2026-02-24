@@ -6,7 +6,7 @@ const SolutionSection = () => {
     <div
       style={{
         background: "transparent",
-        padding: "35px",
+        padding: "24px",
         marginBottom: "60px",
       }}
     >
@@ -42,18 +42,19 @@ const SolutionSection = () => {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
           gap: "20px",
-          maxWidth: "800px",
+          maxWidth: "960px",
           margin: "0 auto",
         }}
       >
         <div
           style={{
-            background: "rgba(255, 255, 255, 0.9)",
+            background: "#ffffff",
+            border: "1px solid var(--border)",
             padding: "20px",
-            borderRadius: "10px",
-            boxShadow: "0 3px 10px rgba(0, 0, 0, 0.08)",
+            borderRadius: "12px",
+            boxShadow: "var(--shadow-1)",
           }}
         >
           <h3
@@ -72,10 +73,11 @@ const SolutionSection = () => {
         </div>
         <div
           style={{
-            background: "rgba(255, 255, 255, 0.9)",
+            background: "#ffffff",
+            border: "1px solid var(--border)",
             padding: "20px",
-            borderRadius: "10px",
-            boxShadow: "0 3px 10px rgba(0, 0, 0, 0.08)",
+            borderRadius: "12px",
+            boxShadow: "var(--shadow-1)",
           }}
         >
           <h3
@@ -94,10 +96,11 @@ const SolutionSection = () => {
         </div>
         <div
           style={{
-            background: "rgba(255, 255, 255, 0.9)",
+            background: "#ffffff",
+            border: "1px solid var(--border)",
             padding: "20px",
-            borderRadius: "10px",
-            boxShadow: "0 3px 10px rgba(0, 0, 0, 0.08)",
+            borderRadius: "12px",
+            boxShadow: "var(--shadow-1)",
           }}
         >
           <h3
@@ -116,10 +119,11 @@ const SolutionSection = () => {
         </div>
         <div
           style={{
-            background: "rgba(255, 255, 255, 0.9)",
+            background: "#ffffff",
+            border: "1px solid var(--border)",
             padding: "20px",
-            borderRadius: "10px",
-            boxShadow: "0 3px 10px rgba(0, 0, 0, 0.08)",
+            borderRadius: "12px",
+            boxShadow: "var(--shadow-1)",
           }}
         >
           <h3

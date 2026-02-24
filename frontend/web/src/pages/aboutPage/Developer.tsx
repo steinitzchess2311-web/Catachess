@@ -40,7 +40,7 @@ const Developer = () => {
             objectFit: "contain",
           }}
         />
-        <div style={{ fontSize: "14px", fontWeight: 600, color: "#2f2a26" }}>
+        <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>
           CataDragon
         </div>
       </div>
@@ -50,7 +50,7 @@ const Developer = () => {
           alignItems: "center",
           fontSize: "20px",
           lineHeight: 1.7,
-          color: "#2f2a26",
+          color: "#0f172a",
         }}
       >
         CataDragon is the co-developer of this website. He loves playing Clash Royale.
@@ -76,7 +76,7 @@ const Developer = () => {
             objectFit: "contain",
           }}
         />
-        <div style={{ fontSize: "14px", fontWeight: 600, color: "#2f2a26" }}>
+        <div style={{ fontSize: "14px", fontWeight: 600, color: "#0f172a" }}>
           ChessNut
         </div>
       </div>
@@ -86,7 +86,7 @@ const Developer = () => {
           alignItems: "center",
           fontSize: "20px",
           lineHeight: 1.7,
-          color: "#2f2a26",
+          color: "#0f172a",
         }}
       >
         ChessNut is the co-developer of this website. She has a cat named nut.

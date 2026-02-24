@@ -6,9 +6,9 @@ const UserManual = () => {
       style={{
         width: "100%",
         borderRadius: "20px",
-        border: "1px solid rgba(26, 27, 31, 0.12)",
-        background: "rgba(255, 255, 255, 0.75)",
-        boxShadow: "0 16px 36px rgba(28, 23, 18, 0.1)",
+        border: "1px solid var(--border)",
+        background: "#ffffff",
+        boxShadow: "var(--shadow-1)",
         padding: "24px 28px",
         boxSizing: "border-box",
         display: "flex",
@@ -16,10 +16,10 @@ const UserManual = () => {
         gap: "14px",
       }}
     >
-      <div style={{ fontSize: "20px", fontWeight: 700, color: "#2f2a26" }}>
+      <div style={{ fontSize: "20px", fontWeight: 700, color: "#0f172a" }}>
         How to use ChessorTag.org
       </div>
-      <div style={{ fontSize: "15px", lineHeight: 1.75, color: "#2f2a26" }}>
+      <div style={{ fontSize: "15px", lineHeight: 1.75, color: "#475569" }}>
         This is a detailed tutorial on how to use ChessorTag.org. After you created an
         account and sign in, you can choose to create a folder or a study. After you
         opened the study, you will be able to create a list of chapters on the right.

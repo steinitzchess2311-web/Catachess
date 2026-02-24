@@ -24,7 +24,7 @@ const ArticleMeta: React.FC<ArticleMetaProps> = ({
         alignItems: "center",
         gap: "12px",
         paddingTop: "12px",
-        borderTop: "1px solid rgba(139, 115, 85, 0.1)",
+        borderTop: "1px solid rgba(37, 99, 235, 0.1)",
         fontSize: "0.85rem",
         color: "#2563eb",
       }}

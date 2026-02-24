@@ -291,7 +291,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   padding: '20px',
                   zIndex: 10001,
                   minWidth: '280px',
-                  border: '1px solid #e0e0e0'
+                  border: '1px solid #e2e8f0'
                 }}
               >
                 <div style={{ marginBottom: '16px', fontSize: '0.95rem', color: '#0f172a', fontWeight: 600 }}>
@@ -364,7 +364,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                       fontWeight: 500,
                       color: '#475569',
                       backgroundColor: 'transparent',
-                      border: '1px solid #e0e0e0',
+                      border: '1px solid #e2e8f0',
                       borderRadius: '6px',
                       cursor: saving ? 'not-allowed' : 'pointer',
                       opacity: saving ? 0.5 : 1,
@@ -417,13 +417,13 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   width: '100%',
                   padding: '12px',
                   fontSize: '1rem',
-                  border: '1px solid #e0e0e0',
+                  border: '1px solid #e2e8f0',
                   borderRadius: '8px',
                   outline: 'none',
                   transition: 'border-color 0.2s'
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#2563eb'}
-                onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
               />
             </div>
 
@@ -442,13 +442,13 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   width: '100%',
                   padding: '12px',
                   fontSize: '1rem',
-                  border: '1px solid #e0e0e0',
+                  border: '1px solid #e2e8f0',
                   borderRadius: '8px',
                   outline: 'none',
                   transition: 'border-color 0.2s'
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#2563eb'}
-                onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
               />
             </div>
 
@@ -467,7 +467,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                         width: '100%',
                         padding: '12px',
                         fontSize: '1rem',
-                        border: '1px solid #e0e0e0',
+                        border: '1px solid #e2e8f0',
                         borderRadius: '8px',
                         backgroundColor: 'white',
                         display: 'flex',
@@ -499,7 +499,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                             <SelectItem value="about">Our Stories</SelectItem>
                             <SelectItem value="function">Function Intro</SelectItem>
                           </Select.Group>
-                          <Select.Separator style={{ height: '1px', backgroundColor: '#e0e0e0', margin: '8px 0' }} />
+                          <Select.Separator style={{ height: '1px', backgroundColor: '#e2e8f0', margin: '8px 0' }} />
                           <Select.Group>
                             <Select.Label style={{ padding: '8px 12px', fontSize: '0.8rem', color: '#2563eb', fontWeight: 700 }}>
                               ✍️ Community
@@ -516,7 +516,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                     width: '100%',
                     padding: '12px',
                     fontSize: '1rem',
-                    border: '1px solid #e0e0e0',
+                    border: '1px solid #e2e8f0',
                     borderRadius: '8px',
                     backgroundColor: '#f5f5f5',
                     color: '#475569'
@@ -537,7 +537,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                       width: '100%',
                       padding: '12px',
                       fontSize: '1rem',
-                      border: '1px solid #e0e0e0',
+                      border: '1px solid #e2e8f0',
                       borderRadius: '8px',
                       backgroundColor: 'white',
                       display: 'flex',
@@ -637,13 +637,13 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   width: '100%',
                   padding: '12px',
                   fontSize: '1rem',
-                  border: '1px solid #e0e0e0',
+                  border: '1px solid #e2e8f0',
                   borderRadius: '8px',
                   outline: 'none',
                   transition: 'border-color 0.2s'
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#2563eb'}
-                onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
               />
             </div>
 
@@ -662,7 +662,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   width: '100%',
                   padding: '12px',
                   fontSize: '1rem',
-                  border: '1px solid #e0e0e0',
+                  border: '1px solid #e2e8f0',
                   borderRadius: '8px',
                   outline: 'none',
                   transition: 'border-color 0.2s',
@@ -670,7 +670,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   resize: 'vertical'
                 }}
                 onFocus={(e) => e.currentTarget.style.borderColor = '#2563eb'}
-                onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+                onBlur={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
               />
             </div>
 
@@ -695,7 +695,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                 }}
                 onMouseEnter={(e) => {
                   if (!saving && !uploading) {
-                    e.currentTarget.style.backgroundColor = 'rgba(139, 115, 85, 0.08)';
+                    e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.08)';
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -721,9 +721,9 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   fontSize: '0.95rem',
                   fontWeight: 500,
                   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif',
-                  color: '#4a9eff',
+                  color: '#2563eb',
                   backgroundColor: 'transparent',
-                  border: '2px solid #4a9eff',
+                  border: '2px solid #2563eb',
                   borderRadius: '8px',
                   cursor: saving || uploading ? 'not-allowed' : 'pointer',
                   opacity: saving || uploading ? 0.5 : 1,

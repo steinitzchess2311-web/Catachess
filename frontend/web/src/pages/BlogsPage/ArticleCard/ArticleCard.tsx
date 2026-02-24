@@ -323,10 +323,10 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                     gap: "5px",
                     padding: "4px 10px",
                     borderRadius: "20px",
-                    border: "1px solid rgba(139, 115, 85, 0.3)",
+                    border: "1px solid rgba(37, 99, 235, 0.3)",
                     background: showCategoryDropdown
-                      ? "rgba(139, 115, 85, 0.12)"
-                      : "rgba(139, 115, 85, 0.06)",
+                      ? "rgba(37, 99, 235, 0.12)"
+                      : "rgba(37, 99, 235, 0.06)",
                     color: "#2563eb",
                     fontSize: "0.78rem",
                     fontWeight: 500,
@@ -336,11 +336,11 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                   }}
                   onMouseEnter={(e) => {
                     if (!showCategoryDropdown)
-                      e.currentTarget.style.background = "rgba(139, 115, 85, 0.12)";
+                      e.currentTarget.style.background = "rgba(37, 99, 235, 0.12)";
                   }}
                   onMouseLeave={(e) => {
                     if (!showCategoryDropdown)
-                      e.currentTarget.style.background = "rgba(139, 115, 85, 0.06)";
+                      e.currentTarget.style.background = "rgba(37, 99, 235, 0.06)";
                   }}
                 >
                   <span>
@@ -368,7 +368,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                       background: "#fff",
                       borderRadius: "10px",
                       boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
-                      border: "1px solid rgba(139, 115, 85, 0.15)",
+                      border: "1px solid rgba(37, 99, 235, 0.15)",
                       overflow: "hidden",
                       zIndex: 9999,
                       minWidth: "160px",
@@ -387,7 +387,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                             width: "100%",
                             padding: "9px 14px",
                             border: "none",
-                            background: isActive ? "rgba(139, 115, 85, 0.08)" : "transparent",
+                            background: isActive ? "rgba(37, 99, 235, 0.08)" : "transparent",
                             color: isActive ? "#2563eb" : "#444",
                             fontSize: "0.83rem",
                             fontWeight: isActive ? 600 : 400,
@@ -398,7 +398,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                           }}
                           onMouseEnter={(e) => {
                             if (!isActive)
-                              e.currentTarget.style.background = "rgba(139, 115, 85, 0.06)";
+                              e.currentTarget.style.background = "rgba(37, 99, 235, 0.06)";
                           }}
                           onMouseLeave={(e) => {
                             if (!isActive)

@@ -8,10 +8,10 @@ const ProblemsSection = () => {
     <div style={{ marginBottom: "60px" }}>
       <h2
         style={{
-          fontSize: "1.9rem",
+          fontSize: "2rem",
           fontWeight: 700,
           color: "#0f172a",
-          marginBottom: "35px",
+          marginBottom: "28px",
           textAlign: "center",
         }}
       >
@@ -22,18 +22,19 @@ const ProblemsSection = () => {
       <div
         style={{
           display: "flex",
-          gap: "32px",
+          gap: "24px",
           marginBottom: "32px",
           alignItems: "center",
-          background: "rgba(255, 255, 255, 0.75)",
-          borderRadius: "10px",
+          background: "#ffffff",
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
           padding: "24px",
-          boxShadow: "0 3px 12px rgba(0, 0, 0, 0.06)",
-          width: "70%",
+          boxShadow: "var(--shadow-1)",
+          width: "min(100%, 960px)",
           margin: "0 auto 32px auto",
         }}
       >
-        <div style={{ flex: "0 0 9.5%" }}>
+        <div style={{ flex: "0 0 78px" }}>
           <a
             href="https://shop.chessbase.com/en/products/chessbase_17_program_only"
             target="_blank"
@@ -48,10 +49,10 @@ const ProblemsSection = () => {
                 borderRadius: "6px",
                 boxShadow: "0 3px 10px rgba(0, 0, 0, 0.12)",
                 cursor: "pointer",
-                transition: "transform 0.3s ease",
+                transition: "transform 0.2s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.1)";
+                e.currentTarget.style.transform = "scale(1.04)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "scale(1)";
@@ -89,18 +90,19 @@ const ProblemsSection = () => {
       <div
         style={{
           display: "flex",
-          gap: "32px",
+          gap: "24px",
           marginBottom: "32px",
           alignItems: "center",
-          background: "rgba(255, 255, 255, 0.75)",
-          borderRadius: "10px",
+          background: "#ffffff",
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
           padding: "24px",
-          boxShadow: "0 3px 12px rgba(0, 0, 0, 0.06)",
-          width: "70%",
+          boxShadow: "var(--shadow-1)",
+          width: "min(100%, 960px)",
           margin: "0 auto 32px auto",
         }}
       >
-        <div style={{ flex: "0 0 9.5%" }}>
+        <div style={{ flex: "0 0 78px" }}>
           <a
             href="https://lichess.org/study"
             target="_blank"
@@ -115,10 +117,10 @@ const ProblemsSection = () => {
                 borderRadius: "6px",
                 boxShadow: "0 3px 10px rgba(0, 0, 0, 0.12)",
                 cursor: "pointer",
-                transition: "transform 0.3s ease",
+                transition: "transform 0.2s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.1)";
+                e.currentTarget.style.transform = "scale(1.04)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "scale(1)";
@@ -155,18 +157,19 @@ const ProblemsSection = () => {
       <div
         style={{
           display: "flex",
-          gap: "32px",
+          gap: "24px",
           marginBottom: "32px",
           alignItems: "center",
-          background: "rgba(255, 255, 255, 0.75)",
-          borderRadius: "10px",
+          background: "#ffffff",
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
           padding: "24px",
-          boxShadow: "0 3px 12px rgba(0, 0, 0, 0.06)",
-          width: "70%",
+          boxShadow: "var(--shadow-1)",
+          width: "min(100%, 960px)",
           margin: "0 auto 32px auto",
         }}
       >
-        <div style={{ flex: "0 0 9.5%" }}>
+        <div style={{ flex: "0 0 78px" }}>
           <a
             href="https://chesstempo.com/opening-training/"
             target="_blank"
@@ -181,10 +184,10 @@ const ProblemsSection = () => {
                 borderRadius: "6px",
                 boxShadow: "0 3px 10px rgba(0, 0, 0, 0.12)",
                 cursor: "pointer",
-                transition: "transform 0.3s ease",
+                transition: "transform 0.2s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "scale(1.1)";
+                e.currentTarget.style.transform = "scale(1.04)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = "scale(1)";

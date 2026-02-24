@@ -10,7 +10,7 @@ const CTASection = () => {
         borderRadius: "16px",
         padding: "45px",
         textAlign: "center",
-        boxShadow: "0 8px 32px rgba(139, 115, 85, 0.3)",
+        boxShadow: "0 8px 32px rgba(37, 99, 235, 0.22)",
       }}
     >
       <h2

@@ -36,7 +36,7 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
           width: "36px",
           height: "36px",
           border: "none",
-          background: activeCategory === "pinned" ? "rgba(139, 115, 85, 0.2)" : "transparent",
+          background: activeCategory === "pinned" ? "rgba(37, 99, 235, 0.2)" : "transparent",
           borderRadius: "8px",
           cursor: "pointer",
           fontSize: "1.2rem",
@@ -46,7 +46,7 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
           transition: "all 0.2s ease",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(139, 115, 85, 0.15)";
+          e.currentTarget.style.background = "rgba(37, 99, 235, 0.15)";
         }}
         onMouseLeave={(e) => {
           if (activeCategory !== "pinned") {
@@ -65,7 +65,7 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
           width: "36px",
           height: "36px",
           border: "none",
-          background: activeCategory === "user" ? "rgba(139, 115, 85, 0.2)" : "transparent",
+          background: activeCategory === "user" ? "rgba(37, 99, 235, 0.2)" : "transparent",
           borderRadius: "8px",
           cursor: "pointer",
           fontSize: "1.2rem",
@@ -75,7 +75,7 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
           transition: "all 0.2s ease",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(139, 115, 85, 0.15)";
+          e.currentTarget.style.background = "rgba(37, 99, 235, 0.15)";
         }}
         onMouseLeave={(e) => {
           if (activeCategory !== "user") {
@@ -97,7 +97,7 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
           width: "36px",
           height: "36px",
           border: "none",
-          background: (activeCategory === undefined || activeCategory === 'allblogs') ? "rgba(139, 115, 85, 0.2)" : "transparent",
+          background: (activeCategory === undefined || activeCategory === 'allblogs') ? "rgba(37, 99, 235, 0.2)" : "transparent",
           borderRadius: "8px",
           cursor: "pointer",
           display: "flex",
@@ -107,7 +107,7 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
           padding: "6px",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(139, 115, 85, 0.15)";
+          e.currentTarget.style.background = "rgba(37, 99, 235, 0.15)";
         }}
         onMouseLeave={(e) => {
           if (activeCategory !== undefined && activeCategory !== 'allblogs') {
@@ -134,12 +134,12 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
           style={{
             width: "36px",
             height: "36px",
-            border: "2px solid #4a9eff",
+            border: "2px solid #2563eb",
             background: "transparent",
             borderRadius: "8px",
             cursor: "pointer",
             fontSize: "1.2rem",
-            color: "#4a9eff",
+            color: "#2563eb",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -147,7 +147,7 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
             marginTop: "20px",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "rgba(74, 158, 255, 0.08)";
+            e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.08)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.backgroundColor = "transparent";

@@ -13,7 +13,7 @@ const CommunityButton: React.FC<CommunityButtonProps> = ({
     <button
       onClick={onUserBlogsClick}
       style={{
-        background: activeCategory === "user" ? "rgba(139, 115, 85, 0.1)" : "transparent",
+        background: activeCategory === "user" ? "rgba(37, 99, 235, 0.1)" : "transparent",
         border: "none",
         borderLeft: activeCategory === "user" ? "4px solid #2563eb" : "4px solid transparent",
         padding: "14px 25px",
@@ -30,7 +30,7 @@ const CommunityButton: React.FC<CommunityButtonProps> = ({
       }}
       onMouseEnter={(e) => {
         if (activeCategory !== "user") {
-          e.currentTarget.style.background = "rgba(139, 115, 85, 0.05)";
+          e.currentTarget.style.background = "rgba(37, 99, 235, 0.05)";
         }
       }}
       onMouseLeave={(e) => {

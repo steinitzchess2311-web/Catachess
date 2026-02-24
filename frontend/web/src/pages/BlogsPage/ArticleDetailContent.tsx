@@ -149,7 +149,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
           gap: "16px",
           paddingBottom: "24px",
           marginBottom: "32px",
-          borderBottom: "2px solid rgba(139, 115, 85, 0.15)",
+          borderBottom: "2px solid rgba(37, 99, 235, 0.15)",
           fontSize: "0.95rem",
           color: "#2563eb",
         }}
@@ -161,7 +161,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
               padding: "4px 8px",
               backgroundColor: article.author_type === 'official'
                 ? "rgba(76, 175, 80, 0.1)"
-                : "rgba(139, 115, 85, 0.1)",
+                : "rgba(37, 99, 235, 0.1)",
               borderRadius: "4px",
               fontSize: "0.75rem",
               fontWeight: 600,
@@ -192,7 +192,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
               key={index}
               style={{
                 padding: "6px 14px",
-                backgroundColor: "rgba(139, 115, 85, 0.1)",
+                backgroundColor: "rgba(37, 99, 235, 0.1)",
                 color: "#2563eb",
                 borderRadius: "20px",
                 fontSize: "0.85rem",
@@ -215,7 +215,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
         style={{
           marginTop: "40px",
           paddingTop: "24px",
-          borderTop: "1px solid rgba(139, 115, 85, 0.15)",
+          borderTop: "1px solid rgba(37, 99, 235, 0.15)",
           display: "flex",
           gap: "32px",
           fontSize: "0.95rem",
@@ -254,7 +254,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
           onMouseEnter={(e) => {
             if (!isLiked) {
               e.currentTarget.style.color = "#2563eb";
-              e.currentTarget.style.backgroundColor = "rgba(139, 115, 85, 0.08)";
+              e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.08)";
             }
           }}
           onMouseLeave={(e) => {

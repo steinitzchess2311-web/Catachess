@@ -71,7 +71,7 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
               color: '#666',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#4a9eff';
+              e.currentTarget.style.backgroundColor = '#2563eb';
               e.currentTarget.style.color = 'white';
               e.currentTarget.style.transform = 'scale(1.1)';
             }}

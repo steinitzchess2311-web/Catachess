@@ -20,7 +20,7 @@ const UserActionsSection: React.FC<UserActionsSectionProps> = ({
       style={{
         marginTop: "20px",
         paddingTop: "20px",
-        borderTop: "1px solid rgba(139, 115, 85, 0.15)",
+        borderTop: "1px solid rgba(37, 99, 235, 0.15)",
         paddingLeft: "25px",
         paddingRight: "25px",
       }}
@@ -34,16 +34,16 @@ const UserActionsSection: React.FC<UserActionsSectionProps> = ({
           fontSize: "0.95rem",
           fontWeight: 500,
           fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif",
-          color: "#4a9eff",
+          color: "#2563eb",
           backgroundColor: "transparent",
-          border: "2px solid #4a9eff",
+          border: "2px solid #2563eb",
           borderRadius: "8px",
           cursor: "pointer",
           transition: "all 0.2s ease",
           marginBottom: "12px",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "rgba(74, 158, 255, 0.08)";
+          e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.08)";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = "transparent";
@@ -68,8 +68,8 @@ const UserActionsSection: React.FC<UserActionsSectionProps> = ({
           fontWeight: 500,
           fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif",
           color: viewMode === 'drafts' ? "#2563eb" : "#475569",
-          backgroundColor: viewMode === 'drafts' ? "rgba(139, 115, 85, 0.08)" : "transparent",
-          border: "1px solid rgba(139, 115, 85, 0.3)",
+          backgroundColor: viewMode === 'drafts' ? "rgba(37, 99, 235, 0.08)" : "transparent",
+          border: "1px solid rgba(37, 99, 235, 0.3)",
           borderRadius: "6px",
           cursor: "pointer",
           transition: "all 0.2s ease",
@@ -80,7 +80,7 @@ const UserActionsSection: React.FC<UserActionsSectionProps> = ({
         }}
         onMouseEnter={(e) => {
           if (viewMode !== 'drafts') {
-            e.currentTarget.style.backgroundColor = "rgba(139, 115, 85, 0.05)";
+            e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.05)";
           }
         }}
         onMouseLeave={(e) => {
@@ -103,8 +103,8 @@ const UserActionsSection: React.FC<UserActionsSectionProps> = ({
           fontWeight: 500,
           fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif",
           color: viewMode === 'my-published' ? "#2563eb" : "#475569",
-          backgroundColor: viewMode === 'my-published' ? "rgba(139, 115, 85, 0.08)" : "transparent",
-          border: "1px solid rgba(139, 115, 85, 0.3)",
+          backgroundColor: viewMode === 'my-published' ? "rgba(37, 99, 235, 0.08)" : "transparent",
+          border: "1px solid rgba(37, 99, 235, 0.3)",
           borderRadius: "6px",
           cursor: "pointer",
           transition: "all 0.2s ease",
@@ -114,7 +114,7 @@ const UserActionsSection: React.FC<UserActionsSectionProps> = ({
         }}
         onMouseEnter={(e) => {
           if (viewMode !== 'my-published') {
-            e.currentTarget.style.backgroundColor = "rgba(139, 115, 85, 0.05)";
+            e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.05)";
           }
         }}
         onMouseLeave={(e) => {

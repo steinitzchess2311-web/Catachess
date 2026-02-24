@@ -17,7 +17,7 @@ const Intro = () => {
         boxSizing: "border-box",
       }}
     >
-      <div style={{ fontSize: "22px", fontWeight: 700, color: "#2f2a26" }}>
+      <div style={{ fontSize: "22px", fontWeight: 700, color: "#0f172a" }}>
         ChessorTag
       </div>
       <div style={{ fontSize: "16px", lineHeight: 1.7, color: "#1a1b1f" }}>

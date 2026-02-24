@@ -25,7 +25,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
     fontWeight: 500,
     color: '#0f172a',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    border: '1px solid #e0e0e0',
+    border: '1px solid #e2e8f0',
     borderRadius: '8px',
     cursor: 'pointer',
     transition: 'all 0.2s ease'
@@ -54,14 +54,14 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
         onClick={() => onPageChange(pagination.page - 1)}
         onMouseEnter={(e) => {
           if (pagination.has_prev) {
-            e.currentTarget.style.backgroundColor = 'rgba(139, 115, 85, 0.1)';
+            e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.1)';
             e.currentTarget.style.borderColor = '#2563eb';
           }
         }}
         onMouseLeave={(e) => {
           if (pagination.has_prev) {
             e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-            e.currentTarget.style.borderColor = '#e0e0e0';
+            e.currentTarget.style.borderColor = '#e2e8f0';
           }
         }}
       >
@@ -84,14 +84,14 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
         onClick={() => onPageChange(pagination.page + 1)}
         onMouseEnter={(e) => {
           if (pagination.has_next) {
-            e.currentTarget.style.backgroundColor = 'rgba(139, 115, 85, 0.1)';
+            e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.1)';
             e.currentTarget.style.borderColor = '#2563eb';
           }
         }}
         onMouseLeave={(e) => {
           if (pagination.has_next) {
             e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-            e.currentTarget.style.borderColor = '#e0e0e0';
+            e.currentTarget.style.borderColor = '#e2e8f0';
           }
         }}
       >

@@ -29,7 +29,7 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
       <button
         onClick={() => onCategoryClick('allblogs')}
         style={{
-          background: (activeCategory === undefined || activeCategory === 'allblogs') ? "rgba(139, 115, 85, 0.1)" : "transparent",
+          background: (activeCategory === undefined || activeCategory === 'allblogs') ? "rgba(37, 99, 235, 0.1)" : "transparent",
           border: "none",
           borderLeft: (activeCategory === undefined || activeCategory === 'allblogs') ? "4px solid #2563eb" : "4px solid transparent",
           padding: "14px 25px",
@@ -46,7 +46,7 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
         }}
         onMouseEnter={(e) => {
           if (activeCategory !== undefined && activeCategory !== 'allblogs') {
-            e.currentTarget.style.background = "rgba(139, 115, 85, 0.05)";
+            e.currentTarget.style.background = "rgba(37, 99, 235, 0.05)";
           }
         }}
         onMouseLeave={(e) => {
@@ -80,7 +80,7 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
             key={item.id}
             onClick={() => onCategoryClick(item.id)}
             style={{
-              background: activeCategory === item.id ? "rgba(139, 115, 85, 0.08)" : "transparent",
+              background: activeCategory === item.id ? "rgba(37, 99, 235, 0.08)" : "transparent",
               border: "none",
               padding: "10px 25px 10px 20px",
               textAlign: "left",
@@ -95,7 +95,7 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
               marginBottom: "2px",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(139, 115, 85, 0.08)";
+              e.currentTarget.style.background = "rgba(37, 99, 235, 0.08)";
               e.currentTarget.style.color = "#2563eb";
             }}
             onMouseLeave={(e) => {

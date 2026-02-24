@@ -68,14 +68,14 @@ const Promises = () => {
               padding: "20px 24px",
               boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
               transition: "transform 0.3s ease, box-shadow 0.3s ease",
-              border: "1px solid rgba(139, 115, 85, 0.1)",
+              border: "1px solid rgba(37, 99, 235, 0.1)",
               display: "flex",
               flexDirection: "column",
               gap: "16px",
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.transform = "translateY(-4px)";
-              e.currentTarget.style.boxShadow = "0 8px 30px rgba(139, 115, 85, 0.15)";
+              e.currentTarget.style.boxShadow = "0 8px 30px rgba(37, 99, 235, 0.12)";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = "translateY(0)";

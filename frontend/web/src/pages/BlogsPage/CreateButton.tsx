@@ -49,7 +49,7 @@ const CreateButton: React.FC<CreateButtonProps> = ({ onArticleCreated, userRole 
           border: 'none',
           borderRadius: '8px',
           cursor: 'pointer',
-          boxShadow: '0 2px 8px rgba(139, 115, 85, 0.3)',
+          boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
           display: 'flex',
           alignItems: 'center',
           gap: '6px',
@@ -57,13 +57,13 @@ const CreateButton: React.FC<CreateButtonProps> = ({ onArticleCreated, userRole 
           zIndex: 10
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = '#6f5a43';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(139, 115, 85, 0.4)';
+          e.currentTarget.style.backgroundColor = '#1d4ed8';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.4)';
           e.currentTarget.style.transform = 'translateY(-2px)';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.backgroundColor = '#2563eb';
-          e.currentTarget.style.boxShadow = '0 2px 8px rgba(139, 115, 85, 0.3)';
+          e.currentTarget.style.boxShadow = '0 2px 8px rgba(37, 99, 235, 0.3)';
           e.currentTarget.style.transform = 'translateY(0)';
         }}
         title="Create New Article"

@@ -128,18 +128,18 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                 fontWeight: 500,
                 color: "#0f172a",
                 backgroundColor: "rgba(255, 255, 255, 0.9)",
-                border: "1px solid #e0e0e0",
+                border: "1px solid #e2e8f0",
                 borderRadius: "8px",
                 cursor: "pointer",
                 transition: "all 0.2s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = "rgba(139, 115, 85, 0.1)";
+                e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.1)";
                 e.currentTarget.style.borderColor = "#2563eb";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
-                e.currentTarget.style.borderColor = "#e0e0e0";
+                e.currentTarget.style.borderColor = "#e2e8f0";
               }}
             >
               ← Back to Blogs
@@ -179,7 +179,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
               transition: "all 0.2s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "#6f5a43";
+              e.currentTarget.style.backgroundColor = "#1d4ed8";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = "#2563eb";
@@ -294,7 +294,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                   gap: "16px",
                   paddingBottom: "24px",
                   marginBottom: "32px",
-                  borderBottom: "2px solid rgba(139, 115, 85, 0.15)",
+                  borderBottom: "2px solid rgba(37, 99, 235, 0.15)",
                   fontSize: "0.95rem",
                   color: "#2563eb",
                 }}
@@ -306,7 +306,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                       padding: "4px 8px",
                       backgroundColor: article.author_type === 'official'
                         ? "rgba(76, 175, 80, 0.1)"  // 绿色 - 官方文章
-                        : "rgba(139, 115, 85, 0.1)",  // 棕色 - 用户投稿
+                        : "rgba(37, 99, 235, 0.1)",  // 棕色 - 用户投稿
                       borderRadius: "4px",
                       fontSize: "0.75rem",
                       fontWeight: 600,
@@ -337,7 +337,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                       key={index}
                       style={{
                         padding: "6px 14px",
-                        backgroundColor: "rgba(139, 115, 85, 0.1)",
+                        backgroundColor: "rgba(37, 99, 235, 0.1)",
                         color: "#2563eb",
                         borderRadius: "20px",
                         fontSize: "0.85rem",
@@ -360,7 +360,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                 style={{
                   marginTop: "40px",
                   paddingTop: "24px",
-                  borderTop: "1px solid rgba(139, 115, 85, 0.15)",
+                  borderTop: "1px solid rgba(37, 99, 235, 0.15)",
                   display: "flex",
                   gap: "32px",
                   fontSize: "0.95rem",
@@ -399,7 +399,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                   onMouseEnter={(e) => {
                     if (!isLiked) {
                       e.currentTarget.style.color = "#2563eb";
-                      e.currentTarget.style.backgroundColor = "rgba(139, 115, 85, 0.08)";
+                      e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.08)";
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -464,18 +464,18 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
               fontWeight: 500,
               color: "#0f172a",
               backgroundColor: "rgba(255, 255, 255, 0.9)",
-              border: "1px solid #e0e0e0",
+              border: "1px solid #e2e8f0",
               borderRadius: "8px",
               cursor: "pointer",
               transition: "all 0.2s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = "rgba(139, 115, 85, 0.1)";
+              e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.1)";
               e.currentTarget.style.borderColor = "#2563eb";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
-              e.currentTarget.style.borderColor = "#e0e0e0";
+              e.currentTarget.style.borderColor = "#e2e8f0";
             }}
           >
             ← Back to Blogs

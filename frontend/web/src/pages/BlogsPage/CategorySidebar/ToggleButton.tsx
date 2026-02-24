@@ -23,7 +23,7 @@ const ToggleButton: React.FC<ToggleButtonProps> = ({
         alignItems: "center",
         justifyContent: "center",
         border: "none",
-        background: "rgba(139, 115, 85, 0.1)",
+        background: "rgba(37, 99, 235, 0.1)",
         borderRadius: "6px",
         cursor: "pointer",
         color: "#2563eb",
@@ -31,10 +31,10 @@ const ToggleButton: React.FC<ToggleButtonProps> = ({
         zIndex: 10,
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = "rgba(139, 115, 85, 0.2)";
+        e.currentTarget.style.background = "rgba(37, 99, 235, 0.2)";
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.background = "rgba(139, 115, 85, 0.1)";
+        e.currentTarget.style.background = "rgba(37, 99, 235, 0.1)";
       }}
     >
       {isOpen ? <ChevronLeftIcon width={20} height={20} /> : <ChevronRightIcon width={20} height={20} />}

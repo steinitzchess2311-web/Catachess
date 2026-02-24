@@ -7,7 +7,7 @@ const ImitatorSection = () => {
       <div style={{ textAlign: "center", marginBottom: "40px" }}>
         <h2
           style={{
-            fontSize: "2.3rem",
+            fontSize: "2rem",
             fontWeight: 800,
             color: "#0f172a",
             marginBottom: "12px",
@@ -19,7 +19,7 @@ const ImitatorSection = () => {
         </h2>
         <h3
           style={{
-            fontSize: "2rem",
+            fontSize: "1.7rem",
             fontWeight: 700,
             color: "#2563eb",
             marginBottom: "0",
@@ -32,11 +32,12 @@ const ImitatorSection = () => {
       {/* Card 1: How it works? */}
       <div
         style={{
-          background: "rgba(255, 255, 255, 0.75)",
-          borderRadius: "10px",
+          background: "#ffffff",
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
           padding: "24px",
-          boxShadow: "0 3px 12px rgba(0, 0, 0, 0.06)",
-          width: "70%",
+          boxShadow: "var(--shadow-1)",
+          width: "min(100%, 960px)",
           margin: "0 auto 32px auto",
         }}
       >
@@ -67,11 +68,12 @@ const ImitatorSection = () => {
       {/* Card 2: What does it do? */}
       <div
         style={{
-          background: "rgba(255, 255, 255, 0.75)",
-          borderRadius: "10px",
+          background: "#ffffff",
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
           padding: "24px",
-          boxShadow: "0 3px 12px rgba(0, 0, 0, 0.06)",
-          width: "70%",
+          boxShadow: "var(--shadow-1)",
+          width: "min(100%, 960px)",
           margin: "0 auto 32px auto",
         }}
       >
@@ -129,11 +131,12 @@ const ImitatorSection = () => {
       {/* Card 3: Why is it important? */}
       <div
         style={{
-          background: "rgba(255, 255, 255, 0.75)",
-          borderRadius: "10px",
+          background: "#ffffff",
+          border: "1px solid var(--border)",
+          borderRadius: "12px",
           padding: "24px",
-          boxShadow: "0 3px 12px rgba(0, 0, 0, 0.06)",
-          width: "70%",
+          boxShadow: "var(--shadow-1)",
+          width: "min(100%, 960px)",
           margin: "0 auto 32px auto",
         }}
       >

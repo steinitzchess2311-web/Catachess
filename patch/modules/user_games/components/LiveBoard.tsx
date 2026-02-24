@@ -69,12 +69,10 @@ export function LiveBoard({ fen, myColor, turn, isOver, onMove }: LiveBoardProps
         onPieceDrop={handlePieceDrop}
         onPromotionPieceSelect={handlePromotion}
         isDraggablePiece={isMyTurn ? undefined : () => false}
-        // 标准棋盘颜色，与 studyBoard 统一
         customDarkSquareStyle={{ backgroundColor: '#779954' }}
         customLightSquareStyle={{ backgroundColor: '#e9edcc' }}
         animationDuration={120}
-        // 允许内置升变弹窗
-        promotionToSquare={null}
+        areArrowsAllowed={false}
       />
 
       {/* 翻转按钮 */}

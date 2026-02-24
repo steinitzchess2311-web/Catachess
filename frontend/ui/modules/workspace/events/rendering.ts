@@ -192,6 +192,15 @@ export function renderItems(
 
         elements.itemsGrid.appendChild(item);
     });
+
+    // Harmonized reveal animation for workspace cards to avoid abrupt pop-in.
+    const cards = Array.from(elements.itemsGrid.querySelectorAll('.grid-item')) as HTMLElement[];
+    cards.forEach((card, index) => {
+        card.classList.remove('grid-item--enter');
+        const delay = Math.min(index, 12) * 26;
+        card.style.setProperty('--enter-delay', `${delay}ms`);
+        card.classList.add('grid-item--enter');
+    });
 }
 
 export function renderReactComponents(

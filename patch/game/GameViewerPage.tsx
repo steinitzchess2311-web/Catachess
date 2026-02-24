@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import '../../frontend/web/src/pages/analysis/analysis.css';
 import { useNavigate, useParams } from 'react-router-dom';
 import { StudyProvider, useStudy } from '../studyContext';
 import { StudyBoard } from '../board/studyBoard';
@@ -292,6 +293,18 @@ function GameViewerContent({ game }: { game: GameDetail }) {
 
   return (
     <div className="patch-study-page game-viewer-page">
+      <div className="analysis-header">
+        <h2 className="analysis-title">Game Viewer</h2>
+        <div className="analysis-header-actions">
+          <button
+            type="button"
+            className="analysis-send-btn"
+            onClick={() => setShowPicker(true)}
+          >
+            Save to Study
+          </button>
+        </div>
+      </div>
       <div className="patch-study-layout" ref={layoutRef}>
         {!state.isTrainMode && (
           <div className="patch-study-sidebar">
@@ -337,15 +350,6 @@ function GameViewerContent({ game }: { game: GameDetail }) {
                   onClick={() => setShowTrainModal(true)}
                 >
                   Train
-                </button>
-                {/* Send to Study 入口 */}
-                <button
-                  type="button"
-                  className="patch-sidebar-tab analysis-send-btn"
-                  onClick={() => setShowPicker(true)}
-                  title="Save this game to a study chapter"
-                >
-                  Save to Study
                 </button>
               </div>
               <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>

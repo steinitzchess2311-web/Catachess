@@ -10,6 +10,21 @@ interface CreateModalProps {
   onSuccess: () => void;
 }
 
+function CreateNodeIcon({ type }: { type: 'folder' | 'study' }) {
+  if (type === 'folder') {
+    return (
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <path fill="currentColor" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path fill="currentColor" d="M16 6a4 4 0 1 1-8 0a4 4 0 0 1 8 0M12 11c-2.5 0-5 1.5-5 4v1h10v-1c0-2.5-2.5-4-5-4m-6 7h12v2H6z" />
+    </svg>
+  );
+}
+
 const CreateModal: React.FC<CreateModalProps> = ({
   isOpen,
   type,
@@ -116,13 +131,14 @@ const CreateModal: React.FC<CreateModalProps> = ({
   if (!isOpen) return null;
 
   const modalTitle = type === 'folder' ? 'Create New Folder' : 'Create New Study';
-  const icon = type === 'folder' ? '📁' : '📖';
 
   return (
     <div className="create-modal-overlay">
       <div ref={modalRef} className="create-modal-card">
         <div className="create-modal-header">
-          <div className="create-modal-icon">{icon}</div>
+          <div className={`create-modal-icon ${type === 'study' ? 'is-study' : 'is-folder'}`}>
+            <CreateNodeIcon type={type} />
+          </div>
           <h3 className="create-modal-title">{modalTitle}</h3>
           <button className="create-modal-close" onClick={onClose}>
             ×

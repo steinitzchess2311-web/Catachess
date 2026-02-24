@@ -284,11 +284,12 @@ function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
     // 1. Inject a guest banner into #test-sign-container (below the sort bar)
     // 2. Disable the New Folder / New Study cards
     let observer: MutationObserver | null = null;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
     if ((mode === "private" || mode === "shared") && !isAuthed()) {
       const loginHref = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
 
       const applyGuestUI = (root: HTMLElement) => {
-        // Inject banner into #test-sign-container if not already done
         const signContainer = root.querySelector<HTMLElement>("#test-sign-container");
         if (signContainer && !signContainer.querySelector(".guest-banner")) {
           const banner = document.createElement("div");
@@ -313,7 +314,6 @@ function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
           `;
           signContainer.appendChild(banner);
         }
-        // Disable new-item-cards
         root.querySelectorAll<HTMLElement>(".new-item-card").forEach((card) => {
           card.style.opacity = "0.35";
           card.style.pointerEvents = "none";
@@ -321,14 +321,19 @@ function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
         });
       };
 
+      // Debounce so the callback fires once after DOM settles, not on every mutation during init
       observer = new MutationObserver(() => {
-        if (containerRef.current) applyGuestUI(containerRef.current);
+        if (debounceTimer) clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+          if (containerRef.current) applyGuestUI(containerRef.current);
+        }, 60);
       });
       observer.observe(containerRef.current, { childList: true, subtree: true });
     }
 
     return () => {
       observer?.disconnect();
+      if (debounceTimer) clearTimeout(debounceTimer);
     };
   }, [mode]); // ONLY depend on mode — navigate is accessed via ref to avoid spurious re-inits
 

@@ -195,19 +195,17 @@ export function renderItems(
 }
 
 export function renderReactComponents(
-    container: HTMLElement
+    container: HTMLElement,
+    mode: string
 ) {
-    // Render LogoutButton
-    const logoutContainer = container.querySelector('#logout-button-container') as HTMLElement;
-    if (logoutContainer) {
-        const root = ReactDOM.createRoot(logoutContainer);
-        root.render(React.createElement(LogoutButton));
+    // LogoutButton is only relevant in private mode (logged-in users)
+    if (mode === 'private') {
+        const logoutContainer = container.querySelector('#logout-button-container') as HTMLElement;
+        if (logoutContainer) {
+            const root = ReactDOM.createRoot(logoutContainer);
+            root.render(React.createElement(LogoutButton));
+        }
     }
-
-    // Render TestSign
-    const testSignContainer = container.querySelector('#test-sign-container') as HTMLElement;
-    if (testSignContainer) {
-        const testSignRoot = ReactDOM.createRoot(testSignContainer);
-        testSignRoot.render(React.createElement(TestSign));
-    }
+    // TestSign always returns null — skip creating a React root for it entirely.
+    // The #test-sign-container div stays empty and available for other injections.
 }

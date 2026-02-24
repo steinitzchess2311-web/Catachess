@@ -195,12 +195,28 @@ export function renderItems(
 
     // Harmonized reveal animation for workspace cards to avoid abrupt pop-in.
     const cards = Array.from(elements.itemsGrid.querySelectorAll('.grid-item')) as HTMLElement[];
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     cards.forEach((card, index) => {
-        card.classList.remove('grid-item--enter');
-        const delay = Math.min(index, 12) * 26;
+        card.classList.remove('grid-item--preenter', 'grid-item--enter');
+        if (reduceMotion) {
+            card.style.removeProperty('--enter-delay');
+            return;
+        }
+        const delay = Math.min(index, 10) * 22;
         card.style.setProperty('--enter-delay', `${delay}ms`);
-        card.classList.add('grid-item--enter');
+        card.classList.add('grid-item--preenter');
     });
+
+    if (!reduceMotion && cards.length > 0) {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                cards.forEach((card) => {
+                    card.classList.remove('grid-item--preenter');
+                    card.classList.add('grid-item--enter');
+                });
+            });
+        });
+    }
 }
 
 export function renderReactComponents(

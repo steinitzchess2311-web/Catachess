@@ -244,33 +244,14 @@
   background: transparent;
   border-radius: 50%;
   cursor: pointer;
+  color: var(--text-secondary);
   transition: background 0.15s, color 0.15s;
-}
-
-.challenge-btn--waiting {
-  color: #ef4444;
-}
-
-.challenge-btn--ongoing {
-  color: #16a34a;
 }
 
 .challenge-btn:hover {
   background: var(--primary-bg);
+  color: var(--primary);
 }
-
-.challenge-dot {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  border: 1.5px solid #fff;
-}
-
-.challenge-dot--red { background: #ef4444; }
-.challenge-dot--green { background: #16a34a; }
 
 .challenge-dropdown {
   position: absolute;

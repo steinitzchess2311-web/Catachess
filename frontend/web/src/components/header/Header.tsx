@@ -207,14 +207,13 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
         </nav>
       </div>
       <div className="header-right">
-        {isAuthed && currentGame && (currentGame.status === 'waiting' || currentGame.status === 'ongoing') && (
+        {isAuthed && (
           <div className="challenge-wrapper" ref={challengeRef}>
             <button
-              className={`challenge-btn${currentGame.status === 'ongoing' ? ' challenge-btn--ongoing' : ' challenge-btn--waiting'}`}
-              aria-label="Current game"
+              className="challenge-btn"
+              aria-label="Games"
               onClick={() => setChallengeOpen(o => !o)}
             >
-              {/* Crossed swords SVG */}
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="3" y1="21" x2="21" y2="3"/>
                 <path d="M14.5 9.5L18 6l-3-3-3.5 3.5"/>
@@ -222,41 +221,49 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
                 <path d="M3 3l3 3"/>
                 <path d="M18 18l3 3"/>
               </svg>
-              <span className={`challenge-dot${currentGame.status === 'ongoing' ? ' challenge-dot--green' : ' challenge-dot--red'}`} />
+              {currentGame && (currentGame.status === 'waiting' || currentGame.status === 'ongoing') && (
+                <span className="bell-badge">1</span>
+              )}
             </button>
             {challengeOpen && (
               <div className="challenge-dropdown">
-                <div className="challenge-dropdown-header">
-                  {currentGame.status === 'ongoing' ? 'Ongoing Game' : 'Pending Challenge'}
-                </div>
-                <div className="challenge-info">
-                  <div className="challenge-opponent">
-                    vs <strong>{currentGame.opponent.id}</strong>
-                  </div>
-                  <div className="challenge-meta">
-                    {Math.floor(currentGame.time_control.initial / 60)}+{currentGame.time_control.increment}
-                    {' · '}
-                    <span className={`challenge-status-badge challenge-status-badge--${currentGame.status}`}>
-                      {currentGame.status === 'ongoing' ? 'Ongoing' : 'Waiting'}
-                    </span>
-                  </div>
-                </div>
-                <div className="challenge-actions">
-                  <button
-                    className="challenge-go-btn"
-                    onClick={() => { setChallengeOpen(false); navigate(`/chess/${currentGame.game_id}`); }}
-                  >
-                    Go to Game →
-                  </button>
-                  {currentGame.status === 'waiting' && (
-                    <button
-                      className="challenge-decline-btn"
-                      onClick={handleDeclineChallenge}
-                    >
-                      Decline
-                    </button>
-                  )}
-                </div>
+                {currentGame && (currentGame.status === 'waiting' || currentGame.status === 'ongoing') ? (
+                  <>
+                    <div className="challenge-dropdown-header">
+                      {currentGame.status === 'ongoing' ? 'Ongoing Game' : 'Pending Challenge'}
+                    </div>
+                    <div className="challenge-info">
+                      <div className="challenge-opponent">
+                        vs <strong>{currentGame.opponent.id}</strong>
+                      </div>
+                      <div className="challenge-meta">
+                        {Math.floor(currentGame.time_control.initial / 60)}+{currentGame.time_control.increment}
+                        {' · '}
+                        <span className={`challenge-status-badge challenge-status-badge--${currentGame.status}`}>
+                          {currentGame.status === 'ongoing' ? 'Ongoing' : 'Waiting'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="challenge-actions">
+                      <button
+                        className="challenge-go-btn"
+                        onClick={() => { setChallengeOpen(false); navigate(`/chess/${currentGame.game_id}`); }}
+                      >
+                        Go to Game →
+                      </button>
+                      {currentGame.status === 'waiting' && (
+                        <button
+                          className="challenge-decline-btn"
+                          onClick={handleDeclineChallenge}
+                        >
+                          Decline
+                        </button>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="bell-empty">No active games</div>
+                )}
               </div>
             )}
           </div>

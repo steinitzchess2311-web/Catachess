@@ -59,7 +59,7 @@ export function LiveBoard({ fen, myColor, turn, isOver, onMove }: LiveBoardProps
     <div
       ref={sizeRef}
       className="ug-board-wrapper"
-      style={{ width: '100%', height: '100%' }}
+      style={{ width: '100%' }}
     >
       <Chessboard
         id="live-board"

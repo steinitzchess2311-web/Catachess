@@ -665,16 +665,15 @@
 .ug-board-container {
   position: relative;
   display: flex;
-  align-items: stretch;
+  align-items: flex-start;
 }
 
 .ug-board-wrapper {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  flex: 1;
-  aspect-ratio: 1;
+  align-items: flex-start;
+  justify-content: flex-start;
+  flex-shrink: 0;
 }
 
 /* 翻转按钮 */

@@ -47,19 +47,11 @@ export class ApiClient {
             });
 
             if (response.status === 401) {
-                // Unauthorized - clear token and redirect, unless on a guest-accessible page
+                // Clear stored credentials so the next Protected route check redirects to login
                 localStorage.removeItem('catachess_token');
                 localStorage.removeItem('catachess_user_id');
                 sessionStorage.removeItem('catachess_token');
                 sessionStorage.removeItem('catachess_user_id');
-                const path = window.location.pathname;
-                const isGuestPage =
-                    path.startsWith('/workspace/public') ||
-                    path.startsWith('/workspace/shared');
-                if (!path.startsWith('/login') && !isGuestPage) {
-                    window.location.assign('/login');
-                    console.warn('Unauthorized: Redirecting to login...');
-                }
                 throw new Error('Unauthorized');
             }
 

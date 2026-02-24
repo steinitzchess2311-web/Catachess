@@ -253,7 +253,7 @@ function GameViewerContent({ game }: { game: GameDetail }) {
   const [showPicker, setShowPicker] = useState(false);
 
   const handleSendNavigate = useCallback(
-    (studyId: string) => navigate(`/workspace/private/${studyId}`),
+    (studyId: string) => navigate(`/patch/workspace/${studyId}`),
     [navigate],
   );
 

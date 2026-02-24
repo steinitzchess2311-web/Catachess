@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@ui/assets/api';
 import type { StudyTree } from '@patch/tree/type';
+import './analysis.css';
 
 interface PickerNode {
   id: string;

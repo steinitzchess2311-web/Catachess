@@ -33,7 +33,7 @@ const FundingPlansSection = () => {
           margin: 0,
         }}
       >
-        <li style={{ marginBottom: "18px" }}>
+        <li style={{ marginBottom: "16px", display: "flex", alignItems: "flex-start" }}>
           <span
             style={{
               display: "inline-block",
@@ -45,6 +45,7 @@ const FundingPlansSection = () => {
               textAlign: "center",
               lineHeight: "28px",
               marginRight: "10px",
+              flexShrink: 0,
               fontWeight: 700,
               fontSize: "0.9rem",
             }}
@@ -53,7 +54,7 @@ const FundingPlansSection = () => {
           </span>
           Better imitation of our tagged coaches.
         </li>
-        <li style={{ marginBottom: "18px" }}>
+        <li style={{ marginBottom: "16px", display: "flex", alignItems: "flex-start" }}>
           <span
             style={{
               display: "inline-block",
@@ -65,6 +66,7 @@ const FundingPlansSection = () => {
               textAlign: "center",
               lineHeight: "28px",
               marginRight: "10px",
+              flexShrink: 0,
               fontWeight: 700,
               fontSize: "0.9rem",
             }}
@@ -73,7 +75,7 @@ const FundingPlansSection = () => {
           </span>
           A wider audience: we will reach out to more communities and even our tagged coaches for future support.
         </li>
-        <li style={{ marginBottom: "18px" }}>
+        <li style={{ marginBottom: "16px", display: "flex", alignItems: "flex-start" }}>
           <span
             style={{
               display: "inline-block",
@@ -85,6 +87,7 @@ const FundingPlansSection = () => {
               textAlign: "center",
               lineHeight: "28px",
               marginRight: "10px",
+              flexShrink: 0,
               fontWeight: 700,
               fontSize: "0.9rem",
             }}
@@ -93,7 +96,7 @@ const FundingPlansSection = () => {
           </span>
           Hold high quality tournaments (see steinitzchess.org) to boost inclusivity among all chess lovers
         </li>
-        <li style={{ marginBottom: "18px" }}>
+        <li style={{ marginBottom: "16px", display: "flex", alignItems: "flex-start" }}>
           <span
             style={{
               display: "inline-block",
@@ -105,6 +108,7 @@ const FundingPlansSection = () => {
               textAlign: "center",
               lineHeight: "28px",
               marginRight: "10px",
+              flexShrink: 0,
               fontWeight: 700,
               fontSize: "0.9rem",
             }}

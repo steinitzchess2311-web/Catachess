@@ -6,7 +6,7 @@
 /* ---- 页面基础 ---------------------------------------------- */
 
 .up-page {
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - 72px);
   background: var(--bg-app);
   display: flex;
   flex-direction: column;

@@ -26,7 +26,7 @@ main {
 }
 
 .patch-study-page {
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - 72px);
   height: auto;
   padding: 16px;
   box-sizing: border-box;

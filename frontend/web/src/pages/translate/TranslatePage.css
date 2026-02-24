@@ -1,5 +1,5 @@
 .translate-page {
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - 72px);
   background: var(--bg-app);
   padding: 60px 24px;
   font-family: var(--font-family);

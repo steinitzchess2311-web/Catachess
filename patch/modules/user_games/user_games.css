@@ -6,7 +6,7 @@
 /* ---- 页面基础 ---------------------------------------------- */
 
 .ug-page {
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - 72px);
   background: var(--bg-app);
   display: flex;
   flex-direction: column;
@@ -1142,7 +1142,7 @@
 .ug-join-page {
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 100px);
+  min-height: calc(100vh - 72px);
 }
 
 .ug-join-card {

@@ -59,9 +59,9 @@
   position: relative;
   flex: 1;
   min-height: 360px;
-  padding: 0 24px 54px;
+  padding: 0 24px 48px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   overflow: hidden;
 }
@@ -69,9 +69,9 @@
 .ps-idle-art {
   position: absolute;
   inset: 0;
-  background: url('/assets/desktop/cat_mainpage.png?v=3') center center no-repeat;
-  background-size: min(44vw, 500px);
-  opacity: 0.12;
+  background: url('/assets/desktop/cat_mainpage.png?v=3') center 54% no-repeat;
+  background-size: min(36vw, 420px);
+  opacity: 0.06;
   pointer-events: none;
 }
 
@@ -83,69 +83,74 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   text-align: center;
   animation: ps-idle-card-in 260ms ease-out both;
-  transform: translateY(-54px);
+  margin-top: -72px;
 }
 
 @keyframes ps-idle-card-in {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .ps-idle-title {
   margin: 0;
-  font-size: clamp(34px, 5.2vw, 54px);
+  font-size: clamp(32px, 4.2vw, 44px);
   line-height: 1.1;
   letter-spacing: -0.03em;
-  color: rgba(71, 85, 105, 0.64);
+  color: rgba(71, 85, 105, 0.52);
   font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   font-weight: 700;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.42);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.46);
 }
 
 .ps-idle-desc {
   margin: 0;
-  font-size: clamp(18px, 2vw, 24px);
-  line-height: 1.35;
-  color: rgba(100, 116, 139, 0.58);
+  font-size: clamp(15px, 1.4vw, 18px);
+  line-height: 1.25;
+  color: rgba(100, 116, 139, 0.54);
   font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   font-weight: 500;
-  max-width: 600px;
+  max-width: none;
+  white-space: nowrap;
 }
 
 .ps-idle-quick {
-  margin-top: 4px;
+  margin-top: 10px;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .ps-idle-chip {
-  border: none;
-  background: transparent;
-  color: rgba(71, 85, 105, 0.72);
-  border-radius: 0;
-  padding: 2px 0;
-  font-size: 22px;
+  border: 1px solid #b9cff6;
+  background: linear-gradient(180deg, #edf4ff 0%, #e4edfd 100%);
+  color: #325fb9;
+  border-radius: 12px;
+  padding: 10px 18px;
+  min-width: 170px;
+  font-size: 17px;
   font-weight: 600;
   font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  line-height: 1.2;
+  line-height: 1.15;
   cursor: pointer;
-  transition: color 150ms ease, text-shadow 150ms ease, transform 150ms ease;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.14);
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
 }
 
 .ps-idle-chip:hover {
-  color: rgba(51, 65, 85, 0.88);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.38);
+  background: linear-gradient(180deg, #e6f0ff 0%, #dce8ff 100%);
+  border-color: #9bb9ee;
+  color: #244f9e;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
   transform: translateY(-1px);
 }
 
 .ps-idle-chip:focus-visible {
   outline: none;
-  box-shadow: 0 2px 0 rgba(148, 163, 184, 0.42);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.24);
 }
 
 .ps-hero-eyebrow {
@@ -1072,28 +1077,35 @@
 
   .ps-idle {
     min-height: 320px;
-    padding: 0 14px 30px;
+    padding: 0 14px 24px;
   }
 
   .ps-idle-art {
-    background-size: min(66vw, 400px);
-    background-position: center 34%;
-    opacity: 0.1;
+    background-size: min(58vw, 340px);
+    background-position: center 52%;
+    opacity: 0.055;
   }
 
   .ps-idle-card {
     width: 100%;
     padding: 0 8px;
-    transform: translateY(-28px);
+    margin-top: -34px;
   }
 
   .ps-idle-quick {
+    flex-wrap: wrap;
     gap: 8px;
   }
 
   .ps-idle-chip {
-    font-size: 18px;
-    padding: 2px 0;
+    min-width: 140px;
+    font-size: 15px;
+    padding: 8px 12px;
+  }
+
+  .ps-idle-desc {
+    font-size: 14px;
+    white-space: nowrap;
   }
 
   .ps-results {

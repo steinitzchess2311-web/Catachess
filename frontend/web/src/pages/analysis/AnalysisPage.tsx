@@ -161,13 +161,17 @@ function AnalysisPageContent() {
     if (pgn) {
       try {
         const result = importPgn(pgn);
+        console.log('[AnalysisPage] importPgn result:', { success: result.success, hasTree: !!result.tree, errors: result.errors, nodeCount: result.tree ? Object.keys(result.tree.nodes).length : 0 });
         if (result.tree) {
           loadTree(result.tree);
           return;
         }
-      } catch {
+      } catch (e) {
+        console.error('[AnalysisPage] importPgn threw:', e);
         // fall through to empty tree
       }
+    } else {
+      console.log('[AnalysisPage] no pgn in location.state, loading empty tree');
     }
     loadTree(createEmptyTree());
   // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -110,8 +110,13 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
 
   useEffect(() => {
     pollCurrentGame();
-    const id = setInterval(pollCurrentGame, 15_000);
-    return () => clearInterval(id);
+    const id = setInterval(pollCurrentGame, 5_000);
+    // also refresh when the tab regains focus
+    window.addEventListener('focus', pollCurrentGame);
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('focus', pollCurrentGame);
+    };
   }, [pollCurrentGame]);
 
   // Close challenge dropdown on outside click

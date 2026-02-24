@@ -31,6 +31,30 @@ interface BroadcastNotif {
 const CATACHAT_URL = "https://catachat.catachess.com";
 const SEEN_KEY = 'catachat_seen_ids';
 
+function DuelIcon() {
+  return (
+    <svg
+      className="header-action-icon"
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M8.2 3.6l3.2 3.2-4.1 4.1L4.1 7.7z" />
+      <path d="M15.8 3.6l-3.2 3.2 4.1 4.1 3.2-3.2z" />
+      <path d="M7.3 10.9L3.6 14.6" />
+      <path d="M16.7 10.9l3.7 3.7" />
+      <path d="M9.8 13.5l-3.5 3.5 1.6 1.6 3.5-3.5" />
+      <path d="M14.2 13.5l3.5 3.5-1.6 1.6-3.5-3.5" />
+    </svg>
+  );
+}
+
 function loadSeenIds(): Set<string> {
   try {
     const raw = localStorage.getItem(SEEN_KEY);
@@ -214,15 +238,9 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
               aria-label="Games"
               onClick={() => setChallengeOpen(o => !o)}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="3" y1="21" x2="21" y2="3"/>
-                <path d="M14.5 9.5L18 6l-3-3-3.5 3.5"/>
-                <path d="M9.5 14.5L6 18l3 3 3.5-3.5"/>
-                <path d="M3 3l3 3"/>
-                <path d="M18 18l3 3"/>
-              </svg>
+              <DuelIcon />
               {currentGame && (currentGame.status === 'waiting' || currentGame.status === 'ongoing') && (
-                <span className="bell-badge">1</span>
+                <span className="challenge-indicator" />
               )}
             </button>
             {challengeOpen && (
@@ -275,7 +293,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
               aria-label="Messages"
               onClick={() => setBellOpen(o => !o)}
             >
-              <BellIcon width={20} height={20} />
+              <BellIcon width={18} height={18} />
               {unseenCount > 0 && (
                 <span className="bell-badge">{unseenCount}</span>
               )}

@@ -160,19 +160,19 @@ export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPick
         </div>
 
         {/* Node list */}
-        <div className="picker-body">
-          {isUnauthed && (
+        <div className={`picker-body${isUnauthed ? ' is-unauthed' : ''}`}>
+          {isUnauthed ? (
             <div className="picker-unauthed">
-              <span className="picker-unauthed-icon">🔒</span>
+              <span className="picker-unauthed-icon" aria-hidden="true" />
               <p className="picker-unauthed-text">Log in to save to a study</p>
-              <a href="/login" className="picker-unauthed-link">Go to Login →</a>
+              <a href={`/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`} className="picker-unauthed-link">Go to Login</a>
             </div>
-          )}
-          {isLoading && <div className="picker-loading">Loading...</div>}
-          {!isLoading && nodes.length === 0 && (
+          ) : null}
+          {!isUnauthed && isLoading && <div className="picker-loading">Loading...</div>}
+          {!isUnauthed && !isLoading && nodes.length === 0 && (
             <div className="picker-empty">No folders or studies here.</div>
           )}
-          {!isLoading && nodes.length > 0 && (
+          {!isUnauthed && !isLoading && nodes.length > 0 && (
             <ul className="picker-node-list">
               {nodes.map((node) => (
                 <li
@@ -198,7 +198,8 @@ export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPick
         {error && <div className="picker-error">{error}</div>}
 
         {/* Footer: new study */}
-        <div className="picker-footer">
+        {!isUnauthed && (
+          <div className="picker-footer">
           {showNewStudyInput ? (
             <div className="picker-new-study-row">
               <input
@@ -243,7 +244,8 @@ export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPick
               + New Study here
             </button>
           )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

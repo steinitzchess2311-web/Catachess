@@ -6,7 +6,6 @@ import "./Footer.css";
 const Footer: React.FC = () => {
   return (
     <footer className="app-footer">
-      <div className="footer-gradient-overlay"></div>
       <div className="footer-content">
         <div className="footer-section footer-main">
           <div className="footer-brand">
@@ -41,21 +40,6 @@ const Footer: React.FC = () => {
             >
               steinitzchess.org
             </a>
-          </div>
-        </div>
-
-        <div className="footer-section footer-appreciation">
-          <h3 className="footer-heading">Appreciated Individuals</h3>
-          <div className="appreciation-grid">
-            <span className="appreciation-name">Cata Long</span>
-            <span className="appreciation-name">Jorlanda Chen</span>
-            <span className="appreciation-name">Yiping Lou</span>
-            <span className="appreciation-name">Zhian Chen</span>
-            <span className="appreciation-name">Liren Ding</span>
-            <span className="appreciation-name">Yaochen Yu</span>
-            <span className="appreciation-name">ZiFei Luo</span>
-            <span className="appreciation-name">Yuxuan Zheng</span>
-            <span className="appreciation-name">Ziyang Huang</span>
           </div>
         </div>
       </div>

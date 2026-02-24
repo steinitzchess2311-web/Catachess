@@ -26,7 +26,7 @@ const AboutPage = () => {
           padding: "40px 24px 70px",
           fontFamily: "var(--font-family)",
           background: "var(--bg-app)",
-          minHeight: "calc(100vh - 72px)",
+          minHeight: "calc(100vh - 100px)",
         }}
       >
         <div

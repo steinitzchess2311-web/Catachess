@@ -118,7 +118,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
       {/* Title */}
       <h1
         style={{
-          fontSize: "2.5rem",
+          fontSize: "clamp(1.85rem, 3.4vw, 2.35rem)",
           fontWeight: 700,
           color: "#0f172a",
           marginBottom: "12px",
@@ -131,7 +131,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
       {/* Subtitle */}
       <h2
         style={{
-          fontSize: "1.3rem",
+          fontSize: "clamp(1rem, 2.2vw, 1.2rem)",
           fontWeight: 400,
           color: "#475569",
           marginBottom: "24px",
@@ -172,9 +172,9 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
             {article.author_type === 'official' ? 'Official' : 'User'}
           </span>
         </div>
-        <span style={{ color: "#d0d0d0" }}>•</span>
+        <span style={{ color: "#cbd5e1" }}>•</span>
         <span>{formattedDate}</span>
-        <span style={{ color: "#d0d0d0" }}>•</span>
+        <span style={{ color: "#cbd5e1" }}>•</span>
         <span>{article.view_count} views</span>
       </div>
 

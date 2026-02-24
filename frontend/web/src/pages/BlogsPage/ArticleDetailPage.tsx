@@ -259,11 +259,11 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
             </div>
 
             {/* Article Content */}
-            <div style={{ padding: "40px" }}>
+            <div style={{ padding: "clamp(18px, 3.5vw, 40px)" }}>
               {/* Title */}
               <h1
                 style={{
-                  fontSize: "2.5rem",
+                  fontSize: "clamp(1.85rem, 3.4vw, 2.35rem)",
                   fontWeight: 700,
                   color: "#0f172a",
                   marginBottom: "12px",
@@ -276,7 +276,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
               {/* Subtitle */}
               <h2
                 style={{
-                  fontSize: "1.3rem",
+                  fontSize: "clamp(1rem, 2.2vw, 1.2rem)",
                   fontWeight: 400,
                   color: "#475569",
                   marginBottom: "24px",
@@ -291,6 +291,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                 style={{
                   display: "flex",
                   alignItems: "center",
+                  flexWrap: "wrap",
                   gap: "16px",
                   paddingBottom: "24px",
                   marginBottom: "32px",
@@ -316,9 +317,9 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                     {article.author_type === 'official' ? 'Official' : 'User'}
                   </span>
                 </div>
-                <span style={{ color: "#d0d0d0" }}>•</span>
+                <span style={{ color: "#cbd5e1" }}>•</span>
                 <span>{formattedDate}</span>
-                <span style={{ color: "#d0d0d0" }}>•</span>
+                <span style={{ color: "#cbd5e1" }}>•</span>
                 <span>{article.view_count} views</span>
               </div>
 
@@ -449,11 +450,11 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
         style={{
           minHeight: "100vh",
           background: "var(--bg-app)",
-          padding: "80px 24px 40px",
+          padding: "36px 16px 32px",
           overflowY: "auto",
         }}
       >
-        <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+        <div style={{ maxWidth: "860px", margin: "0 auto" }}>
           {/* Back Button */}
           <button
             onClick={() => navigate("/blogs")}

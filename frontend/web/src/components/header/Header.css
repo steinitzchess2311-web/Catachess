@@ -3,7 +3,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0 24px;
-  height: 72px;
+  height: 100px;
   background: rgba(255, 255, 255, 0.96);
   border-bottom: 1px solid var(--border);
   font-family: var(--font-family);
@@ -29,7 +29,7 @@
 }
 
 .header-left .logo-image {
-  height: 44px;
+  height: 100px;
   width: auto;
   display: block;
 }
@@ -435,7 +435,7 @@
 
 @media (max-width: 860px) {
   .app-header {
-    height: 64px;
+    height: 80px;
   }
 
   .header-left {
@@ -443,7 +443,7 @@
   }
 
   .header-left .logo-image {
-    height: 38px;
+    height: 72px;
   }
 
   .header-center .nav-link {

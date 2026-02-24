@@ -16,7 +16,6 @@ main {
   margin-top: auto;
 }
 
-.footer-gradient-overlay,
 .app-footer::before {
   display: none;
 }
@@ -71,8 +70,7 @@ main {
   -webkit-text-fill-color: unset;
 }
 
-.footer-contact,
-.footer-appreciation {
+.footer-contact {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -104,7 +102,6 @@ main {
 
 .contact-label,
 .contact-text,
-.appreciation-name,
 .footer-copyright {
   color: var(--text-secondary);
 }
@@ -122,32 +119,6 @@ main {
 
 .contact-link:hover {
   color: var(--primary);
-}
-
-.appreciation-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px 12px;
-}
-
-.appreciation-name {
-  font-size: 13px;
-  padding: 2px 0 2px 12px;
-  position: relative;
-  transition: color 0.2s;
-}
-
-.appreciation-name::before {
-  content: "•";
-  position: absolute;
-  left: 0;
-  color: #93c5fd;
-  font-size: 14px;
-}
-
-.appreciation-name:hover {
-  color: var(--text-main);
-  transform: none;
 }
 
 .footer-bottom {
@@ -195,10 +166,6 @@ main {
     grid-template-columns: 1fr;
     gap: 20px;
   }
-
-  .footer-appreciation {
-    grid-column: auto;
-  }
 }
 
 @media (max-width: 680px) {
@@ -210,13 +177,4 @@ main {
     font-size: 17px;
   }
 
-  .appreciation-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 460px) {
-  .appreciation-grid {
-    grid-template-columns: 1fr;
-  }
 }

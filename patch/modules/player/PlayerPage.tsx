@@ -37,13 +37,9 @@ type ViewState =
   | { kind: 'players'; query: string; list: PlayerSuggestion[]; loading: boolean }
   | { kind: 'games';   player: string };
 
-const IDLE_QUICK_SEARCHES = [
-  'Magnus Carlsen',
-  'Hikaru Nakamura',
-  'Ju Wenjun',
-  'Fabiano Caruana',
-  'Alireza Firouzja',
-  'Hou Yifan',
+const IDLE_QUICK_LINKS = [
+  { label: 'Carlsen', type: 'search' as const, value: 'carlsen' },
+  { label: 'Li Quanhao', type: 'player' as const, value: 'Li, Quanhao' },
 ];
 
 // ---- Games sub-view ----
@@ -244,20 +240,23 @@ const PlayerPage: React.FC = () => {
         <div className="ps-idle">
           <div className="ps-idle-art" aria-hidden />
           <section className="ps-idle-card" aria-label="Player search guidance">
-            <p className="ps-idle-eyebrow">Getting Started</p>
             <h2 className="ps-idle-title">Start by searching a player</h2>
-            <p className="ps-idle-desc">
-              Search by full name for best results. You can open player games, compare styles, and jump to analysis.
-            </p>
+            <p className="ps-idle-desc">Enter a "," or space between LAST name and FIRST name</p>
             <div className="ps-idle-quick">
-              {IDLE_QUICK_SEARCHES.map((name) => (
+              {IDLE_QUICK_LINKS.map((item) => (
                 <button
-                  key={name}
+                  key={item.label}
                   type="button"
                   className="ps-idle-chip"
-                  onClick={() => handleSearch(name)}
+                  onClick={() => {
+                    if (item.type === 'search') {
+                      handleSearch(item.value);
+                      return;
+                    }
+                    goToPlayer(item.value);
+                  }}
                 >
-                  {name}
+                  {item.label}
                 </button>
               ))}
             </div>

@@ -480,7 +480,11 @@ function WorkspacePage() {
 
 function Layout() {
   const location = useLocation();
-  const [username, setUsername] = useState<string | null>(null);
+  const [username, setUsername] = useState<string | null>(() => {
+    const token = readStored(TOKEN_KEY);
+    if (!isTokenValid(token)) return null;
+    return decodeUserIdFromToken(token) || readStored(USER_ID_KEY);
+  });
   const [userRole, setUserRole] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [showCat, setShowCat] = useState(false);

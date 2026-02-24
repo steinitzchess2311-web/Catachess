@@ -1379,17 +1379,35 @@ main {
 }
 
 .patch-chapter-list__new {
-  background: #2e6bff;
-  color: #fff;
-  border: none;
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
   font-size: 12px;
-  padding: 6px 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
   cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
 }
 
 .patch-chapter-list__new:hover {
-  background: #1f5cf0;
+  background: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.patch-chapter-list__new:active {
+  background: #cfe2ff;
+}
+
+.patch-chapter-list__new:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
 }
 
 .patch-chapter-list__scroll {

@@ -76,8 +76,12 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
   const pollCurrentGame = useCallback(() => {
     if (!isAuthed || !username) return;
     getCurrentGame(username)
-      .then(setCurrentGame)
-      .catch(() => {});
+      .then((data) => {
+        setCurrentGame(data);
+      })
+      .catch((err) => {
+        console.warn('[Header] getCurrentGame failed:', err);
+      });
   }, [isAuthed, username]);
 
   useEffect(() => {

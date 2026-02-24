@@ -69,28 +69,24 @@
 .ps-idle-art {
   position: absolute;
   inset: 0;
-  background: url('/assets/desktop/cat_mainpage.png?v=3') center 28% no-repeat;
-  background-size: min(54vw, 620px);
-  opacity: 0.08;
+  background: url('/assets/desktop/cat_mainpage.png?v=3') center center no-repeat;
+  background-size: min(56vw, 640px);
+  opacity: 0.14;
   pointer-events: none;
-  filter: grayscale(1);
 }
 
 .ps-idle-card {
   position: relative;
   z-index: 1;
   width: min(740px, calc(100vw - 40px));
-  background: rgba(255, 255, 255, 0.86);
-  border: 1px solid rgba(148, 163, 184, 0.2);
-  border-radius: 18px;
-  backdrop-filter: blur(6px);
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08), 0 2px 10px rgba(15, 23, 42, 0.05);
-  padding: 24px 30px 20px;
+  padding: 6px 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
   animation: ps-idle-card-in 260ms ease-out both;
-  transform: translateY(-28px);
+  transform: translateY(-18px);
 }
 
 @keyframes ps-idle-card-in {
@@ -104,7 +100,7 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #64748b;
+  color: rgba(100, 116, 139, 0.72);
 }
 
 .ps-idle-title {
@@ -112,14 +108,14 @@
   font-size: clamp(24px, 3.5vw, 32px);
   line-height: 1.2;
   letter-spacing: -0.02em;
-  color: #0f172a;
+  color: rgba(30, 41, 59, 0.9);
 }
 
 .ps-idle-desc {
   margin: 0;
   font-size: 14px;
   line-height: 1.6;
-  color: #475569;
+  color: rgba(71, 85, 105, 0.8);
   max-width: 600px;
 }
 
@@ -127,34 +123,32 @@
   margin-top: 6px;
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
 }
 
 .ps-idle-chip {
-  border: 1px solid #d4dbe6;
-  background: #f3f5f8;
-  color: #5b6472;
-  border-radius: 999px;
-  padding: 7px 12px;
+  border: none;
+  background: transparent;
+  color: rgba(71, 85, 105, 0.82);
+  border-radius: 0;
+  padding: 2px 0;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   line-height: 1.2;
   cursor: pointer;
-  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  transition: color 150ms ease, text-shadow 150ms ease;
 }
 
 .ps-idle-chip:hover {
-  background: #ebeef3;
-  border-color: #c4cbd8;
-  color: #3f4754;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12);
-  transform: translateY(-1px);
+  color: rgba(30, 64, 175, 0.86);
+  text-shadow: 0 0 0.01px currentColor;
 }
 
 .ps-idle-chip:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.24);
+  box-shadow: 0 2px 0 rgba(59, 130, 246, 0.28);
 }
 
 .ps-hero-eyebrow {
@@ -1085,16 +1079,15 @@
   }
 
   .ps-idle-art {
-    background-size: min(88vw, 560px);
+    background-size: min(80vw, 520px);
     background-position: center 34%;
-    opacity: 0.07;
+    opacity: 0.12;
   }
 
   .ps-idle-card {
     width: 100%;
-    border-radius: 14px;
-    padding: 20px 16px 18px;
-    transform: translateY(-14px);
+    padding: 0 8px;
+    transform: translateY(-10px);
   }
 
   .ps-idle-quick {

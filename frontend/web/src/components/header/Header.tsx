@@ -203,7 +203,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
         </nav>
       </div>
       <div className="header-right">
-        {isAuthed && currentGame && (
+        {isAuthed && currentGame && (currentGame.status === 'waiting' || currentGame.status === 'ongoing') && (
           <div className="challenge-wrapper" ref={challengeRef}>
             <button
               className={`challenge-btn${currentGame.status === 'ongoing' ? ' challenge-btn--ongoing' : ' challenge-btn--waiting'}`}

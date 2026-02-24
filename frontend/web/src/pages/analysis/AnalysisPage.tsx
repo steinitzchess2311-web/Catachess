@@ -1,28 +1,102 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { StudyProvider, useStudy } from '@patch/studyContext';
 import { StudyBoard } from '@patch/board/studyBoard';
 import { MoveTree } from '@patch/sidebar/movetree';
 import { createEmptyTree } from '@patch/tree/StudyTree';
+import { importPgn } from '@patch/pgn/import';
 import { ExplorerPanel } from '@patch/modules/explorer';
 import { AnalysisSidebar } from './AnalysisSidebar';
 import { StudyPickerModal } from './StudyPickerModal';
 import './analysis.css';
 
+// ---- Location state 类型 ------------------------------------
+
+interface GameContext {
+  gameId: string;
+  white: string;
+  black: string;
+  result: string | null;
+  timeControl: { initial: number; increment: number };
+  backUrl: string;
+}
+
+interface AnalysisLocationState {
+  pgn?: string;
+  gameContext?: GameContext;
+}
+
+// ---- 工具 ---------------------------------------------------
+
+function formatTimeControl(initial: number, increment: number): string {
+  const mins = Math.floor(initial / 60);
+  const secs = initial % 60;
+  const base = secs > 0 ? `${mins}:${String(secs).padStart(2, '0')}` : String(mins);
+  return `${base}+${increment}`;
+}
+
+function resultLabel(result: string | null): { text: string; cls: string } {
+  if (result === '1-0') return { text: '1-0', cls: 'analysis-game-result--white' };
+  if (result === '0-1') return { text: '0-1', cls: 'analysis-game-result--black' };
+  if (result === '1/2-1/2') return { text: '½-½', cls: 'analysis-game-result--draw' };
+  return { text: '?', cls: '' };
+}
+
+// ---- Game Banner（仅从 /chess/:id/analyze 跳转时显示）------
+
+function GameBanner({ ctx, onBack }: { ctx: GameContext; onBack: () => void }) {
+  const res = resultLabel(ctx.result);
+  return (
+    <div className="analysis-game-banner">
+      <button
+        type="button"
+        className="analysis-game-back"
+        onClick={onBack}
+        title="Back to game"
+      >
+        ← Back
+      </button>
+
+      <div className="analysis-game-players">
+        <span className="analysis-game-player">
+          <span className="analysis-game-piece analysis-game-piece--white">♔</span>
+          {ctx.white}
+        </span>
+        <span className={`analysis-game-result ${res.cls}`}>{res.text}</span>
+        <span className="analysis-game-player">
+          <span className="analysis-game-piece analysis-game-piece--black">♚</span>
+          {ctx.black}
+        </span>
+      </div>
+
+      <span className="analysis-game-tc">
+        {formatTimeControl(ctx.timeControl.initial, ctx.timeControl.increment)}
+      </span>
+    </div>
+  );
+}
+
+// ---- 主内容层（必须在 StudyProvider 内）--------------------
+
 function AnalysisPageContent() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { state, loadTree, addMove } = useStudy();
+
+  const locState = (location.state ?? {}) as AnalysisLocationState;
+  const pgn = locState.pgn;
+  const gameContext = locState.gameContext;
 
   // Player filter passed in via URL: ?player=A&player=B
   const playerFilter = searchParams.getAll('player');
   const clearPlayerFilter = useCallback(() => {
     setSearchParams(new URLSearchParams());
   }, [setSearchParams]);
+
   const [rightbarWidth, setRightbarWidth] = useState(280);
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
-  // Auto-open Explorer tab when arriving with player filter or ?tab=explorer
   const [rightPanelTab, setRightPanelTab] = useState<'tree' | 'explorer'>(
     playerFilter.length > 0 || searchParams.get('tab') === 'explorer' ? 'explorer' : 'tree',
   );
@@ -33,18 +107,30 @@ function AnalysisPageContent() {
   const rightbarMin = 220;
   const rightbarMax = 520;
 
-  // Bootstrap an empty local tree (no chapter ID → auto-save is skipped by context)
+  // 加载树：有 pgn → importPgn；否则空棋盘
   useEffect(() => {
+    if (pgn) {
+      try {
+        const result = importPgn(pgn);
+        if (result.tree) {
+          loadTree(result.tree);
+          return;
+        }
+      } catch {
+        // fall through to empty tree
+      }
+    }
     loadTree(createEmptyTree());
-  }, [loadTree]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);   // 只在 mount 时运行一次，pgn 通过 location.state 传入
 
-  // Measure main column to size board responsively
+  // 测量 main 列动态调整棋盘大小
   useEffect(() => {
     if (!mainRef.current) return;
     const measure = () => {
       const el = mainRef.current;
       if (!el) return;
-        const NAV_HEIGHT = 42; // study-board-nav: 32px buttons + 10px gap
+      const NAV_HEIGHT = 42;
       const size = Math.min(el.clientWidth, el.clientHeight - NAV_HEIGHT);
       if (size > 0) setBoardWidth(Math.floor(size));
     };
@@ -54,10 +140,9 @@ function AnalysisPageContent() {
     return () => ro.disconnect();
   }, []);
 
-  // Rightbar drag-resize
+  // 右栏拖拽 resize
   useEffect(() => {
     if (!isResizingRightbar) return;
-
     const handlePointerMove = (e: PointerEvent) => {
       if (!layoutRef.current) return;
       const rect = layoutRef.current.getBoundingClientRect();
@@ -65,12 +150,10 @@ function AnalysisPageContent() {
       setRightbarWidth(Math.min(rightbarMax, Math.max(rightbarMin, next)));
     };
     const handlePointerUp = () => setIsResizingRightbar(false);
-
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
     window.addEventListener('pointermove', handlePointerMove);
     window.addEventListener('pointerup', handlePointerUp);
-
     return () => {
       window.removeEventListener('pointermove', handlePointerMove);
       window.removeEventListener('pointerup', handlePointerUp);
@@ -81,8 +164,11 @@ function AnalysisPageContent() {
 
   return (
     <div className="analysis-page">
+      {/* ---- Header ---- */}
       <div className="analysis-header">
-        <h2 className="analysis-title">Analysis Board</h2>
+        <h2 className="analysis-title">
+          {gameContext ? 'Game Analysis' : 'Analysis Board'}
+        </h2>
         <div className="analysis-header-actions">
           <button
             type="button"
@@ -94,6 +180,15 @@ function AnalysisPageContent() {
         </div>
       </div>
 
+      {/* ---- Game Banner（仅分析对局时显示）---- */}
+      {gameContext && (
+        <GameBanner
+          ctx={gameContext}
+          onBack={() => navigate(gameContext.backUrl)}
+        />
+      )}
+
+      {/* ---- 主布局 ---- */}
       <div className="analysis-layout" ref={layoutRef}>
         <div className="analysis-sidebar">
           <AnalysisSidebar />

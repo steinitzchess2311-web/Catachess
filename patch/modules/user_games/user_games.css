@@ -685,10 +685,7 @@
 
 .ug-board-wrapper {
   position: relative;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  flex-shrink: 0;
+  display: inline-block;
 }
 
 /* 翻转按钮 */

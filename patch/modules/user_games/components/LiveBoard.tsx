@@ -10,7 +10,6 @@
 
 import React, { useCallback, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
-import { useBoardSize } from '@patch/board/useBoardSize';
 import type { PlayerColor } from '../types';
 
 interface LiveBoardProps {
@@ -18,11 +17,11 @@ interface LiveBoardProps {
   myColor: PlayerColor | null;     // null = 观战
   turn: PlayerColor;               // 当前轮到哪方走棋
   isOver: boolean;
+  boardWidth: number;              // 由父组件测量传入
   onMove: (from: string, to: string, promotion?: string) => void;
 }
 
-export function LiveBoard({ fen, myColor, turn, isOver, onMove }: LiveBoardProps) {
-  const [sizeRef, boardWidth] = useBoardSize(500);
+export function LiveBoard({ fen, myColor, turn, isOver, boardWidth, onMove }: LiveBoardProps) {
   // 默认方向：我的颜色朝下，观战者看白方
   const [orientation, setOrientation] = useState<'white' | 'black'>(
     myColor === 'black' ? 'black' : 'white',
@@ -56,11 +55,7 @@ export function LiveBoard({ fen, myColor, turn, isOver, onMove }: LiveBoardProps
     setOrientation((o) => (o === 'white' ? 'black' : 'white'));
 
   return (
-    <div
-      ref={sizeRef}
-      className="ug-board-wrapper"
-      style={{ width: '100%' }}
-    >
+    <div className="ug-board-wrapper">
       <Chessboard
         id="live-board"
         position={fen}

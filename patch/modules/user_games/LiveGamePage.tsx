@@ -7,7 +7,7 @@
 //   右：走法列表 + 对局操作按钮
 // ============================================================
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Chess } from 'chess.js';
 import { abortGame } from './api';
@@ -41,6 +41,23 @@ export function LiveGamePage({ username }: LiveGamePageProps) {
     }
     return username ?? getOrCreateGuestId();
   }, [gameId, username]);
+
+  // ---- 棋盘尺寸测量（挂在 board-container 上）--------------
+  const boardContainerRef = useRef<HTMLDivElement>(null);
+  const [boardWidth, setBoardWidth] = useState(500);
+
+  useEffect(() => {
+    const el = boardContainerRef.current;
+    if (!el) return;
+    const measure = () => {
+      const { width } = el.getBoundingClientRect();
+      if (width > 0) setBoardWidth(Math.floor(width));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const {
     state,
@@ -206,14 +223,14 @@ export function LiveGamePage({ username }: LiveGamePageProps) {
           />
 
           {/* 棋盘（相对定位，结算层叠其上）*/}
-          <div className="ug-board-container">
+          <div className="ug-board-container" ref={boardContainerRef}>
             <LiveBoard
               fen={displayFen}
               myColor={myColor}
               turn={state.turn}
               isOver={isOver || isViewingHistory}
+              boardWidth={boardWidth}
               onMove={(from, to, promo) => {
-                // 回看状态下不允许走棋
                 if (!isViewingHistory) sendMove(from, to, promo);
               }}
             />

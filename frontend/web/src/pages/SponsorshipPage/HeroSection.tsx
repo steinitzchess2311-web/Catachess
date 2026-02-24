@@ -10,20 +10,20 @@ const HeroSection = () => {
     >
       <h1
         style={{
-          fontSize: "2.8rem",
+          fontSize: "2.25rem",
           fontWeight: 800,
-          color: "#2c2c2c",
+          color: "#0f172a",
           marginBottom: "12px",
-          letterSpacing: "1px",
+          letterSpacing: "0.4px",
         }}
       >
         SPONSORSHIP
       </h1>
       <p
         style={{
-          fontSize: "1.4rem",
-          fontWeight: 600,
-          color: "#8b7355",
+          fontSize: "1.05rem",
+          fontWeight: 500,
+          color: "#475569",
           marginBottom: "0",
         }}
       >

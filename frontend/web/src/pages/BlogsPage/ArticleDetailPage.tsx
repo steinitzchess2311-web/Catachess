@@ -126,7 +126,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                 marginBottom: "20px",
                 fontSize: "0.95rem",
                 fontWeight: 500,
-                color: "#2c2c2c",
+                color: "#0f172a",
                 backgroundColor: "rgba(255, 255, 255, 0.9)",
                 border: "1px solid #e0e0e0",
                 borderRadius: "8px",
@@ -135,7 +135,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = "rgba(139, 115, 85, 0.1)";
-                e.currentTarget.style.borderColor = "#8b7355";
+                e.currentTarget.style.borderColor = "#2563eb";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.9)";
@@ -161,7 +161,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
         }}
       >
         <h1 style={{ fontSize: "3rem", marginBottom: "20px" }}>404</h1>
-        <p style={{ fontSize: "1.2rem", color: "#5a5a5a", marginBottom: "30px" }}>
+        <p style={{ fontSize: "1.2rem", color: "#475569", marginBottom: "30px" }}>
           Article not found
         </p>
         {!embedded && (
@@ -172,7 +172,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
               fontSize: "1rem",
               fontWeight: 600,
               color: "white",
-              backgroundColor: "#8b7355",
+              backgroundColor: "#2563eb",
               border: "none",
               borderRadius: "8px",
               cursor: "pointer",
@@ -182,7 +182,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
               e.currentTarget.style.backgroundColor = "#6f5a43";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = "#8b7355";
+              e.currentTarget.style.backgroundColor = "#2563eb";
             }}
           >
             Back to Blogs
@@ -265,7 +265,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                 style={{
                   fontSize: "2.5rem",
                   fontWeight: 700,
-                  color: "#2c2c2c",
+                  color: "#0f172a",
                   marginBottom: "12px",
                   lineHeight: "1.3",
                 }}
@@ -278,7 +278,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                 style={{
                   fontSize: "1.3rem",
                   fontWeight: 400,
-                  color: "#5a5a5a",
+                  color: "#475569",
                   marginBottom: "24px",
                   lineHeight: "1.5",
                 }}
@@ -296,7 +296,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                   marginBottom: "32px",
                   borderBottom: "2px solid rgba(139, 115, 85, 0.15)",
                   fontSize: "0.95rem",
-                  color: "#8b7355",
+                  color: "#2563eb",
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -338,7 +338,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                       style={{
                         padding: "6px 14px",
                         backgroundColor: "rgba(139, 115, 85, 0.1)",
-                        color: "#8b7355",
+                        color: "#2563eb",
                         borderRadius: "20px",
                         fontSize: "0.85rem",
                         fontWeight: 500,
@@ -373,7 +373,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
-                    color: "#6a6a6a",
+                    color: "#64748b",
                   }}
                 >
                   <EyeOpenIcon width={18} height={18} />
@@ -387,7 +387,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
-                    color: isLiked ? "#8b7355" : "#6a6a6a",
+                    color: isLiked ? "#2563eb" : "#64748b",
                     border: "none",
                     background: "transparent",
                     cursor: "pointer",
@@ -398,13 +398,13 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                   }}
                   onMouseEnter={(e) => {
                     if (!isLiked) {
-                      e.currentTarget.style.color = "#8b7355";
+                      e.currentTarget.style.color = "#2563eb";
                       e.currentTarget.style.backgroundColor = "rgba(139, 115, 85, 0.08)";
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isLiked) {
-                      e.currentTarget.style.color = "#6a6a6a";
+                      e.currentTarget.style.color = "#64748b";
                       e.currentTarget.style.backgroundColor = "transparent";
                     }
                   }}
@@ -413,7 +413,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                     width={18}
                     height={18}
                     style={{
-                      fill: isLiked ? "#8b7355" : "none",
+                      fill: isLiked ? "#2563eb" : "none",
                       transform: "rotate(0deg)"
                     }}
                   />
@@ -426,7 +426,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
-                    color: "#6a6a6a",
+                    color: "#64748b",
                   }}
                 >
                   <ChatBubbleIcon width={18} height={18} />
@@ -462,7 +462,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
               marginBottom: "30px",
               fontSize: "0.95rem",
               fontWeight: 500,
-              color: "#2c2c2c",
+              color: "#0f172a",
               backgroundColor: "rgba(255, 255, 255, 0.9)",
               border: "1px solid #e0e0e0",
               borderRadius: "8px",
@@ -471,7 +471,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = "rgba(139, 115, 85, 0.1)";
-              e.currentTarget.style.borderColor = "#8b7355";
+              e.currentTarget.style.borderColor = "#2563eb";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.9)";

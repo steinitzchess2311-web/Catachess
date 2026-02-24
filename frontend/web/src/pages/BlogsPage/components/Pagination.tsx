@@ -23,7 +23,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
     padding: '10px 20px',
     fontSize: '0.95rem',
     fontWeight: 500,
-    color: '#2c2c2c',
+    color: '#0f172a',
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     border: '1px solid #e0e0e0',
     borderRadius: '8px',
@@ -55,7 +55,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
         onMouseEnter={(e) => {
           if (pagination.has_prev) {
             e.currentTarget.style.backgroundColor = 'rgba(139, 115, 85, 0.1)';
-            e.currentTarget.style.borderColor = '#8b7355';
+            e.currentTarget.style.borderColor = '#2563eb';
           }
         }}
         onMouseLeave={(e) => {
@@ -71,7 +71,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
       <span
         style={{
           fontSize: '0.95rem',
-          color: '#5a5a5a',
+          color: '#475569',
           fontWeight: 500
         }}
       >
@@ -85,7 +85,7 @@ const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => 
         onMouseEnter={(e) => {
           if (pagination.has_next) {
             e.currentTarget.style.backgroundColor = 'rgba(139, 115, 85, 0.1)';
-            e.currentTarget.style.borderColor = '#8b7355';
+            e.currentTarget.style.borderColor = '#2563eb';
           }
         }}
         onMouseLeave={(e) => {

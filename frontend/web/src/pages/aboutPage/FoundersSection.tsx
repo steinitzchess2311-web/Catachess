@@ -44,8 +44,8 @@ const FoundersSection = () => {
             marginBottom: "0",
           }}
         >
-          This website was conceived, built, and fully developed by two high school students, <strong style={{ color: "#8b7355" }}>Quanhao Li</strong> and{" "}
-          <strong style={{ color: "#8b7355" }}>Jorlanda Chen</strong>. As competitive chess players and ambitious young innovators, they created this platform to make high-level chess training more accessible and effective for players everywhere.
+          This website was conceived, built, and fully developed by two high school students, <strong style={{ color: "#2563eb" }}>Quanhao Li</strong> and{" "}
+          <strong style={{ color: "#2563eb" }}>Jorlanda Chen</strong>. As competitive chess players and ambitious young innovators, they created this platform to make high-level chess training more accessible and effective for players everywhere.
         </p>
       </div>
       <div
@@ -81,7 +81,7 @@ const FoundersSection = () => {
             style={{
               fontSize: "0.85rem",
               fontWeight: 600,
-              color: "#8b7355",
+              color: "#2563eb",
               textAlign: "center",
             }}
           >
@@ -114,7 +114,7 @@ const FoundersSection = () => {
             style={{
               fontSize: "0.85rem",
               fontWeight: 600,
-              color: "#8b7355",
+              color: "#2563eb",
               textAlign: "center",
             }}
           >

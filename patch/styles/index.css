@@ -2,6 +2,24 @@
 @import "../modules/user_games/user_games.css";
 @import "../modules/user_profile/user_profile.css";
 
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-family: var(--font-family);
+}
+
+main {
+  min-height: calc(100vh - 72px);
+}
+
 @keyframes fadeSlideIn {
   from { opacity: 0; transform: translateX(6px); }
   to   { opacity: 1; transform: translateX(0); }

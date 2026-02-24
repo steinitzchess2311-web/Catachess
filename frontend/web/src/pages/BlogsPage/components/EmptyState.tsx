@@ -37,7 +37,7 @@ const EmptyState: React.FC<EmptyStateProps> = ({ message = 'No articles found' }
       <p
         style={{
           fontSize: '1.1rem',
-          color: '#5a5a5a',
+          color: '#475569',
           margin: 0
         }}
       >

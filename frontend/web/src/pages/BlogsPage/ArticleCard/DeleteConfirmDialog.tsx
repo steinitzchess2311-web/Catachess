@@ -42,7 +42,7 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
           style={{
             margin: '0 0 16px 0',
             fontSize: '0.95rem',
-            color: '#2c2c2c',
+            color: '#0f172a',
             textAlign: 'center',
             lineHeight: '1.5',
             fontWeight: 500,

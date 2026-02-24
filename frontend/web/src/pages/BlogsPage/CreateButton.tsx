@@ -45,7 +45,7 @@ const CreateButton: React.FC<CreateButtonProps> = ({ onArticleCreated, userRole 
           fontSize: '0.95rem',
           fontWeight: 600,
           color: 'white',
-          backgroundColor: '#8b7355',
+          backgroundColor: '#2563eb',
           border: 'none',
           borderRadius: '8px',
           cursor: 'pointer',
@@ -62,7 +62,7 @@ const CreateButton: React.FC<CreateButtonProps> = ({ onArticleCreated, userRole 
           e.currentTarget.style.transform = 'translateY(-2px)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = '#8b7355';
+          e.currentTarget.style.backgroundColor = '#2563eb';
           e.currentTarget.style.boxShadow = '0 2px 8px rgba(139, 115, 85, 0.3)';
           e.currentTarget.style.transform = 'translateY(0)';
         }}

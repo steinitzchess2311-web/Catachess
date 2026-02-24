@@ -26,7 +26,7 @@ const ArticleMeta: React.FC<ArticleMetaProps> = ({
         paddingTop: "12px",
         borderTop: "1px solid rgba(139, 115, 85, 0.1)",
         fontSize: "0.85rem",
-        color: "#8b7355",
+        color: "#2563eb",
       }}
     >
       <span style={{ fontWeight: 600 }}>{authorName}</span>

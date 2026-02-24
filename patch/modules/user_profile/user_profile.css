@@ -7,7 +7,7 @@
 
 .up-page {
   min-height: calc(100vh - 100px);
-  background: #f4f4f0;
+  background: var(--bg-app);
   display: flex;
   flex-direction: column;
   animation: up-page-in 0.5s ease-out both;
@@ -30,7 +30,7 @@
 .up-hero {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f172a 100%);
+  background: linear-gradient(135deg, #eaf2ff 0%, #dbeafe 55%, #eff6ff 100%);
   padding: 64px 24px 56px;
 }
 
@@ -102,7 +102,7 @@
 .up-hero__username {
   font-size: clamp(28px, 5vw, 42px);
   font-weight: 900;
-  color: #fff;
+  color: #0f172a;
   letter-spacing: -0.03em;
   margin: 0;
   line-height: 1.1;
@@ -125,7 +125,7 @@
 .up-rating-block__value {
   font-size: 22px;
   font-weight: 800;
-  color: #fff;
+  color: #0f172a;
   letter-spacing: -0.02em;
   line-height: 1;
 }
@@ -371,7 +371,7 @@
    ================================================================ */
 
 .up-edit-page {
-  background: #f4f4f0;
+  background: var(--bg-app);
 }
 
 /* 页头固定区 */
@@ -539,7 +539,7 @@
   padding: 0 10px;
   font-size: 12px;
   color: #aaa;
-  background: #f4f4f0;
+  background: var(--bg-app);
   border-right: 1.5px solid #e0e0dc;
   white-space: nowrap;
   line-height: 38px;

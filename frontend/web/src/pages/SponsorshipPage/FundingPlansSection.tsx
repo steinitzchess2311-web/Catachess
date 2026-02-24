@@ -4,19 +4,20 @@ const FundingPlansSection = () => {
   return (
     <div
       style={{
-        background: "rgba(255, 255, 255, 0.85)",
+        background: "#ffffff",
+        border: "1px solid var(--border)",
         borderRadius: "12px",
-        padding: "35px",
+        padding: "24px",
         marginBottom: "60px",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+        boxShadow: "var(--shadow-1)",
       }}
     >
       <h2
         style={{
-          fontSize: "1.9rem",
+          fontSize: "1.65rem",
           fontWeight: 700,
-          color: "#2c2c2c",
-          marginBottom: "28px",
+          color: "#0f172a",
+          marginBottom: "20px",
           textAlign: "center",
         }}
       >
@@ -24,11 +25,12 @@ const FundingPlansSection = () => {
       </h2>
       <ul
         style={{
-          fontSize: "1.05rem",
-          lineHeight: "2",
-          color: "#5a5a5a",
-          paddingLeft: "1.8rem",
+          fontSize: "1rem",
+          lineHeight: "1.85",
+          color: "#475569",
+          paddingLeft: "0",
           listStyleType: "none",
+          margin: 0,
         }}
       >
         <li style={{ marginBottom: "18px" }}>
@@ -37,7 +39,7 @@ const FundingPlansSection = () => {
               display: "inline-block",
               width: "28px",
               height: "28px",
-              background: "#8b7355",
+              background: "#2563eb",
               color: "white",
               borderRadius: "50%",
               textAlign: "center",
@@ -57,7 +59,7 @@ const FundingPlansSection = () => {
               display: "inline-block",
               width: "28px",
               height: "28px",
-              background: "#8b7355",
+              background: "#2563eb",
               color: "white",
               borderRadius: "50%",
               textAlign: "center",
@@ -77,7 +79,7 @@ const FundingPlansSection = () => {
               display: "inline-block",
               width: "28px",
               height: "28px",
-              background: "#8b7355",
+              background: "#2563eb",
               color: "white",
               borderRadius: "50%",
               textAlign: "center",
@@ -97,7 +99,7 @@ const FundingPlansSection = () => {
               display: "inline-block",
               width: "28px",
               height: "28px",
-              background: "#8b7355",
+              background: "#2563eb",
               color: "white",
               borderRadius: "50%",
               textAlign: "center",

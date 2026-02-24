@@ -3,31 +3,33 @@
   justify-content: space-between;
   align-items: center;
   padding: 0 24px;
-  height: 100px;
-  background-color: #ffffff;
-  border-bottom: 1px solid #dbdbdb;
-  font-family: 'Roboto', sans-serif;
+  height: 72px;
+  background: rgba(255, 255, 255, 0.96);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-family);
   position: sticky;
   top: 0;
   z-index: 1000;
+  backdrop-filter: blur(8px);
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 18px;
+  min-width: 0;
 }
 
 .header-left .logo {
   display: flex;
   align-items: center;
   text-decoration: none;
-  color: #202124;
+  color: var(--text-main);
   height: 100%;
 }
 
 .header-left .logo-image {
-  height: 100px;
+  height: 44px;
   width: auto;
   display: block;
 }
@@ -35,43 +37,43 @@
 .header-center {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
 }
 
 .header-center .nav-link {
-  font-size: 20px;
-  font-weight: 500;
-  color: #5f6368;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
   text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  transition: background-color 0.3s;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .header-center .nav-link:hover {
-  background-color: #f1f3f4;
+  background-color: var(--primary-bg);
+  color: var(--primary);
 }
 
 .header-right .username {
-  font-size: 18px;
-  font-weight: 500;
-  color: #202124;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  text-decoration: none;
 }
 
 .header-right .nav-link {
-    font-size: 18px;
-    font-weight: 500;
-    color: #1a73e8;
-    text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
-
-/* ── Bell / notification ───────────────────────── */
 
 .bell-wrapper {
   position: relative;
@@ -84,30 +86,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border: none;
   background: transparent;
   border-radius: 50%;
   cursor: pointer;
-  color: #5f6368;
+  color: var(--text-secondary);
   transition: background 0.15s, color 0.15s;
 }
 
 .bell-btn:hover {
-  background: #f1f3f4;
-  color: #202124;
+  background: var(--primary-bg);
+  color: var(--primary);
 }
 
 .bell-badge {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 2px;
+  right: 2px;
   min-width: 16px;
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background: #e53935;
+  background: #ef4444;
   color: #fff;
   font-size: 10px;
   font-weight: 700;
@@ -122,27 +124,27 @@
   right: 0;
   width: 300px;
   background: #fff;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-2);
   z-index: 1100;
   overflow: hidden;
 }
 
 .bell-dropdown-header {
   padding: 12px 16px 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #888;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px solid #f0f0f0;
+  letter-spacing: 0.06em;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .bell-empty {
   padding: 20px 16px;
   font-size: 14px;
-  color: #aaa;
+  color: #94a3b8;
   text-align: center;
 }
 
@@ -157,23 +159,23 @@
   cursor: pointer;
   text-align: left;
   transition: background 0.12s;
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid #f1f5f9;
   gap: 2px;
 }
 
 .bell-item:hover {
-  background: #f0f4ff;
+  background: #eff6ff;
 }
 
 .bell-item-sender {
   font-size: 13px;
   font-weight: 600;
-  color: #202124;
+  color: var(--text-main);
 }
 
 .bell-item-content {
   font-size: 13px;
-  color: #5f6368;
+  color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -189,18 +191,17 @@
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  color: #1a73e8;
+  color: var(--primary);
   text-align: center;
   transition: background 0.12s;
 }
 
 .bell-open-chat:hover {
-  background: #f0f4ff;
+  background: #eff6ff;
 }
 
-/* Broadcast pinned item */
 .bell-item--broadcast {
-  background: #fffbf0;
+  background: #fffbeb;
   border-left: 3px solid #f59e0b;
 }
 
@@ -214,18 +215,15 @@
   gap: 4px;
   font-size: 10px;
   font-weight: 700;
-  color: #d97706;
+  color: #b45309;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.04em;
   margin-bottom: 1px;
 }
 
-/* Seen (already clicked) items are dimmed */
 .bell-item--seen {
   opacity: 0.45;
 }
-
-/* ── Analysis dropdown ──────────────────────────── */
 
 .nav-dropdown {
   position: relative;
@@ -242,9 +240,9 @@
 }
 
 .nav-link--dropdown::after {
-  content: '▾';
-  font-size: 13px;
-  opacity: 0.6;
+  content: "▾";
+  font-size: 12px;
+  opacity: 0.55;
 }
 
 .nav-dropdown-menu {
@@ -254,9 +252,9 @@
   left: 50%;
   transform: translateX(-50%);
   background: #fff;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--shadow-2);
   min-width: 170px;
   z-index: 1100;
   padding: 6px 0;
@@ -269,15 +267,49 @@
 
 .nav-dropdown-item {
   display: block;
-  padding: 10px 18px;
-  font-size: 15px;
+  padding: 10px 16px;
+  font-size: 14px;
   font-weight: 500;
-  color: #333;
+  color: var(--text-main);
   text-decoration: none;
   transition: background 0.12s, color 0.12s;
 }
 
 .nav-dropdown-item:hover {
-  background: #f0f4ff;
-  color: #2e6bff;
+  background: #eff6ff;
+  color: var(--primary);
+}
+
+@media (max-width: 1080px) {
+  .app-header {
+    padding: 0 14px;
+  }
+
+  .header-center {
+    gap: 0;
+  }
+
+  .header-center .nav-link {
+    padding: 7px 10px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 860px) {
+  .app-header {
+    height: 64px;
+  }
+
+  .header-left {
+    gap: 10px;
+  }
+
+  .header-left .logo-image {
+    height: 38px;
+  }
+
+  .header-center .nav-link {
+    padding: 6px 8px;
+    font-size: 13px;
+  }
 }

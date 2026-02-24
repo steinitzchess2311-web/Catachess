@@ -141,10 +141,11 @@ const ContentArea: React.FC<ContentAreaProps> = ({
     <div
       style={{
         flex: 1,
-        background: "rgba(255, 255, 255, 0.85)",
+        background: "#ffffff",
+        border: "1px solid var(--border)",
         borderRadius: "12px",
-        padding: "40px",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+        padding: "24px",
+        boxShadow: "var(--shadow-1)",
       }}
     >
       {/* Article Detail View */}

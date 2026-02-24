@@ -31,13 +31,13 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
         style={{
           background: (activeCategory === undefined || activeCategory === 'allblogs') ? "rgba(139, 115, 85, 0.1)" : "transparent",
           border: "none",
-          borderLeft: (activeCategory === undefined || activeCategory === 'allblogs') ? "4px solid #8b7355" : "4px solid transparent",
+          borderLeft: (activeCategory === undefined || activeCategory === 'allblogs') ? "4px solid #2563eb" : "4px solid transparent",
           padding: "14px 25px",
           textAlign: "left",
           cursor: "pointer",
           fontSize: "0.95rem",
           fontWeight: (activeCategory === undefined || activeCategory === 'allblogs') ? 600 : 500,
-          color: (activeCategory === undefined || activeCategory === 'allblogs') ? "#2c2c2c" : "#5a5a5a",
+          color: (activeCategory === undefined || activeCategory === 'allblogs') ? "#0f172a" : "#475569",
           transition: "all 0.2s ease",
           display: "flex",
           alignItems: "center",
@@ -87,7 +87,7 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
               cursor: "pointer",
               fontSize: "0.9rem",
               fontWeight: activeCategory === item.id ? 600 : 400,
-              color: activeCategory === item.id ? "#8b7355" : "#6a6a6a",
+              color: activeCategory === item.id ? "#2563eb" : "#64748b",
               transition: "all 0.15s ease",
               display: "block",
               width: "100%",
@@ -96,12 +96,12 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "rgba(139, 115, 85, 0.08)";
-              e.currentTarget.style.color = "#8b7355";
+              e.currentTarget.style.color = "#2563eb";
             }}
             onMouseLeave={(e) => {
               if (activeCategory !== item.id) {
                 e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "#6a6a6a";
+                e.currentTarget.style.color = "#64748b";
               }
             }}
           >

@@ -13,7 +13,7 @@ const ArticleContent: React.FC<ArticleContentProps> = ({ title, subtitle }) => {
         style={{
           fontSize: "1.3rem",
           fontWeight: 700,
-          color: "#2c2c2c",
+          color: "#0f172a",
           marginBottom: "10px",
           lineHeight: "1.4",
           display: "-webkit-box",
@@ -30,7 +30,7 @@ const ArticleContent: React.FC<ArticleContentProps> = ({ title, subtitle }) => {
       <p
         style={{
           fontSize: "0.95rem",
-          color: "#5a5a5a",
+          color: "#475569",
           lineHeight: "1.6",
           marginBottom: "16px",
           display: "-webkit-box",

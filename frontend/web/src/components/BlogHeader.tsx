@@ -94,19 +94,20 @@ const BlogHeader: React.FC<BlogHeaderProps> = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "20px 30px",
-        background: "rgba(255, 255, 255, 0.95)",
+        padding: "16px 22px",
+        background: "#ffffff",
+        border: "1px solid var(--border)",
         borderRadius: "12px",
-        marginBottom: "24px",
-        boxShadow: "0 2px 12px rgba(0, 0, 0, 0.06)",
+        marginBottom: "16px",
+        boxShadow: "var(--shadow-1)",
       }}
     >
       {/* Left: Category Label or Article Title */}
       <div
         style={{
-          fontSize: "1.5rem",
+          fontSize: "1.35rem",
           fontWeight: 700,
-          color: "#2c2c2c",
+          color: "var(--text-main)",
           display: "flex",
           alignItems: "center",
           gap: "12px",
@@ -138,20 +139,20 @@ const BlogHeader: React.FC<BlogHeaderProps> = ({
               alignItems: "center",
               gap: "8px",
               padding: "10px 20px",
-              border: "1px solid rgba(139, 115, 85, 0.3)",
+              border: "1px solid #bfdbfe",
               borderRadius: "8px",
-              fontSize: "0.95rem",
-              color: "#2c2c2c",
-              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              fontSize: "0.9rem",
+              color: "var(--text-main)",
+              backgroundColor: "#f8fbff",
               cursor: "pointer",
               transition: "all 0.2s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#8b7355";
-              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(139, 115, 85, 0.1)";
+              e.currentTarget.style.borderColor = "#2563eb";
+              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(37, 99, 235, 0.12)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "rgba(139, 115, 85, 0.3)";
+              e.currentTarget.style.borderColor = "#bfdbfe";
               e.currentTarget.style.boxShadow = "none";
             }}
           >
@@ -173,21 +174,21 @@ const BlogHeader: React.FC<BlogHeaderProps> = ({
             style={{
               width: "100%",
               padding: "10px 40px 10px 16px",
-              border: "1px solid rgba(139, 115, 85, 0.3)",
+              border: "1px solid #bfdbfe",
               borderRadius: "8px",
-              fontSize: "0.95rem",
-              color: "#2c2c2c",
-              backgroundColor: "rgba(255, 255, 255, 0.9)",
+              fontSize: "0.9rem",
+              color: "var(--text-main)",
+              backgroundColor: "#f8fbff",
               boxSizing: "border-box",
               transition: "all 0.2s ease",
               outline: "none",
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = "#8b7355";
-              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(139, 115, 85, 0.1)";
+              e.currentTarget.style.borderColor = "#2563eb";
+              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(37, 99, 235, 0.12)";
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = "rgba(139, 115, 85, 0.3)";
+              e.currentTarget.style.borderColor = "#bfdbfe";
               e.currentTarget.style.boxShadow = "none";
             }}
           />
@@ -202,11 +203,11 @@ const BlogHeader: React.FC<BlogHeaderProps> = ({
                 width: "24px",
                 height: "24px",
                 border: "none",
-                background: "rgba(139, 115, 85, 0.2)",
+                background: "rgba(37, 99, 235, 0.12)",
                 borderRadius: "50%",
                 fontSize: "16px",
                 lineHeight: "1",
-                color: "#5a5a5a",
+                color: "#475569",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
@@ -214,10 +215,10 @@ const BlogHeader: React.FC<BlogHeaderProps> = ({
                 transition: "background 0.2s ease",
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(139, 115, 85, 0.3)";
+                e.currentTarget.style.background = "rgba(37, 99, 235, 0.2)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(139, 115, 85, 0.2)";
+                e.currentTarget.style.background = "rgba(37, 99, 235, 0.12)";
               }}
             >
               ×

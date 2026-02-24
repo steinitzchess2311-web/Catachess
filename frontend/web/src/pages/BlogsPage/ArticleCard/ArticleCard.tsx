@@ -327,7 +327,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                     background: showCategoryDropdown
                       ? "rgba(139, 115, 85, 0.12)"
                       : "rgba(139, 115, 85, 0.06)",
-                    color: "#8b7355",
+                    color: "#2563eb",
                     fontSize: "0.78rem",
                     fontWeight: 500,
                     cursor: isChangingCategory ? "wait" : "pointer",
@@ -388,7 +388,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                             padding: "9px 14px",
                             border: "none",
                             background: isActive ? "rgba(139, 115, 85, 0.08)" : "transparent",
-                            color: isActive ? "#8b7355" : "#444",
+                            color: isActive ? "#2563eb" : "#444",
                             fontSize: "0.83rem",
                             fontWeight: isActive ? 600 : 400,
                             cursor: isActive ? "default" : "pointer",

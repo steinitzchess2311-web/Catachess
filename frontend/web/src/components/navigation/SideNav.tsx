@@ -55,13 +55,14 @@ const SideNav: React.FC<SideNavProps> = ({ items, isOpen: controlledIsOpen, onOp
       <nav
         style={{
           position: "fixed",
-          top: "140px",
+          top: "96px",
           left: "max(24px, calc((100vw - 1400px) / 2))",
           width: isOpen ? "220px" : "60px",
-          background: "rgba(255, 255, 255, 0.85)",
+          background: "rgba(255, 255, 255, 0.96)",
+          border: "1px solid var(--border)",
           borderRadius: "12px",
           padding: isOpen ? "24px 0" : "16px 0",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+          boxShadow: "var(--shadow-1)",
           backdropFilter: "blur(10px)",
           zIndex: 100,
           transition: "width 0.3s ease, padding 0.3s ease",
@@ -80,17 +81,17 @@ const SideNav: React.FC<SideNavProps> = ({ items, isOpen: controlledIsOpen, onOp
               alignItems: "center",
               justifyContent: "center",
               border: "none",
-              background: "rgba(139, 115, 85, 0.1)",
+              background: "rgba(37, 99, 235, 0.08)",
               borderRadius: "6px",
               cursor: "pointer",
-              color: "#8b7355",
+              color: "#2563eb",
               transition: "all 0.2s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(139, 115, 85, 0.2)";
+              e.currentTarget.style.background = "rgba(37, 99, 235, 0.16)";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(139, 115, 85, 0.1)";
+              e.currentTarget.style.background = "rgba(37, 99, 235, 0.08)";
             }}
           >
             {isOpen ? <ChevronLeftIcon width={20} height={20} /> : <ChevronRightIcon width={20} height={20} />}
@@ -122,16 +123,16 @@ const SideNav: React.FC<SideNavProps> = ({ items, isOpen: controlledIsOpen, onOp
                     alignItems: "center",
                     justifyContent: "center",
                     border: "none",
-                    background: isActive ? "rgba(139, 115, 85, 0.15)" : "transparent",
+                    background: isActive ? "rgba(37, 99, 235, 0.12)" : "transparent",
                     borderRadius: "8px",
                     cursor: "pointer",
                     fontSize: "1.3rem",
                     transition: "all 0.2s ease",
-                    borderLeft: isActive ? "3px solid #8b7355" : "3px solid transparent",
+                    borderLeft: isActive ? "3px solid #2563eb" : "3px solid transparent",
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.background = "rgba(139, 115, 85, 0.1)";
+                      e.currentTarget.style.background = "rgba(37, 99, 235, 0.08)";
                     }
                   }}
                   onMouseLeave={(e) => {
@@ -171,24 +172,24 @@ const SideNav: React.FC<SideNavProps> = ({ items, isOpen: controlledIsOpen, onOp
                       textAlign: "left",
                       cursor: "pointer",
                       fontSize: "0.95rem",
-                      color: isActive ? "#8b7355" : "#5a5a5a",
-                      fontWeight: isActive ? 600 : 400,
+                      color: isActive ? "#2563eb" : "#475569",
+                      fontWeight: isActive ? 600 : 500,
                       transition: "all 0.3s ease",
                       position: "relative",
-                      borderLeft: isActive ? "3px solid #8b7355" : "3px solid transparent",
+                      borderLeft: isActive ? "3px solid #2563eb" : "3px solid transparent",
                       display: "flex",
                       alignItems: "center",
                       gap: "8px",
                     }}
                     onMouseEnter={(e) => {
                       if (!isActive) {
-                        e.currentTarget.style.color = "#8b7355";
+                        e.currentTarget.style.color = "#2563eb";
                         e.currentTarget.style.transform = "translateX(4px)";
                       }
                     }}
                     onMouseLeave={(e) => {
                       if (!isActive) {
-                        e.currentTarget.style.color = "#5a5a5a";
+                        e.currentTarget.style.color = "#475569";
                         e.currentTarget.style.transform = "translateX(0)";
                       }
                     }}

@@ -252,12 +252,12 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
             animation: 'slideUp 0.3s ease',
             zIndex: 9999,
             overflow: 'auto',
-            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", sans-serif'
           }}
         >
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', position: 'relative' }}>
-            <Dialog.Title style={{ fontSize: '1.8rem', fontWeight: 700, color: '#2c2c2c' }}>
+            <Dialog.Title style={{ fontSize: '1.8rem', fontWeight: 700, color: '#0f172a' }}>
               {isEditMode ? 'Edit Article' : 'Create New Article'}
             </Dialog.Title>
             <button
@@ -294,7 +294,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   border: '1px solid #e0e0e0'
                 }}
               >
-                <div style={{ marginBottom: '16px', fontSize: '0.95rem', color: '#2c2c2c', fontWeight: 600 }}>
+                <div style={{ marginBottom: '16px', fontSize: '0.95rem', color: '#0f172a', fontWeight: 600 }}>
                   Do you want to save your changes?
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -307,7 +307,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                       fontSize: '0.9rem',
                       fontWeight: 500,
                       color: 'white',
-                      backgroundColor: '#8b7355',
+                      backgroundColor: '#2563eb',
                       border: 'none',
                       borderRadius: '6px',
                       cursor: saving ? 'not-allowed' : 'pointer',
@@ -318,7 +318,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                       if (!saving) e.currentTarget.style.backgroundColor = '#6f5a42';
                     }}
                     onMouseLeave={(e) => {
-                      if (!saving) e.currentTarget.style.backgroundColor = '#8b7355';
+                      if (!saving) e.currentTarget.style.backgroundColor = '#2563eb';
                     }}
                   >
                     {saving ? 'Saving...' : 'Save and Exit'}
@@ -362,7 +362,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                       padding: '10px 16px',
                       fontSize: '0.9rem',
                       fontWeight: 500,
-                      color: '#5a5a5a',
+                      color: '#475569',
                       backgroundColor: 'transparent',
                       border: '1px solid #e0e0e0',
                       borderRadius: '6px',
@@ -404,7 +404,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* Title */}
             <div>
-              <Label.Root htmlFor="title" style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c2c2c', marginBottom: '8px', display: 'block' }}>
+              <Label.Root htmlFor="title" style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', marginBottom: '8px', display: 'block' }}>
                 Title *
               </Label.Root>
               <input
@@ -422,14 +422,14 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   outline: 'none',
                   transition: 'border-color 0.2s'
                 }}
-                onFocus={(e) => e.currentTarget.style.borderColor = '#8b7355'}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#2563eb'}
                 onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
               />
             </div>
 
             {/* Subtitle */}
             <div>
-              <Label.Root htmlFor="subtitle" style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c2c2c', marginBottom: '8px', display: 'block' }}>
+              <Label.Root htmlFor="subtitle" style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', marginBottom: '8px', display: 'block' }}>
                 Subtitle
               </Label.Root>
               <input
@@ -447,7 +447,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   outline: 'none',
                   transition: 'border-color 0.2s'
                 }}
-                onFocus={(e) => e.currentTarget.style.borderColor = '#8b7355'}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#2563eb'}
                 onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
               />
             </div>
@@ -456,7 +456,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               {/* Category */}
               <div>
-                <Label.Root style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c2c2c', marginBottom: '8px', display: 'block' }}>
+                <Label.Root style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', marginBottom: '8px', display: 'block' }}>
                   Category *
                 </Label.Root>
                 {isAdmin ? (
@@ -493,7 +493,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                       >
                         <Select.Viewport>
                           <Select.Group>
-                            <Select.Label style={{ padding: '8px 12px', fontSize: '0.8rem', color: '#8b7355', fontWeight: 700 }}>
+                            <Select.Label style={{ padding: '8px 12px', fontSize: '0.8rem', color: '#2563eb', fontWeight: 700 }}>
                               📖 ChessorTag Official
                             </Select.Label>
                             <SelectItem value="about">Our Stories</SelectItem>
@@ -501,7 +501,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                           </Select.Group>
                           <Select.Separator style={{ height: '1px', backgroundColor: '#e0e0e0', margin: '8px 0' }} />
                           <Select.Group>
-                            <Select.Label style={{ padding: '8px 12px', fontSize: '0.8rem', color: '#8b7355', fontWeight: 700 }}>
+                            <Select.Label style={{ padding: '8px 12px', fontSize: '0.8rem', color: '#2563eb', fontWeight: 700 }}>
                               ✍️ Community
                             </Select.Label>
                             <SelectItem value="user">User Content</SelectItem>
@@ -519,7 +519,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                     border: '1px solid #e0e0e0',
                     borderRadius: '8px',
                     backgroundColor: '#f5f5f5',
-                    color: '#5a5a5a'
+                    color: '#475569'
                   }}>
                     ✍️ Community (User Content)
                   </div>
@@ -528,7 +528,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
 
               {/* Author Type */}
               <div>
-                <Label.Root style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c2c2c', marginBottom: '8px', display: 'block' }}>
+                <Label.Root style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', marginBottom: '8px', display: 'block' }}>
                   Author Type
                 </Label.Root>
                 <Select.Root value={authorType} onValueChange={(val) => setAuthorType(val as 'official' | 'user')}>
@@ -573,7 +573,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
 
             {/* Cover Image */}
             <div>
-              <Label.Root htmlFor="coverImage" style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c2c2c', marginBottom: '8px', display: 'block' }}>
+              <Label.Root htmlFor="coverImage" style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', marginBottom: '8px', display: 'block' }}>
                 Cover Image
               </Label.Root>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -591,7 +591,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                     padding: '12px 24px',
                     fontSize: '0.95rem',
                     fontWeight: 500,
-                    color: '#2c2c2c',
+                    color: '#0f172a',
                     backgroundColor: '#f0f0f0',
                     border: 'none',
                     borderRadius: '8px',
@@ -602,7 +602,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   {uploading ? 'Uploading...' : 'Upload Image'}
                 </label>
                 {coverImageUrl && (
-                  <span style={{ fontSize: '0.9rem', color: '#5a5a5a' }}>
+                  <span style={{ fontSize: '0.9rem', color: '#475569' }}>
                     ✓ Image uploaded
                   </span>
                 )}
@@ -624,7 +624,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
 
             {/* Tags */}
             <div>
-              <Label.Root htmlFor="tags" style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c2c2c', marginBottom: '8px', display: 'block' }}>
+              <Label.Root htmlFor="tags" style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', marginBottom: '8px', display: 'block' }}>
                 Tags
               </Label.Root>
               <input
@@ -642,14 +642,14 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   outline: 'none',
                   transition: 'border-color 0.2s'
                 }}
-                onFocus={(e) => e.currentTarget.style.borderColor = '#8b7355'}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#2563eb'}
                 onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
               />
             </div>
 
             {/* Content (Markdown) */}
             <div>
-              <Label.Root htmlFor="content" style={{ fontSize: '0.95rem', fontWeight: 600, color: '#2c2c2c', marginBottom: '8px', display: 'block' }}>
+              <Label.Root htmlFor="content" style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', marginBottom: '8px', display: 'block' }}>
                 Content (Markdown) *
               </Label.Root>
               <textarea
@@ -669,7 +669,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   fontFamily: 'monospace',
                   resize: 'vertical'
                 }}
-                onFocus={(e) => e.currentTarget.style.borderColor = '#8b7355'}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#2563eb'}
                 onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
               />
             </div>
@@ -684,10 +684,10 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   padding: '10px 16px',
                   fontSize: '0.95rem',
                   fontWeight: 500,
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-                  color: '#8b7355',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif',
+                  color: '#2563eb',
                   backgroundColor: 'transparent',
-                  border: '2px solid #8b7355',
+                  border: '2px solid #2563eb',
                   borderRadius: '8px',
                   cursor: saving || uploading ? 'not-allowed' : 'pointer',
                   opacity: saving || uploading ? 0.5 : 1,
@@ -720,7 +720,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                   padding: '10px 16px',
                   fontSize: '0.95rem',
                   fontWeight: 500,
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif',
                   color: '#4a9eff',
                   backgroundColor: 'transparent',
                   border: '2px solid #4a9eff',

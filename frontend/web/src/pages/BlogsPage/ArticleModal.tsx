@@ -105,7 +105,7 @@ const ArticleModal: React.FC<ArticleModalProps> = ({
           style={{
             fontSize: "1.3rem",
             fontWeight: 700,
-            color: "#2c2c2c",
+            color: "#0f172a",
             marginBottom: "10px",
             lineHeight: "1.4",
             display: "-webkit-box",
@@ -122,7 +122,7 @@ const ArticleModal: React.FC<ArticleModalProps> = ({
         <p
           style={{
             fontSize: "0.95rem",
-            color: "#5a5a5a",
+            color: "#475569",
             lineHeight: "1.6",
             marginBottom: "16px",
             display: "-webkit-box",
@@ -145,7 +145,7 @@ const ArticleModal: React.FC<ArticleModalProps> = ({
             paddingTop: "12px",
             borderTop: "1px solid rgba(139, 115, 85, 0.1)",
             fontSize: "0.85rem",
-            color: "#8b7355",
+            color: "#2563eb",
           }}
         >
           <span style={{ fontWeight: 600 }}>{author}</span>

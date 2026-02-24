@@ -7,7 +7,7 @@
 
 .ug-page {
   min-height: calc(100vh - 100px);
-  background: #f4f4f0;
+  background: var(--bg-app);
   display: flex;
   flex-direction: column;
   animation: ug-page-in 0.45s ease-out both;
@@ -753,7 +753,7 @@
   justify-content: center;
   font-size: 14px;
   font-weight: 700;
-  color: #fff;
+  color: #0f172a;
   flex-shrink: 0;
 }
 
@@ -988,7 +988,7 @@
 }
 
 .ug-result__btn--secondary:hover {
-  background: #f4f4f0;
+  background: var(--bg-app);
   border-color: #aaa;
 }
 
@@ -1100,7 +1100,7 @@
   border: 1.5px solid #e0e0dc;
 }
 
-.ug-controls__btn--abort:hover { background: #f4f4f0; border-color: #aaa; }
+.ug-controls__btn--abort:hover { background: var(--bg-app); border-color: #aaa; }
 
 .ug-controls__btn--draw {
   background: none;
@@ -1108,7 +1108,7 @@
   border: 1.5px solid #e0e0dc;
 }
 
-.ug-controls__btn--draw:hover:not(:disabled) { background: #f4f4f0; border-color: #888; }
+.ug-controls__btn--draw:hover:not(:disabled) { background: var(--bg-app); border-color: #888; }
 
 .ug-controls__btn--disabled {
   opacity: 0.5;

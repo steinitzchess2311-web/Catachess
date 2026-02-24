@@ -40,7 +40,7 @@ const Promises = () => {
           style={{
             fontSize: "2rem",
             fontWeight: 700,
-            color: "#2c2c2c",
+            color: "#0f172a",
             marginBottom: "16px",
             lineHeight: "1.4",
           }}
@@ -87,7 +87,7 @@ const Promises = () => {
               style={{
                 fontSize: "1.25rem",
                 fontWeight: 700,
-                color: "#8b7355",
+                color: "#2563eb",
                 marginBottom: "8px",
                 lineHeight: "1.4",
                 textAlign: "center",
@@ -101,7 +101,7 @@ const Promises = () => {
               style={{
                 fontSize: "1rem",
                 lineHeight: "1.7",
-                color: "#5a5a5a",
+                color: "#475569",
                 margin: "0",
                 textAlign: "center",
               }}

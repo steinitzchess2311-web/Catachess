@@ -17,7 +17,7 @@ const LoadingState: React.FC = () => {
         alignItems: 'center',
         minHeight: '400px',
         fontSize: '1.1rem',
-        color: '#5a5a5a'
+        color: '#475569'
       }}
     >
       Loading articles...

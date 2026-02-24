@@ -6,7 +6,7 @@ const CTASection = () => {
   return (
     <div
       style={{
-        background: "linear-gradient(135deg, #8b7355 0%, #a0825f 100%)",
+        background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
         borderRadius: "16px",
         padding: "45px",
         textAlign: "center",
@@ -40,7 +40,7 @@ const CTASection = () => {
         style={{
           display: "inline-block",
           background: "white",
-          color: "#8b7355",
+          color: "#2563eb",
           padding: "14px 42px",
           borderRadius: "50px",
           fontSize: "1.05rem",

@@ -26,7 +26,7 @@ const ToggleButton: React.FC<ToggleButtonProps> = ({
         background: "rgba(139, 115, 85, 0.1)",
         borderRadius: "6px",
         cursor: "pointer",
-        color: "#8b7355",
+        color: "#2563eb",
         transition: "all 0.2s ease",
         zIndex: 10,
       }}

@@ -9,7 +9,7 @@ const ImitatorSection = () => {
           style={{
             fontSize: "2.3rem",
             fontWeight: 800,
-            color: "#2c2c2c",
+            color: "#0f172a",
             marginBottom: "12px",
             textTransform: "uppercase",
             letterSpacing: "0.5px",
@@ -21,7 +21,7 @@ const ImitatorSection = () => {
           style={{
             fontSize: "2rem",
             fontWeight: 700,
-            color: "#8b7355",
+            color: "#2563eb",
             marginBottom: "0",
           }}
         >
@@ -44,7 +44,7 @@ const ImitatorSection = () => {
           style={{
             fontSize: "1.35rem",
             fontWeight: 600,
-            color: "#8b7355",
+            color: "#2563eb",
             marginBottom: "12px",
           }}
         >
@@ -54,7 +54,7 @@ const ImitatorSection = () => {
           style={{
             fontSize: "0.98rem",
             lineHeight: "1.7",
-            color: "#5a5a5a",
+            color: "#475569",
             margin: "0",
           }}
         >
@@ -79,7 +79,7 @@ const ImitatorSection = () => {
           style={{
             fontSize: "1.35rem",
             fontWeight: 600,
-            color: "#8b7355",
+            color: "#2563eb",
             marginBottom: "12px",
           }}
         >
@@ -89,7 +89,7 @@ const ImitatorSection = () => {
           style={{
             fontSize: "0.98rem",
             lineHeight: "1.7",
-            color: "#5a5a5a",
+            color: "#475569",
             paddingLeft: "0",
             listStyleType: "none",
             margin: "0",
@@ -100,7 +100,7 @@ const ImitatorSection = () => {
               style={{
                 position: "absolute",
                 left: "0",
-                color: "#8b7355",
+                color: "#2563eb",
                 fontWeight: 700,
               }}
             >
@@ -114,7 +114,7 @@ const ImitatorSection = () => {
               style={{
                 position: "absolute",
                 left: "0",
-                color: "#8b7355",
+                color: "#2563eb",
                 fontWeight: 700,
               }}
             >
@@ -141,7 +141,7 @@ const ImitatorSection = () => {
           style={{
             fontSize: "1.35rem",
             fontWeight: 600,
-            color: "#8b7355",
+            color: "#2563eb",
             marginBottom: "12px",
           }}
         >
@@ -151,7 +151,7 @@ const ImitatorSection = () => {
           style={{
             fontSize: "0.98rem",
             lineHeight: "1.7",
-            color: "#5a5a5a",
+            color: "#475569",
             paddingLeft: "0",
             listStyleType: "none",
             margin: "0",
@@ -162,7 +162,7 @@ const ImitatorSection = () => {
               style={{
                 position: "absolute",
                 left: "0",
-                color: "#8b7355",
+                color: "#2563eb",
                 fontWeight: 700,
               }}
             >
@@ -176,7 +176,7 @@ const ImitatorSection = () => {
               style={{
                 position: "absolute",
                 left: "0",
-                color: "#8b7355",
+                color: "#2563eb",
                 fontWeight: 700,
               }}
             >
@@ -190,14 +190,14 @@ const ImitatorSection = () => {
               style={{
                 position: "absolute",
                 left: "0",
-                color: "#8b7355",
+                color: "#2563eb",
                 fontWeight: 700,
               }}
             >
               •
             </span>
             Not everyone can access chess coaches. We provide a{" "}
-            <strong style={{ color: "#8b7355" }}>
+            <strong style={{ color: "#2563eb" }}>
               free and accessible platform for aspiring players
             </strong>{" "}
             who are eager to improve their game.

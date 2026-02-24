@@ -7,7 +7,7 @@
 
 .ps-page {
   min-height: 100vh;
-  background: #f4f4f0;
+  background: var(--bg-app);
   display: flex;
   flex-direction: column;
   animation: ps-page-in 0.6s ease-out both;
@@ -25,7 +25,7 @@
 .ps-hero {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f172a 100%);
+  background: linear-gradient(135deg, #eaf2ff 0%, #dbeafe 55%, #eff6ff 100%);
   padding: 80px 24px 72px;
   display: flex;
   align-items: center;
@@ -60,14 +60,14 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
+  color: #64748b;
   margin: 0;
 }
 
 .ps-hero-title {
   font-size: clamp(26px, 5vw, 40px);
   font-weight: 800;
-  color: #fff;
+  color: #0f172a;
   letter-spacing: -0.02em;
   margin: 0;
   line-height: 1.15;
@@ -75,7 +75,7 @@
 
 .ps-hero-desc {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #64748b;
   margin: 0 0 8px;
   line-height: 1.6;
   max-width: 420px;
@@ -94,8 +94,8 @@
 .ps-search-bar {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.86);
+  border: 1.5px solid rgba(37, 99, 235, 0.2);
   border-radius: 14px;
   padding: 4px 4px 4px 14px;
   gap: 8px;
@@ -104,13 +104,13 @@
 }
 
 .ps-search-bar:focus-within {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.35);
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06);
+  background: #fff;
+  border-color: rgba(37, 99, 235, 0.5);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
 .ps-search-icon {
-  color: rgba(255, 255, 255, 0.4);
+  color: #64748b;
   display: flex;
   align-items: center;
   flex-shrink: 0;
@@ -118,7 +118,7 @@
 }
 
 .ps-search-bar:focus-within .ps-search-icon {
-  color: rgba(255, 255, 255, 0.7);
+  color: #2563eb;
 }
 
 .ps-search-input {
@@ -129,19 +129,19 @@
   outline: none;
   font-size: 15px;
   font-family: inherit;
-  color: #fff;
+  color: #0f172a;
   padding: 8px 0;
 }
 
 .ps-search-input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: #94a3b8;
 }
 
 .ps-search-clear {
   background: none;
   border: none;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.35);
+  color: #94a3b8;
   display: flex;
   align-items: center;
   padding: 4px;
@@ -150,8 +150,8 @@
 }
 
 .ps-search-clear:hover {
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.08);
+  color: #475569;
+  background: rgba(37, 99, 235, 0.08);
 }
 
 .ps-search-btn {
@@ -186,8 +186,8 @@
 
 .ps-dropdown {
   /* position/top/left/width set inline via Portal */
-  background: #1e293b;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  border: 1px solid #dbeafe;
   border-radius: 12px;
   overflow-y: auto;
   max-height: 320px;
@@ -195,7 +195,7 @@
   margin: 0;
   padding: 4px;
   z-index: 1200; /* above header (1000) and dropdowns (1100) */
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12), 0 4px 12px rgba(15, 23, 42, 0.08);
   animation: ps-fade-in 0.12s ease-out;
 }
 
@@ -217,14 +217,14 @@
   gap: 8px;
   padding: 12px 14px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.4);
+  color: #64748b;
 }
 
 .ps-spinner {
   width: 14px;
   height: 14px;
   border: 2px solid rgba(255, 255, 255, 0.15);
-  border-top-color: rgba(255, 255, 255, 0.5);
+  border-top-color: #64748b;
   border-radius: 50%;
   animation: ps-spin 0.6s linear infinite;
   flex-shrink: 0;
@@ -247,12 +247,12 @@
 
 .ps-dropdown-item:hover,
 .ps-dropdown-item.is-active {
-  background: rgba(255, 255, 255, 0.08);
+  background: #eff6ff;
 }
 
 .ps-dropdown-name {
   font-size: 14px;
-  color: #fff;
+  color: #0f172a;
   font-weight: 500;
   min-width: 0;
   overflow: hidden;
@@ -262,7 +262,7 @@
 
 .ps-dropdown-games {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.35);
+  color: #94a3b8;
   white-space: nowrap;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -409,7 +409,7 @@
 .ps-pcard__checkbox.is-checked {
   background: #6366f1;
   border-color: #6366f1;
-  color: #fff;
+  color: #ffffff;
 }
 
 .ps-pcard.is-selected .ps-pcard__checkbox {
@@ -563,7 +563,7 @@
 .ps-chip.is-active {
   background: #0f172a;
   border-color: #0f172a;
-  color: #fff;
+  color: #ffffff;
   transform: translateY(-1px);
   box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
 }
@@ -709,7 +709,7 @@
 }
 
 .ps-card--white-wins .ps-card__result { color: #475569; }
-.ps-card--black-wins .ps-card__result { color: #0f172a; }
+.ps-card--black-wins .ps-card__result { color: #dc2626; }
 .ps-card--draw       .ps-card__result { color: #94a3b8; }
 
 /* 元信息 */
@@ -904,7 +904,7 @@
 
 .ps-explore-bar__icon {
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #64748b;
   line-height: 1;
 }
 
@@ -926,7 +926,7 @@
   border-radius: 50%;
   border: none;
   background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.5);
+  color: #64748b;
   cursor: pointer;
   padding: 0;
   transition: background 0.15s, color 0.15s;
@@ -934,7 +934,7 @@
 
 .ps-explore-bar__clear:hover {
   background: rgba(255, 255, 255, 0.2);
-  color: #fff;
+  color: #ffffff;
 }
 
 .ps-explore-bar__btn {
@@ -942,7 +942,7 @@
   align-items: center;
   gap: 6px;
   background: #6366f1;
-  color: #fff;
+  color: #ffffff;
   border: none;
   border-radius: 999px;
   padding: 8px 18px;

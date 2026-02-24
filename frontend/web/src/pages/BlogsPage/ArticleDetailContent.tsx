@@ -79,7 +79,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
     return (
       <div style={{ textAlign: "center", padding: "60px 20px" }}>
         <h1 style={{ fontSize: "3rem", marginBottom: "20px" }}>404</h1>
-        <p style={{ fontSize: "1.2rem", color: "#5a5a5a" }}>Article not found</p>
+        <p style={{ fontSize: "1.2rem", color: "#475569" }}>Article not found</p>
       </div>
     );
   }
@@ -120,7 +120,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
         style={{
           fontSize: "2.5rem",
           fontWeight: 700,
-          color: "#2c2c2c",
+          color: "#0f172a",
           marginBottom: "12px",
           lineHeight: "1.3",
         }}
@@ -133,7 +133,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
         style={{
           fontSize: "1.3rem",
           fontWeight: 400,
-          color: "#5a5a5a",
+          color: "#475569",
           marginBottom: "24px",
           lineHeight: "1.5",
         }}
@@ -151,7 +151,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
           marginBottom: "32px",
           borderBottom: "2px solid rgba(139, 115, 85, 0.15)",
           fontSize: "0.95rem",
-          color: "#8b7355",
+          color: "#2563eb",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -193,7 +193,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
               style={{
                 padding: "6px 14px",
                 backgroundColor: "rgba(139, 115, 85, 0.1)",
-                color: "#8b7355",
+                color: "#2563eb",
                 borderRadius: "20px",
                 fontSize: "0.85rem",
                 fontWeight: 500,
@@ -228,7 +228,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
             display: "flex",
             alignItems: "center",
             gap: "8px",
-            color: "#6a6a6a",
+            color: "#64748b",
           }}
         >
           <EyeOpenIcon width={18} height={18} />
@@ -242,7 +242,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
             display: "flex",
             alignItems: "center",
             gap: "8px",
-            color: isLiked ? "#8b7355" : "#6a6a6a",
+            color: isLiked ? "#2563eb" : "#64748b",
             border: "none",
             background: "transparent",
             cursor: "pointer",
@@ -253,13 +253,13 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
           }}
           onMouseEnter={(e) => {
             if (!isLiked) {
-              e.currentTarget.style.color = "#8b7355";
+              e.currentTarget.style.color = "#2563eb";
               e.currentTarget.style.backgroundColor = "rgba(139, 115, 85, 0.08)";
             }
           }}
           onMouseLeave={(e) => {
             if (!isLiked) {
-              e.currentTarget.style.color = "#6a6a6a";
+              e.currentTarget.style.color = "#64748b";
               e.currentTarget.style.backgroundColor = "transparent";
             }
           }}
@@ -268,7 +268,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
             width={18}
             height={18}
             style={{
-              fill: isLiked ? "#8b7355" : "none",
+              fill: isLiked ? "#2563eb" : "none",
               transform: "rotate(0deg)"
             }}
           />
@@ -281,7 +281,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
             display: "flex",
             alignItems: "center",
             gap: "8px",
-            color: "#6a6a6a",
+            color: "#64748b",
           }}
         >
           <ChatBubbleIcon width={18} height={18} />

@@ -12,7 +12,7 @@ const HeroSection = () => {
         style={{
           fontSize: "2.8rem",
           fontWeight: 800,
-          color: "#2c2c2c",
+          color: "#0f172a",
           marginBottom: "12px",
           letterSpacing: "1px",
         }}
@@ -23,7 +23,7 @@ const HeroSection = () => {
         style={{
           fontSize: "1.4rem",
           fontWeight: 600,
-          color: "#8b7355",
+          color: "#2563eb",
           marginBottom: "0",
         }}
       >

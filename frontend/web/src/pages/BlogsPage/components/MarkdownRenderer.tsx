@@ -21,7 +21,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
       style={{
         fontSize: '1.05rem',
         lineHeight: '1.8',
-        color: '#2c2c2c',
+        color: '#0f172a',
         marginTop: '32px'
       }}
       className="markdown-content"

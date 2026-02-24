@@ -10,7 +10,7 @@ const ProblemsSection = () => {
         style={{
           fontSize: "1.9rem",
           fontWeight: 700,
-          color: "#2c2c2c",
+          color: "#0f172a",
           marginBottom: "35px",
           textAlign: "center",
         }}
@@ -64,7 +64,7 @@ const ProblemsSection = () => {
             style={{
               fontSize: "1.35rem",
               fontWeight: 600,
-              color: "#8b7355",
+              color: "#2563eb",
               marginBottom: "12px",
             }}
           >
@@ -74,7 +74,7 @@ const ProblemsSection = () => {
             style={{
               fontSize: "0.98rem",
               lineHeight: "1.7",
-              color: "#5a5a5a",
+              color: "#475569",
             }}
           >
             Pro players are all using ChessBase to keep their chess repertoires and materials
@@ -131,7 +131,7 @@ const ProblemsSection = () => {
             style={{
               fontSize: "1.35rem",
               fontWeight: 600,
-              color: "#8b7355",
+              color: "#2563eb",
               marginBottom: "12px",
             }}
           >
@@ -141,7 +141,7 @@ const ProblemsSection = () => {
             style={{
               fontSize: "0.98rem",
               lineHeight: "1.7",
-              color: "#5a5a5a",
+              color: "#475569",
             }}
           >
             Lichess study is good! However, you <strong>cannot intuitively organize</strong>{" "}
@@ -197,7 +197,7 @@ const ProblemsSection = () => {
             style={{
               fontSize: "1.35rem",
               fontWeight: 600,
-              color: "#8b7355",
+              color: "#2563eb",
               marginBottom: "12px",
             }}
           >
@@ -207,7 +207,7 @@ const ProblemsSection = () => {
             style={{
               fontSize: "0.98rem",
               lineHeight: "1.7",
-              color: "#5a5a5a",
+              color: "#475569",
             }}
           >
             ChessTempo opening is also good! But there are{" "}

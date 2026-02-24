@@ -63,10 +63,10 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
     if (embedded) {
       return (
         <div style={{
-          background: "rgba(255, 255, 255, 0.85)",
+          background: "#ffffff",
           borderRadius: "12px",
           padding: "40px",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+          boxShadow: "var(--shadow-1)",
           minHeight: "400px",
           display: "flex",
           alignItems: "center",
@@ -82,7 +82,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
         <div
           style={{
             minHeight: "100vh",
-            background: "linear-gradient(135deg, #f8f4f0 0%, #e8ddd0 100%)",
+            background: "var(--bg-app)",
             padding: "80px 24px 40px",
           }}
         >
@@ -99,10 +99,10 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
     if (embedded) {
       return (
         <div style={{
-          background: "rgba(255, 255, 255, 0.85)",
+          background: "#ffffff",
           borderRadius: "12px",
           padding: "40px",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+          boxShadow: "var(--shadow-1)",
         }}>
           {errorContent}
         </div>
@@ -114,7 +114,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
         <div
           style={{
             minHeight: "100vh",
-            background: "linear-gradient(135deg, #f8f4f0 0%, #e8ddd0 100%)",
+            background: "var(--bg-app)",
             padding: "80px 24px 40px",
           }}
         >
@@ -194,10 +194,10 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
     if (embedded) {
       return (
         <div style={{
-          background: "rgba(255, 255, 255, 0.85)",
+          background: "#ffffff",
           borderRadius: "12px",
           padding: "40px",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+          boxShadow: "var(--shadow-1)",
         }}>
           {notFoundContent}
         </div>
@@ -209,7 +209,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
         <div
           style={{
             minHeight: "100vh",
-            background: "linear-gradient(135deg, #f8f4f0 0%, #e8ddd0 100%)",
+            background: "var(--bg-app)",
             padding: "80px 24px 40px",
           }}
         >
@@ -232,17 +232,17 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
   const articleContent = (
     <article
       style={{
-        background: "rgba(255, 255, 255, 0.95)",
+        background: "#ffffff",
         borderRadius: "12px",
         overflow: "hidden",
-        boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+        boxShadow: "var(--shadow-1)",
       }}
     >
             {/* Cover Image */}
             <div
               style={{
                 width: "100%",
-                height: "400px",
+                height: "clamp(220px, 38vw, 400px)",
                 overflow: "hidden",
                 backgroundColor: "#f5f5f5",
               }}
@@ -448,7 +448,7 @@ const ArticleDetailPage: React.FC<ArticleDetailPageProps> = ({
       <div
         style={{
           minHeight: "100vh",
-          background: "linear-gradient(135deg, #f8f4f0 0%, #e8ddd0 100%)",
+          background: "var(--bg-app)",
           padding: "80px 24px 40px",
           overflowY: "auto",
         }}

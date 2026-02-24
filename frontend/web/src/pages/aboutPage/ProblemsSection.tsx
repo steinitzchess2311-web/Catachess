@@ -22,6 +22,7 @@ const ProblemsSection = () => {
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           gap: "24px",
           marginBottom: "32px",
           alignItems: "center",
@@ -90,6 +91,7 @@ const ProblemsSection = () => {
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           gap: "24px",
           marginBottom: "32px",
           alignItems: "center",
@@ -157,6 +159,7 @@ const ProblemsSection = () => {
       <div
         style={{
           display: "flex",
+          flexWrap: "wrap",
           gap: "24px",
           marginBottom: "32px",
           alignItems: "center",

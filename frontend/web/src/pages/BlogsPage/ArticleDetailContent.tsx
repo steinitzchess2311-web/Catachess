@@ -92,12 +92,12 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
   });
 
   return (
-    <div style={{ maxWidth: "100%", margin: "0 auto" }}>
+    <div style={{ maxWidth: "860px", margin: "0 auto" }}>
       {/* Cover Image */}
       <div
         style={{
           width: "100%",
-          height: "400px",
+          height: "clamp(220px, 38vw, 400px)",
           overflow: "hidden",
           backgroundColor: "#f5f5f5",
           borderRadius: "8px",
@@ -146,6 +146,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
         style={{
           display: "flex",
           alignItems: "center",
+          flexWrap: "wrap",
           gap: "16px",
           paddingBottom: "24px",
           marginBottom: "32px",

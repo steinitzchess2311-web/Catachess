@@ -285,32 +285,6 @@ async def _init_blog_db() -> None:
         logger.warning("Blog module may not function correctly")
 
 
-# ── TEMPORARY: Classroom column migration ─────────────────────────────────────
-# Adds workspace_folder_id columns to existing classroom tables.
-# Safe to run repeatedly — uses ADD COLUMN IF NOT EXISTS.
-# TODO: Remove once confirmed in Railway, replace with Alembic migration.
-def _migrate_classroom_columns() -> None:
-    import os
-    from sqlalchemy import create_engine, text
-
-    url = os.getenv("CLASSROOM_DATABASE")
-    if not url:
-        return
-    try:
-        engine = create_engine(url, pool_pre_ping=True)
-        with engine.begin() as conn:
-            conn.execute(text(
-                "ALTER TABLE classrooms "
-                "ADD COLUMN IF NOT EXISTS workspace_folder_id VARCHAR(64)"
-            ))
-            conn.execute(text(
-                "ALTER TABLE classroom_members "
-                "ADD COLUMN IF NOT EXISTS workspace_folder_id VARCHAR(64)"
-            ))
-        logger.info("✅ Classroom column migration complete")
-    except Exception as exc:
-        logger.error(f"Classroom column migration failed: {exc}", exc_info=True)
-# ── END TEMPORARY ─────────────────────────────────────────────────────────────
 
 
 async def _presence_cleanup_loop() -> None:
@@ -389,10 +363,6 @@ async def lifespan(app: FastAPI):
 
     # Initialize Blog database and run migrations
     await _init_blog_db()
-
-    # TEMPORARY: add workspace_folder_id columns to classroom tables
-    await asyncio.to_thread(_migrate_classroom_columns)
-    # END TEMPORARY
 
     # Initialize MongoDB cache
     try:

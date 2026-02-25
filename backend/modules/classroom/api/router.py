@@ -42,6 +42,9 @@ Submissions:
   GET    /api/classroom/classrooms/{id}/assignments/{aid}/submissions/me
   GET    /api/classroom/classrooms/{id}/assignments/{aid}/submissions/{username}
   GET    /api/classroom/classrooms/my/todo
+
+Activity:
+  GET    /api/classroom/classrooms/{id}/activity
 """
 from fastapi import APIRouter
 
@@ -49,6 +52,7 @@ from modules.classroom.api.endpoints.classrooms import router as classrooms_rout
 from modules.classroom.api.endpoints.members import router as members_router
 from modules.classroom.api.endpoints.assignments import router as assignments_router
 from modules.classroom.api.endpoints.submissions import router as submissions_router
+from modules.classroom.api.endpoints.activity import router as activity_router
 
 router = APIRouter()
 
@@ -56,3 +60,4 @@ router.include_router(classrooms_router)
 router.include_router(members_router)
 router.include_router(assignments_router)
 router.include_router(submissions_router)
+router.include_router(activity_router)

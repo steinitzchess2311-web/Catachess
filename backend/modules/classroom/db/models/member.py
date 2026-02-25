@@ -43,6 +43,12 @@ class ClassroomMember(Base):
     )  # 'teacher' | 'student'
 
     invited_by: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+
+    # Workspace linkage — the student's subfolder node under the classroom folder
+    # NULL if workspace sync failed or not yet synced
+    workspace_folder_id: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )
     joined_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
     )

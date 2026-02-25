@@ -33,7 +33,7 @@ from modules.classroom.schemas.classroom import (
     InviteToggle, InviteResponse, JoinByCode, ChatLinkResponse,
     BroadcastCreate, BroadcastResponse,
 )
-from modules.classroom.services import catachat_sync
+from modules.classroom.services import catachat_sync, workspace_sync
 from models.user import User
 
 router = APIRouter(tags=["classroom-classrooms"])
@@ -120,6 +120,17 @@ def create_classroom(
     )
     if group_id:
         classroom.catchat_group_id = group_id
+        db.commit()
+        db.refresh(classroom)
+
+    # Sync workspace: create shared folder in teacher's workspace
+    ws_folder_id = workspace_sync.sync_create_classroom_folder(
+        teacher_uuid=str(current_user.id),
+        classroom_id=str(classroom.id),
+        class_name=classroom.name,
+    )
+    if ws_folder_id:
+        classroom.workspace_folder_id = ws_folder_id
         db.commit()
         db.refresh(classroom)
 
@@ -356,6 +367,33 @@ def join_classroom(
         username=username,
         classroom_role="student",
     )
+
+    # Sync workspace: create student subfolder if classroom folder exists
+    if classroom.workspace_folder_id:
+        # Look up teacher UUID to generate JWT
+        from models.user import User as UserModel
+        from core.db.deps import get_db as get_main_db
+        for main_db in get_main_db():
+            teacher = main_db.execute(
+                select(UserModel).where(UserModel.username == classroom.owner)
+            ).scalar_one_or_none()
+            if teacher:
+                member_row = db.execute(
+                    select(ClassroomMember).where(
+                        ClassroomMember.classroom_id == classroom.id,
+                        ClassroomMember.username == username,
+                        ClassroomMember.removed_at.is_(None),
+                    )
+                ).scalar_one_or_none()
+                ws_folder_id = workspace_sync.sync_create_student_folder(
+                    teacher_uuid=str(teacher.id),
+                    classroom_folder_id=classroom.workspace_folder_id,
+                    student_username=username,
+                )
+                if ws_folder_id and member_row:
+                    member_row.workspace_folder_id = ws_folder_id
+                    db.commit()
+            break
 
     return ClassroomListItem(
         id=str(classroom.id), name=classroom.name, owner=classroom.owner,

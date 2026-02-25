@@ -19,7 +19,7 @@ from modules.classroom.db.session import get_db
 from modules.classroom.db.models.classroom import Classroom
 from modules.classroom.db.models.member import ClassroomMember
 from modules.classroom.schemas.member import MemberAdd, MemberRoleUpdate, MemberResponse
-from modules.classroom.services import catachat_sync
+from modules.classroom.services import catachat_sync, workspace_sync
 from models.user import User
 
 router = APIRouter(tags=["classroom-members"])
@@ -146,6 +146,26 @@ def add_member(
         username=body.username,
         classroom_role=body.role,
     )
+
+    # Sync workspace: create student subfolder if classroom folder exists
+    if classroom.workspace_folder_id:
+        # Look up teacher UUID to generate workspace JWT
+        from models.user import User as UserModel
+        from core.db.deps import get_db as get_main_db
+        for main_db in get_main_db():
+            teacher = main_db.execute(
+                select(UserModel).where(UserModel.username == classroom.owner)
+            ).scalar_one_or_none()
+            if teacher:
+                ws_folder_id = workspace_sync.sync_create_student_folder(
+                    teacher_uuid=str(teacher.id),
+                    classroom_folder_id=classroom.workspace_folder_id,
+                    student_username=body.username,
+                )
+                if ws_folder_id:
+                    member.workspace_folder_id = ws_folder_id
+                    db.commit()
+            break
 
     return MemberResponse(
         username=member.username,

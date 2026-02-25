@@ -36,6 +36,23 @@ class SubmissionResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ActivityItem(BaseModel):
+    """
+    Teacher-facing activity item — recent submission events across all assignments
+    in a classroom, ordered by most recent first.
+    """
+    submission_id: str
+    student_username: str
+    assignment_id: str
+    assignment_title: str
+    assignment_category: str   # material | assignment | exam
+    attempt: int
+    status: str                # in_progress | submitted | graded
+    score: Optional[float]
+    submitted_at: Optional[datetime]
+    started_at: datetime
+
+
 class TodoItem(BaseModel):
     """
     Student-facing todo item — aggregated across all classrooms.

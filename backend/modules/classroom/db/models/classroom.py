@@ -43,6 +43,12 @@ class Classroom(Base):
         UUID(as_uuid=True), nullable=True
     )
 
+    # Workspace linkage — the shared folder node created in teacher's workspace
+    # NULL if workspace sync failed or not yet synced
+    workspace_folder_id: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=datetime.utcnow, nullable=False
     )

@@ -28,6 +28,22 @@ function dedupTitles(titles: string[]): string[] {
 }
 
 // ---------------------------------------------------------------------------
+// Tree serialization
+// ---------------------------------------------------------------------------
+
+/**
+ * Serialize a StudyTree for the backend PUT endpoint.
+ * The backend requires `san` to be a string; our root node has `san: null`.
+ * We replace null with "" so the payload passes schema validation.
+ */
+function serializeTreeForApi(tree: ReturnType<typeof importMultiPgn>['games'][number]['tree']) {
+  const nodes: Record<string, any> = {};
+  for (const [id, node] of Object.entries(tree.nodes)) {
+    nodes[id] = { ...node, san: node.san ?? '' };
+  }
+  return { ...tree, nodes };
+}
+
 // HTTP helpers
 // ---------------------------------------------------------------------------
 
@@ -236,7 +252,7 @@ export function NewChapterModal({
           withRetry(() =>
             api.put(
               `/api/v1/workspace/studies/study-patch/chapter/${ch.id}/tree`,
-              games[ch.index].tree,
+              serializeTreeForApi(games[ch.index].tree),
             ),
           ),
         );

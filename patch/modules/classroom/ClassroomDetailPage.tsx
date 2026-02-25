@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { getClassroom, archiveClassroom, unarchiveClassroom, deleteClassroom, renameClassroom } from './api';
+import { getClassroom, archiveClassroom, unarchiveClassroom, deleteClassroom, renameClassroom, leaveClassroom } from './api';
 import type { Classroom } from './types';
 import { RoleBadge } from './components/RoleBadge';
 import { TeacherOverview, StudentOverview } from './components/OverviewTab';
@@ -57,6 +57,16 @@ export const ClassroomDetailPage: React.FC = () => {
       navigate('/classroom');
     } catch (err: any) {
       alert(err?.message || 'Failed to delete classroom.');
+    }
+  }
+
+  async function handleLeave() {
+    if (!classroom || !confirm(`Leave "${classroom.name}"?`)) return;
+    try {
+      await leaveClassroom(classroom.id);
+      navigate('/classroom');
+    } catch (err: any) {
+      alert(err?.message || 'Failed to leave classroom.');
     }
   }
 
@@ -130,6 +140,12 @@ export const ClassroomDetailPage: React.FC = () => {
 
           {/* Actions */}
           <div className="cl-detail-actions">
+            {/* Leave — available to teachers and students (not owner) */}
+            {!isOwner && (
+              <button className="cl-btn cl-btn-ghost cl-btn-sm" onClick={handleLeave} style={{ color: 'var(--cl-overdue)' }}>
+                Leave Class
+              </button>
+            )}
             {isTeacher && (
               <button className="cl-btn cl-btn-secondary cl-btn-sm" onClick={() => setShowBroadcast(true)}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

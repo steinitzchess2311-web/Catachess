@@ -58,6 +58,14 @@ export interface Assignment {
   my_submission?: MySubmission | null;
 }
 
+export interface AssignmentUpdatePayload {
+  title?: string;
+  description?: string;
+  due_date?: string | null;
+  time_limit?: number | null;
+  max_attempts?: number | null;
+}
+
 export interface AssignmentCreatePayload {
   category: AssignmentCategory;
   type: AssignmentType;
@@ -69,6 +77,26 @@ export interface AssignmentCreatePayload {
   time_limit?: number | null;
   max_attempts?: number | null;
   targets: AssignmentTargets;
+}
+
+// ─── Submission Types ─────────────────────────────────────────────────────────
+
+export interface Submission {
+  id: string;
+  assignment_id: string;
+  username: string;
+  attempt: number;
+  status: 'in_progress' | 'submitted';
+  score: number | null;
+  detail: Record<string, any> | null;
+  started_at: string;
+  submitted_at: string | null;
+}
+
+export interface SubmissionUpsertPayload {
+  status: 'in_progress' | 'submitted';
+  score?: number | null;
+  detail?: Record<string, any>;
 }
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
@@ -89,6 +117,17 @@ export interface AssignmentStats {
     attempt: number;
     submitted_at: string | null;
   }>;
+}
+
+// ─── Activity ─────────────────────────────────────────────────────────────────
+
+export interface ActivityItem {
+  username: string;
+  assignment_id: string;
+  assignment_title: string;
+  status: 'submitted' | 'in_progress';
+  score: number | null;
+  submitted_at: string;
 }
 
 // ─── Todo ─────────────────────────────────────────────────────────────────────

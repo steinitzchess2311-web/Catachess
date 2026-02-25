@@ -1,5 +1,5 @@
 // ─── Classroom API ────────────────────────────────────────────────────────────
-// All calls hit /api/classroom (backend not yet live — returns placeholders gracefully)
+// Base: /api/classroom  (resolves to https://api.catachess.com in prod)
 
 import { api } from '@ui/assets/api';
 import type {
@@ -8,123 +8,134 @@ import type {
   ClassroomRole,
   Assignment,
   AssignmentCreatePayload,
+  AssignmentUpdatePayload,
   AssignmentStats,
+  Submission,
+  SubmissionUpsertPayload,
+  ActivityItem,
   TodoItem,
   InviteInfo,
 } from './types';
 
-const BASE = '/api/classroom';
+const BASE = '/api/classroom/classrooms';
 
 // ─── Classrooms ───────────────────────────────────────────────────────────────
 
-export async function listClassrooms(): Promise<Classroom[]> {
-  return api.get(`${BASE}/classrooms`);
-}
+export const listClassrooms = (): Promise<Classroom[]> =>
+  api.get(BASE);
 
-export async function getClassroom(id: string): Promise<Classroom> {
-  return api.get(`${BASE}/classrooms/${id}`);
-}
+export const getClassroom = (id: string): Promise<Classroom> =>
+  api.get(`${BASE}/${id}`);
 
-export async function createClassroom(name: string): Promise<Classroom> {
-  return api.post(`${BASE}/classrooms`, { name });
-}
+export const createClassroom = (name: string): Promise<Classroom> =>
+  api.post(BASE, { name });
 
-export async function renameClassroom(id: string, name: string): Promise<Classroom> {
-  return api.patch(`${BASE}/classrooms/${id}`, { name });
-}
+export const renameClassroom = (id: string, name: string): Promise<Classroom> =>
+  api.patch(`${BASE}/${id}`, { name });
 
-export async function archiveClassroom(id: string): Promise<void> {
-  return api.post(`${BASE}/classrooms/${id}/archive`, {});
-}
+export const archiveClassroom = (id: string): Promise<void> =>
+  api.post(`${BASE}/${id}/archive`, {});
 
-export async function unarchiveClassroom(id: string): Promise<void> {
-  return api.post(`${BASE}/classrooms/${id}/unarchive`, {});
-}
+export const unarchiveClassroom = (id: string): Promise<void> =>
+  api.post(`${BASE}/${id}/unarchive`, {});
 
-export async function deleteClassroom(id: string): Promise<void> {
-  return api.delete(`${BASE}/classrooms/${id}`);
-}
+export const deleteClassroom = (id: string): Promise<void> =>
+  api.delete(`${BASE}/${id}`);
 
 // ─── Invite ───────────────────────────────────────────────────────────────────
 
-export async function getInvite(id: string): Promise<InviteInfo> {
-  return api.get(`${BASE}/classrooms/${id}/invite`);
-}
+export const getInvite = (id: string): Promise<InviteInfo> =>
+  api.get(`${BASE}/${id}/invite`);
 
-export async function resetInvite(id: string): Promise<InviteInfo> {
-  return api.post(`${BASE}/classrooms/${id}/invite/reset`, {});
-}
+export const resetInvite = (id: string): Promise<InviteInfo> =>
+  api.post(`${BASE}/${id}/invite/reset`, {});
 
-export async function setInviteActive(id: string, active: boolean): Promise<InviteInfo> {
-  return api.patch(`${BASE}/classrooms/${id}/invite`, { active });
-}
+export const setInviteActive = (id: string, active: boolean): Promise<InviteInfo> =>
+  api.patch(`${BASE}/${id}/invite`, { active });
 
-export async function joinClassroom(invite_code: string): Promise<{ classroom_id: string; name: string; role: ClassroomRole }> {
-  return api.post(`${BASE}/classrooms/join`, { invite_code });
-}
+export const joinClassroom = (invite_code: string): Promise<{ classroom_id: string; name: string; role: ClassroomRole }> =>
+  api.post(`${BASE}/join`, { invite_code });
+
+// ─── Chat & Broadcast ─────────────────────────────────────────────────────────
+
+export const getChatGroupId = (id: string): Promise<{ catchat_group_id: string | null }> =>
+  api.get(`${BASE}/${id}/chat`);
+
+export const broadcastMessage = (id: string, content: string): Promise<{ broadcast_id: string; created_at: string }> =>
+  api.post(`${BASE}/${id}/broadcast`, { content });
 
 // ─── Members ──────────────────────────────────────────────────────────────────
 
-export async function listMembers(classroomId: string): Promise<ClassroomMember[]> {
-  return api.get(`${BASE}/classrooms/${classroomId}/members`);
-}
+export const listMembers = (classroomId: string): Promise<ClassroomMember[]> =>
+  api.get(`${BASE}/${classroomId}/members`);
 
-export async function addMember(classroomId: string, username: string, role: ClassroomRole = 'student'): Promise<ClassroomMember> {
-  return api.post(`${BASE}/classrooms/${classroomId}/members`, { username, role });
-}
+export const addMember = (classroomId: string, username: string, role: ClassroomRole = 'student'): Promise<ClassroomMember> =>
+  api.post(`${BASE}/${classroomId}/members`, { username, role });
 
-export async function removeMember(classroomId: string, username: string): Promise<void> {
-  return api.delete(`${BASE}/classrooms/${classroomId}/members/${username}`);
-}
+export const removeMember = (classroomId: string, username: string): Promise<void> =>
+  api.delete(`${BASE}/${classroomId}/members/${username}`);
 
-export async function updateMemberRole(classroomId: string, username: string, role: ClassroomRole): Promise<void> {
-  return api.patch(`${BASE}/classrooms/${classroomId}/members/${username}/role`, { role });
-}
+export const updateMemberRole = (classroomId: string, username: string, role: ClassroomRole): Promise<void> =>
+  api.patch(`${BASE}/${classroomId}/members/${username}/role`, { role });
 
-export async function leaveClassroom(classroomId: string): Promise<void> {
-  return api.post(`${BASE}/classrooms/${classroomId}/members/leave`, {});
-}
+export const leaveClassroom = (classroomId: string): Promise<void> =>
+  api.post(`${BASE}/${classroomId}/members/leave`, {});
 
 // ─── Assignments ──────────────────────────────────────────────────────────────
 
-export async function listAssignments(
+export const listAssignments = (
   classroomId: string,
-  params?: { category?: string; status?: string }
-): Promise<Assignment[]> {
+  params?: { category?: string; status?: string },
+): Promise<Assignment[]> => {
   const query = params
-    ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v != null)) as Record<string, string>).toString()
+    ? '?' + new URLSearchParams(
+        Object.fromEntries(
+          Object.entries(params).filter(([, v]) => v != null),
+        ) as Record<string, string>,
+      ).toString()
     : '';
-  return api.get(`${BASE}/classrooms/${classroomId}/assignments${query}`);
-}
+  return api.get(`${BASE}/${classroomId}/assignments${query}`);
+};
 
-export async function getAssignment(classroomId: string, assignmentId: string): Promise<Assignment> {
-  return api.get(`${BASE}/classrooms/${classroomId}/assignments/${assignmentId}`);
-}
+export const getAssignment = (classroomId: string, assignmentId: string): Promise<Assignment> =>
+  api.get(`${BASE}/${classroomId}/assignments/${assignmentId}`);
 
-export async function createAssignment(classroomId: string, payload: AssignmentCreatePayload): Promise<Assignment> {
-  return api.post(`${BASE}/classrooms/${classroomId}/assignments`, payload);
-}
+export const createAssignment = (classroomId: string, payload: AssignmentCreatePayload): Promise<Assignment> =>
+  api.post(`${BASE}/${classroomId}/assignments`, payload);
 
-export async function deleteAssignment(classroomId: string, assignmentId: string): Promise<void> {
-  return api.delete(`${BASE}/classrooms/${classroomId}/assignments/${assignmentId}`);
-}
+export const updateAssignment = (classroomId: string, assignmentId: string, payload: AssignmentUpdatePayload): Promise<Assignment> =>
+  api.patch(`${BASE}/${classroomId}/assignments/${assignmentId}`, payload);
 
-export async function getAssignmentStats(classroomId: string, assignmentId: string): Promise<AssignmentStats> {
-  return api.get(`${BASE}/classrooms/${classroomId}/assignments/${assignmentId}/stats`);
-}
+export const deleteAssignment = (classroomId: string, assignmentId: string): Promise<void> =>
+  api.delete(`${BASE}/${classroomId}/assignments/${assignmentId}`);
+
+export const getAssignmentStats = (classroomId: string, assignmentId: string): Promise<AssignmentStats> =>
+  api.get(`${BASE}/${classroomId}/assignments/${assignmentId}/stats`);
+
+// ─── Submissions ──────────────────────────────────────────────────────────────
+
+export const upsertSubmission = (
+  classroomId: string,
+  assignmentId: string,
+  payload: SubmissionUpsertPayload,
+): Promise<Submission> =>
+  api.post(`${BASE}/${classroomId}/assignments/${assignmentId}/submissions`, payload);
+
+export const listSubmissions = (classroomId: string, assignmentId: string): Promise<Submission[]> =>
+  api.get(`${BASE}/${classroomId}/assignments/${assignmentId}/submissions`);
+
+export const getMySubmission = (classroomId: string, assignmentId: string): Promise<Submission[]> =>
+  api.get(`${BASE}/${classroomId}/assignments/${assignmentId}/submissions/me`);
+
+export const getStudentSubmission = (classroomId: string, assignmentId: string, username: string): Promise<Submission[]> =>
+  api.get(`${BASE}/${classroomId}/assignments/${assignmentId}/submissions/${username}`);
+
+// ─── Activity ─────────────────────────────────────────────────────────────────
+
+export const getActivity = (classroomId: string): Promise<ActivityItem[]> =>
+  api.get(`${BASE}/${classroomId}/activity`);
 
 // ─── Todo ─────────────────────────────────────────────────────────────────────
 
-export async function getMyTodo(): Promise<TodoItem[]> {
-  return api.get(`${BASE}/classrooms/my/todo`);
-}
-
-// ─── Chat ─────────────────────────────────────────────────────────────────────
-
-export async function getChatGroupId(classroomId: string): Promise<{ catchat_group_id: string | null }> {
-  return api.get(`${BASE}/classrooms/${classroomId}/chat`);
-}
-
-export async function broadcastMessage(classroomId: string, content: string): Promise<{ broadcast_id: string; created_at: string }> {
-  return api.post(`${BASE}/classrooms/${classroomId}/broadcast`, { content });
-}
+export const getMyTodo = (): Promise<TodoItem[]> =>
+  api.get(`${BASE}/my/todo`);

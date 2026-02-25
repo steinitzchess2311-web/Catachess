@@ -13,8 +13,9 @@
 
 import React, { useState, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import logoImage from '../../../frontend/web/src/assets/logo.jpg';
 import './player.css';
+
+const logoImage = '/assets/logo.jpg';
 import { PlayerSearchInput } from './components/PlayerSearchInput';
 import { PlayerCardGrid } from './components/PlayerCardGrid';
 import { FilterBar } from './components/FilterBar';

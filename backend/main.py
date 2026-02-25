@@ -285,33 +285,6 @@ async def _init_blog_db() -> None:
         logger.warning("Blog module may not function correctly")
 
 
-# ── TEMPORARY: Classroom table bootstrap ──────────────────────────────────────
-# Creates all classroom tables if they do not exist.
-# Remove this function (and its call in lifespan) once tables are confirmed
-# in Railway and a proper Alembic migration has been written.
-def _init_classroom_db() -> None:
-    import os
-    from sqlalchemy import create_engine, inspect
-
-    url = os.getenv("CLASSROOM_DATABASE")
-    if not url:
-        logger.warning("CLASSROOM_DATABASE not set — skipping classroom table init")
-        return
-
-    try:
-        import modules.classroom.db.models  # noqa: F401 — registers all ORM models
-        from modules.classroom.db.session import Base
-
-        engine = create_engine(url, pool_pre_ping=True)
-        Base.metadata.create_all(bind=engine)
-
-        tables = inspect(engine).get_table_names()
-        logger.info(f"✅ Classroom DB ready. Tables: {sorted(tables)}")
-    except Exception as exc:
-        logger.error(f"Classroom DB init failed: {exc}", exc_info=True)
-# ── END TEMPORARY ─────────────────────────────────────────────────────────────
-
-
 async def _presence_cleanup_loop() -> None:
     import os
 
@@ -389,13 +362,6 @@ async def lifespan(app: FastAPI):
     # Initialize Blog database and run migrations
     await _init_blog_db()
 
-    # ── TEMPORARY: Classroom DB table creation ────────────────────────────────
-    # Creates all classroom tables on startup via SQLAlchemy create_all.
-    # Safe to run repeatedly — uses CREATE TABLE IF NOT EXISTS semantics.
-    # TODO: Remove this block once tables are confirmed live in Railway.
-    # Replace with a proper Alembic migration in modules/classroom/db/migrations/.
-    await asyncio.to_thread(_init_classroom_db)
-    # ── END TEMPORARY ─────────────────────────────────────────────────────────
 
     # Initialize MongoDB cache
     try:

@@ -12,7 +12,7 @@ import './classroom.css';
 // ─── Classroom card ───────────────────────────────────────────────────────────
 
 const ClassroomCard: React.FC<{ classroom: Classroom }> = ({ classroom }) => (
-  <Link to={`/classroom/${classroom.id}`} className="cl-card">
+  <Link to={`/classroom/${classroom.id}`} state={{ classroom }} className="cl-card">
     <div className="cl-card__accent" />
     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
       <span className="cl-card__name">{classroom.name}</span>

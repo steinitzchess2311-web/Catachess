@@ -1,7 +1,7 @@
 // ─── /classroom/:id ── Classroom detail ──────────────────────────────────────
 
 import React, { useEffect, useState } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getClassroom, archiveClassroom, unarchiveClassroom, deleteClassroom, renameClassroom, leaveClassroom } from './api';
 import type { Classroom } from './types';
 import { RoleBadge } from './components/RoleBadge';
@@ -16,9 +16,15 @@ type Tab = 'overview' | 'assignments' | 'members';
 export const ClassroomDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [classroom, setClassroom] = useState<Classroom | null>(null);
-  const [loading, setLoading] = useState(true);
+  // ── If we navigated from the list page, the classroom object (with my_role)
+  // is already available in router state — use it immediately so role-based UI
+  // renders correctly on first paint without waiting for the fetch.
+  const stateClassroom = (location.state as { classroom?: Classroom } | null)?.classroom ?? null;
+
+  const [classroom, setClassroom] = useState<Classroom | null>(stateClassroom);
+  const [loading, setLoading] = useState(!stateClassroom); // skip loading if we already have data
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab>('overview');
   const [showBroadcast, setShowBroadcast] = useState(false);
@@ -26,11 +32,23 @@ export const ClassroomDetailPage: React.FC = () => {
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
+    // Always fetch fresh data. If the backend returns my_role in the detail
+    // endpoint, great. If not, preserve the my_role we already have from the
+    // list page so identity determination is never broken.
     getClassroom(id)
-      .then(setClassroom)
-      .catch(err => setError(err?.message || 'Classroom not found.'))
+      .then(fresh => {
+        setClassroom(prev => ({
+          ...fresh,
+          // my_role may be absent in the detail response — keep the known value
+          my_role: fresh.my_role ?? prev?.my_role ?? 'student',
+        }));
+      })
+      .catch(err => {
+        // If we already have stale data, don't wipe it — just show no error
+        if (!stateClassroom) setError(err?.message || 'Classroom not found.');
+      })
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const isTeacher = classroom?.my_role === 'owner' || classroom?.my_role === 'teacher';

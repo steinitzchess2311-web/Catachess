@@ -39,6 +39,7 @@ class ClassroomResponse(BaseModel):
     invite_code: Optional[str]
     invite_active: bool
     catchat_group_id: Optional[str]
+    workspace_folder_id: Optional[str]
     created_at: datetime
     archived_at: Optional[datetime]
 

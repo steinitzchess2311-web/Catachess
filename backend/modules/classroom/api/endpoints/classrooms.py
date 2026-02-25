@@ -469,6 +469,7 @@ def _to_response(c: Classroom) -> ClassroomResponse:
         invite_code=c.invite_code,
         invite_active=c.invite_active,
         catchat_group_id=str(c.catchat_group_id) if c.catchat_group_id else None,
+        workspace_folder_id=c.workspace_folder_id,
         created_at=c.created_at,
         archived_at=c.archived_at,
     )

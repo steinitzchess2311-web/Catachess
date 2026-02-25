@@ -15,7 +15,7 @@ import React, { useState, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import './player.css';
 
-const logoImage = '/assets/logo.jpg';
+const logoImage = '/assets/logo-main.jpg';
 import { PlayerSearchInput } from './components/PlayerSearchInput';
 import { PlayerCardGrid } from './components/PlayerCardGrid';
 import { FilterBar } from './components/FilterBar';

@@ -58,7 +58,7 @@
 .ps-idle {
   flex: 1;
   min-height: clamp(320px, 40vh, 460px);
-  padding: 52px 24px 52px;
+  padding: 24px 24px 72px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -69,7 +69,7 @@
 .ps-idle-logo {
   width: min(14vw, 160px);
   height: auto;
-  opacity: 0.12;
+  opacity: 0.5;
   pointer-events: none;
   display: block;
   flex-shrink: 0;

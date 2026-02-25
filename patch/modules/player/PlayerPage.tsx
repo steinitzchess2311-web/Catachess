@@ -3,7 +3,7 @@
 //
 // Routes:
 //   /players          — search / idle
-//   /players/:name    — game list for a specific player
+//   /playerbase/:name    — game list for a specific player
 //                       (name = encodeURIComponent of DB name)
 //
 // Navigation uses React Router location.state to carry back-
@@ -179,7 +179,7 @@ const PlayerPage: React.FC = () => {
 
   // Navigate to a player's game list, carrying search context for back navigation
   const goToPlayer = useCallback((name: string, backState?: BackState) => {
-    navigate('/players/' + encodeURIComponent(name), {
+    navigate('/playerbase/' + encodeURIComponent(name), {
       state: backState ?? null,
     });
   }, [navigate]);
@@ -203,9 +203,9 @@ const PlayerPage: React.FC = () => {
     const s = location.state as BackState | null;
     if (s?.prevQuery) {
       // Navigate to /players and restore search results via location.state
-      navigate('/players', { state: s });
+      navigate('/playerbase', { state: s });
     } else {
-      navigate('/players');
+      navigate('/playerbase');
     }
   }, [navigate, location.state]);
 

@@ -16,7 +16,7 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
   updatedAt,
 }) => {
   return (
-    <Link to={`/players/${id}`} className="tagger-card">
+    <Link to={`/playerbase/${id}`} className="tagger-card">
       <div className="tagger-card-top">
         <span className="tagger-card-title">{name}</span>
         <span className="tagger-chip">Profile</span>

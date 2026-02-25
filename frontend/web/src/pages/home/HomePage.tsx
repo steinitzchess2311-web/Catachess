@@ -141,7 +141,7 @@ const HomePage: React.FC = () => {
               <p className="hp-section-label">HUGE Database</p>
               <div className="hp-cards">
                 <HpCard
-                  to="/players"
+                  to="/playerbase"
                   icon={<MagnifyingGlassIcon width={28} height={28} />}
                   label="SEARCH PLAYERS"
                   tooltip="Explore any player's game history and statistics"

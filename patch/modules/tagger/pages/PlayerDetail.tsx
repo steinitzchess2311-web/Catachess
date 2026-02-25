@@ -283,7 +283,7 @@ const PlayerDetail: React.FC = () => {
     setError("");
     try {
       await taggerApi.deletePlayer(id);
-      navigate("/players");
+      navigate("/playerbase");
     } catch (err: any) {
       setError(err?.message || "Delete failed.");
     }
@@ -335,7 +335,7 @@ const PlayerDetail: React.FC = () => {
     return (
       <div className="tagger-page tagger-loading">
         <p>Player not found.</p>
-        <button className="tagger-back" onClick={() => navigate("/players")}>
+        <button className="tagger-back" onClick={() => navigate("/playerbase")}>
           Back to Players
         </button>
       </div>
@@ -346,7 +346,7 @@ const PlayerDetail: React.FC = () => {
     <section className="tagger-page">
       <div className="tagger-detail-hero">
         <div>
-          <button className="tagger-back" onClick={() => navigate("/players")}>
+          <button className="tagger-back" onClick={() => navigate("/playerbase")}>
             ← Players
           </button>
           <h1>{player.display_name}</h1>

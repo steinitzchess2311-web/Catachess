@@ -589,8 +589,8 @@ function Layout() {
           <Route path="/analysis" element={<AnalysisPage />} />
           <Route path="/board-editor" element={<BoardEditorPage />} />
           <Route path="/translate" element={<TranslatePage />} />
-          <Route path="/players"      element={<PlayersIndex />} />
-          <Route path="/players/:name" element={<PlayersIndex />} />
+          <Route path="/playerbase"       element={<PlayersIndex />} />
+          <Route path="/playerbase/:name" element={<PlayersIndex />} />
           <Route
             path="/players1/:id"
             element={

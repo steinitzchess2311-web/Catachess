@@ -222,8 +222,8 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
         {/* Navigation links moved here, next to logo */}
         <nav className="header-center">
           <Link to={isAuthed ? "/workspace/private" : "/workspace/public"} className="nav-link">Workspace</Link>
+          <Link to="/playerbase" className="nav-link">Playerbase</Link>
           <Link to="/play" className="nav-link">Games</Link>
-          <Link to="/playerbase" className="nav-link">Players</Link>
           <Link to="/blogs" className="nav-link">Blogs</Link>
           <div className="nav-dropdown">
             <span className="nav-link nav-link--dropdown">Analysis</span>

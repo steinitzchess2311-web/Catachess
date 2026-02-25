@@ -13,6 +13,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import logoImage from '@ui/assets/logo.jpg';
 import './player.css';
 import { PlayerSearchInput } from './components/PlayerSearchInput';
 import { PlayerCardGrid } from './components/PlayerCardGrid';
@@ -238,7 +239,7 @@ const PlayerPage: React.FC = () => {
 
       {view.kind === 'idle' && (
         <div className="ps-idle">
-          <div className="ps-idle-art" aria-hidden />
+          <img src={logoImage} alt="" className="ps-idle-logo" aria-hidden />
           <section className="ps-idle-card" aria-label="Player search guidance">
             <h2 className="ps-idle-title">Start by searching a player</h2>
             <p className="ps-idle-desc">Enter a "," or space between LAST name and FIRST name</p>

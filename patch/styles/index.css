@@ -1976,6 +1976,17 @@ main {
   transition: width 0.15s ease;
 }
 
+/* Indeterminate animation for the "Parsing PGN…" phase */
+.patch-modal-progress__fill.is-indeterminate {
+  width: 40% !important;
+  animation: pgn-indeterminate 1.2s ease-in-out infinite;
+}
+
+@keyframes pgn-indeterminate {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+
 /* ── Game Viewer Page ─────────────────────────────────────────────────────── */
 
 .game-viewer-page {

@@ -2,6 +2,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@ui/assets/api';
 import { importMultiPgn } from '../pgn/import';
 
+// ---------------------------------------------------------------------------
+// Title helpers
+// ---------------------------------------------------------------------------
+
 function pgnGameTitle(headers: Record<string, string>): string {
   const white = headers['White'] ?? '?';
   const black = headers['Black'] ?? '?';
@@ -9,28 +13,46 @@ function pgnGameTitle(headers: Record<string, string>): string {
   if (white === '?' && black === '?' && !event) return 'Imported Game';
   const players = white === '?' && black === '?' ? '' : `${white} vs ${black}`;
   const raw = [players, event].filter(Boolean).join(' – ')
-    .replace(/\//g, '-');  // backend forbids "/" in chapter names
-  // Backend maxLength is 200; leave room for dedup suffix " (99)"
+    .replace(/\//g, '-');  // backend forbids "/" in chapter/study names
   return raw.length > 194 ? raw.slice(0, 194) : raw;
 }
 
-/**
- * Given a list of raw titles, return deduplicated titles.
- * Duplicate titles get a " (2)", " (3)" suffix so the backend
- * unique-per-study constraint is never violated.
- */
+/** Append " (2)", " (3)" etc. to repeated titles to satisfy backend uniqueness. */
 function dedupTitles(titles: string[]): string[] {
   const seen = new Map<string, number>();
   return titles.map((t) => {
-    const count = (seen.get(t) ?? 0) + 1;
-    seen.set(t, count);
-    return count === 1 ? t : `${t} (${count})`;
+    const n = (seen.get(t) ?? 0) + 1;
+    seen.set(t, n);
+    return n === 1 ? t : `${t} (${n})`;
   });
 }
 
 // ---------------------------------------------------------------------------
-// Concurrent task runner — at most `limit` promises in flight at once
+// HTTP helpers
 // ---------------------------------------------------------------------------
+
+/** Retry a request on 5xx (server errors). Never retries on 4xx (our data is wrong). */
+async function withRetry<T>(fn: () => Promise<T>, retries = 2, delayMs = 1000): Promise<T> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (e: any) {
+      const status = e?.response?.status ?? e?.status ?? 0;
+      if (status >= 500 && attempt < retries) {
+        await new Promise((r) => setTimeout(r, delayMs * (attempt + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
+  // unreachable but satisfies TypeScript
+  throw new Error('unreachable');
+}
+
+/**
+ * Run tasks with at most `limit` in-flight at once.
+ * Each task is individually wrapped with retry logic.
+ */
 async function runConcurrent<T>(
   tasks: (() => Promise<T>)[],
   limit: number,
@@ -52,31 +74,35 @@ async function runConcurrent<T>(
     }
   }
 
-  const workers = Array.from({ length: Math.min(limit, tasks.length) }, () => worker());
-  await Promise.all(workers);
+  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
   return results;
 }
+
+// ---------------------------------------------------------------------------
+// Component types
+// ---------------------------------------------------------------------------
 
 interface NewChapterModalProps {
   studyId: string;
   nextChapterIndex: number;
   chaptersCount: number;
   onClose: () => void;
-  /** Called when a single chapter (empty/fen) is created. */
   onCreated: (chapter: any) => void;
-  /** Called when multiple chapters are created from a PGN. */
   onMultiCreated: (newChapters: any[]) => void;
-  /** Load + select the given chapter tree (from useChapters.handleSelectChapter). */
   onSelectChapter: (chapterId: string) => Promise<void>;
 }
 
 type CreateMode = 'empty' | 'fen' | 'pgn';
 
 interface ImportProgress {
-  phase: 'creating' | 'uploading';
+  phase: 'parsing' | 'creating' | 'uploading';
   done: number;
   total: number;
 }
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 export function NewChapterModal({
   studyId,
@@ -109,10 +135,24 @@ export function NewChapterModal({
     }
   }, [mode]);
 
+  // Parse PGN with a "Parsing…" phase so UI stays responsive
   useEffect(() => {
     const text = pgnText.trim();
-    if (!text) { setPgnParsed(null); return; }
-    setPgnParsed(importMultiPgn(text, 64));
+    if (!text) {
+      setPgnParsed(null);
+      setProgress(null);
+      return;
+    }
+
+    // Show parsing indicator immediately, then run on next tick
+    setPgnParsed(null);
+    setProgress({ phase: 'parsing', done: 0, total: 1 });
+    const timer = setTimeout(() => {
+      // No upper limit — import everything in the PGN
+      setPgnParsed(importMultiPgn(text, 5_000));
+      setProgress(null);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [pgnText]);
 
   const handleClose = useCallback(() => {
@@ -140,68 +180,79 @@ export function NewChapterModal({
     if (mode === 'pgn') {
       if (!pgnParsed || pgnParsed.games.length === 0) return;
       setIsImporting(true);
-      setProgress({ phase: 'creating', done: 0, total: pgnParsed.games.length });
 
       const games = pgnParsed.games;
       const errs: string[] = [];
 
-      // Pre-compute deduplicated titles so concurrent requests never collide
-      const rawTitles = games.map((g) => pgnGameTitle(g.headers));
-      const gameTitles = dedupTitles(rawTitles);
+      // Deduplicate titles before any HTTP — concurrent requests must not collide
+      const gameTitles = dedupTitles(games.map((g) => pgnGameTitle(g.headers)));
 
       try {
-        // ── Phase 1: Create all chapters concurrently (8 in parallel) ──────
-        type ChapterResult = { id: string; title: string; index: number } | null;
+        // ── Phase 1: Create chapter records (4 concurrent, retry on 5xx) ───
+        setProgress({ phase: 'creating', done: 0, total: games.length });
+        type Created = { id: string; title: string; index: number };
 
-        const createTasks = games.map((game, i) => async (): Promise<ChapterResult> => {
-          const gameTitle = gameTitles[i];
-          try {
+        const createTasks = games.map((game, i) => () =>
+          withRetry(async () => {
+            const gameTitle = gameTitles[i];
             if (game.startingFen) {
               const resp = await api.post('/api/v1/import-export/fen/import', {
                 study_id: studyId,
                 chapter_title: gameTitle,
                 fen: game.startingFen,
               });
-              return resp?.chapter_id ? { id: resp.chapter_id, title: gameTitle, index: i } : null;
+              if (!resp?.chapter_id) throw new Error('No chapter_id returned');
+              return { id: resp.chapter_id, title: gameTitle, index: i } as Created;
             } else {
-              const resp = await api.post(`/api/v1/workspace/studies/${studyId}/chapters`, { title: gameTitle });
-              return resp?.id ? { id: resp.id, title: gameTitle, index: i } : null;
+              const resp = await api.post(`/api/v1/workspace/studies/${studyId}/chapters`, {
+                title: gameTitle,
+              });
+              if (!resp?.id) throw new Error('No id returned');
+              return { id: resp.id, title: gameTitle, index: i } as Created;
             }
-          } catch (e) {
-            errs.push(`Create "${gameTitle}": ${e instanceof Error ? e.message : 'error'}`);
-            return null;
-          }
-        });
+          }),
+        );
 
-        const createResults = await runConcurrent(createTasks, 8, (done, total) => {
+        const createResults = await runConcurrent(createTasks, 4, (done, total) => {
           setProgress({ phase: 'creating', done, total });
         });
 
-        // Collect successful chapters (preserve order)
-        const created: Array<{ id: string; title: string; index: number }> = [];
+        const created: Created[] = [];
         for (const r of createResults) {
-          if (r.status === 'fulfilled' && r.value) created.push(r.value);
+          if (r.status === 'fulfilled') {
+            created.push(r.value);
+          } else {
+            const reason = r.reason;
+            const title = gameTitles[createResults.indexOf(r)];
+            errs.push(`Create "${title}": ${reason instanceof Error ? reason.message : String(reason)}`);
+          }
         }
 
-        // ── Phase 2: Upload trees concurrently (8 in parallel) ────────────
+        // ── Phase 2: Upload trees (3 concurrent, retry on 5xx) ────────────
+        // Fewer workers than Phase 1: tree payloads are much larger
         setProgress({ phase: 'uploading', done: 0, total: created.length });
 
-        const uploadTasks = created.map((ch) => async () => {
-          try {
-            await api.put(
+        const uploadTasks = created.map((ch) => () =>
+          withRetry(() =>
+            api.put(
               `/api/v1/workspace/studies/study-patch/chapter/${ch.id}/tree`,
               games[ch.index].tree,
-            );
-          } catch (e) {
-            errs.push(`Upload tree "${ch.title}": ${e instanceof Error ? e.message : 'error'}`);
-          }
-        });
+            ),
+          ),
+        );
 
-        await runConcurrent(uploadTasks, 8, (done, total) => {
+        const uploadResults = await runConcurrent(uploadTasks, 3, (done, total) => {
           setProgress({ phase: 'uploading', done, total });
         });
 
-        // ── Update UI with successfully created chapters ───────────────────
+        for (let i = 0; i < uploadResults.length; i++) {
+          const r = uploadResults[i];
+          if (r.status === 'rejected') {
+            errs.push(`Upload "${created[i].title}": ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+          }
+        }
+
+        // ── Update UI ─────────────────────────────────────────────────────
         const addedChapters = created.map((ch, pos) => ({
           id: ch.id,
           title: ch.title,
@@ -212,7 +263,11 @@ export function NewChapterModal({
         if (addedChapters.length > 0) await onSelectChapter(addedChapters[0].id);
 
         if (errs.length > 0) {
-          setError(`Imported ${addedChapters.length} chapter(s) with ${errs.length} error(s):\n${errs.join('\n')}`);
+          setError(
+            `Imported ${addedChapters.length} of ${games.length} chapter(s).` +
+            ` ${errs.length} failed:\n${errs.slice(0, 5).join('\n')}` +
+            (errs.length > 5 ? `\n…and ${errs.length - 5} more` : ''),
+          );
           return;
         }
       } finally {
@@ -246,7 +301,9 @@ export function NewChapterModal({
         onCreated(chapter);
         if (chapter.id) await onSelectChapter(chapter.id);
       } else {
-        const chapter = await api.post(`/api/v1/workspace/studies/${studyId}/chapters`, { title: nextTitle });
+        const chapter = await api.post(`/api/v1/workspace/studies/${studyId}/chapters`, {
+          title: nextTitle,
+        });
         onCreated(chapter);
         if (chapter?.id) await onSelectChapter(chapter.id);
       }
@@ -254,7 +311,7 @@ export function NewChapterModal({
     } catch (e: any) {
       const detail = e.response?.data?.detail;
       if (Array.isArray(detail)) {
-        setError(detail.map((err: any) => `${err.loc?.join('.')}: ${err.msg}`).join('; '));
+        setError(detail.map((d: any) => `${d.loc?.join('.')}: ${d.msg}`).join('; '));
       } else {
         setError(detail || e.message || 'Failed to create chapter');
       }
@@ -263,7 +320,23 @@ export function NewChapterModal({
     }
   }, [busy, chaptersCount, fen, mode, nextChapterIndex, onClose, onCreated, onMultiCreated, onSelectChapter, pgnParsed, studyId, title]);
 
-  const confirmLabel = () => {
+  // ── Labels ───────────────────────────────────────────────────────────────
+
+  const progressLabel = (): string => {
+    if (!progress) return '';
+    if (progress.phase === 'parsing') return 'Parsing PGN…';
+    if (progress.phase === 'creating')
+      return `Creating chapters… ${progress.done} / ${progress.total}`;
+    return `Uploading moves… ${progress.done} / ${progress.total}`;
+  };
+
+  const progressPct = (): number => {
+    if (!progress || progress.total === 0) return 0;
+    if (progress.phase === 'parsing') return 0; // indeterminate
+    return Math.round((progress.done / progress.total) * 100);
+  };
+
+  const confirmLabel = (): string => {
     if (mode === 'pgn') {
       if (isImporting) return 'Importing…';
       if (pgnParsed && pgnParsed.games.length > 0)
@@ -276,6 +349,8 @@ export function NewChapterModal({
   const confirmDisabled =
     busy ||
     (mode === 'pgn' && (!pgnParsed || pgnParsed.games.length === 0));
+
+  // ── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div className="patch-modal-overlay" role="dialog" aria-modal="true">
@@ -303,7 +378,10 @@ export function NewChapterModal({
               ref={titleInputRef}
               className="patch-modal-input"
               value={title}
-              onChange={(e) => { setTitle(e.target.value); if (!e.target.value.includes('/')) setTitleError(null); }}
+              onChange={(e) => {
+                setTitle(e.target.value);
+                if (!e.target.value.includes('/')) setTitleError(null);
+              }}
               onFocus={(e) => e.target.select()}
               placeholder="Chapter 1"
             />
@@ -365,29 +443,26 @@ export function NewChapterModal({
               )}
             </div>
 
-            {/* Progress bar */}
+            {/* Progress — shown during parsing and importing */}
             {progress && (
               <div className="patch-modal-progress">
-                <div className="patch-modal-progress__label">
-                  {progress.phase === 'creating'
-                    ? `Creating chapters… ${progress.done} / ${progress.total}`
-                    : `Uploading trees… ${progress.done} / ${progress.total}`}
-                </div>
+                <div className="patch-modal-progress__label">{progressLabel()}</div>
                 <div className="patch-modal-progress__bar">
                   <div
-                    className="patch-modal-progress__fill"
-                    style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }}
+                    className={`patch-modal-progress__fill${progress.phase === 'parsing' ? ' is-indeterminate' : ''}`}
+                    style={progress.phase !== 'parsing' ? { width: `${progressPct()}%` } : undefined}
                   />
                 </div>
               </div>
             )}
 
+            {/* Preview — shown after parsing, before import */}
             {!progress && pgnParsed && pgnParsed.games.length > 0 && (
               <div className="patch-modal-pgn-preview">
                 <strong>
                   {pgnParsed.games.length === 1
                     ? '1 game found'
-                    : `${pgnParsed.games.length} games found${pgnParsed.truncated ? ' (truncated to 64)' : ''}`}
+                    : `${pgnParsed.games.length} games found`}
                 </strong>
                 <div className="patch-modal-pgn-preview__first">
                   {pgnGameTitle(pgnParsed.games[0].headers)}
@@ -401,10 +476,17 @@ export function NewChapterModal({
           </>
         )}
 
-        {error && <div className="patch-modal-error" style={{ whiteSpace: 'pre-line' }}>{error}</div>}
+        {error && (
+          <div className="patch-modal-error" style={{ whiteSpace: 'pre-line' }}>{error}</div>
+        )}
 
         <div className="patch-modal-actions">
-          <button type="button" className="patch-modal-button" onClick={handleClose} disabled={busy}>
+          <button
+            type="button"
+            className="patch-modal-button"
+            onClick={handleClose}
+            disabled={busy}
+          >
             Cancel
           </button>
           <button

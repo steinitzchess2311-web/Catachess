@@ -8,7 +8,8 @@ function pgnGameTitle(headers: Record<string, string>): string {
   const event = headers['Event'] ?? '';
   if (white === '?' && black === '?' && !event) return 'Imported Game';
   const players = white === '?' && black === '?' ? '' : `${white} vs ${black}`;
-  const raw = [players, event].filter(Boolean).join(' – ');
+  const raw = [players, event].filter(Boolean).join(' – ')
+    .replace(/\//g, '-');  // backend forbids "/" in chapter names
   // Backend maxLength is 200; leave room for dedup suffix " (99)"
   return raw.length > 194 ? raw.slice(0, 194) : raw;
 }

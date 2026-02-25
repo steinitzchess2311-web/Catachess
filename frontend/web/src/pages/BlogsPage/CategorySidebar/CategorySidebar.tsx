@@ -28,9 +28,15 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
   isOpen,
   onOpenChange,
 }) => {
-  const [isOfficialOpen, setIsOfficialOpen] = useState<boolean>(false);
+  const [isOfficialOpen, setIsOfficialOpen] = useState<boolean>(true);
   const [showComingSoon, setShowComingSoon] = useState<boolean>(false);
   const [editorOpen, setEditorOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (activeCategory === 'about' || activeCategory === 'function' || activeCategory === 'devlog' || activeCategory === 'official') {
+      setIsOfficialOpen(true);
+    }
+  }, [activeCategory]);
 
   const handleUserBlogsClick = () => {
     // Community is now enabled - navigate to user category
@@ -78,17 +84,17 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
 
       <div
         style={{
-          width: isOpen ? "280px" : "60px",
+          width: isOpen ? "288px" : "84px",
           flexShrink: 0,
           background: "#ffffff",
           border: "1px solid var(--border)",
-          borderRadius: "12px",
-          padding: isOpen ? "25px 0" : "16px 0",
+          borderRadius: "14px",
+          padding: isOpen ? "24px 0" : "14px 0",
           boxShadow: "var(--shadow-1)",
           position: "sticky",
-          top: "12px",
+          top: "16px",
           alignSelf: "flex-start",
-          transition: "width 0.3s ease, padding 0.3s ease",
+          transition: "width 0.28s ease, padding 0.28s ease, border-radius 0.28s ease",
           overflow: isOpen ? "visible" : "hidden",
         }}
       >
@@ -134,8 +140,6 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
         {!isOpen && (
           <CollapsedView
             activeCategory={activeCategory}
-            isOfficialOpen={isOfficialOpen}
-            setIsOfficialOpen={setIsOfficialOpen}
             onCategoryChange={onCategoryChange}
             onViewModeChange={onViewModeChange}
             onUserBlogsClick={handleUserBlogsClick}

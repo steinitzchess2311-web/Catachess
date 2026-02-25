@@ -12,19 +12,20 @@ const ToggleButton: React.FC<ToggleButtonProps> = ({
 }) => {
   return (
     <button
+      aria-label={isOpen ? "Collapse sidebar" : "Expand sidebar"}
       onClick={() => onOpenChange(!isOpen)}
       style={{
         position: "absolute",
-        top: "12px",
-        right: "12px",
-        width: "32px",
-        height: "32px",
+        top: "10px",
+        right: "10px",
+        width: "34px",
+        height: "34px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         border: "none",
-        background: "rgba(37, 99, 235, 0.1)",
-        borderRadius: "6px",
+        background: "rgba(37, 99, 235, 0.12)",
+        borderRadius: "8px",
         cursor: "pointer",
         color: "#2563eb",
         transition: "all 0.2s ease",

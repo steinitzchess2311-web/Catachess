@@ -166,8 +166,9 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
             background: "rgba(255, 255, 255, 0.9)",
             borderRadius: "12px",
             overflow: "hidden",
-            boxShadow: "0 2px 12px rgba(0, 0, 0, 0.08)",
-            transition: "all 0.3s ease",
+            border: "1px solid rgba(15, 23, 42, 0.06)",
+            boxShadow: "0 2px 10px rgba(15, 23, 42, 0.06)",
+            transition: "transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease",
             cursor: "pointer",
             height: "100%",
             display: "flex",
@@ -175,12 +176,14 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
             position: "relative",  // For action buttons positioning
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-4px)";
-            e.currentTarget.style.boxShadow = "0 8px 24px rgba(0, 0, 0, 0.12)";
+            e.currentTarget.style.transform = "translateY(-3px)";
+            e.currentTarget.style.boxShadow = "0 10px 24px rgba(15, 23, 42, 0.1)";
+            e.currentTarget.style.borderColor = "rgba(37, 99, 235, 0.2)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 2px 12px rgba(0, 0, 0, 0.08)";
+            e.currentTarget.style.boxShadow = "0 2px 10px rgba(15, 23, 42, 0.06)";
+            e.currentTarget.style.borderColor = "rgba(15, 23, 42, 0.06)";
           }}
         >
           {/* Delete Confirmation Dialog */}
@@ -203,7 +206,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
             <div
               style={{
                 position: "absolute",
-                top: "13rem",
+                top: "0.75rem",
                 right: "0.75rem",
                 display: "flex",
                 gap: "0.5rem",

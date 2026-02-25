@@ -29,6 +29,7 @@ interface ContentAreaProps {
   article?: BlogArticle | null;  // Pre-fetched article data
   articleLoading?: boolean;  // Article loading state
   categoryParam?: string;  // Original category from URL (for history tracking)
+  sidebarOpen?: boolean; // Whether category sidebar is expanded
 }
 
 /**
@@ -48,6 +49,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({
   article,
   articleLoading = false,
   categoryParam,
+  sidebarOpen = true,
 }) => {
   // State for drafts and my-published views
   const [myArticles, setMyArticles] = useState<BlogArticle[]>([]);
@@ -171,12 +173,8 @@ const ContentArea: React.FC<ContentAreaProps> = ({
           {!displayLoading && !displayError && displayArticles.length > 0 && (
             <>
               <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(16rem, 1fr))",
-                  gap: "1.5rem",
-                  marginBottom: "20px",
-                }}
+                className="blogs-grid"
+                data-sidebar-open={sidebarOpen}
               >
                 {displayArticles.map((article) => (
                   <ArticleCard

@@ -13,6 +13,7 @@ import ArticleDetailPage from "./ArticleDetailPage";
 import { useBlogArticle } from "../../hooks/useBlogArticle";
 import { getCategoryLastArticle, clearCategoryLastArticle } from "../../utils/articleHistory";
 import { useUser } from "../../contexts/UserContext";
+import "./BlogsPage.css";
 
 /**
  * Main blog page with sidebar navigation and article grid
@@ -134,28 +135,11 @@ const BlogsPage = () => {
 
   return (
     <PageTransition>
-      <div
-        style={{
-          padding: "40px 24px 70px",
-          fontFamily: "var(--font-family)",
-          background: "var(--bg-app)",
-          minHeight: "calc(100vh - 100px)",
-          overflowY: "auto",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: "1200px",
-            margin: "0 auto",
-          }}
-        >
+      <div className="blogs-page-shell">
+        <div className="blogs-page-container">
           {/* Main Layout: Sidebar + Content */}
           <div
-            style={{
-              display: "flex",
-              gap: "20px",
-              alignItems: "flex-start",
-            }}
+            className={`blogs-main-layout ${sidebarOpen ? "is-expanded" : "is-rail"}`}
           >
             <CategorySidebar
               activeCategory={categoryParam}
@@ -171,7 +155,7 @@ const BlogsPage = () => {
             />
 
             {/* Content Column: Header + Content */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <div className="blogs-content-column">
               <BlogHeader
                 activeCategory={categoryParam}
                 searchQuery={search}
@@ -200,6 +184,7 @@ const BlogsPage = () => {
                 article={article}
                 articleLoading={articleLoading}
                 categoryParam={categoryParam}
+                sidebarOpen={sidebarOpen}
               />
             </div>
           </div>

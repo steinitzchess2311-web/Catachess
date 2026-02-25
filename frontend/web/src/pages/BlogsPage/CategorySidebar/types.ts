@@ -55,8 +55,6 @@ export interface UserActionsSectionProps {
 
 export interface CollapsedViewProps {
   activeCategory?: string;
-  isOfficialOpen: boolean;
-  setIsOfficialOpen: (open: boolean) => void;
   onCategoryChange: (category: string | undefined) => void;
   onViewModeChange: (mode: ViewMode) => void;
   onUserBlogsClick: () => void;

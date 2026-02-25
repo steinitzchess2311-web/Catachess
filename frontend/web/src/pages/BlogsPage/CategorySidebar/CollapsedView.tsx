@@ -8,8 +8,6 @@ import { CollapsedViewProps } from "./types";
 
 const CollapsedView: React.FC<CollapsedViewProps> = ({
   activeCategory,
-  isOfficialOpen,
-  setIsOfficialOpen,
   onCategoryChange,
   onViewModeChange,
   onUserBlogsClick,
@@ -22,8 +20,9 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: "20px",
-        paddingTop: "52px",
+        gap: "12px",
+        paddingTop: "56px",
+        paddingBottom: "10px",
       }}
     >
       {/* Pinned Icon */}
@@ -33,17 +32,18 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
           onViewModeChange('articles');
         }}
         style={{
-          width: "36px",
-          height: "36px",
+          width: "44px",
+          height: "44px",
           border: "none",
-          background: activeCategory === "pinned" ? "rgba(37, 99, 235, 0.2)" : "transparent",
-          borderRadius: "8px",
+          background: activeCategory === "pinned" ? "rgba(37, 99, 235, 0.16)" : "transparent",
+          borderRadius: "10px",
           cursor: "pointer",
           fontSize: "1.2rem",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           transition: "all 0.2s ease",
+          outline: activeCategory === "pinned" ? "1px solid rgba(37, 99, 235, 0.3)" : "none",
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = "rgba(37, 99, 235, 0.15)";
@@ -62,17 +62,18 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
       <button
         onClick={onUserBlogsClick}
         style={{
-          width: "36px",
-          height: "36px",
+          width: "44px",
+          height: "44px",
           border: "none",
-          background: activeCategory === "user" ? "rgba(37, 99, 235, 0.2)" : "transparent",
-          borderRadius: "8px",
+          background: activeCategory === "user" ? "rgba(37, 99, 235, 0.16)" : "transparent",
+          borderRadius: "10px",
           cursor: "pointer",
           fontSize: "1.2rem",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           transition: "all 0.2s ease",
+          outline: activeCategory === "user" ? "1px solid rgba(37, 99, 235, 0.3)" : "none",
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = "rgba(37, 99, 235, 0.15)";
@@ -94,17 +95,18 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
           onViewModeChange('articles');
         }}
         style={{
-          width: "36px",
-          height: "36px",
+          width: "44px",
+          height: "44px",
           border: "none",
-          background: (activeCategory === undefined || activeCategory === 'allblogs') ? "rgba(37, 99, 235, 0.2)" : "transparent",
-          borderRadius: "8px",
+          background: (activeCategory === undefined || activeCategory === 'allblogs') ? "rgba(37, 99, 235, 0.16)" : "transparent",
+          borderRadius: "10px",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           transition: "all 0.2s ease",
-          padding: "6px",
+          padding: "8px",
+          outline: (activeCategory === undefined || activeCategory === 'allblogs') ? "1px solid rgba(37, 99, 235, 0.3)" : "none",
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.background = "rgba(37, 99, 235, 0.15)";
@@ -132,11 +134,11 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
         <button
           onClick={() => setEditorOpen(true)}
           style={{
-            width: "36px",
-            height: "36px",
+            width: "44px",
+            height: "44px",
             border: "2px solid #2563eb",
             background: "transparent",
-            borderRadius: "8px",
+            borderRadius: "10px",
             cursor: "pointer",
             fontSize: "1.2rem",
             color: "#2563eb",
@@ -144,7 +146,7 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
             alignItems: "center",
             justifyContent: "center",
             transition: "all 0.2s ease",
-            marginTop: "20px",
+            marginTop: "16px",
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.08)";

@@ -4,6 +4,7 @@
 
 import React from "react";
 import pureLogo from "../../../assets/chessortag_pure_logo.png";
+import { ChevronDownIcon } from "@radix-ui/react-icons";
 import { OfficialSectionProps } from "./types";
 
 const OfficialSection: React.FC<OfficialSectionProps> = ({
@@ -18,26 +19,26 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
     { id: "devlog", label: "Developer Logs" },
   ];
 
-  // Check if any official category is active (including allblogs)
-  const isOfficialActive = activeCategory === 'about' ||
-                          activeCategory === 'function' ||
-                          activeCategory === undefined;
+  const isOfficialRootActive = activeCategory === undefined || activeCategory === 'allblogs' || activeCategory === 'official';
 
   return (
     <div>
       {/* Chessortag Official Header Button */}
       <button
-        onClick={() => onCategoryClick('allblogs')}
+        onClick={() => {
+          onCategoryClick('allblogs');
+          setIsOfficialOpen((prev) => !prev);
+        }}
         style={{
-          background: (activeCategory === undefined || activeCategory === 'allblogs') ? "rgba(37, 99, 235, 0.1)" : "transparent",
+          background: isOfficialRootActive ? "rgba(37, 99, 235, 0.1)" : "transparent",
           border: "none",
-          borderLeft: (activeCategory === undefined || activeCategory === 'allblogs') ? "4px solid #2563eb" : "4px solid transparent",
+          borderLeft: isOfficialRootActive ? "4px solid #2563eb" : "4px solid transparent",
           padding: "14px 25px",
           textAlign: "left",
           cursor: "pointer",
           fontSize: "0.95rem",
-          fontWeight: (activeCategory === undefined || activeCategory === 'allblogs') ? 600 : 500,
-          color: (activeCategory === undefined || activeCategory === 'allblogs') ? "#0f172a" : "#475569",
+          fontWeight: isOfficialRootActive ? 600 : 500,
+          color: isOfficialRootActive ? "#0f172a" : "#475569",
           transition: "all 0.2s ease",
           display: "flex",
           alignItems: "center",
@@ -45,12 +46,12 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
           width: "100%",
         }}
         onMouseEnter={(e) => {
-          if (activeCategory !== undefined && activeCategory !== 'allblogs') {
+          if (!isOfficialRootActive) {
             e.currentTarget.style.background = "rgba(37, 99, 235, 0.05)";
           }
         }}
         onMouseLeave={(e) => {
-          if (activeCategory !== undefined && activeCategory !== 'allblogs') {
+          if (!isOfficialRootActive) {
             e.currentTarget.style.background = "transparent";
           }
         }}
@@ -65,14 +66,27 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
           }}
         />
         <span style={{ flex: 1 }}>Chessortag Official</span>
+        <ChevronDownIcon
+          width={18}
+          height={18}
+          style={{
+            transform: isOfficialOpen ? "rotate(0deg)" : "rotate(-90deg)",
+            transition: "transform 0.18s ease",
+            opacity: 0.75,
+          }}
+        />
       </button>
 
-      {/* Sub-items - Always visible */}
+      {/* Sub-items */}
       <div
         style={{
           paddingLeft: "54px",
-          paddingTop: "4px",
-          paddingBottom: "4px",
+          paddingTop: isOfficialOpen ? "4px" : "0px",
+          paddingBottom: isOfficialOpen ? "4px" : "0px",
+          maxHeight: isOfficialOpen ? "220px" : "0px",
+          opacity: isOfficialOpen ? 1 : 0,
+          overflow: "hidden",
+          transition: "max-height 0.22s ease, opacity 0.22s ease, padding 0.22s ease",
         }}
       >
         {officialSubItems.map((item) => (

@@ -18,7 +18,7 @@ const ArticleImage: React.FC<ArticleImageProps> = ({
     <div
       style={{
         width: "100%",
-        height: "12.5rem",
+        aspectRatio: "16 / 10",
         overflow: "hidden",
         position: "relative",
         backgroundColor: "#f5f5f5",

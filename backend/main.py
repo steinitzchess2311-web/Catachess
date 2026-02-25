@@ -26,6 +26,7 @@ from modules.workspace.api.router import api_router as workspace_router
 from modules.blogs.api.router import router as blog_router
 from modules.pgn_fen_import_export.api import router as import_export_router
 from modules.catchat.api.router import router as catchat_router
+from modules.classroom.api.router import router as classroom_router
 from core.log.log_api import logger
 from core.config import settings
 from modules.workspace.db.session import init_db as init_workspace_db
@@ -284,6 +285,33 @@ async def _init_blog_db() -> None:
         logger.warning("Blog module may not function correctly")
 
 
+# ── TEMPORARY: Classroom table bootstrap ──────────────────────────────────────
+# Creates all classroom tables if they do not exist.
+# Remove this function (and its call in lifespan) once tables are confirmed
+# in Railway and a proper Alembic migration has been written.
+def _init_classroom_db() -> None:
+    import os
+    from sqlalchemy import create_engine, inspect
+
+    url = os.getenv("CLASSROOM_DATABASE")
+    if not url:
+        logger.warning("CLASSROOM_DATABASE not set — skipping classroom table init")
+        return
+
+    try:
+        import modules.classroom.db.models  # noqa: F401 — registers all ORM models
+        from modules.classroom.db.session import Base
+
+        engine = create_engine(url, pool_pre_ping=True)
+        Base.metadata.create_all(bind=engine)
+
+        tables = inspect(engine).get_table_names()
+        logger.info(f"✅ Classroom DB ready. Tables: {sorted(tables)}")
+    except Exception as exc:
+        logger.error(f"Classroom DB init failed: {exc}", exc_info=True)
+# ── END TEMPORARY ─────────────────────────────────────────────────────────────
+
+
 async def _presence_cleanup_loop() -> None:
     import os
 
@@ -360,6 +388,14 @@ async def lifespan(app: FastAPI):
 
     # Initialize Blog database and run migrations
     await _init_blog_db()
+
+    # ── TEMPORARY: Classroom DB table creation ────────────────────────────────
+    # Creates all classroom tables on startup via SQLAlchemy create_all.
+    # Safe to run repeatedly — uses CREATE TABLE IF NOT EXISTS semantics.
+    # TODO: Remove this block once tables are confirmed live in Railway.
+    # Replace with a proper Alembic migration in modules/classroom/db/migrations/.
+    await asyncio.to_thread(_init_classroom_db)
+    # ── END TEMPORARY ─────────────────────────────────────────────────────────
 
     # Initialize MongoDB cache
     try:
@@ -496,6 +532,7 @@ app.include_router(workspace_router, prefix="/api/v1/workspace", tags=["workspac
 app.include_router(import_export_router)  # ✅ FEN/PGN import/export endpoints
 app.include_router(user_statistics.router)  # User statistics endpoints
 app.include_router(catchat_router, prefix="/api/catchat", tags=["catchat"])
+app.include_router(classroom_router, prefix="/api/classroom", tags=["classroom"])
 
 logger.info("Catachess API initialized")
 

@@ -53,6 +53,9 @@ patch/tsconfig.json
 # Blog module - contains sensitive database credentials
 backend/modules/blogs/docs/PLAN.md
 
+# Classroom module - contains database credentials
+backend/modules/classroom/docs/env.md
+
 # Database
 *.db
 *.sqlite

@@ -58,12 +58,12 @@
 .ps-idle {
   flex: 1;
   min-height: clamp(320px, 40vh, 460px);
-  padding: 24px 24px 72px;
+  padding: 48px 24px 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 32px;
+  justify-content: flex-start;
+  gap: 28px;
 }
 
 .ps-idle-logo {

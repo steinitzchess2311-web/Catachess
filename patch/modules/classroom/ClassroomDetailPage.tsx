@@ -284,8 +284,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ classroom, onArchiv
             onKeyDown={async e => {
               if (e.key === 'Enter') {
                 setRenameLoading(true);
-                await onRename(newName.trim());
-                setRenameLoading(false);
+                try { await onRename(newName.trim()); }
+                finally { setRenameLoading(false); }
               }
               if (e.key === 'Escape') setRenaming(false);
             }}
@@ -297,8 +297,8 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ classroom, onArchiv
               disabled={renameLoading || !newName.trim()}
               onClick={async () => {
                 setRenameLoading(true);
-                await onRename(newName.trim());
-                setRenameLoading(false);
+                try { await onRename(newName.trim()); }
+                finally { setRenameLoading(false); }
               }}
             >
               {renameLoading ? 'Saving…' : 'Save'}

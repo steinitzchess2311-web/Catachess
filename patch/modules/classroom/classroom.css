@@ -1,0 +1,911 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   Classroom Module — Design System
+   Minimal · Modern · Google-inspired
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ─── Tokens ─────────────────────────────────────────────────────────────────*/
+.cl-root {
+  --cl-accent:        #4f46e5;
+  --cl-accent-light:  #eef2ff;
+  --cl-accent-hover:  #4338ca;
+  --cl-text:          #111827;
+  --cl-text-secondary:#6b7280;
+  --cl-text-muted:    #9ca3af;
+  --cl-border:        #e5e7eb;
+  --cl-surface:       #ffffff;
+  --cl-bg:            #f9fafb;
+  --cl-radius:        10px;
+  --cl-radius-sm:     6px;
+  --cl-radius-lg:     14px;
+  --cl-shadow:        0 1px 4px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04);
+  --cl-shadow-hover:  0 4px 16px rgba(0,0,0,0.10), 0 0 0 1px rgba(0,0,0,0.05);
+  --cl-shadow-modal:  0 20px 60px rgba(0,0,0,0.18);
+
+  --cl-overdue:       #ef4444;
+  --cl-overdue-bg:    #fef2f2;
+  --cl-soon:          #f59e0b;
+  --cl-soon-bg:       #fffbeb;
+  --cl-ok:            #22c55e;
+  --cl-ok-bg:         #f0fdf4;
+  --cl-neutral:       #6b7280;
+  --cl-neutral-bg:    #f3f4f6;
+
+  font-family: var(--font-family, 'Space Grotesk', 'Inter', sans-serif);
+  color: var(--cl-text);
+}
+
+/* ─── Page shell ─────────────────────────────────────────────────────────────*/
+.cl-page {
+  min-height: calc(100vh - 64px);
+  background: var(--bg-app, var(--cl-bg));
+  padding: 0 1.5rem 5rem;
+}
+
+.cl-page-inner {
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+/* ─── Page header ────────────────────────────────────────────────────────────*/
+.cl-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2.5rem 0 1.75rem;
+  gap: 1rem;
+}
+
+.cl-page-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--cl-text);
+  letter-spacing: -0.4px;
+  margin: 0;
+}
+
+.cl-page-subtitle {
+  font-size: 0.9rem;
+  color: var(--cl-text-secondary);
+  margin: 2px 0 0;
+}
+
+.cl-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────────*/
+.cl-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--cl-radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  border: none;
+  font-family: inherit;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.cl-btn:active { transform: translateY(1px); }
+
+.cl-btn-primary {
+  background: var(--cl-accent);
+  color: #fff;
+}
+.cl-btn-primary:hover { background: var(--cl-accent-hover); }
+
+.cl-btn-secondary {
+  background: var(--cl-surface);
+  color: var(--cl-text);
+  box-shadow: var(--cl-shadow);
+}
+.cl-btn-secondary:hover { box-shadow: var(--cl-shadow-hover); }
+
+.cl-btn-ghost {
+  background: transparent;
+  color: var(--cl-text-secondary);
+}
+.cl-btn-ghost:hover {
+  background: var(--cl-border);
+  color: var(--cl-text);
+}
+
+.cl-btn-danger {
+  background: var(--cl-overdue-bg);
+  color: var(--cl-overdue);
+}
+.cl-btn-danger:hover { background: #fee2e2; }
+
+.cl-btn-sm {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.8rem;
+}
+
+.cl-btn-icon {
+  padding: 0.4rem;
+  border-radius: var(--cl-radius-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--cl-text-secondary);
+  transition: background 0.15s, color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.cl-btn-icon:hover {
+  background: var(--cl-border);
+  color: var(--cl-text);
+}
+
+/* ─── Classroom cards grid ───────────────────────────────────────────────────*/
+.cl-section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cl-text-muted);
+  margin: 0 0 0.75rem;
+}
+
+.cl-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.cl-card {
+  background: var(--cl-surface);
+  border-radius: var(--cl-radius-lg);
+  box-shadow: var(--cl-shadow);
+  padding: 1.25rem 1.4rem;
+  cursor: pointer;
+  transition: box-shadow 0.18s, transform 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  text-decoration: none;
+  color: inherit;
+  border: 1.5px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+
+.cl-card:hover {
+  box-shadow: var(--cl-shadow-hover);
+  transform: translateY(-2px);
+  border-color: var(--cl-accent-light);
+}
+
+.cl-card__accent {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--cl-accent);
+  border-radius: var(--cl-radius-lg) var(--cl-radius-lg) 0 0;
+}
+
+.cl-card__name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--cl-text);
+  letter-spacing: -0.2px;
+  margin-top: 0.2rem;
+}
+
+.cl-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cl-card__members {
+  font-size: 0.82rem;
+  color: var(--cl-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.cl-card__archived {
+  font-size: 0.75rem;
+  color: var(--cl-text-muted);
+  background: var(--cl-neutral-bg);
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-weight: 500;
+}
+
+/* ─── Role badge ─────────────────────────────────────────────────────────────*/
+.cl-role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: capitalize;
+}
+
+.cl-role-badge--owner {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.cl-role-badge--teacher {
+  background: var(--cl-accent-light);
+  color: var(--cl-accent);
+}
+
+.cl-role-badge--student {
+  background: var(--cl-ok-bg);
+  color: #166534;
+}
+
+/* ─── Status badges ──────────────────────────────────────────────────────────*/
+.cl-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.cl-status-badge--submitted   { background: var(--cl-ok-bg);      color: #166534; }
+.cl-status-badge--in_progress { background: var(--cl-accent-light); color: var(--cl-accent); }
+.cl-status-badge--not_started { background: var(--cl-neutral-bg);  color: var(--cl-neutral); }
+.cl-status-badge--overdue     { background: var(--cl-overdue-bg);  color: var(--cl-overdue); }
+
+/* ─── Category badge ─────────────────────────────────────────────────────────*/
+.cl-cat-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.cl-cat-badge--material   { background: #ede9fe; color: #5b21b6; }
+.cl-cat-badge--assignment { background: #dbeafe; color: #1e40af; }
+.cl-cat-badge--exam       { background: #fce7f3; color: #9d174d; }
+
+/* ─── Urgency badge ──────────────────────────────────────────────────────────*/
+.cl-urgency-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.cl-urgency-dot--overdue  { background: var(--cl-overdue); }
+.cl-urgency-dot--due_soon { background: var(--cl-soon); }
+.cl-urgency-dot--normal   { background: var(--cl-ok); }
+
+/* ─── Detail page layout ─────────────────────────────────────────────────────*/
+.cl-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 2rem 0 0;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.cl-detail-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cl-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--cl-text-secondary);
+  text-decoration: none;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  transition: color 0.15s;
+}
+.cl-detail-back:hover { color: var(--cl-accent); }
+
+.cl-detail-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  margin: 0;
+}
+
+.cl-detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.cl-detail-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ─── Tabs ───────────────────────────────────────────────────────────────────*/
+.cl-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1.5px solid var(--cl-border);
+  margin: 1.5rem 0 1.75rem;
+}
+
+.cl-tab {
+  padding: 0.6rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--cl-text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1.5px;
+  transition: color 0.15s, border-color 0.15s;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.cl-tab:hover { color: var(--cl-text); }
+
+.cl-tab--active {
+  color: var(--cl-accent);
+  border-bottom-color: var(--cl-accent);
+  font-weight: 600;
+}
+
+/* ─── Assignment card ────────────────────────────────────────────────────────*/
+.cl-asgn-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.cl-asgn-card {
+  background: var(--cl-surface);
+  border-radius: var(--cl-radius);
+  box-shadow: var(--cl-shadow);
+  padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  border: 1.5px solid var(--cl-border);
+}
+
+.cl-asgn-card:hover {
+  box-shadow: var(--cl-shadow-hover);
+  border-color: #c7d2fe;
+}
+
+.cl-asgn-card__left {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cl-asgn-card__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--cl-text);
+}
+
+.cl-asgn-card__sub {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.cl-asgn-card__due {
+  font-size: 0.78rem;
+  color: var(--cl-text-secondary);
+}
+
+.cl-asgn-card__due--overdue { color: var(--cl-overdue); font-weight: 600; }
+.cl-asgn-card__due--soon    { color: var(--cl-soon); font-weight: 600; }
+
+.cl-asgn-card__right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.cl-asgn-card__progress {
+  font-size: 0.82rem;
+  color: var(--cl-text-secondary);
+  white-space: nowrap;
+}
+
+/* ─── Members list ───────────────────────────────────────────────────────────*/
+.cl-member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cl-member-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--cl-radius-sm);
+  transition: background 0.12s;
+}
+
+.cl-member-row:hover { background: var(--cl-bg); }
+
+.cl-member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--cl-accent-light);
+  color: var(--cl-accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.cl-member-name {
+  font-size: 0.88rem;
+  font-weight: 500;
+  flex: 1;
+}
+
+.cl-member-joined {
+  font-size: 0.76rem;
+  color: var(--cl-text-muted);
+}
+
+.cl-member-actions {
+  display: flex;
+  gap: 0.3rem;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.cl-member-row:hover .cl-member-actions { opacity: 1; }
+
+/* ─── Stats panel ────────────────────────────────────────────────────────────*/
+.cl-stats-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.cl-stat-chip {
+  background: var(--cl-surface);
+  border-radius: var(--cl-radius);
+  box-shadow: var(--cl-shadow);
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.cl-stat-chip__value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.cl-stat-chip__label {
+  font-size: 0.75rem;
+  color: var(--cl-text-secondary);
+  font-weight: 500;
+}
+
+.cl-stat-chip--overdue .cl-stat-chip__value { color: var(--cl-overdue); }
+.cl-stat-chip--submitted .cl-stat-chip__value { color: var(--cl-ok); }
+.cl-stat-chip--accent .cl-stat-chip__value { color: var(--cl-accent); }
+
+/* ─── Score bar ──────────────────────────────────────────────────────────────*/
+.cl-score-bar-wrap {
+  background: var(--cl-border);
+  border-radius: 20px;
+  height: 6px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.cl-score-bar {
+  height: 100%;
+  border-radius: 20px;
+  background: var(--cl-ok);
+  transition: width 0.4s ease;
+}
+
+/* ─── Todo panel ─────────────────────────────────────────────────────────────*/
+.cl-todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.cl-todo-item {
+  background: var(--cl-surface);
+  border-radius: var(--cl-radius);
+  box-shadow: var(--cl-shadow);
+  padding: 0.85rem 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  border-left: 3px solid var(--cl-border);
+  transition: box-shadow 0.15s;
+}
+
+.cl-todo-item:hover { box-shadow: var(--cl-shadow-hover); }
+.cl-todo-item--overdue  { border-left-color: var(--cl-overdue); }
+.cl-todo-item--due_soon { border-left-color: var(--cl-soon); }
+.cl-todo-item--normal   { border-left-color: var(--cl-ok); }
+
+.cl-todo-item__body { flex: 1; min-width: 0; }
+
+.cl-todo-item__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cl-todo-item__sub {
+  font-size: 0.78rem;
+  color: var(--cl-text-secondary);
+  margin-top: 2px;
+}
+
+/* ─── Overview stats row ─────────────────────────────────────────────────────*/
+.cl-overview-stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.75rem;
+}
+
+.cl-ov-stat {
+  background: var(--cl-surface);
+  border-radius: var(--cl-radius);
+  box-shadow: var(--cl-shadow);
+  padding: 0.9rem 1.25rem;
+  flex: 1;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  border-top: 3px solid transparent;
+}
+
+.cl-ov-stat--accent  { border-top-color: var(--cl-accent); }
+.cl-ov-stat--green   { border-top-color: var(--cl-ok); }
+.cl-ov-stat--red     { border-top-color: var(--cl-overdue); }
+.cl-ov-stat--yellow  { border-top-color: var(--cl-soon); }
+
+.cl-ov-stat__val {
+  font-size: 1.8rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  line-height: 1;
+  color: var(--cl-text);
+}
+
+.cl-ov-stat__lbl {
+  font-size: 0.78rem;
+  color: var(--cl-text-secondary);
+  font-weight: 500;
+}
+
+/* ─── Empty state ────────────────────────────────────────────────────────────*/
+.cl-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3.5rem 1rem;
+  color: var(--cl-text-secondary);
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.cl-empty svg { opacity: 0.35; }
+
+.cl-empty__title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--cl-text);
+}
+
+.cl-empty__sub { font-size: 0.875rem; }
+
+/* ─── Divider ────────────────────────────────────────────────────────────────*/
+.cl-divider {
+  border: none;
+  border-top: 1.5px solid var(--cl-border);
+  margin: 1.5rem 0;
+}
+
+/* ─── Modal overlay ──────────────────────────────────────────────────────────*/
+.cl-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+  animation: cl-fade-in 0.15s ease;
+}
+
+@keyframes cl-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.cl-modal {
+  background: var(--cl-surface);
+  border-radius: var(--cl-radius-lg);
+  box-shadow: var(--cl-shadow-modal);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  animation: cl-slide-up 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.cl-modal--wide { max-width: 640px; }
+
+@keyframes cl-slide-up {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cl-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1.5px solid var(--cl-border);
+}
+
+.cl-modal__title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.cl-modal__body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.cl-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 1rem 1.5rem;
+  border-top: 1.5px solid var(--cl-border);
+}
+
+/* ─── Form fields ────────────────────────────────────────────────────────────*/
+.cl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cl-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--cl-text);
+}
+
+.cl-input,
+.cl-textarea,
+.cl-select {
+  padding: 0.55rem 0.75rem;
+  border: 1.5px solid var(--cl-border);
+  border-radius: var(--cl-radius-sm);
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--cl-text);
+  background: var(--cl-surface);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cl-input:focus,
+.cl-textarea:focus,
+.cl-select:focus {
+  border-color: var(--cl-accent);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+}
+
+.cl-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.cl-input-hint {
+  font-size: 0.76rem;
+  color: var(--cl-text-muted);
+}
+
+/* ─── Invite code box ────────────────────────────────────────────────────────*/
+.cl-invite-box {
+  background: var(--cl-surface);
+  border-radius: var(--cl-radius);
+  box-shadow: var(--cl-shadow);
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border: 1.5px dashed var(--cl-border);
+  flex-wrap: wrap;
+}
+
+.cl-invite-code {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  color: var(--cl-accent);
+  flex: 1;
+}
+
+.cl-invite-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* ─── Section header ─────────────────────────────────────────────────────────*/
+.cl-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+}
+
+.cl-section-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--cl-text);
+  margin: 0;
+}
+
+/* ─── Join banner ────────────────────────────────────────────────────────────*/
+.cl-join-banner {
+  background: var(--cl-surface);
+  border-radius: var(--cl-radius-lg);
+  box-shadow: var(--cl-shadow);
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  border: 1.5px dashed #c7d2fe;
+  flex-wrap: wrap;
+}
+
+.cl-join-banner__label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--cl-text-secondary);
+  white-space: nowrap;
+}
+
+.cl-join-banner__inputs {
+  display: flex;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 200px;
+}
+
+.cl-join-banner__input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1.5px solid var(--cl-border);
+  border-radius: var(--cl-radius-sm);
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.cl-join-banner__input:focus { border-color: var(--cl-accent); }
+
+/* ─── Loading skeleton ───────────────────────────────────────────────────────*/
+.cl-skeleton {
+  background: linear-gradient(90deg, var(--cl-border) 25%, #f3f4f6 50%, var(--cl-border) 75%);
+  background-size: 200% 100%;
+  animation: cl-shimmer 1.4s infinite;
+  border-radius: var(--cl-radius-sm);
+}
+
+@keyframes cl-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ─── Error banner ───────────────────────────────────────────────────────────*/
+.cl-error-banner {
+  background: var(--cl-overdue-bg);
+  border: 1.5px solid #fca5a5;
+  border-radius: var(--cl-radius-sm);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.82rem;
+  color: var(--cl-overdue);
+  font-weight: 500;
+}
+
+/* ─── Broadcast modal textarea ───────────────────────────────────────────────*/
+.cl-broadcast-preview {
+  background: var(--cl-bg);
+  border-radius: var(--cl-radius-sm);
+  padding: 0.75rem 0.9rem;
+  font-size: 0.82rem;
+  color: var(--cl-text-secondary);
+  border: 1.5px solid var(--cl-border);
+  min-height: 60px;
+}
+
+/* ─── Inline code / invite link display ─────────────────────────────────────*/
+.cl-code {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  background: var(--cl-bg);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  color: var(--cl-accent);
+  border: 1px solid var(--cl-border);
+}
+
+/* ─── Responsive ─────────────────────────────────────────────────────────────*/
+@media (max-width: 600px) {
+  .cl-page { padding: 0 1rem 4rem; }
+  .cl-page-title { font-size: 1.4rem; }
+  .cl-grid { grid-template-columns: 1fr; }
+  .cl-detail-header { flex-direction: column; }
+  .cl-overview-stats { gap: 0.6rem; }
+  .cl-ov-stat { min-width: 80px; }
+}

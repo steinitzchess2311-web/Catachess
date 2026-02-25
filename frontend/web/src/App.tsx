@@ -55,6 +55,8 @@ const PlayPage = React.lazy(() => import("@patch/modules/user_games").then(m => 
 const LiveGamePage = React.lazy(() => import("@patch/modules/user_games").then(m => ({ default: m.LiveGamePage })));
 const AnalyzeGamePage = React.lazy(() => import("@patch/modules/user_games").then(m => ({ default: m.AnalyzeGamePage })));
 const JoinGamePage = React.lazy(() => import("@patch/modules/user_games").then(m => ({ default: m.JoinGamePage })));
+const ClassroomPage = React.lazy(() => import("@patch/modules/classroom").then(m => ({ default: m.ClassroomPage })));
+const ClassroomDetailPage = React.lazy(() => import("@patch/modules/classroom").then(m => ({ default: m.ClassroomDetailPage })));
 
 // Entry switch configuration: default to patch unless explicitly disabled
 const USE_PATCH_STUDY = import.meta.env.VITE_USE_PATCH_STUDY !== "false";
@@ -624,6 +626,10 @@ function Layout() {
           <Route path="/chess/:gameId/join" element={<JoinGamePage username={username} />} />
           <Route path="/chess/:gameId/analyze" element={<AnalyzeGamePage />} />
           <Route path="/chess/:gameId" element={<LiveGamePage username={username} />} />
+
+          {/* Classroom */}
+          <Route path="/classroom" element={<Protected><ClassroomPage /></Protected>} />
+          <Route path="/classroom/:id" element={<Protected><ClassroomDetailPage /></Protected>} />
 
           {/* Game viewer — must precede the /:id catch-all */}
           <Route path="/game/:id" element={<GameViewerPage />} />

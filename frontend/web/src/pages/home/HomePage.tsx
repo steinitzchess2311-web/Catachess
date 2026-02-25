@@ -159,10 +159,10 @@ const HomePage: React.FC = () => {
               <p className="hp-section-label">Coach Tools</p>
               <div className="hp-cards">
                 <HpCard
+                  to="/classroom"
                   icon={<DesktopIcon width={28} height={28} />}
                   label="CLASSROOM"
-                  tooltip=""
-                  disabled
+                  tooltip="Manage classes, publish tasks, and track student progress"
                 />
                 <HpCard
                   icon={<PersonIcon width={28} height={28} />}

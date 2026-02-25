@@ -122,3 +122,4 @@ backend/modules/classroom/
 4. **services/ 封装业务逻辑**：端点只做参数校验 + 权限检查，复杂查询逻辑下沉到 services。
 5. **schemas/ 严格分层**：Request schema（Create/Update）与 Response schema 分开，不混用。
 
+ 

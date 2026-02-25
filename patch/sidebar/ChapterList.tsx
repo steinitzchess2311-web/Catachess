@@ -79,9 +79,8 @@ export function ChapterList({
     setConfirmDelete({ id: chapterId, label });
   };
 
-  const resolveLabel = (chapter: { id: string; title?: string; order?: number }, index: number) => {
-    const orderValue = typeof chapter.order === 'number' ? chapter.order + 1 : index + 1;
-    return chapter.title || `Chapter ${orderValue}`;
+  const resolveLabel = (chapter: { id: string; title?: string }, index: number) => {
+    return chapter.title || `Chapter ${index + 1}`;
   };
   const labelMap = new Map(
     chapters.map((chapter, index) => [chapter.id, resolveLabel(chapter, index)])
@@ -184,9 +183,8 @@ export function ChapterList({
         {chapters.map((chapter, index) => {
           const canDelete = chapters.length > 1;
           const isActive = chapter.id === currentChapterId;
-          const orderValue = typeof chapter.order === 'number' ? chapter.order + 1 : index + 1;
           const label = resolveLabel(chapter, index);
-          const order = orderValue;
+          const order = index + 1;
           const isEditing = editingId === chapter.id;
           const isSaving = savingId === chapter.id;
           const isDragging = draggingId === chapter.id;

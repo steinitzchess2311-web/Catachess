@@ -476,6 +476,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
           studyId={id}
           nextChapterIndex={getNextChapterIndex()}
           chaptersCount={chapters.length}
+          existingChapterIds={chapters.map((ch) => ch.id)}
           onClose={() => setIsCreateModalOpen(false)}
           onCreated={(chapter) => setChapters((prev) => sortChapters([...prev, chapter]))}
           onMultiCreated={(newChapters) => setChapters((prev) => sortChapters([...prev, ...newChapters]))}

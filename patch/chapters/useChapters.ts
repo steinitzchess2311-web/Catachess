@@ -67,12 +67,11 @@ export function useChapters(studyId: string | undefined) {
   }, []);
 
   const getNextChapterIndex = useCallback(() => {
-    const orders = [
-      ...chapters.map((ch) => (typeof ch.order === 'number' ? ch.order : null)),
-      ...pendingDeleteChapters.map((ch) => (typeof ch.order === 'number' ? ch.order : null)),
-    ].filter((v): v is number => typeof v === 'number');
-    return (orders.length > 0 ? Math.max(...orders) : -1) + 2;
-  }, [chapters, pendingDeleteChapters]);
+    const taken = new Set(chapters.map((ch) => ch.title).filter(Boolean));
+    let n = chapters.length + 1;
+    while (taken.has(`Chapter ${n}`)) n++;
+    return n;
+  }, [chapters]);
 
   // ── Tree loading ─────────────────────────────────────────────────────────
 

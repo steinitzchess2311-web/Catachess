@@ -102,6 +102,7 @@ interface NewChapterModalProps {
   studyId: string;
   nextChapterIndex: number;
   chaptersCount: number;
+  existingChapterIds: string[];
   onClose: () => void;
   onCreated: (chapter: any) => void;
   onMultiCreated: (newChapters: any[]) => void;
@@ -124,6 +125,7 @@ export function NewChapterModal({
   studyId,
   nextChapterIndex,
   chaptersCount,
+  existingChapterIds,
   onClose,
   onCreated,
   onMultiCreated,
@@ -266,6 +268,18 @@ export function NewChapterModal({
           if (r.status === 'rejected') {
             errs.push(`Upload "${created[i].title}": ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
           }
+        }
+
+        // ── Phase 3: Fix order on backend (best-effort, silent) ───────────
+        if (created.length > 0) {
+          const correctOrder = [
+            ...existingChapterIds,
+            ...created.map((ch) => ch.id),
+          ];
+          await api.post(
+            `/api/v1/workspace/studies/${studyId}/chapters/reorder`,
+            { order: correctOrder },
+          ).catch(() => { /* non-critical: display is index-based */ });
         }
 
         // ── Update UI ─────────────────────────────────────────────────────

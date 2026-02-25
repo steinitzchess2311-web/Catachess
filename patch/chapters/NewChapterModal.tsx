@@ -11,6 +11,35 @@ function pgnGameTitle(headers: Record<string, string>): string {
   return [players, event].filter(Boolean).join(' – ');
 }
 
+// ---------------------------------------------------------------------------
+// Concurrent task runner — at most `limit` promises in flight at once
+// ---------------------------------------------------------------------------
+async function runConcurrent<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number,
+  onProgress: (done: number, total: number) => void,
+): Promise<PromiseSettledResult<T>[]> {
+  const results: PromiseSettledResult<T>[] = new Array(tasks.length);
+  let next = 0;
+  let done = 0;
+
+  async function worker() {
+    while (next < tasks.length) {
+      const i = next++;
+      try {
+        results[i] = { status: 'fulfilled', value: await tasks[i]() };
+      } catch (e) {
+        results[i] = { status: 'rejected', reason: e };
+      }
+      onProgress(++done, tasks.length);
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(limit, tasks.length) }, () => worker());
+  await Promise.all(workers);
+  return results;
+}
+
 interface NewChapterModalProps {
   studyId: string;
   nextChapterIndex: number;
@@ -25,6 +54,12 @@ interface NewChapterModalProps {
 }
 
 type CreateMode = 'empty' | 'fen' | 'pgn';
+
+interface ImportProgress {
+  phase: 'creating' | 'uploading';
+  done: number;
+  total: number;
+}
 
 export function NewChapterModal({
   studyId,
@@ -43,6 +78,7 @@ export function NewChapterModal({
   const [pgnParsed, setPgnParsed] = useState<ReturnType<typeof importMultiPgn> | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [progress, setProgress] = useState<ImportProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -87,13 +123,17 @@ export function NewChapterModal({
     if (mode === 'pgn') {
       if (!pgnParsed || pgnParsed.games.length === 0) return;
       setIsImporting(true);
+      setProgress({ phase: 'creating', done: 0, total: pgnParsed.games.length });
+
+      const games = pgnParsed.games;
       const errs: string[] = [];
-      let firstChapterId: string | null = null;
-      const addedChapters: any[] = [];
+
       try {
-        for (const game of pgnParsed.games) {
+        // ── Phase 1: Create all chapters concurrently (8 in parallel) ──────
+        type ChapterResult = { id: string; title: string; index: number } | null;
+
+        const createTasks = games.map((game, i) => async (): Promise<ChapterResult> => {
           const gameTitle = pgnGameTitle(game.headers);
-          let chapterId: string | null = null;
           try {
             if (game.startingFen) {
               const resp = await api.post('/api/v1/import-export/fen/import', {
@@ -101,32 +141,64 @@ export function NewChapterModal({
                 chapter_title: gameTitle,
                 fen: game.startingFen,
               });
-              chapterId = resp?.chapter_id ?? null;
+              return resp?.chapter_id ? { id: resp.chapter_id, title: gameTitle, index: i } : null;
             } else {
               const resp = await api.post(`/api/v1/workspace/studies/${studyId}/chapters`, { title: gameTitle });
-              chapterId = resp?.id ?? null;
-            }
-            if (chapterId) {
-              addedChapters.push({ id: chapterId, title: gameTitle, order: chaptersCount + addedChapters.length });
+              return resp?.id ? { id: resp.id, title: gameTitle, index: i } : null;
             }
           } catch (e) {
-            errs.push(`Failed to create "${gameTitle}": ${e instanceof Error ? e.message : 'error'}`);
-            continue;
+            errs.push(`Create "${gameTitle}": ${e instanceof Error ? e.message : 'error'}`);
+            return null;
           }
-          if (!chapterId) { errs.push(`Could not get chapter ID for "${gameTitle}"`); continue; }
-          if (!firstChapterId) firstChapterId = chapterId;
+        });
+
+        const createResults = await runConcurrent(createTasks, 8, (done, total) => {
+          setProgress({ phase: 'creating', done, total });
+        });
+
+        // Collect successful chapters (preserve order)
+        const created: Array<{ id: string; title: string; index: number }> = [];
+        for (const r of createResults) {
+          if (r.status === 'fulfilled' && r.value) created.push(r.value);
+        }
+
+        // ── Phase 2: Upload trees concurrently (8 in parallel) ────────────
+        setProgress({ phase: 'uploading', done: 0, total: created.length });
+
+        const uploadTasks = created.map((ch) => async () => {
           try {
-            await api.put(`/api/v1/workspace/studies/study-patch/chapter/${chapterId}/tree`, game.tree);
+            await api.put(
+              `/api/v1/workspace/studies/study-patch/chapter/${ch.id}/tree`,
+              games[ch.index].tree,
+            );
           } catch (e) {
-            errs.push(`Failed to save tree for "${gameTitle}": ${e instanceof Error ? e.message : 'error'}`);
+            errs.push(`Upload tree "${ch.title}": ${e instanceof Error ? e.message : 'error'}`);
           }
+        });
+
+        await runConcurrent(uploadTasks, 8, (done, total) => {
+          setProgress({ phase: 'uploading', done, total });
+        });
+
+        // ── Update UI with successfully created chapters ───────────────────
+        const addedChapters = created.map((ch, pos) => ({
+          id: ch.id,
+          title: ch.title,
+          order: chaptersCount + pos,
+        }));
+
+        if (addedChapters.length > 0) onMultiCreated(addedChapters);
+        if (addedChapters.length > 0) await onSelectChapter(addedChapters[0].id);
+
+        if (errs.length > 0) {
+          setError(`Imported ${addedChapters.length} chapter(s) with ${errs.length} error(s):\n${errs.join('\n')}`);
+          return;
         }
       } finally {
         setIsImporting(false);
+        setProgress(null);
       }
-      if (errs.length > 0) { setError(errs.join('\n')); return; }
-      if (addedChapters.length > 0) onMultiCreated(addedChapters);
-      if (firstChapterId) await onSelectChapter(firstChapterId);
+
       onClose();
       return;
     }
@@ -243,6 +315,7 @@ export function NewChapterModal({
               placeholder="Paste PGN here…"
               spellCheck={false}
               rows={8}
+              disabled={busy}
             />
             <div className="patch-modal-pgn-actions">
               <button
@@ -260,18 +333,35 @@ export function NewChapterModal({
                 style={{ display: 'none' }}
                 onChange={handleFileChange}
               />
-              {pgnText && (
+              {pgnText && !busy && (
                 <button
                   type="button"
                   className="patch-modal-button"
                   onClick={() => { setPgnText(''); setPgnParsed(null); }}
-                  disabled={busy}
                 >
                   Clear
                 </button>
               )}
             </div>
-            {pgnParsed && pgnParsed.games.length > 0 && (
+
+            {/* Progress bar */}
+            {progress && (
+              <div className="patch-modal-progress">
+                <div className="patch-modal-progress__label">
+                  {progress.phase === 'creating'
+                    ? `Creating chapters… ${progress.done} / ${progress.total}`
+                    : `Uploading trees… ${progress.done} / ${progress.total}`}
+                </div>
+                <div className="patch-modal-progress__bar">
+                  <div
+                    className="patch-modal-progress__fill"
+                    style={{ width: `${Math.round((progress.done / progress.total) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {!progress && pgnParsed && pgnParsed.games.length > 0 && (
               <div className="patch-modal-pgn-preview">
                 <strong>
                   {pgnParsed.games.length === 1
@@ -284,7 +374,7 @@ export function NewChapterModal({
                 </div>
               </div>
             )}
-            {pgnParsed && pgnParsed.games.length === 0 && (
+            {!progress && pgnParsed && pgnParsed.games.length === 0 && (
               <div className="patch-modal-error">No valid PGN games found.</div>
             )}
           </>

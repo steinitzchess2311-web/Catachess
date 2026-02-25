@@ -1951,6 +1951,31 @@ main {
   color: #6b7280;
 }
 
+/* PGN import progress bar */
+.patch-modal-progress {
+  margin-top: 10px;
+}
+
+.patch-modal-progress__label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 6px;
+}
+
+.patch-modal-progress__bar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.patch-modal-progress__fill {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 3px;
+  transition: width 0.15s ease;
+}
+
 /* ── Game Viewer Page ─────────────────────────────────────────────────────── */
 
 .game-viewer-page {

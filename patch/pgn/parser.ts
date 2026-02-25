@@ -243,6 +243,11 @@ export function parsePgn(pgn: string): ParsedGame {
   const nodeFen = new Map<string, string>();
   nodeFen.set(tree.rootId, STARTING);
 
+  // Single Chess instance reused across all moves.
+  // Only reconstructed at variation boundaries (variation_start / variation_end),
+  // NOT on every SAN token — this is the key performance improvement.
+  let currentBoard = new Chess(STARTING);
+
   // Stack of return-points for variations
   // Each '(' saves the current (nodeId, fen) to restore on matching ')'
   type Frame = { nodeId: string; fen: string };
@@ -266,18 +271,10 @@ export function parsePgn(pgn: string): ParsedGame {
         break;
 
       case 'san': {
-        // Get the board at the current node (the position we'll play from)
-        const parentFen = nodeFen.get(currentNodeId);
-        if (!parentFen) {
-          errors.push(`Missing FEN for node ${currentNodeId}; skipping "${tok.value}"`);
-          break;
-        }
-
-        // Create a fresh board from the stored FEN – avoids undo() issues
-        const board = new Chess(parentFen);
+        // Reuse currentBoard — no FEN reconstruction needed for mainline moves
         let moveResult: ReturnType<Chess['move']> | null = null;
         try {
-          moveResult = board.move(tok.value);
+          moveResult = currentBoard.move(tok.value);
         } catch {
           moveResult = null;
         }
@@ -300,8 +297,8 @@ export function parsePgn(pgn: string): ParsedGame {
 
         tree.nodes[newId] = newNode;
         tree.nodes[currentNodeId].children.push(newId);
-        // Store the FEN AFTER this move so child nodes can use it
-        nodeFen.set(newId, board.fen());
+        // Store FEN after this move so variation_start can reconstruct the board
+        nodeFen.set(newId, currentBoard.fen());
         currentNodeId = newId;
         nodeCount++;
         break;
@@ -338,25 +335,23 @@ export function parsePgn(pgn: string): ParsedGame {
       }
 
       case 'variation_start': {
-        // Save the current state (after last move) and rewind to parent
+        // Save the current state and rewind to parent for the variation branch.
+        // currentBoard is reconstructed here (once per variation entry, not per move).
         const currentNode = tree.nodes[currentNodeId];
         if (!currentNode || currentNode.parentId === null) {
-          // At root – can't rewind further; push a no-op frame
           frameStack.push({ nodeId: currentNodeId, fen: nodeFen.get(currentNodeId) ?? STARTING });
           break;
         }
 
-        // Save return point (the state AFTER the current move)
+        // Save return point so variation_end can restore exactly
         const currentFen = nodeFen.get(currentNodeId) ?? STARTING;
         frameStack.push({ nodeId: currentNodeId, fen: currentFen });
 
-        // Rewind to parent: the variation branches from the parent's position.
-        // The parent's "board state" is stored as nodeFen[parent] which is the FEN
-        // AFTER the parent's own move (i.e. the position the current node was played from).
-        // So the parent's board = nodeFen[parent].
+        // Rewind: the variation branches from the parent's position
         const parentId = currentNode.parentId;
         currentNodeId = parentId;
-        // (nodeFen[parentId] is already set; we just update currentNodeId)
+        // Reconstruct board at parent position (ready for variation's first move)
+        currentBoard = new Chess(nodeFen.get(parentId) ?? STARTING);
         break;
       }
 
@@ -364,7 +359,8 @@ export function parsePgn(pgn: string): ParsedGame {
         if (frameStack.length > 0) {
           const frame = frameStack.pop()!;
           currentNodeId = frame.nodeId;
-          // nodeFen[frame.nodeId] is already set; no board reconstruction needed
+          // Reconstruct board at the saved position (ready to continue main line)
+          currentBoard = new Chess(frame.fen);
         }
         break;
       }

@@ -8,7 +8,23 @@ function pgnGameTitle(headers: Record<string, string>): string {
   const event = headers['Event'] ?? '';
   if (white === '?' && black === '?' && !event) return 'Imported Game';
   const players = white === '?' && black === '?' ? '' : `${white} vs ${black}`;
-  return [players, event].filter(Boolean).join(' – ');
+  const raw = [players, event].filter(Boolean).join(' – ');
+  // Backend maxLength is 200; leave room for dedup suffix " (99)"
+  return raw.length > 194 ? raw.slice(0, 194) : raw;
+}
+
+/**
+ * Given a list of raw titles, return deduplicated titles.
+ * Duplicate titles get a " (2)", " (3)" suffix so the backend
+ * unique-per-study constraint is never violated.
+ */
+function dedupTitles(titles: string[]): string[] {
+  const seen = new Map<string, number>();
+  return titles.map((t) => {
+    const count = (seen.get(t) ?? 0) + 1;
+    seen.set(t, count);
+    return count === 1 ? t : `${t} (${count})`;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -128,12 +144,16 @@ export function NewChapterModal({
       const games = pgnParsed.games;
       const errs: string[] = [];
 
+      // Pre-compute deduplicated titles so concurrent requests never collide
+      const rawTitles = games.map((g) => pgnGameTitle(g.headers));
+      const gameTitles = dedupTitles(rawTitles);
+
       try {
         // ── Phase 1: Create all chapters concurrently (8 in parallel) ──────
         type ChapterResult = { id: string; title: string; index: number } | null;
 
         const createTasks = games.map((game, i) => async (): Promise<ChapterResult> => {
-          const gameTitle = pgnGameTitle(game.headers);
+          const gameTitle = gameTitles[i];
           try {
             if (game.startingFen) {
               const resp = await api.post('/api/v1/import-export/fen/import', {

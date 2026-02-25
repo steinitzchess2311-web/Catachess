@@ -13,7 +13,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import logoImage from '@ui/assets/logo.jpg';
+import logoImage from '../../../frontend/web/src/assets/logo.jpg';
 import './player.css';
 import { PlayerSearchInput } from './components/PlayerSearchInput';
 import { PlayerCardGrid } from './components/PlayerCardGrid';

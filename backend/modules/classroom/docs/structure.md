@@ -121,3 +121,4 @@ backend/modules/classroom/
 3. **catachat_sync.py 同进程直接调**：不走 HTTP，直接 import catchat DB models 操作，零延迟，失败静默。
 4. **services/ 封装业务逻辑**：端点只做参数校验 + 权限检查，复杂查询逻辑下沉到 services。
 5. **schemas/ 严格分层**：Request schema（Create/Update）与 Response schema 分开，不混用。
+

@@ -10,15 +10,14 @@
 ## 目录结构
 
 ```
-My Classroom/               ← 老师 workspace 根目录下，所有班级共享这一个入口
+classroom/                  ← 老师 workspace Shared 区，所有班级共享这一个入口
   {student_username}/       ← 每个学生一个文件夹，跨班级去重（同一学生只建一次）
   {student_username}/
   ...
 ```
 
-**不按班级划分**，直接按学生。原因：
-- 一个学生可能同时在老师的多个班级，重复建目录没有意义。
-- 老师管理学生内容时，关心的是"这个学生"，不是"这个班的这个学生"。
+**文件夹归属：老师 workspace**，不在学生端。
+学生内容进入此目录的唯一方式是在 classroom 界面主动 "share with teacher"（V2 实现）。
 
 ---
 
@@ -41,8 +40,9 @@ My Classroom/               ← 老师 workspace 根目录下，所有班级共�
 
 ## Sharing 语义
 
-- **classroom-scoped share**：学生在 classroom 内选择"share with teacher"，内容进入 `My Classroom/{student_username}/`。
-- **normal workspace share**：学生直接 share 节点给老师账号，走正常 workspace share 流程，**不进这个目录**。
+- **classroom-scoped share**（V2）：学生在 classroom 内点"share with teacher"，后端把内容放入老师的 `classroom/{student_username}/`。
+- **normal workspace share**：学生直接 share 节点给老师账号，走正常 workspace share 流程，不进这个目录。
+- **学生端不会自动出现任何文件夹**：`classroom/{username}/` 只存在于老师 workspace。
 
 两套系统完全独立，互不干扰。
 

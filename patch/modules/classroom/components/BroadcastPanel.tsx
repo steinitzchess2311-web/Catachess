@@ -46,7 +46,6 @@ export const BroadcastPanel: React.FC<Props> = ({ classroomId, refreshKey }) => 
     <div>
       <div className="cl-section-header" style={{ marginBottom: '0.75rem' }}>
         <h3 className="cl-section-title">Announcements</h3>
-        <span style={{ fontSize: '0.75rem', color: 'var(--cl-text-muted)' }}>last 5</span>
       </div>
 
       {loading ? (

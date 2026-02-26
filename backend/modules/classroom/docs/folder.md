@@ -85,3 +85,88 @@ My Classroom/               ← 老师 workspace 根目录下，所有班级共�
 - 不自动删除文件夹（学生被移除时文件夹保留，防止数据丢失）
 - 不自动跟随班级改名（workspace 文件夹名由老师手动控制）
 - 不处理老师转移班级所有权后的文件夹归属问题
+
+---
+
+## 前端对接说明
+
+### 完全自动的部分（前端无需处理）
+
+以下操作由后端在响应返回前自动完成，前端不需要额外调用任何接口：
+
+| 触发动作 | 后端自动完成 |
+|----------|-------------|
+| `POST /classrooms` | 创建 `My Classroom/` 根目录（或复用已有的），`workspace_folder_id` 出现在返回值里 |
+| `POST /classrooms/{id}/members` | 在 `My Classroom/` 下创建学生子文件夹（或复用已有的） |
+| `POST /classrooms/join` | 同上 |
+
+---
+
+### 前端需要实现的部分
+
+#### 1. 展示跳转入口
+
+`POST /classrooms` 的响应里有 `workspace_folder_id`：
+
+```json
+{
+  "id": "...",
+  "name": "围棋班 A",
+  "workspace_folder_id": "82f2d6a4-295f-4876-b0e9-90ac39908eff",
+  ...
+}
+```
+
+前端可用这个 ID 直接跳转到老师 workspace 里的 `My Classroom/` 文件夹：
+
+```
+/workspace?folder=82f2d6a4-295f-4876-b0e9-90ac39908eff
+```
+
+（具体路由格式以 workspace 前端约定为准）
+
+---
+
+#### 2. 展示学生文件夹入口
+
+`GET /classrooms/{id}/members` 返回的每个成员里目前**没有** `workspace_folder_id`（该字段存在 DB 但未暴露在响应里）。
+
+如果前端需要在成员列表里放"打开 workspace 文件夹"按钮，后端需要在 `MemberResponse` 里加 `workspace_folder_id` 字段。**目前未加，按需告知后端添加。**
+
+---
+
+#### 3. 重命名学生文件夹
+
+老师端成员管理界面，支持修改学生文件夹显示名（改成真名）：
+
+```
+PATCH /api/classroom/classrooms/{classroom_id}/members/{username}/folder
+Authorization: Bearer {token}
+Content-Type: application/json
+
+{
+  "title": "Alice Chen"
+}
+```
+
+**响应：**
+- `204 No Content` — 重命名成功
+- `404` — 成员不存在，或该成员还没有 workspace 文件夹（可能刚加入、workspace 服务当时不可用）
+- `503` — workspace 服务临时不可用，可提示用户稍后重试
+
+**注意：**
+- 只改 workspace 里的文件夹标题，`username` 字段不变，班级内的所有逻辑仍以 `username` 为准
+- 改名后刷新 workspace 即可看到新名字
+
+---
+
+#### 4. Classroom-scoped Share（学生 → 老师文件夹）
+
+学生在 classroom 界面里选择"分享给老师"时，需要把内容移动/复制到对应的学生文件夹下。
+
+**流程：**
+1. 学生从 `GET /classrooms/{id}/members/me`（或成员列表）拿到自己的 `workspace_folder_id`
+   - ⚠️ 目前 `MemberResponse` 未暴露此字段，需后端添加
+2. 调 workspace 的移动/复制接口，把目标节点放到该 folder 下
+
+**这部分前后端需要进一步对齐接口细节，V1 可先不实现，入口做成"敬请期待"。**

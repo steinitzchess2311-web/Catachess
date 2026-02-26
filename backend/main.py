@@ -285,6 +285,30 @@ async def _init_blog_db() -> None:
         logger.warning("Blog module may not function correctly")
 
 
+# ── TEMPORARY: Add is_broadcast column to catchat_group_messages ──────────────
+# Needed so classroom broadcast messages can be queried separately from normal
+# group chat messages.
+# Safe to run repeatedly — uses ADD COLUMN IF NOT EXISTS.
+# TODO: Remove once confirmed in Railway DB.
+def _migrate_catchat_is_broadcast() -> None:
+    import os
+    from sqlalchemy import create_engine, text
+
+    url = os.getenv("CATCHAT_DATABASE")
+    if not url:
+        logger.warning("CATCHAT_DATABASE not set — skipping is_broadcast migration")
+        return
+    try:
+        engine = create_engine(url, pool_pre_ping=True)
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE catchat_group_messages "
+                "ADD COLUMN IF NOT EXISTS is_broadcast BOOLEAN NOT NULL DEFAULT false"
+            ))
+        logger.info("✅ catchat_group_messages.is_broadcast column ready")
+    except Exception as exc:
+        logger.error(f"is_broadcast migration failed: {exc}", exc_info=True)
+# ── END TEMPORARY ─────────────────────────────────────────────────────────────
 
 
 async def _presence_cleanup_loop() -> None:
@@ -363,6 +387,10 @@ async def lifespan(app: FastAPI):
 
     # Initialize Blog database and run migrations
     await _init_blog_db()
+
+    # TEMPORARY: add is_broadcast column to catchat_group_messages
+    await asyncio.to_thread(_migrate_catchat_is_broadcast)
+    # END TEMPORARY
 
     # Initialize MongoDB cache
     try:

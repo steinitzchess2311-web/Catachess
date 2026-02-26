@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import catLogo from '../../../frontend/web/src/assets/chessortag_pure_logo.png';
 import { listClassrooms } from './api';
 import type { Classroom } from './types';
 import { RoleBadge } from './components/RoleBadge';
@@ -69,9 +70,22 @@ export const ClassroomPage: React.FC = () => {
 
         {/* Page header */}
         <div className="cl-page-header">
-          <div>
-            <h1 className="cl-page-title">Classroom</h1>
-            <p className="cl-page-subtitle">Manage classes, publish tasks, and track student progress.</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <img
+              src={catLogo}
+              alt="Catachess logo"
+              style={{ width: 48, height: 48, objectFit: 'contain', flexShrink: 0 }}
+            />
+            <h1 style={{
+              margin: 0,
+              fontSize: 32,
+              fontWeight: 700,
+              lineHeight: 1.2,
+              letterSpacing: '-0.5px',
+              fontFamily: 'inherit',
+            }}>
+              Catachess Classroom
+            </h1>
           </div>
           <div className="cl-header-actions">
             <button className="cl-btn cl-btn-secondary" onClick={() => setShowJoin(true)}>

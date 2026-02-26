@@ -29,6 +29,7 @@ export const ClassroomDetailPage: React.FC = () => {
   const [tab, setTab] = useState<Tab>('overview');
   const [showBroadcast, setShowBroadcast] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [broadcastRefreshKey, setBroadcastRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!id) return;
@@ -220,7 +221,7 @@ export const ClassroomDetailPage: React.FC = () => {
         <div role="tabpanel">
           {tab === 'overview' && (
             isTeacher
-              ? <TeacherOverview classroom={classroom} onBroadcast={() => setShowBroadcast(true)} />
+              ? <TeacherOverview classroom={classroom} onBroadcast={() => setShowBroadcast(true)} broadcastRefreshKey={broadcastRefreshKey} />
               : <StudentOverview classroom={classroom} />
           )}
           {tab === 'assignments' && <AssignmentsTab classroom={classroom} />}
@@ -234,6 +235,7 @@ export const ClassroomDetailPage: React.FC = () => {
           classroomId={classroom.id}
           classroomName={classroom.name}
           onClose={() => setShowBroadcast(false)}
+          onSent={() => { setBroadcastRefreshKey(k => k + 1); setShowBroadcast(false); }}
         />
       )}
     </div>

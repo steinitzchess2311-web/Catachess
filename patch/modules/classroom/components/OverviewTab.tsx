@@ -6,6 +6,8 @@ import type { Classroom, Assignment, TodoItem } from '../types';
 import { CategoryBadge } from './CategoryBadge';
 import { StatusBadge } from './StatusBadge';
 import { ActivityFeed } from './ActivityFeed';
+import { BroadcastBanner } from './BroadcastBanner';
+import { BroadcastPanel } from './BroadcastPanel';
 import { formatDue, dueCssModifier } from '../utils';
 
 const CATACHAT_URL = 'https://catachat.catachess.com';
@@ -26,9 +28,10 @@ function openCatachat(classroomId: string) {
 interface TeacherOverviewProps {
   classroom: Classroom;
   onBroadcast: () => void;
+  broadcastRefreshKey?: number;
 }
 
-export const TeacherOverview: React.FC<TeacherOverviewProps> = ({ classroom, onBroadcast }) => {
+export const TeacherOverview: React.FC<TeacherOverviewProps> = ({ classroom, onBroadcast, broadcastRefreshKey }) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -73,8 +76,8 @@ export const TeacherOverview: React.FC<TeacherOverviewProps> = ({ classroom, onB
         </button>
       </div>
 
-      {/* Two-column layout: Recent assignments + Activity feed */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
+      {/* Three-column layout: Recent assignments + Announcements + Activity feed */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
 
         {/* Recent assignments */}
         <div>
@@ -121,6 +124,9 @@ export const TeacherOverview: React.FC<TeacherOverviewProps> = ({ classroom, onB
           )}
         </div>
 
+        {/* Announcements */}
+        <BroadcastPanel classroomId={classroom.id} refreshKey={broadcastRefreshKey} />
+
         {/* Activity feed */}
         <div>
           <div className="cl-section-header" style={{ marginBottom: '0.75rem' }}>
@@ -164,6 +170,9 @@ export const StudentOverview: React.FC<StudentOverviewProps> = ({ classroom }) =
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+
+      {/* Broadcast announcements — prominently at top */}
+      <BroadcastBanner classroomId={classroom.id} />
 
       {/* Quick stats */}
       <div className="cl-overview-stats">

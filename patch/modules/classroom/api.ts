@@ -64,6 +64,12 @@ export const getChatGroupId = (id: string): Promise<{ catchat_group_id: string |
 export const broadcastMessage = (id: string, content: string): Promise<{ broadcast_id: string; created_at: string }> =>
   api.post(`${BASE}/${id}/broadcast`, { content });
 
+export const listBroadcasts = (id: string, limit = 5): Promise<import('./types').BroadcastItem[]> =>
+  api.get(`${BASE}/${id}/broadcasts?limit=${limit}`);
+
+export const deleteBroadcast = (classroomId: string, messageId: string): Promise<void> =>
+  api.delete(`${BASE}/${classroomId}/broadcasts/${messageId}`);
+
 // ─── Members ──────────────────────────────────────────────────────────────────
 
 export const listMembers = (classroomId: string): Promise<ClassroomMember[]> =>

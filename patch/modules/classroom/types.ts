@@ -149,6 +149,15 @@ export interface TodoItem {
   my_status: 'not_started' | 'in_progress' | 'submitted';
 }
 
+// ─── Broadcast ────────────────────────────────────────────────────────────────
+
+export interface BroadcastItem {
+  id: string;
+  sender_name: string;
+  content: string;
+  created_at: string;
+}
+
 // ─── Invite ───────────────────────────────────────────────────────────────────
 
 export interface InviteInfo {

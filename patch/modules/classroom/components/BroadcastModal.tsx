@@ -5,9 +5,10 @@ interface Props {
   classroomId: string;
   classroomName: string;
   onClose: () => void;
+  onSent?: () => void;
 }
 
-export const BroadcastModal: React.FC<Props> = ({ classroomId, classroomName, onClose }) => {
+export const BroadcastModal: React.FC<Props> = ({ classroomId, classroomName, onClose, onSent }) => {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,7 +22,7 @@ export const BroadcastModal: React.FC<Props> = ({ classroomId, classroomName, on
     try {
       await broadcastMessage(classroomId, content.trim());
       setSent(true);
-      setTimeout(onClose, 1200);
+      setTimeout(() => { onSent ? onSent() : onClose(); }, 1200);
     } catch (err: any) {
       setError(err?.message || 'Failed to send announcement.');
     } finally {

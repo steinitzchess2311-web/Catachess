@@ -176,6 +176,7 @@ def add_member(
                     teacher_uuid=str(teacher.id),
                     root_folder_id=classroom.workspace_folder_id,
                     student_username=body.username,
+                    student_uuid=body.user_id,
                     existing_student_folder_id=existing_student_folder,
                 )
                 if ws_folder_id:

@@ -69,6 +69,35 @@ def _create_folder(token: str, title: str, parent_id: Optional[str]) -> Optional
         return None
 
 
+def _share_folder_with_user(token: str, node_id: str, user_id: str) -> bool:
+    """
+    POST /api/v1/workspace/share/{node_id}/users
+    Grant editor access so the node appears in the user's 'Shared with me'.
+    inherit_to_children=True so all subfolders are accessible too.
+    """
+    try:
+        res = httpx.post(
+            f"{_api_base()}/api/v1/workspace/share/{node_id}/users",
+            json={
+                "user_id": user_id,
+                "permission": "editor",
+                "inherit_to_children": True,
+            },
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=5.0,
+        )
+        if res.status_code in (200, 201):
+            return True
+        log.warning(
+            f"[workspace_sync] _share_folder_with_user node={node_id} user={user_id} "
+            f"→ {res.status_code}: {res.text[:200]}"
+        )
+        return False
+    except Exception as exc:
+        log.error(f"[workspace_sync] _share_folder_with_user node={node_id} failed: {exc}")
+        return False
+
+
 def _rename_folder(token: str, node_id: str, new_title: str) -> bool:
     """PUT /api/v1/workspace/nodes/{node_id}. Returns True on success."""
     try:
@@ -123,14 +152,20 @@ def sync_get_or_create_student_folder(
     teacher_uuid: str,
     root_folder_id: str,
     student_username: str,
+    student_uuid: str,
     existing_student_folder_id: Optional[str],
 ) -> Optional[str]:
     """
     Return the student subfolder ID under 'My Classroom/'.
 
     If `existing_student_folder_id` is provided (found on another classroom of
-    the same teacher for the same student), it is returned immediately.
-    Otherwise, create a new '{student_username}/' folder under root and return its ID.
+    the same teacher for the same student), it is returned immediately without
+    creating a new folder or re-sharing (share already exists).
+
+    Otherwise:
+    1. Create '{student_username}/' under root_folder_id.
+    2. Share it with the student (editor + inherit_to_children) so it appears
+       in their 'Shared with me' section.
 
     Called when a student joins or is added to a classroom.
     """
@@ -144,11 +179,21 @@ def sync_get_or_create_student_folder(
     try:
         token = _make_token(teacher_uuid)
         node_id = _create_folder(token, title=student_username, parent_id=root_folder_id)
-        if node_id:
+        if not node_id:
+            return None
+
+        log.info(
+            f"[workspace_sync] Created student folder '{student_username}' "
+            f"(node={node_id}) under root {root_folder_id}"
+        )
+
+        # Share the folder with the student so it appears in their 'Shared with me'
+        shared = _share_folder_with_user(token, node_id=node_id, user_id=student_uuid)
+        if shared:
             log.info(
-                f"[workspace_sync] Created student folder '{student_username}' "
-                f"(node={node_id}) under root {root_folder_id}"
+                f"[workspace_sync] Shared folder {node_id} with student {student_username}"
             )
+
         return node_id
     except Exception as exc:
         log.error(

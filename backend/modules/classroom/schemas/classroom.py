@@ -71,3 +71,10 @@ class ChatLinkResponse(BaseModel):
 class BroadcastResponse(BaseModel):
     broadcast_id: str
     created_at: datetime
+
+
+class BroadcastItem(BaseModel):
+    broadcast_id: str
+    sender_username: str
+    content: str
+    created_at: datetime

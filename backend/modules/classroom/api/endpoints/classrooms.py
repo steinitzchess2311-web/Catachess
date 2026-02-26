@@ -14,13 +14,15 @@ PATCH  /classrooms/{id}/invite        Enable/disable invite code
 POST   /classrooms/join               Join via invite code
 GET    /classrooms/{id}/chat          Get catchat_group_id for frontend routing
 POST   /classrooms/{id}/broadcast     Send announcement via catachat
+GET    /classrooms/{id}/broadcasts    List broadcast messages (any member)
+DELETE /classrooms/{id}/broadcasts/{mid}  Delete a broadcast (teacher+)
 """
 import random
 import string
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
@@ -31,7 +33,7 @@ from modules.classroom.db.models.member import ClassroomMember
 from modules.classroom.schemas.classroom import (
     ClassroomCreate, ClassroomUpdate, ClassroomResponse, ClassroomListItem,
     InviteToggle, InviteResponse, JoinByCode, ChatLinkResponse,
-    BroadcastCreate, BroadcastResponse,
+    BroadcastCreate, BroadcastResponse, BroadcastItem,
 )
 from modules.classroom.services import catachat_sync, workspace_sync
 from models.user import User
@@ -449,6 +451,7 @@ def broadcast(
                 sender_id=current_user.id,
                 sender_name=current_user.username,
                 content=body.content,
+                is_broadcast=True,
             )
             cdb.add(msg)
             # Update group's last_message_at so it surfaces in sidebar
@@ -464,6 +467,92 @@ def broadcast(
             )
     except Exception as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Broadcast failed: {exc}")
+
+
+# ── List broadcasts ───────────────────────────────────────────────────────────
+
+@router.get("/classrooms/{classroom_id}/broadcasts", response_model=list[BroadcastItem])
+def list_broadcasts(
+    classroom_id: uuid.UUID,
+    limit: int = Query(20, ge=1, le=100),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    classroom = _get_classroom_or_404(db, classroom_id)
+    _my_role(classroom, current_user.username, db)   # any member can read
+
+    if not classroom.catchat_group_id:
+        return []
+
+    try:
+        from modules.catchat.db.models.group_message import GroupMessage
+        from sqlalchemy import create_engine, select as sa_select, desc
+        from sqlalchemy.orm import Session as CatchatSession
+        import os
+
+        engine = create_engine(os.getenv("CATCHAT_DATABASE"), pool_pre_ping=True)
+        with CatchatSession(engine) as cdb:
+            rows = cdb.execute(
+                sa_select(GroupMessage)
+                .where(
+                    GroupMessage.group_id == classroom.catchat_group_id,
+                    GroupMessage.is_broadcast.is_(True),
+                )
+                .order_by(desc(GroupMessage.created_at))
+                .limit(limit)
+            ).scalars().all()
+            return [
+                BroadcastItem(
+                    broadcast_id=str(r.id),
+                    sender_username=r.sender_name,
+                    content=r.content,
+                    created_at=r.created_at,
+                )
+                for r in rows
+            ]
+    except Exception as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Broadcasts unavailable: {exc}")
+
+
+# ── Delete broadcast ───────────────────────────────────────────────────────────
+
+@router.delete("/classrooms/{classroom_id}/broadcasts/{broadcast_id}", status_code=204)
+def delete_broadcast(
+    classroom_id: uuid.UUID,
+    broadcast_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    classroom = _get_classroom_or_404(db, classroom_id)
+    _require_teacher(classroom, current_user.username, db)
+
+    if not classroom.catchat_group_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Chat not available")
+
+    try:
+        from modules.catchat.db.models.group_message import GroupMessage
+        from sqlalchemy import create_engine
+        from sqlalchemy.orm import Session as CatchatSession
+        import os
+
+        engine = create_engine(os.getenv("CATCHAT_DATABASE"), pool_pre_ping=True)
+        with CatchatSession(engine) as cdb:
+            from sqlalchemy import select as sa_select
+            msg = cdb.execute(
+                sa_select(GroupMessage).where(
+                    GroupMessage.id == broadcast_id,
+                    GroupMessage.group_id == classroom.catchat_group_id,
+                    GroupMessage.is_broadcast.is_(True),
+                )
+            ).scalar_one_or_none()
+            if not msg:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Broadcast not found")
+            cdb.delete(msg)
+            cdb.commit()
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Delete failed: {exc}")
 
 
 # ── Serialisation helper ──────────────────────────────────────────────────────

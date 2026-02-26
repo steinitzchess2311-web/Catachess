@@ -125,14 +125,23 @@ def create_classroom(
         db.commit()
         db.refresh(classroom)
 
-    # Sync workspace: create shared folder in teacher's workspace
-    ws_folder_id = workspace_sync.sync_create_classroom_folder(
+    # Sync workspace: get or create 'My Classroom/' root folder for this teacher.
+    # All classrooms owned by the same teacher share one root folder.
+    existing_root = db.execute(
+        select(Classroom).where(
+            Classroom.owner == current_user.username,
+            Classroom.workspace_folder_id.is_not(None),
+            Classroom.deleted_at.is_(None),
+            Classroom.id != classroom.id,
+        ).limit(1)
+    ).scalar_one_or_none()
+
+    ws_root_id = workspace_sync.sync_get_or_create_root_folder(
         teacher_uuid=str(current_user.id),
-        classroom_id=str(classroom.id),
-        class_name=classroom.name,
+        existing_root_folder_id=existing_root.workspace_folder_id if existing_root else None,
     )
-    if ws_folder_id:
-        classroom.workspace_folder_id = ws_folder_id
+    if ws_root_id:
+        classroom.workspace_folder_id = ws_root_id
         db.commit()
         db.refresh(classroom)
 
@@ -370,9 +379,10 @@ def join_classroom(
         classroom_role="student",
     )
 
-    # Sync workspace: create student subfolder if classroom folder exists
+    # Sync workspace: get or create student subfolder under 'My Classroom/'.
+    # If the student is already in another classroom of the same teacher,
+    # reuse their existing folder rather than creating a duplicate.
     if classroom.workspace_folder_id:
-        # Look up teacher UUID to generate JWT
         from models.user import User as UserModel
         from core.db.deps import get_db as get_main_db
         for main_db in get_main_db():
@@ -380,6 +390,20 @@ def join_classroom(
                 select(UserModel).where(UserModel.username == classroom.owner)
             ).scalar_one_or_none()
             if teacher:
+                # Check if this student already has a folder under this teacher
+                existing_student_folder = db.execute(
+                    select(ClassroomMember.workspace_folder_id)
+                    .join(Classroom, ClassroomMember.classroom_id == Classroom.id)
+                    .where(
+                        Classroom.owner == classroom.owner,
+                        Classroom.deleted_at.is_(None),
+                        ClassroomMember.username == username,
+                        ClassroomMember.workspace_folder_id.is_not(None),
+                        ClassroomMember.removed_at.is_(None),
+                    )
+                    .limit(1)
+                ).scalar_one_or_none()
+
                 member_row = db.execute(
                     select(ClassroomMember).where(
                         ClassroomMember.classroom_id == classroom.id,
@@ -387,10 +411,12 @@ def join_classroom(
                         ClassroomMember.removed_at.is_(None),
                     )
                 ).scalar_one_or_none()
-                ws_folder_id = workspace_sync.sync_create_student_folder(
+
+                ws_folder_id = workspace_sync.sync_get_or_create_student_folder(
                     teacher_uuid=str(teacher.id),
-                    classroom_folder_id=classroom.workspace_folder_id,
+                    root_folder_id=classroom.workspace_folder_id,
                     student_username=username,
+                    existing_student_folder_id=existing_student_folder,
                 )
                 if ws_folder_id and member_row:
                     member_row.workspace_folder_id = ws_folder_id

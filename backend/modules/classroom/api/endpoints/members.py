@@ -18,7 +18,8 @@ from modules.classroom.auth import get_current_user
 from modules.classroom.db.session import get_db
 from modules.classroom.db.models.classroom import Classroom
 from modules.classroom.db.models.member import ClassroomMember
-from modules.classroom.schemas.member import MemberAdd, MemberRoleUpdate, MemberResponse
+from modules.classroom.schemas.member import MemberAdd, MemberRoleUpdate, MemberResponse, FolderRename
+from modules.classroom.db.models.classroom import Classroom
 from modules.classroom.services import catachat_sync, workspace_sync
 from models.user import User
 
@@ -147,9 +148,10 @@ def add_member(
         classroom_role=body.role,
     )
 
-    # Sync workspace: create student subfolder if classroom folder exists
+    # Sync workspace: get or create student subfolder under 'My Classroom/'.
+    # Reuse existing folder if the student is already in another classroom
+    # of the same teacher, to avoid duplicate folders.
     if classroom.workspace_folder_id:
-        # Look up teacher UUID to generate workspace JWT
         from models.user import User as UserModel
         from core.db.deps import get_db as get_main_db
         for main_db in get_main_db():
@@ -157,10 +159,24 @@ def add_member(
                 select(UserModel).where(UserModel.username == classroom.owner)
             ).scalar_one_or_none()
             if teacher:
-                ws_folder_id = workspace_sync.sync_create_student_folder(
+                existing_student_folder = db.execute(
+                    select(ClassroomMember.workspace_folder_id)
+                    .join(Classroom, ClassroomMember.classroom_id == Classroom.id)
+                    .where(
+                        Classroom.owner == classroom.owner,
+                        Classroom.deleted_at.is_(None),
+                        ClassroomMember.username == body.username,
+                        ClassroomMember.workspace_folder_id.is_not(None),
+                        ClassroomMember.removed_at.is_(None),
+                    )
+                    .limit(1)
+                ).scalar_one_or_none()
+
+                ws_folder_id = workspace_sync.sync_get_or_create_student_folder(
                     teacher_uuid=str(teacher.id),
-                    classroom_folder_id=classroom.workspace_folder_id,
+                    root_folder_id=classroom.workspace_folder_id,
                     student_username=body.username,
+                    existing_student_folder_id=existing_student_folder,
                 )
                 if ws_folder_id:
                     member.workspace_folder_id = ws_folder_id
@@ -308,3 +324,57 @@ def leave_classroom(
     db.commit()
 
     catachat_sync.sync_remove_member(classroom.catchat_group_id, str(current_user.id))
+
+
+# ── Rename student workspace folder ───────────────────────────────────────────
+
+@router.patch("/classrooms/{classroom_id}/members/{username}/folder", status_code=204)
+def rename_student_folder(
+    classroom_id: uuid.UUID,
+    username: str,
+    body: FolderRename,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Rename a student's workspace folder (e.g. username → real name).
+    Only changes the workspace folder title; classroom DB is not affected.
+    Requires teacher+ role.
+    """
+    classroom = _get_classroom_or_404(db, classroom_id)
+    _require_teacher(classroom, current_user.username, db)
+
+    member = db.execute(
+        select(ClassroomMember).where(
+            ClassroomMember.classroom_id == classroom_id,
+            ClassroomMember.username == username,
+            ClassroomMember.removed_at.is_(None),
+        )
+    ).scalar_one_or_none()
+    if not member:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Member not found")
+    if not member.workspace_folder_id:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="No workspace folder for this member")
+
+    # Look up teacher UUID to generate workspace JWT
+    from models.user import User as UserModel
+    from core.db.deps import get_db as get_main_db
+    teacher_uuid = None
+    for main_db in get_main_db():
+        teacher = main_db.execute(
+            select(UserModel).where(UserModel.username == classroom.owner)
+        ).scalar_one_or_none()
+        if teacher:
+            teacher_uuid = str(teacher.id)
+        break
+
+    if not teacher_uuid:
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Teacher not found")
+
+    ok = workspace_sync.sync_rename_student_folder(
+        teacher_uuid=teacher_uuid,
+        folder_node_id=member.workspace_folder_id,
+        new_title=body.title,
+    )
+    if not ok:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Workspace rename failed")

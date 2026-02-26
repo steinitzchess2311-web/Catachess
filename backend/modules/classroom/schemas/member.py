@@ -19,6 +19,10 @@ class MemberRoleUpdate(BaseModel):
     role: str = Field(..., pattern="^(teacher|student)$")
 
 
+class FolderRename(BaseModel):
+    title: str = Field(..., min_length=1, max_length=100)
+
+
 # ── Responses ─────────────────────────────────────────────────────────────────
 
 class MemberResponse(BaseModel):

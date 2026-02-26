@@ -26,6 +26,7 @@ Members:
   POST   /api/classroom/classrooms/{id}/members
   DELETE /api/classroom/classrooms/{id}/members/{username}
   PATCH  /api/classroom/classrooms/{id}/members/{username}/role
+  PATCH  /api/classroom/classrooms/{id}/members/{username}/folder Rename workspace folder (teacher+)
   POST   /api/classroom/classrooms/{id}/members/leave
 
 Assignments:

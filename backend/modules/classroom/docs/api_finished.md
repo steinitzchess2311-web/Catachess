@@ -26,6 +26,7 @@
 | POST | `/api/classroom/classrooms/{id}/members` | 直接添加成员并指定角色（teacher+） |
 | DELETE | `/api/classroom/classrooms/{id}/members/{username}` | 移除成员（teacher+ 可移除 student，owner 可移除 teacher） |
 | PATCH | `/api/classroom/classrooms/{id}/members/{username}/role` | 修改成员角色（owner only） |
+| PATCH | `/api/classroom/classrooms/{id}/members/{username}/folder` | 重命名学生 workspace 文件夹（teacher+） |
 | POST | `/api/classroom/classrooms/{id}/members/leave` | 当前用户离开班级 |
 
 ## Assignments

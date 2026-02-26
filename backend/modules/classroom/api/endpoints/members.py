@@ -93,6 +93,7 @@ def list_members(
             role=m.role,
             invited_by=m.invited_by,
             joined_at=m.joined_at,
+            workspace_folder_id=m.workspace_folder_id,
         ))
     return result
 

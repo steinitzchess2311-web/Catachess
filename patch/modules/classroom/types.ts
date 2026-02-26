@@ -13,12 +13,14 @@ export interface Classroom {
   invite_code?: string;
   invite_active?: boolean;
   catchat_group_id?: string | null;
+  workspace_folder_id?: string | null;
 }
 
 export interface ClassroomMember {
   username: string;
   role: ClassroomRole;
   joined_at: string;
+  workspace_folder_id?: string | null;
 }
 
 // ─── Assignment Types ─────────────────────────────────────────────────────────

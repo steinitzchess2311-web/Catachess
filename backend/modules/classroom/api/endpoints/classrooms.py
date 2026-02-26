@@ -192,6 +192,7 @@ def list_my_classrooms(
             my_role="owner",
             member_count=_member_count(db, c.id),
             archived_at=c.archived_at, created_at=c.created_at,
+            workspace_folder_id=c.workspace_folder_id,
         ))
 
     for c in member_classrooms:
@@ -202,6 +203,7 @@ def list_my_classrooms(
             my_role=member_role_map.get(c.id, "student"),
             member_count=_member_count(db, c.id),
             archived_at=c.archived_at, created_at=c.created_at,
+            workspace_folder_id=c.workspace_folder_id,
         ))
 
     result.sort(key=lambda x: x.created_at, reverse=True)
@@ -428,6 +430,7 @@ def join_classroom(
         my_role="student",
         member_count=_member_count(db, classroom.id),
         archived_at=classroom.archived_at, created_at=classroom.created_at,
+        workspace_folder_id=classroom.workspace_folder_id,
     )
 
 

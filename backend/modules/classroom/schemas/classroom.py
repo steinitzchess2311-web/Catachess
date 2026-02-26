@@ -55,6 +55,7 @@ class ClassroomListItem(BaseModel):
     member_count: int
     archived_at: Optional[datetime]
     created_at: datetime
+    workspace_folder_id: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

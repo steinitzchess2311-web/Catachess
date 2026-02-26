@@ -27,8 +27,9 @@ class FolderRename(BaseModel):
 
 class MemberResponse(BaseModel):
     username: str
-    role: str             # 'owner' | 'teacher' | 'student'
+    role: str                          # 'owner' | 'teacher' | 'student'
     invited_by: Optional[str]
     joined_at: datetime
+    workspace_folder_id: Optional[str] = None   # student's subfolder in teacher's classroom/
 
     model_config = {"from_attributes": True}

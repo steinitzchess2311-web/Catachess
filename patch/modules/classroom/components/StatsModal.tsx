@@ -89,7 +89,7 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
                         background: 'var(--cl-bg)',
                       }}>
                         <div className="cl-member-avatar" style={{ width: 28, height: 28, fontSize: '0.78rem' }}>
-                          {s.username[0]?.toUpperCase()}
+                          {s.username?.[0]?.toUpperCase()}
                         </div>
                         <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 500 }}>{s.username}</span>
                         <StatusBadge status={s.status as any} />

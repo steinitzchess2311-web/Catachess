@@ -124,7 +124,7 @@ export const AddMemberModal: React.FC<Props> = ({ classroomId, onClose, onAdded 
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: '#fff', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0,
               }}>
-                {found.username[0].toUpperCase()}
+                {found.username?.[0]?.toUpperCase()}
               </div>
 
               <span style={{ fontSize: '0.9rem', fontWeight: 600, flex: 1 }}>{found.username}</span>

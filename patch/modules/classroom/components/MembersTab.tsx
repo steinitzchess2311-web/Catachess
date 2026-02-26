@@ -151,7 +151,7 @@ const MemberRow: React.FC<MemberRowProps> = ({ member, canManage, currentUserIsO
   return (
     <div className="cl-member-row">
       <div className="cl-member-avatar">
-        {member.username[0]?.toUpperCase()}
+        {member.username?.[0]?.toUpperCase()}
       </div>
       <span className="cl-member-name">{member.username}</span>
       <RoleBadge role={member.role} />

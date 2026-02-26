@@ -65,7 +65,7 @@ export const ActivityFeed: React.FC<Props> = ({ classroomId }) => {
         >
           {/* Avatar */}
           <div className="cl-member-avatar" style={{ width: 28, height: 28, fontSize: '0.76rem', flexShrink: 0 }}>
-            {item.username[0]?.toUpperCase()}
+            {item.username?.[0]?.toUpperCase()}
           </div>
 
           {/* Text */}

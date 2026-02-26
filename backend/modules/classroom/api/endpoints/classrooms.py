@@ -433,9 +433,10 @@ def broadcast(
     if not classroom.catchat_group_id:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Chat not available for this classroom")
 
-    # Write broadcast directly to catchat DB
+    # Write broadcast as a GroupMessage into catchat DB
     try:
-        from modules.catchat.db.models.broadcast import Broadcast
+        from modules.catchat.db.models.group_message import GroupMessage
+        from modules.catchat.db.models.group import Group
         from modules.catchat.db.session import Base  # noqa
         from sqlalchemy import create_engine
         from sqlalchemy.orm import Session as CatchatSession
@@ -443,17 +444,23 @@ def broadcast(
 
         engine = create_engine(os.getenv("CATCHAT_DATABASE"), pool_pre_ping=True)
         with CatchatSession(engine) as cdb:
-            broadcast_obj = Broadcast(
+            msg = GroupMessage(
                 group_id=classroom.catchat_group_id,
                 sender_id=current_user.id,
+                sender_name=current_user.username,
                 content=body.content,
             )
-            cdb.add(broadcast_obj)
+            cdb.add(msg)
+            # Update group's last_message_at so it surfaces in sidebar
+            group = cdb.get(Group, classroom.catchat_group_id)
+            if group:
+                from datetime import datetime
+                group.last_message_at = datetime.utcnow()
             cdb.commit()
-            cdb.refresh(broadcast_obj)
+            cdb.refresh(msg)
             return BroadcastResponse(
-                broadcast_id=str(broadcast_obj.id),
-                created_at=broadcast_obj.created_at,
+                broadcast_id=str(msg.id),
+                created_at=msg.created_at,
             )
     except Exception as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Broadcast failed: {exc}")

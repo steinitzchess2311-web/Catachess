@@ -15,7 +15,9 @@
 | PATCH | `/api/classroom/classrooms/{id}/invite` | 开关邀请码（owner/teacher） |
 | POST | `/api/classroom/classrooms/join` | 通过邀请码加入班级 |
 | GET | `/api/classroom/classrooms/{id}/chat` | 获取该班的 catachat 群组 ID |
-| POST | `/api/classroom/classrooms/{id}/broadcast` | 向班级 catachat 群发送广播消息 |
+| POST | `/api/classroom/classrooms/{id}/broadcast` | 向班级 catachat 群发送广播消息（标记 is_broadcast） |
+| GET | `/api/classroom/classrooms/{id}/broadcasts` | 列出该班所有广播消息，按时间倒序（任意成员） |
+| DELETE | `/api/classroom/classrooms/{id}/broadcasts/{mid}` | 删除指定广播消息（teacher+） |
 
 ## Members
 | Method | Path | Description |

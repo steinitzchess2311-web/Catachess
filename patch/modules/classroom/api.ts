@@ -53,7 +53,7 @@ export const resetInvite = (id: string): Promise<InviteInfo> =>
 export const setInviteActive = (id: string, active: boolean): Promise<InviteInfo> =>
   api.patch(`${BASE}/${id}/invite`, { active });
 
-export const joinClassroom = (invite_code: string): Promise<{ classroom_id: string; name: string; role: ClassroomRole }> =>
+export const joinClassroom = (invite_code: string): Promise<Classroom> =>
   api.post(`${BASE}/join`, { invite_code });
 
 // ─── Chat & Broadcast ─────────────────────────────────────────────────────────
@@ -69,8 +69,8 @@ export const broadcastMessage = (id: string, content: string): Promise<{ broadca
 export const listMembers = (classroomId: string): Promise<ClassroomMember[]> =>
   api.get(`${BASE}/${classroomId}/members`);
 
-export const addMember = (classroomId: string, username: string, role: ClassroomRole = 'student'): Promise<ClassroomMember> =>
-  api.post(`${BASE}/${classroomId}/members`, { username, role });
+export const addMember = (classroomId: string, username: string, user_id: string, role: ClassroomRole = 'student'): Promise<ClassroomMember> =>
+  api.post(`${BASE}/${classroomId}/members`, { username, user_id, role });
 
 export const removeMember = (classroomId: string, username: string): Promise<void> =>
   api.delete(`${BASE}/${classroomId}/members/${username}`);

@@ -18,7 +18,7 @@ export const JoinClassroomModal: React.FC<Props> = ({ onClose }) => {
     setError('');
     try {
       const res = await joinClassroom(trimmed);
-      navigate(`/classroom/${res.classroom_id}`);
+      navigate(`/classroom/${res.id}`, { state: { classroom: res } });
     } catch (err: any) {
       setError(err?.message || 'Invalid or expired invite code.');
     } finally {

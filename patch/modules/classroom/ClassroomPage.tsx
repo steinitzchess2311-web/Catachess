@@ -174,7 +174,7 @@ const InlineJoin: React.FC<{ onJoined: (id: string) => void }> = ({ onJoined }) 
     setError('');
     try {
       const res = await joinClassroom(trimmed);
-      onJoined(res.classroom_id);
+      onJoined(res.id);
     } catch (err: any) {
       setError(err?.message || 'Invalid or expired code.');
     } finally {

@@ -4,6 +4,7 @@ import type { Classroom, ClassroomMember, ClassroomRole } from '../types';
 import { RoleBadge } from './RoleBadge';
 import { AddMemberModal } from './AddMemberModal';
 import { InvitePanel } from './InvitePanel';
+import { avatarColor } from '../utils';
 
 interface Props {
   classroom: Classroom;
@@ -150,7 +151,7 @@ const MemberRow: React.FC<MemberRowProps> = ({ member, canManage, currentUserIsO
 
   return (
     <div className="cl-member-row">
-      <div className="cl-member-avatar">
+      <div className="cl-member-avatar" style={{ background: avatarColor(member.username), color: '#fff' }}>
         {member.username?.[0]?.toUpperCase()}
       </div>
       <span className="cl-member-name">{member.username}</span>

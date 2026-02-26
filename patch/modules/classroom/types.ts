@@ -122,12 +122,16 @@ export interface AssignmentStats {
 // ─── Activity ─────────────────────────────────────────────────────────────────
 
 export interface ActivityItem {
-  username: string;
+  submission_id: string;
+  student_username: string;
   assignment_id: string;
   assignment_title: string;
-  status: 'submitted' | 'in_progress';
+  assignment_category: string;
+  attempt: number;
+  status: 'submitted' | 'in_progress' | 'graded';
   score: number | null;
-  submitted_at: string;
+  submitted_at: string | null;
+  started_at: string;
 }
 
 // ─── Todo ─────────────────────────────────────────────────────────────────────

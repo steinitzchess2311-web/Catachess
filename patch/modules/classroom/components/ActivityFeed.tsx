@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { getActivity } from '../api';
 import type { ActivityItem } from '../types';
+import { avatarColor } from '../utils';
 
 interface Props {
   classroomId: string;
@@ -64,13 +65,17 @@ export const ActivityFeed: React.FC<Props> = ({ classroomId }) => {
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         >
           {/* Avatar */}
-          <div className="cl-member-avatar" style={{ width: 28, height: 28, fontSize: '0.76rem', flexShrink: 0 }}>
-            {item.username?.[0]?.toUpperCase()}
+          <div className="cl-member-avatar" style={{
+            width: 28, height: 28, fontSize: '0.76rem', flexShrink: 0,
+            background: item.student_username ? avatarColor(item.student_username) : 'var(--cl-border)',
+            color: '#fff',
+          }}>
+            {item.student_username?.[0]?.toUpperCase() ?? '?'}
           </div>
 
           {/* Text */}
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{item.username}</span>
+            <span style={{ fontWeight: 600, fontSize: '0.85rem' }}>{item.student_username}</span>
             <span style={{ color: 'var(--cl-text-secondary)', fontSize: '0.85rem' }}>
               {' '}{item.status === 'submitted' ? 'submitted' : 'started'}{' '}
             </span>
@@ -105,7 +110,7 @@ export const ActivityFeed: React.FC<Props> = ({ classroomId }) => {
 
           {/* Time */}
           <span style={{ fontSize: '0.73rem', color: 'var(--cl-text-muted)', flexShrink: 0 }}>
-            {timeAgo(item.submitted_at)}
+            {timeAgo(item.submitted_at ?? item.started_at)}
           </span>
         </div>
       ))}

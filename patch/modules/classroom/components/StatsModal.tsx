@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { getAssignmentStats } from '../api';
 import type { AssignmentStats, Assignment } from '../types';
 import { StatusBadge } from './StatusBadge';
+import { avatarColor } from '../utils';
 
 interface Props {
   classroomId: string;
@@ -88,7 +89,7 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
                         borderRadius: 6,
                         background: 'var(--cl-bg)',
                       }}>
-                        <div className="cl-member-avatar" style={{ width: 28, height: 28, fontSize: '0.78rem' }}>
+                        <div className="cl-member-avatar" style={{ width: 28, height: 28, fontSize: '0.78rem', background: avatarColor(s.username), color: '#fff' }}>
                           {s.username?.[0]?.toUpperCase()}
                         </div>
                         <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 500 }}>{s.username}</span>

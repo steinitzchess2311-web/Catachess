@@ -4,6 +4,7 @@ import React, { useState, useRef } from 'react';
 import { api } from '@ui/assets/api';
 import { addMember } from '../api';
 import type { ClassroomMember, ClassroomRole } from '../types';
+import { avatarColor } from '../utils';
 
 interface UserResult {
   id: string;
@@ -120,7 +121,7 @@ export const AddMemberModal: React.FC<Props> = ({ classroomId, onClose, onAdded 
               {/* Avatar */}
               <div style={{
                 width: 36, height: 36, borderRadius: '50%',
-                background: 'var(--cl-accent)',
+                background: found.username ? avatarColor(found.username) : 'var(--cl-accent)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: '#fff', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0,
               }}>

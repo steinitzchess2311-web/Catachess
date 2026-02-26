@@ -1,6 +1,16 @@
 // ─── Shared utilities ─────────────────────────────────────────────────────────
 
 /**
+ * Returns the avatar background color for a username.
+ * Matches the catachat avatar color algorithm exactly:
+ *   hue = sum of charCodes % 360, bg = hsl(hue, 55%, 55%)
+ */
+export function avatarColor(username: string): string {
+  const hue = [...username].reduce((acc, c) => acc + c.charCodeAt(0), 0) % 360;
+  return `hsl(${hue}, 55%, 55%)`;
+}
+
+/**
  * Returns a human-readable due date string.
  * "Today", "Tomorrow", "Mar 5", etc.
  */

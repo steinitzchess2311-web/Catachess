@@ -39,11 +39,11 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
   }, [activeCategory]);
 
   const handleUserBlogsClick = () => {
-    // Community is now enabled - navigate to user category
+    // Community is now enabled - navigate to user category (also resets viewMode via handleCategoryClick)
     handleCategoryClick('user');
   };
 
-  // Handle category click
+  // Handle category click — also resets viewMode to 'articles'
   const handleCategoryClick = (categoryId: string) => {
     // Map UI category IDs to API category values
     const categoryMap: { [key: string]: string | undefined } = {
@@ -54,6 +54,7 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
       'user': 'user',  // Community category
     };
 
+    onViewModeChange('articles');
     onCategoryChange(categoryMap[categoryId]);
   };
 
@@ -104,26 +105,34 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
         {isOpen && (
           <>
             <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "48px" }}>
-              {/* Pinned Articles */}
-              <PinnedButton
-                activeCategory={activeCategory}
-                onCategoryChange={onCategoryChange}
-                onViewModeChange={onViewModeChange}
-              />
+              {/* When in drafts/my-published mode, no category should appear highlighted */}
+              {(() => {
+                const displayCategory = viewMode === 'articles' ? activeCategory : '__none__';
+                return (
+                  <>
+                    {/* Pinned Articles */}
+                    <PinnedButton
+                      activeCategory={displayCategory}
+                      onCategoryChange={onCategoryChange}
+                      onViewModeChange={onViewModeChange}
+                    />
 
-              {/* Community */}
-              <CommunityButton
-                activeCategory={activeCategory}
-                onUserBlogsClick={handleUserBlogsClick}
-              />
+                    {/* Community */}
+                    <CommunityButton
+                      activeCategory={displayCategory}
+                      onUserBlogsClick={handleUserBlogsClick}
+                    />
 
-              {/* Chessortag Official - Collapsible */}
-              <OfficialSection
-                activeCategory={activeCategory}
-                isOfficialOpen={isOfficialOpen}
-                setIsOfficialOpen={setIsOfficialOpen}
-                onCategoryClick={handleCategoryClick}
-              />
+                    {/* Chessortag Official - Collapsible */}
+                    <OfficialSection
+                      activeCategory={displayCategory}
+                      isOfficialOpen={isOfficialOpen}
+                      setIsOfficialOpen={setIsOfficialOpen}
+                      onCategoryClick={handleCategoryClick}
+                    />
+                  </>
+                );
+              })()}
             </div>
 
             {/* User Actions Section - Only show for Editor/Admin */}
@@ -139,7 +148,7 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
         {/* Collapsed State - Minimal Icon View */}
         {!isOpen && (
           <CollapsedView
-            activeCategory={activeCategory}
+            activeCategory={viewMode === 'articles' ? activeCategory : '__none__'}
             onCategoryChange={onCategoryChange}
             onViewModeChange={onViewModeChange}
             onUserBlogsClick={handleUserBlogsClick}

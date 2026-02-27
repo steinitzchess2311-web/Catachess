@@ -53,9 +53,8 @@ const BlogsPage = () => {
   const search = searchParams.get('search') || undefined;
   const page = parseInt(searchParams.get('page') || '1', 10);
 
-  // Map 'official' category to undefined for API calls (shows all official blogs)
-  // Keep original categoryParam for UI display
-  const category = categoryParam === 'official' ? undefined : categoryParam;
+  // Pass categoryParam directly to API; backend handles 'official' → filter by author_type
+  const category = categoryParam;
 
 
   /**

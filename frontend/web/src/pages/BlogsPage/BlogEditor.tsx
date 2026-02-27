@@ -498,6 +498,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
                             </Select.Label>
                             <SelectItem value="about">Our Stories</SelectItem>
                             <SelectItem value="function">Function Intro</SelectItem>
+                            <SelectItem value="devlog">Developer Logs</SelectItem>
                           </Select.Group>
                           <Select.Separator style={{ height: '1px', backgroundColor: '#e2e8f0', margin: '8px 0' }} />
                           <Select.Group>

@@ -174,7 +174,10 @@ async def get_articles(
     )
 
     # Filter by category
-    if category and category != "allblogs":
+    if category == "official":
+        # "Chessortag Official" root — show all official author_type articles
+        stmt = stmt.where(BlogArticle.author_type == "official")
+    elif category and category not in ("allblogs", "pinned"):
         stmt = stmt.where(BlogArticle.category == category)
 
     # Time filtering by year/month

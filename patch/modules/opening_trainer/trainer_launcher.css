@@ -1,0 +1,106 @@
+.trainer-launcher-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  background: rgba(7, 17, 38, 0.58);
+  backdrop-filter: blur(4px);
+}
+
+.trainer-launcher-modal {
+  width: min(780px, calc(100vw - 28px));
+  border-radius: 18px;
+  border: 1px solid rgba(132, 172, 255, 0.42);
+  background: linear-gradient(160deg, #ffffff, #ecf4ff);
+  box-shadow: 0 28px 70px rgba(15, 42, 97, 0.3);
+  padding: 22px;
+  font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+}
+
+.trainer-launcher-modal h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: #102349;
+}
+
+.trainer-launcher-modal p {
+  margin: 8px 0 0;
+  color: #47608b;
+  font-weight: 500;
+}
+
+.trainer-launcher-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.trainer-launcher-card {
+  border: 1px solid #c8dafb;
+  background: linear-gradient(150deg, #fefeff, #f1f6ff);
+  border-radius: 14px;
+  text-align: left;
+  padding: 14px;
+  cursor: pointer;
+  transition: transform 170ms ease, box-shadow 170ms ease, border-color 170ms ease;
+  display: grid;
+  gap: 8px;
+}
+
+.trainer-launcher-card:hover {
+  transform: translateY(-2px);
+  border-color: #8db1f5;
+  box-shadow: 0 10px 24px rgba(31, 95, 255, 0.18);
+}
+
+.trainer-launcher-badge {
+  justify-self: start;
+  background: #e8efe8;
+  color: #2b5f3e;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trainer-launcher-badge.is-blue {
+  background: #e7f0ff;
+  color: #194cb2;
+}
+
+.trainer-launcher-card strong {
+  font-size: 1rem;
+  color: #13274f;
+}
+
+.trainer-launcher-card small {
+  color: #546e9c;
+  line-height: 1.45;
+}
+
+.trainer-launcher-actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.trainer-launcher-cancel {
+  border: 1px solid #c4d8ff;
+  background: #f7fbff;
+  color: #3e5e95;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .trainer-launcher-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

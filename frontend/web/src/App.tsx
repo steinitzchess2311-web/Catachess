@@ -57,6 +57,7 @@ const AnalyzeGamePage = React.lazy(() => import("@patch/modules/user_games").the
 const JoinGamePage = React.lazy(() => import("@patch/modules/user_games").then(m => ({ default: m.JoinGamePage })));
 const ClassroomPage = React.lazy(() => import("@patch/modules/classroom").then(m => ({ default: m.ClassroomPage })));
 const ClassroomDetailPage = React.lazy(() => import("@patch/modules/classroom").then(m => ({ default: m.ClassroomDetailPage })));
+const OpeningTrainerPage = React.lazy(() => import("./pages/openingTrainer").then(m => ({ default: m.OpeningTrainerPage })));
 
 // Entry switch configuration: default to patch unless explicitly disabled
 const USE_PATCH_STUDY = import.meta.env.VITE_USE_PATCH_STUDY !== "false";
@@ -608,6 +609,9 @@ function Layout() {
           <Route path="/workspace/private/:topFolder/:id" element={<PatchStudyPage />} />
           <Route path="/workspace/public/:topFolder/:id" element={<PatchStudyPage />} />
           <Route path="/workspace/shared/:topFolder/:id" element={<PatchStudyPage />} />
+          <Route path="/workspace/private/:topFolder/:id/opening-trainer" element={<Protected><OpeningTrainerPage /></Protected>} />
+          <Route path="/workspace/public/:topFolder/:id/opening-trainer" element={<Protected><OpeningTrainerPage /></Protected>} />
+          <Route path="/workspace/shared/:topFolder/:id/opening-trainer" element={<Protected><OpeningTrainerPage /></Protected>} />
 
           {/* Workspace browser — wildcard covers /workspace/{mode} and /workspace/{mode}/{topFolder} */}
           <Route path="/workspace/private/*" element={<WorkspaceSelect mode="private" />} />
@@ -621,6 +625,8 @@ function Layout() {
           {/* Legacy study routes (backward compat) */}
           <Route path="/workspace/:id" element={<Protected>{USE_PATCH_STUDY ? <PatchStudyPage /> : <WorkspacePage />}</Protected>} />
           <Route path="/patch/workspace/:id" element={<Protected><PatchStudyPage /></Protected>} />
+          <Route path="/workspace/:id/opening-trainer" element={<Protected><OpeningTrainerPage /></Protected>} />
+          <Route path="/patch/workspace/:id/opening-trainer" element={<Protected><OpeningTrainerPage /></Protected>} />
 
           {/* Games — 大厅 + 实时对局 + 加入 + 赛后分析 */}
           <Route path="/play" element={<PlayPage username={username} />} />

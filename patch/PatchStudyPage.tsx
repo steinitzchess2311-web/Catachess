@@ -15,6 +15,7 @@ import { ExplorerPanel } from './modules/explorer';
 import { useChapters } from './chapters/useChapters';
 import { NewChapterModal } from './chapters/NewChapterModal';
 import { TrainPanel, TrainEntryModal } from './modules/train';
+import { TrainerLauncherModal } from './modules/opening_trainer/TrainerLauncherModal';
 
 export interface PatchStudyPageProps {
   className?: string;
@@ -71,7 +72,8 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [rightbarWidth, setRightbarWidth] = useState<number>(280);
   const [rightPanelTab, setRightPanelTab] = useState<'tree' | 'explorer'>('tree');
-  const [showTrainModal, setShowTrainModal] = useState(false);
+  const [showTrainerLauncher, setShowTrainerLauncher] = useState(false);
+  const [showPositionTrainEntry, setShowPositionTrainEntry] = useState(false);
   const [isResizingRightbar, setIsResizingRightbar] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState<string>('');
@@ -463,7 +465,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
                 <button
                   type="button"
                   className="patch-sidebar-tab"
-                  onClick={() => setShowTrainModal(true)}
+                  onClick={() => setShowTrainerLauncher(true)}
                 >
                   Train
                 </button>
@@ -538,11 +540,25 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         </div>
       )}
 
-      {showTrainModal && (
+      {showTrainerLauncher && (
+        <TrainerLauncherModal
+          onClose={() => setShowTrainerLauncher(false)}
+          onSelectPositionTrainer={() => {
+            setShowTrainerLauncher(false);
+            setShowPositionTrainEntry(true);
+          }}
+          onSelectOpeningTrainer={() => {
+            setShowTrainerLauncher(false);
+            navigate(`${pathname.replace(/\/$/, '')}/opening-trainer`);
+          }}
+        />
+      )}
+
+      {showPositionTrainEntry && (
         <TrainEntryModal
-          onCancel={() => setShowTrainModal(false)}
+          onCancel={() => setShowPositionTrainEntry(false)}
           onConfirm={() => {
-            setShowTrainModal(false);
+            setShowPositionTrainEntry(false);
             enterTrainMode();
           }}
         />

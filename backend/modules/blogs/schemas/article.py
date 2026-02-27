@@ -83,6 +83,7 @@ class ArticleResponse(BaseModel):
     view_count: int
     like_count: int
     comment_count: int
+    is_liked: bool = False  # Whether the current user has liked this article
 
     created_at: datetime
     updated_at: datetime

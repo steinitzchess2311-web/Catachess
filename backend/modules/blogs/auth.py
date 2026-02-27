@@ -31,6 +31,7 @@ from core.db.deps import get_db
 
 # OAuth2 scheme for automatic token extraction
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 def get_blog_db():
@@ -108,6 +109,27 @@ def get_current_user(
         )
 
     return user
+
+
+def get_current_user_optional(
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db)
+) -> Optional[User]:
+    """
+    Return the current user if a valid JWT is present, otherwise return None.
+    Used for public endpoints that show extra info when logged in (e.g. is_liked).
+    """
+    if not token:
+        return None
+    try:
+        user_id = decode_token(token)
+        if not user_id:
+            return None
+        user_uuid = uuid.UUID(user_id)
+        user = db.get(User, user_uuid)
+        return user if user and user.is_active else None
+    except Exception:
+        return None
 
 
 def require_editor(

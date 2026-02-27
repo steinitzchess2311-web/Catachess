@@ -22,6 +22,7 @@ export interface BlogArticle {
   view_count: number;
   like_count: number;
   comment_count: number;
+  is_liked?: boolean;   // Whether the current logged-in user has liked this article
   created_at: string;  // ISO 8601 date string
   published_at: string;  // ISO 8601 date string
 }

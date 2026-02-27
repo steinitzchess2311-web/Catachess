@@ -12,6 +12,7 @@ import LoadingState from "./components/LoadingState";
 import ErrorState from "./components/ErrorState";
 import { useBlogArticle } from "../../hooks/useBlogArticle";
 import { saveCategoryLastArticle, addRecentArticle } from "../../utils/articleHistory";
+import { blogApi } from "../../utils/blogApi";
 
 interface ArticleDetailContentProps {
   article?: BlogArticle | null;
@@ -34,11 +35,13 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
 
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [liking, setLiking] = useState(false);
 
-  // Initialize like count when article loads
+  // Sync like state from article data (including is_liked from backend)
   React.useEffect(() => {
     if (article) {
       setLikeCount(article.like_count || 0);
+      setIsLiked(article.is_liked ?? false);
     }
   }, [article]);
 
@@ -57,11 +60,28 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
     }
   }, [article, currentCategory]);
 
-  // Handle like toggle
-  const handleLikeToggle = () => {
-    setIsLiked(!isLiked);
-    setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
-    // TODO: Call API to update like count
+  // Handle like toggle — optimistic update, roll back on error
+  const handleLikeToggle = async () => {
+    if (!article || liking) return;
+
+    // Optimistic update
+    const nextLiked = !isLiked;
+    setIsLiked(nextLiked);
+    setLikeCount(prev => nextLiked ? prev + 1 : Math.max(prev - 1, 0));
+    setLiking(true);
+
+    try {
+      const res = await blogApi.toggleLike(article.id);
+      // Sync with server truth
+      setIsLiked(res.liked);
+      setLikeCount(res.like_count);
+    } catch {
+      // Roll back optimistic update on failure
+      setIsLiked(isLiked);
+      setLikeCount(prev => isLiked ? prev + 1 : Math.max(prev - 1, 0));
+    } finally {
+      setLiking(false);
+    }
   };
 
   // Loading state
@@ -239,6 +259,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
         {/* Likes - Interactive */}
         <button
           onClick={handleLikeToggle}
+          disabled={liking}
           style={{
             display: "flex",
             alignItems: "center",
@@ -246,11 +267,12 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
             color: isLiked ? "#2563eb" : "#64748b",
             border: "none",
             background: "transparent",
-            cursor: "pointer",
+            cursor: liking ? "wait" : "pointer",
             fontSize: "0.95rem",
             padding: "4px 8px",
             borderRadius: "6px",
             transition: "all 0.2s ease",
+            opacity: liking ? 0.6 : 1,
           }}
           onMouseEnter={(e) => {
             if (!isLiked) {

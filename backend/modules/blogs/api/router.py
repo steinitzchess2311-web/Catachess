@@ -36,7 +36,7 @@ from modules.blogs.schemas import (
 )
 from modules.blogs.services.cache_service import get_blog_cache, BlogCacheService
 from modules.blogs.services.image_service import get_image_service
-from modules.blogs.auth import require_editor, require_admin
+from modules.blogs.auth import require_editor, require_admin, get_current_user_optional
 from modules.blogs.utils.image_linker import sync_article_images
 
 router = APIRouter(prefix="/api/blogs", tags=["Blogs"])
@@ -445,66 +445,144 @@ async def get_my_published(
 async def get_article(
     article_id: UUID,
     cache: BlogCacheService = Depends(get_blog_cache),
-    db: Session = Depends(get_blog_db)
+    db: Session = Depends(get_blog_db),
+    current_user=Depends(get_current_user_optional),
 ):
     """
     Get article detail by ID (cached for 10 minutes)
 
-    **Public endpoint** - No authentication required
+    **Public endpoint** - Optionally authenticated (returns is_liked when logged in)
 
-    **Side effect:** Increments view count
+    **Side effect:** Increments view count in DB
     """
-    # Try cache first
+    # Try cache first for article data (cache never stores is_liked — user-specific)
     cached = await cache.get_article(str(article_id))
     if cached:
-        # Increment view count in background
-        await cache.increment_view(str(article_id))
-        return ArticleResponse(**cached)
+        result = dict(cached)
+    else:
+        # Query database
+        stmt = select(BlogArticle).where(BlogArticle.id == article_id)
+        article = db.execute(stmt).scalar_one_or_none()
 
-    # Query database
-    stmt = select(BlogArticle).where(BlogArticle.id == article_id)
-    article = db.execute(stmt).scalar_one_or_none()
+        if not article:
+            raise HTTPException(status_code=404, detail="Article not found")
+        if article.status != "published":
+            raise HTTPException(status_code=404, detail="Article not published")
+        if article.is_hidden:
+            raise HTTPException(status_code=404, detail="Article not found")
 
-    if not article:
+        result = {
+            "id": str(article.id),
+            "title": article.title,
+            "subtitle": article.subtitle,
+            "content": article.content,
+            "cover_image_url": article.cover_image_url,
+            "author_id": str(article.author_id) if article.author_id else None,
+            "author_name": article.author_name,
+            "author_type": article.author_type,
+            "category": article.category,
+            "sub_category": article.sub_category,
+            "tags": article.tags,
+            "status": article.status,
+            "is_pinned": article.is_pinned,
+            "pin_order": article.pin_order,
+            "view_count": article.view_count,
+            "like_count": article.like_count,
+            "comment_count": article.comment_count,
+            "created_at": article.created_at.isoformat(),
+            "updated_at": article.updated_at.isoformat(),
+            "published_at": article.published_at.isoformat() if article.published_at else None,
+        }
+        await cache.set_article(str(article_id), result)
+
+    # Persist view count increment to DB (fast indexed UPDATE, non-blocking feel)
+    try:
+        db.execute(
+            text("UPDATE blog_articles SET view_count = view_count + 1 WHERE id = :id"),
+            {"id": str(article_id)}
+        )
+        db.commit()
+        result["view_count"] = result.get("view_count", 0) + 1
+    except Exception:
+        db.rollback()
+
+    # Compute is_liked for the current user (never cached — always fresh)
+    is_liked = False
+    if current_user:
+        row = db.execute(
+            text("SELECT 1 FROM blog_likes WHERE article_id = :a AND user_id = :u"),
+            {"a": str(article_id), "u": str(current_user.id)}
+        ).fetchone()
+        is_liked = row is not None
+
+    return ArticleResponse(**result, is_liked=is_liked)
+
+
+@router.post("/articles/{article_id}/like")
+async def toggle_like(
+    article_id: UUID,
+    db: Session = Depends(get_blog_db),
+    current_user=Depends(get_current_user_optional),
+):
+    """
+    Toggle like on an article. Requires login (401 if not authenticated).
+    Returns: { liked: bool, like_count: int }
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Login required to like articles")
+
+    # Verify article exists and is published
+    article_row = db.execute(
+        select(BlogArticle.like_count).where(
+            BlogArticle.id == article_id,
+            BlogArticle.status == "published",
+            BlogArticle.is_hidden == False,
+        )
+    ).fetchone()
+    if not article_row:
         raise HTTPException(status_code=404, detail="Article not found")
 
-    if article.status != "published":
-        raise HTTPException(status_code=404, detail="Article not published")
+    # Check if already liked
+    existing = db.execute(
+        text("SELECT 1 FROM blog_likes WHERE article_id = :a AND user_id = :u"),
+        {"a": str(article_id), "u": str(current_user.id)}
+    ).fetchone()
 
-    if article.is_hidden:
-        raise HTTPException(status_code=404, detail="Article not found")
+    try:
+        if existing:
+            # Unlike
+            db.execute(
+                text("DELETE FROM blog_likes WHERE article_id = :a AND user_id = :u"),
+                {"a": str(article_id), "u": str(current_user.id)}
+            )
+            db.execute(
+                text("UPDATE blog_articles SET like_count = GREATEST(like_count - 1, 0) WHERE id = :id"),
+                {"id": str(article_id)}
+            )
+            liked = False
+        else:
+            # Like
+            db.execute(
+                text("INSERT INTO blog_likes (article_id, user_id) VALUES (:a, :u) ON CONFLICT DO NOTHING"),
+                {"a": str(article_id), "u": str(current_user.id)}
+            )
+            db.execute(
+                text("UPDATE blog_articles SET like_count = like_count + 1 WHERE id = :id"),
+                {"id": str(article_id)}
+            )
+            liked = True
 
-    # Convert to dict
-    result = {
-        "id": str(article.id),
-        "title": article.title,
-        "subtitle": article.subtitle,
-        "content": article.content,
-        "cover_image_url": article.cover_image_url,
-        "author_id": str(article.author_id) if article.author_id else None,
-        "author_name": article.author_name,
-        "author_type": article.author_type,
-        "category": article.category,
-        "sub_category": article.sub_category,
-        "tags": article.tags,
-        "status": article.status,
-        "is_pinned": article.is_pinned,
-        "pin_order": article.pin_order,
-        "view_count": article.view_count,
-        "like_count": article.like_count,
-        "comment_count": article.comment_count,
-        "created_at": article.created_at.isoformat(),
-        "updated_at": article.updated_at.isoformat(),
-        "published_at": article.published_at.isoformat() if article.published_at else None,
-    }
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to update like") from e
 
-    # Cache for 10 minutes
-    await cache.set_article(str(article_id), result)
+    # Return updated like count
+    updated_count = db.execute(
+        select(BlogArticle.like_count).where(BlogArticle.id == article_id)
+    ).scalar()
 
-    # Increment view count
-    await cache.increment_view(str(article_id))
-
-    return ArticleResponse(**result)
+    return {"liked": liked, "like_count": updated_count or 0}
 
 
 # ==================== Cache Stats (Debug) ====================

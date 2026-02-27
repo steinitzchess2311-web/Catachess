@@ -117,6 +117,11 @@ async def _init_blog_db() -> None:
                 logger.info("blog_images missing new fields - migration needed")
                 needs_migration = True
 
+        # Check if blog_likes table exists
+        if 'blog_likes' not in tables:
+            logger.info("blog_likes table not found - migration needed")
+            needs_migration = True
+
         # Step 0: Create base tables if needed
         if needs_base_tables:
             logger.info("🔨 Creating blog base tables...")
@@ -261,6 +266,21 @@ async def _init_blog_db() -> None:
                     FROM blog_images
                     WHERE article_id IS NOT NULL
                     ON CONFLICT (article_id, image_id) DO NOTHING;
+                """))
+
+                # Step 4b: Create blog_likes table
+                logger.info("  Creating blog_likes table...")
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS blog_likes (
+                        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        article_id UUID NOT NULL,
+                        user_id UUID NOT NULL,
+                        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                        CONSTRAINT blog_likes_unique UNIQUE (article_id, user_id)
+                    );
+
+                    CREATE INDEX IF NOT EXISTS ix_blog_likes_article_id ON blog_likes(article_id);
+                    CREATE INDEX IF NOT EXISTS ix_blog_likes_user_id ON blog_likes(user_id);
                 """))
 
                 # Step 5: Update is_orphan status

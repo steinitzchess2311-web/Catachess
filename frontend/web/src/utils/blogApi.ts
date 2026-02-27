@@ -157,6 +157,16 @@ export const blogApi = {
   },
 
   /**
+   * Toggle like on an article (requires login)
+   * @param id - Article ID
+   * @returns { liked: boolean, like_count: number }
+   */
+  async toggleLike(id: string): Promise<{ liked: boolean; like_count: number }> {
+    const response = await api.post(`${BASE_PATH}/articles/${id}/like`, {});
+    return response;
+  },
+
+  /**
    * Pin or unpin article
    * Requires Admin role
    * @param id - Article ID

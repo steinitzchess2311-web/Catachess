@@ -27,6 +27,7 @@ from modules.blogs.api.router import router as blog_router
 from modules.pgn_fen_import_export.api import router as import_export_router
 from modules.catchat.api.router import router as catchat_router
 from modules.classroom.api.router import router as classroom_router
+from modules.opening_trainer.api.router import router as opening_trainer_router
 from core.log.log_api import logger
 from core.config import settings
 from modules.workspace.db.session import init_db as init_workspace_db
@@ -357,6 +358,57 @@ def _backfill_classroom_workspace_acl() -> None:
 # ── END TEMPORARY ─────────────────────────────────────────────────────────────
 
 
+# ── TEMPORARY: OPENING TRAINER TABLE BOOTSTRAP (DELETE AFTER RAILWAY INIT) ───
+# IMPORTANT:
+#   This startup script is ONLY for initial Railway deployment bootstrap.
+#   It creates opening_trainer_moves directly in OPENING_TRAINER_URL.
+#   Remove this function and the lifespan call after table creation is confirmed.
+def _init_opening_trainer_tables_temporary() -> None:
+    import os
+    from sqlalchemy import create_engine, text
+
+    opening_trainer_url = os.getenv("OPENING_TRAINER_URL")
+    if not opening_trainer_url:
+        logger.warning("OPENING_TRAINER_URL not set — skipping opening trainer table bootstrap")
+        return
+
+    try:
+        engine = create_engine(opening_trainer_url, pool_pre_ping=True)
+        with engine.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS opening_trainer_moves (
+                    id BIGSERIAL PRIMARY KEY,
+                    user_id UUID NOT NULL,
+                    from_fen TEXT NOT NULL,
+                    move_san TEXT NOT NULL,
+                    color VARCHAR(5) NOT NULL CHECK (color IN ('white', 'black')),
+                    correct_count INTEGER NOT NULL DEFAULT 0,
+                    wrong_count INTEGER NOT NULL DEFAULT 0,
+                    consecutive_correct INTEGER NOT NULL DEFAULT 0,
+                    mastered BOOLEAN NOT NULL DEFAULT false,
+                    last_practiced_at TIMESTAMPTZ,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+            """))
+            conn.execute(text("""
+                CREATE UNIQUE INDEX IF NOT EXISTS uq_opening_trainer_moves_user_fen_move_color
+                ON opening_trainer_moves (user_id, from_fen, move_san, color);
+            """))
+            conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS ix_opening_trainer_moves_user_color_fen
+                ON opening_trainer_moves (user_id, color, from_fen);
+            """))
+            conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS ix_opening_trainer_moves_user_color_mastered
+                ON opening_trainer_moves (user_id, color, mastered);
+            """))
+        logger.info("✅ opening_trainer_moves table bootstrap completed")
+    except Exception as exc:
+        logger.error(f"Opening trainer table bootstrap failed: {exc}", exc_info=True)
+# ── END TEMPORARY ─────────────────────────────────────────────────────────────
+
+
 async def _presence_cleanup_loop() -> None:
     import os
 
@@ -465,6 +517,9 @@ async def lifespan(app: FastAPI):
     # TEMPORARY: share classroom/ workspace folder with teacher (Shared section fix)
     await asyncio.to_thread(_backfill_classroom_workspace_acl)
     # END TEMPORARY
+
+    # TEMPORARY: bootstrap opening_trainer_moves table on Railway
+    await asyncio.to_thread(_init_opening_trainer_tables_temporary)
 
     # Initialize MongoDB cache
     try:
@@ -602,6 +657,7 @@ app.include_router(import_export_router)  # ✅ FEN/PGN import/export endpoints
 app.include_router(user_statistics.router)  # User statistics endpoints
 app.include_router(catchat_router, prefix="/api/catchat", tags=["catchat"])
 app.include_router(classroom_router, prefix="/api/classroom", tags=["classroom"])
+app.include_router(opening_trainer_router)
 
 logger.info("Catachess API initialized")
 

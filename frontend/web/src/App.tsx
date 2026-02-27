@@ -613,6 +613,7 @@ function Layout() {
           <Route path="/workspace/private/*" element={<WorkspaceSelect mode="private" />} />
           <Route path="/workspace/public/*" element={<WorkspaceSelect mode="public" />} />
           <Route path="/workspace/shared/*" element={<WorkspaceSelect mode="shared" />} />
+          <Route path="/workspace/trash" element={<WorkspaceSelect mode="trash" />} />
 
           {/* /workspace → redirect based on auth state */}
           <Route path="/workspace" element={<Navigate to={isAuthed() ? "/workspace/private" : "/workspace/public"} replace />} />

@@ -7,6 +7,7 @@ import './OpeningTrainerPage.css';
 type TrainerMode = 'chapter' | 'merged';
 type TrainerColor = 'white' | 'black';
 type TrainingMode = 'quiz' | 'learn' | 'preview';
+type FeedbackKind = 'success' | 'error' | 'info';
 
 interface EligibilityResponse {
   eligible: boolean;
@@ -144,7 +145,9 @@ interface ActiveRun {
   finished: boolean;
   boardFen: string;
   lastProgress: TrainingProgress | null;
+  autoMoves: AutoMove[];
   feedback: string | null;
+  feedbackKind: FeedbackKind;
 }
 
 function toFenForBoard(fen: string | null | undefined): string {
@@ -177,6 +180,15 @@ function getUnitMastery(unit: LeafUnit, progressMap: Map<string, ProgressItem>):
     if (item?.mastered) mastered += 1;
   }
   return { mastered, total };
+}
+
+function toPercent(mastered: number, total: number): number {
+  if (total <= 0) return 0;
+  return Math.round((mastered / total) * 100);
+}
+
+function moveToken(step: { color: TrainerColor; move_number: number; move_san: string }): string {
+  return `${step.color === 'white' ? `${step.move_number}.` : `${step.move_number}...`}${step.move_san}`;
 }
 
 export function OpeningTrainerPage() {
@@ -309,7 +321,9 @@ export function OpeningTrainerPage() {
         finished: response.finished,
         boardFen,
         lastProgress: null,
-        feedback: null,
+        autoMoves: response.auto_moves || [],
+        feedback: response.finished ? 'Session complete.' : null,
+        feedbackKind: 'info',
       });
       setAnswerInput('');
     } catch (e: any) {
@@ -361,7 +375,9 @@ export function OpeningTrainerPage() {
           finished: response.finished,
           boardFen,
           lastProgress: response.progress || prev.lastProgress,
+          autoMoves: response.auto_moves || [],
           feedback: response.correct ? 'Correct move.' : `Expected: ${response.expected_move_san}`,
+          feedbackKind: response.correct ? 'success' : 'error',
         };
       });
       setAnswerInput('');
@@ -372,10 +388,32 @@ export function OpeningTrainerPage() {
     }
   }, [studyId, activeRun, answerInput]);
 
-  const totalMastered = useMemo(() => {
+  const selectedUnitMastery = useMemo(() => {
     if (!selectedUnit) return { mastered: 0, total: 0 };
     return getUnitMastery(selectedUnit, progressMap);
   }, [selectedUnit, progressMap]);
+
+  const allUnitsMastery = useMemo(() => {
+    let mastered = 0;
+    let total = 0;
+    for (const unit of units) {
+      const item = getUnitMastery(unit, progressMap);
+      mastered += item.mastered;
+      total += item.total;
+    }
+    return { mastered, total, percent: toPercent(mastered, total) };
+  }, [units, progressMap]);
+
+  const selectedMasteryPercent = useMemo(
+    () => toPercent(selectedUnitMastery.mastered, selectedUnitMastery.total),
+    [selectedUnitMastery],
+  );
+
+  const sessionLinePercent = useMemo(() => {
+    if (!activeRun) return 0;
+    const currentLine = Math.min(activeRun.session.line_count, activeRun.session.line_index + 1);
+    return toPercent(currentLine, Math.max(1, activeRun.session.line_count));
+  }, [activeRun]);
 
   return (
     <div className="ot-page">
@@ -388,6 +426,7 @@ export function OpeningTrainerPage() {
         <div className="ot-title-wrap">
           <p className="ot-kicker">Opening Trainer</p>
           <h1>Repertoire Flight Deck</h1>
+          <p className="ot-study-tag">Study {studyId ? `#${studyId.slice(0, 8)}` : '#N/A'}</p>
         </div>
         <div className="ot-controls">
           <label>
@@ -415,6 +454,29 @@ export function OpeningTrainerPage() {
         </div>
       </header>
 
+      <section className="ot-metric-strip">
+        <article className="ot-metric-card">
+          <span>Trainable Chapters</span>
+          <strong>{eligibility ? eligibility.stats.trainable_chapters : '--'}</strong>
+          <small>{eligibility ? `of ${eligibility.stats.total_chapters} total` : 'loading eligibility'}</small>
+        </article>
+        <article className="ot-metric-card">
+          <span>Global Mastery</span>
+          <strong>{allUnitsMastery.percent}%</strong>
+          <small>{allUnitsMastery.mastered}/{allUnitsMastery.total} moves</small>
+        </article>
+        <article className="ot-metric-card">
+          <span>Selected Unit</span>
+          <strong>{selectedMasteryPercent}%</strong>
+          <small>{selectedUnitMastery.mastered}/{selectedUnitMastery.total} mastered</small>
+        </article>
+        <article className="ot-metric-card">
+          <span>Max Line Depth</span>
+          <strong>{eligibility ? eligibility.stats.max_line_ply : '--'}</strong>
+          <small>{units.length} trainable units</small>
+        </article>
+      </section>
+
       {error && <div className="ot-alert">{error}</div>}
 
       <main className="ot-layout">
@@ -437,7 +499,7 @@ export function OpeningTrainerPage() {
             <div className="ot-unit-list">
               {units.map((unit) => {
                 const mastery = getUnitMastery(unit, progressMap);
-                const ratio = mastery.total > 0 ? Math.round((mastery.mastered / mastery.total) * 100) : 0;
+                const ratio = toPercent(mastery.mastered, mastery.total);
                 return (
                   <button
                     type="button"
@@ -449,8 +511,10 @@ export function OpeningTrainerPage() {
                     }}
                   >
                     <div className="ot-unit-title">{unit.title}</div>
+                    {unit.path?.length > 0 && <div className="ot-unit-path">{unit.path.join(' / ')}</div>}
                     <div className="ot-unit-meta">
                       <span>{unit.line_count} lines</span>
+                      <span>{unit.required_move_count} moves</span>
                       <span>ply {unit.max_ply}</span>
                     </div>
                     <div className="ot-progress-row">
@@ -473,7 +537,7 @@ export function OpeningTrainerPage() {
           <div className="ot-panel-head">
             <h2>Training</h2>
             <button type="button" className="ot-start" disabled={!selectedUnitId || runningAction} onClick={startRun}>
-              {runningAction ? 'Starting...' : 'Start Session'}
+              {runningAction ? 'Processing...' : activeRun ? 'Restart Session' : 'Start Session'}
             </button>
           </div>
 
@@ -487,6 +551,10 @@ export function OpeningTrainerPage() {
                 customDarkSquareStyle={{ backgroundColor: '#4f7ccf' }}
                 customLightSquareStyle={{ backgroundColor: '#eef4ff' }}
               />
+              <div className="ot-board-caption">
+                <span>{color === 'white' ? 'White Repertoire' : 'Black Repertoire'}</span>
+                {activeRun?.session.line_signature && <code>{activeRun.session.line_signature.slice(0, 18)}</code>}
+              </div>
             </div>
 
             <div className="ot-session-card">
@@ -496,6 +564,22 @@ export function OpeningTrainerPage() {
                 </div>
               ) : (
                 <>
+                  <div className="ot-session-chips">
+                    <span>{activeRun.session.mode}</span>
+                    <span>{activeRun.session.color}</span>
+                    <span>{activeRun.session.training_mode}</span>
+                  </div>
+
+                  <div className="ot-session-progress-head">
+                    <span>
+                      Line {Math.min(activeRun.session.line_count, activeRun.session.line_index + 1)} / {activeRun.session.line_count}
+                    </span>
+                    <span>Step {activeRun.session.step_index}</span>
+                  </div>
+                  <div className="ot-session-progress-track">
+                    <div className="ot-session-progress-fill" style={{ width: `${sessionLinePercent}%` }} />
+                  </div>
+
                   <div className="ot-session-line">
                     <span>Unit</span>
                     <strong>{activeRun.unit.title}</strong>
@@ -506,8 +590,9 @@ export function OpeningTrainerPage() {
                   </div>
                   <div className="ot-session-line">
                     <span>Mastery</span>
-                    <strong>{totalMastered.mastered}/{totalMastered.total}</strong>
+                    <strong>{selectedUnitMastery.mastered}/{selectedUnitMastery.total}</strong>
                   </div>
+
                   {activeRun.prompt && (
                     <div className="ot-prompt-box">
                       <p>Your move ({activeRun.prompt.color})</p>
@@ -516,27 +601,48 @@ export function OpeningTrainerPage() {
                       </div>
                     </div>
                   )}
+
                   {!activeRun.finished && activeRun.prompt && (
-                    <div className="ot-answer-row">
-                      <input
-                        value={answerInput}
-                        onChange={(e) => setAnswerInput(e.target.value)}
-                        placeholder="Enter SAN (e.g. Nf3)"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') submitAnswer();
-                        }}
-                      />
-                      <button type="button" disabled={runningAction || !answerInput.trim()} onClick={submitAnswer}>
-                        Submit
-                      </button>
+                    <>
+                      <div className="ot-answer-row">
+                        <input
+                          value={answerInput}
+                          onChange={(e) => setAnswerInput(e.target.value)}
+                          placeholder="Enter SAN (e.g. Nf3)"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') submitAnswer();
+                          }}
+                        />
+                        <button type="button" disabled={runningAction || !answerInput.trim()} onClick={submitAnswer}>
+                          Submit
+                        </button>
+                      </div>
+                      <div className="ot-answer-hint">Use SAN only. Press Enter to submit quickly.</div>
+                    </>
+                  )}
+
+                  {activeRun.feedback && (
+                    <div className={`ot-feedback${activeRun.feedbackKind === 'success' ? ' is-success' : activeRun.feedbackKind === 'error' ? ' is-error' : ''}`}>
+                      {activeRun.feedback}
                     </div>
                   )}
-                  {activeRun.feedback && <div className="ot-feedback">{activeRun.feedback}</div>}
+
                   {activeRun.lastProgress && (
                     <div className="ot-progress-stats">
                       <span>Streak: {activeRun.lastProgress.consecutive_correct}</span>
                       <span>Correct: {activeRun.lastProgress.correct_count}</span>
                       <span>Wrong: {activeRun.lastProgress.wrong_count}</span>
+                    </div>
+                  )}
+
+                  {activeRun.autoMoves.length > 0 && (
+                    <div className="ot-auto-box">
+                      <p>System Continuation</p>
+                      <div className="ot-auto-moves">
+                        {activeRun.autoMoves.map((autoMove, idx) => (
+                          <span key={`${autoMove.to_fen}-${idx}`}>{moveToken(autoMove)}</span>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </>
@@ -548,17 +654,20 @@ export function OpeningTrainerPage() {
         <section className="ot-panel ot-panel-right">
           <div className="ot-panel-head">
             <h2>Line Preview</h2>
-            {loadingDetail && <span>Loading...</span>}
+            <span>{loadingDetail ? 'Loading...' : unitDetail ? `${unitDetail.lines.length} lines` : 'Idle'}</span>
           </div>
           {unitDetail ? (
             <div className="ot-line-list">
               {unitDetail.lines.map((line) => (
                 <div className="ot-line-card" key={line.signature}>
-                  <div className="ot-line-label">{line.signature.slice(0, 10)}</div>
+                  <div className="ot-line-head">
+                    <div className="ot-line-label">{line.signature.slice(0, 12)}</div>
+                    <span>{line.steps.length} ply</span>
+                  </div>
                   <div className="ot-line-moves">
                     {line.steps.map((step, idx) => (
                       <span key={`${line.signature}-${idx}`}>
-                        {step.color === 'white' ? `${step.move_number}.` : `${step.move_number}...`}{step.move_san}
+                        {moveToken(step)}
                       </span>
                     ))}
                   </div>
@@ -576,4 +685,3 @@ export function OpeningTrainerPage() {
 }
 
 export default OpeningTrainerPage;
-

@@ -9,22 +9,24 @@
 }
 
 .trainer-launcher-modal {
-  width: min(780px, calc(100vw - 28px));
+  width: min(820px, calc(100vw - 28px));
   border-radius: 18px;
   border: 1px solid rgba(132, 172, 255, 0.42);
-  background: linear-gradient(160deg, #ffffff, #ecf4ff);
+  background:
+    radial-gradient(circle at 8% 8%, rgba(255, 255, 255, 0.78) 0%, rgba(255, 255, 255, 0) 44%),
+    linear-gradient(160deg, #ffffff, #ecf4ff);
   box-shadow: 0 28px 70px rgba(15, 42, 97, 0.3);
   padding: 22px;
   font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
 }
 
-.trainer-launcher-modal h3 {
+.trainer-launcher-head h3 {
   margin: 0;
   font-size: 1.35rem;
   color: #102349;
 }
 
-.trainer-launcher-modal p {
+.trainer-launcher-head p {
   margin: 8px 0 0;
   color: #47608b;
   font-weight: 500;
@@ -82,6 +84,22 @@
   line-height: 1.45;
 }
 
+.trainer-launcher-points {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.trainer-launcher-points span {
+  border: 1px solid #cfe0ff;
+  background: #eef5ff;
+  color: #355a9d;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .trainer-launcher-actions {
   margin-top: 14px;
   display: flex;
@@ -103,4 +121,3 @@
     grid-template-columns: 1fr;
   }
 }
-

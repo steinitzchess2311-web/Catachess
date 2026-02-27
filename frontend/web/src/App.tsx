@@ -644,6 +644,9 @@ function Layout() {
           {/* 用户设置（编辑资料）— 需登录 */}
           <Route path="/settings" element={<Protected><EditProfilePage currentUsername={username} /></Protected>} />
 
+          {/* /:id/opening-trainer — must precede the /:id catch-all */}
+          <Route path="/:id/opening-trainer" element={<Protected><OpeningTrainerPage /></Protected>} />
+
           {/* /:id — UUID → 棋谱页（需登录），@username → 公开资料页（无需登录）
                RR v6 不支持 /@:username 形式，需在组件内分流 */}
           <Route path="/:id" element={<DynamicIdRoute currentUsername={username} />} />

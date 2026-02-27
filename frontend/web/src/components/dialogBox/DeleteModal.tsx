@@ -49,38 +49,26 @@ const DeleteModal: React.FC<DeleteModalProps> = ({ node, onClose, onSuccess }) =
     return () => document.removeEventListener('keydown', handleEscape);
   }, [onClose]);
 
-  // Handle delete with retry logic for version conflicts
+  // Handle move to recycle bin with retry logic for version conflicts
   const handleDelete = async () => {
     setIsDeleting(true);
     setError('');
 
     try {
-      // First attempt
-      await api.delete(`/api/v1/workspace/nodes/${node.id}/purge?version=${node.version}`);
-
+      await api.delete(`/api/v1/workspace/nodes/${node.id}?version=${node.version}`);
       onSuccess();
     } catch (error: any) {
-      // Handle version conflict (409) with retry
       if (error?.status === 409) {
-        console.log('[DeleteModal] Version conflict detected, refreshing and retrying...');
-
         try {
-          // Fetch latest version
           const refreshed = await api.get(`/api/v1/workspace/nodes/${node.id}`);
-
-          // Retry with new version
-          await api.delete(`/api/v1/workspace/nodes/${refreshed.id}/purge?version=${refreshed.version}`);
-
-          console.log('[DeleteModal] Delete succeeded after version refresh');
+          await api.delete(`/api/v1/workspace/nodes/${refreshed.id}?version=${refreshed.version}`);
           onSuccess();
         } catch (retryError: any) {
-          console.error('[DeleteModal] Failed to delete after retry:', retryError);
-          setError('Delete failed. Please try again.');
+          setError('Move to Recycle failed. Please try again.');
           setIsDeleting(false);
         }
       } else {
-        console.error('[DeleteModal] Failed to delete:', error);
-        setError(error?.message || 'Delete failed. Please try again.');
+        setError(error?.message || 'Move to Recycle failed. Please try again.');
         setIsDeleting(false);
       }
     }
@@ -94,7 +82,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({ node, onClose, onSuccess }) =
       <div ref={modalRef} className="delete-modal-card">
         <div className="delete-modal-header">
           <h3 className="delete-modal-title">
-            🗑️ Delete
+            🗑️ Move to Recycle
           </h3>
           <button className="delete-modal-close" onClick={onClose}>
             ×
@@ -104,13 +92,13 @@ const DeleteModal: React.FC<DeleteModalProps> = ({ node, onClose, onSuccess }) =
         <div className="delete-modal-body">
           <div className="delete-modal-warning">
             <p className="delete-modal-message">
-              Are you sure you want to delete this {typeLabel.toLowerCase()}?
+              Move this {typeLabel.toLowerCase()} to Recycle Bin?
             </p>
             <div className="delete-modal-node-info">
               {icon} <strong>{node.title}</strong>
             </div>
             <p className="delete-modal-hint">
-              This action cannot be undone.
+              You can restore it from the Recycle Bin.
             </p>
           </div>
           {error && (
@@ -133,7 +121,7 @@ const DeleteModal: React.FC<DeleteModalProps> = ({ node, onClose, onSuccess }) =
             onClick={handleDelete}
             disabled={isDeleting}
           >
-            {isDeleting ? 'Deleting...' : 'Delete'}
+            {isDeleting ? 'Moving...' : 'Move to Recycle'}
           </button>
         </div>
       </div>

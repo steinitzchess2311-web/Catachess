@@ -123,7 +123,7 @@ const NodeActionsModal: React.FC<NodeActionsModalProps> = ({
             onClick={() => handleAction('delete')}
           >
             <span className="action-icon">🗑️</span>
-            <span className="action-label">Delete</span>
+            <span className="action-label">Move to Recycle</span>
           </button>
         </div>
       </div>

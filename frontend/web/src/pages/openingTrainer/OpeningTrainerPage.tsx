@@ -191,6 +191,33 @@ function moveToken(step: { color: TrainerColor; move_number: number; move_san: s
   return `${step.color === 'white' ? `${step.move_number}.` : `${step.move_number}...`}${step.move_san}`;
 }
 
+function readApiError(error: unknown, fallback: string): string {
+  const message = (error as { message?: unknown })?.message;
+  if (typeof message === 'string' && message.trim() && message !== '[object Object]') {
+    return message;
+  }
+  const detail = (error as { detail?: unknown })?.detail;
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail;
+  }
+  if (Array.isArray(detail)) {
+    const parts = detail.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+    if (parts.length > 0) return parts.join(' | ');
+  }
+  if (detail && typeof detail === 'object') {
+    const value = detail as { message?: unknown; reasons?: unknown };
+    const detailMessage = typeof value.message === 'string' ? value.message : '';
+    const reasons = Array.isArray(value.reasons)
+      ? value.reasons.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+      : [];
+    if (detailMessage && reasons.length > 0) {
+      return `${detailMessage}: ${reasons.join(' | ')}`;
+    }
+    if (detailMessage) return detailMessage;
+  }
+  return fallback;
+}
+
 export function OpeningTrainerPage() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
@@ -219,27 +246,23 @@ export function OpeningTrainerPage() {
     [selectedUnitId, units],
   );
 
-  const refreshEligibility = useCallback(async () => {
-    if (!studyId) return;
-    setLoadingEligibility(true);
-    try {
-      const data = await api.get(`/api/v1/opening-trainer/studies/${studyId}/eligibility`);
-      setEligibility(data);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to load eligibility');
-    } finally {
-      setLoadingEligibility(false);
-    }
-  }, [studyId]);
-
   const refreshUnits = useCallback(async () => {
     if (!studyId) return;
+    setLoadingEligibility(true);
     setLoadingUnits(true);
     setError(null);
     setActiveRun(null);
     setUnitDetail(null);
     setProgressMap(new Map());
     try {
+      const eligibilityData = await api.get(`/api/v1/opening-trainer/studies/${studyId}/eligibility`) as EligibilityResponse;
+      setEligibility(eligibilityData);
+      if (!eligibilityData.eligible) {
+        setUnits([]);
+        setSelectedUnitId(null);
+        return;
+      }
+
       const data = await api.get(
         `/api/v1/opening-trainer/studies/${studyId}/units?mode=${mode}&color=${color}`,
       ) as UnitCatalogResponse;
@@ -261,17 +284,18 @@ export function OpeningTrainerPage() {
         const progress = await api.get(`/api/v1/opening-trainer/progress?${params.toString()}`) as { items: ProgressItem[] };
         setProgressMap(buildProgressMap(progress.items || []));
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       setUnits([]);
       setSelectedUnitId(null);
-      setError(e?.message || 'Failed to load units');
+      setError(readApiError(e, 'Failed to load units'));
     } finally {
+      setLoadingEligibility(false);
       setLoadingUnits(false);
     }
   }, [studyId, mode, color]);
 
   const refreshUnitDetail = useCallback(async () => {
-    if (!studyId || !selectedUnitId) {
+    if (!studyId || !selectedUnitId || (eligibility && !eligibility.eligible)) {
       setUnitDetail(null);
       return;
     }
@@ -281,16 +305,12 @@ export function OpeningTrainerPage() {
         `/api/v1/opening-trainer/studies/${studyId}/units/${selectedUnitId}?mode=${mode}&color=${color}`,
       ) as UnitDetailResponse;
       setUnitDetail(detail);
-    } catch (e: any) {
-      setError(e?.message || 'Failed to load unit detail');
+    } catch (e: unknown) {
+      setError(readApiError(e, 'Failed to load unit detail'));
     } finally {
       setLoadingDetail(false);
     }
-  }, [studyId, selectedUnitId, mode, color]);
-
-  useEffect(() => {
-    refreshEligibility();
-  }, [refreshEligibility]);
+  }, [studyId, selectedUnitId, mode, color, eligibility]);
 
   useEffect(() => {
     refreshUnits();
@@ -326,8 +346,8 @@ export function OpeningTrainerPage() {
         feedbackKind: 'info',
       });
       setAnswerInput('');
-    } catch (e: any) {
-      setError(e?.message || 'Failed to start training');
+    } catch (e: unknown) {
+      setError(readApiError(e, 'Failed to start training'));
     } finally {
       setRunningAction(false);
     }
@@ -381,8 +401,8 @@ export function OpeningTrainerPage() {
         };
       });
       setAnswerInput('');
-    } catch (e: any) {
-      setError(e?.message || 'Failed to submit answer');
+    } catch (e: unknown) {
+      setError(readApiError(e, 'Failed to submit answer'));
     } finally {
       setRunningAction(false);
     }

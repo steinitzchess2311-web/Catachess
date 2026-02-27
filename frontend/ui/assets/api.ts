@@ -24,6 +24,36 @@ export class ApiClient {
         return ApiClient.instance;
     }
 
+    private static detailToMessage(detail: unknown, status: number): string {
+        if (typeof detail === 'string' && detail.trim()) {
+            return detail;
+        }
+        if (Array.isArray(detail)) {
+            const parts = detail.filter((item): item is string => typeof item === 'string' && item.trim().length > 0);
+            if (parts.length > 0) return parts.join(' | ');
+        }
+        if (detail && typeof detail === 'object') {
+            const value = detail as Record<string, unknown>;
+            const message = typeof value.message === 'string' ? value.message.trim() : '';
+            const reasons = Array.isArray(value.reasons)
+                ? value.reasons.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+                : [];
+            if (message && reasons.length > 0) {
+                return `${message}: ${reasons.join(' | ')}`;
+            }
+            if (message) {
+                return message;
+            }
+            try {
+                const serialized = JSON.stringify(detail);
+                if (serialized && serialized !== '{}') return serialized;
+            } catch {
+                // fallback below
+            }
+        }
+        return `Request failed with status ${status}`;
+    }
+
     public async request(endpoint: string, options: RequestInit = {}): Promise<any> {
         const token =
             localStorage.getItem('catachess_token') ||
@@ -57,7 +87,14 @@ export class ApiClient {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.detail || `Request failed with status ${response.status}`);
+                const detail = (errorData as Record<string, unknown>).detail ?? errorData;
+                const error = new Error(ApiClient.detailToMessage(detail, response.status)) as Error & {
+                    status?: number;
+                    detail?: unknown;
+                };
+                error.status = response.status;
+                error.detail = detail;
+                throw error;
             }
 
             // Handle 204 No Content
@@ -67,7 +104,10 @@ export class ApiClient {
 
             return await response.json();
         } catch (error) {
-            console.error('API Request Failed:', error);
+            const status = (error as { status?: number })?.status;
+            if (typeof status !== 'number' || status >= 500) {
+                console.error('API Request Failed:', error);
+            }
             throw error;
         }
     }

@@ -66,19 +66,25 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
     ],
     content: value,   // tiptap-markdown parses Markdown automatically
     onUpdate({ editor }) {
-      // Serialize back to Markdown on every change
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      onChange((editor.storage as any).markdown.getMarkdown());
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onChange((editor.storage as any).markdown.getMarkdown());
+      } catch {
+        // Fallback: if tiptap-markdown storage is unavailable, use HTML
+        onChange(editor.getHTML());
+      }
     },
   });
 
   // Sync external value changes (e.g. loading a different article for edit)
   useEffect(() => {
     if (!editor) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const current = (editor.storage as any).markdown.getMarkdown();
-    if (current !== value) {
-      editor.commands.setContent(value);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const current = (editor.storage as any).markdown.getMarkdown();
+      if (current !== value) editor.commands.setContent(value);
+    } catch {
+      // Storage not available yet; skip sync
     }
   }, [value, editor]);
 

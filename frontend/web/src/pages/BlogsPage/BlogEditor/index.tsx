@@ -170,7 +170,11 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay style={overlayStyle} />
-        <Dialog.Content style={contentStyle}>
+        <Dialog.Content
+          style={contentStyle}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+        >
 
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', position: 'relative' }}>

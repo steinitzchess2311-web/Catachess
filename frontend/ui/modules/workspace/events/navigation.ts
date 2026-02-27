@@ -4,12 +4,12 @@ import { api } from '../../../assets/api';
 import { WorkspaceState, WorkspaceElements, WorkspaceMode } from './types';
 
 export function getRootPrefix(state: WorkspaceState): string {
-    const map: Record<string, string> = { private: 'root/', public: 'public/', shared: 'shared/' };
+    const map: Record<string, string> = { private: 'root/', public: 'public/', shared: 'shared/', trash: 'trash/' };
     return map[state.mode ?? 'private'] ?? 'root/';
 }
 
 export function getRootLabel(state: WorkspaceState): string {
-    const map: Record<string, string> = { private: 'Root', public: 'Public', shared: 'Shared' };
+    const map: Record<string, string> = { private: 'Root', public: 'Public', shared: 'Shared', trash: 'Trash' };
     return map[state.mode ?? 'private'] ?? 'Root';
 }
 

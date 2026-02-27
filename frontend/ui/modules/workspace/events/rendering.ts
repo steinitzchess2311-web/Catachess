@@ -7,6 +7,7 @@ import LogoutButton from '../../../../web/src/components/dialogBox/LogoutButton'
 import TestSign from '../../../../web/src/components/dialogBox/TestSign';
 import { WorkspaceState, WorkspaceElements, WorkspaceOptions } from './types';
 import { sortNodes, renameNode } from './nodeOperations';
+import { api } from '../../../assets/api';
 
 export function renderItems(
     state: WorkspaceState,
@@ -18,6 +19,7 @@ export function renderItems(
         openNodeActions: (node: any, disabledActions?: { move?: boolean; rename?: boolean; delete?: boolean }) => void;
         openMoveConfirm: (source: any, target: any) => void;
         openCreateModal: (type: 'folder' | 'study') => void;
+        refreshNodes: () => void;
     }
 ) {
     const sortedNodes = sortNodes(state, nodes);

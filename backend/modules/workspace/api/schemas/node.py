@@ -88,6 +88,7 @@ class NodeResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
+    deleted_root_id: str | None = None
 
     @field_validator("visibility", mode="before")
     @classmethod

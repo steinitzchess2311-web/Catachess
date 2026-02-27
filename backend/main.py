@@ -311,6 +311,52 @@ def _migrate_catchat_is_broadcast() -> None:
 # ── END TEMPORARY ─────────────────────────────────────────────────────────────
 
 
+# ── TEMPORARY: Backfill classroom/ folder ACL so it appears in Shared ─────────
+# For existing teachers who already have a classroom/ folder (workspace_folder_id
+# set on classroom rows), share it with themselves so it shows up in Shared section.
+# Safe to run repeatedly — share API is idempotent (duplicate ACL → ignored or 200).
+# TODO: Remove after one deploy cycle.
+def _backfill_classroom_workspace_acl() -> None:
+    import os
+    from sqlalchemy import create_engine, text
+
+    classroom_url = os.getenv("CLASSROOM_DATABASE")
+    main_url = os.getenv("DATABASE_URL")
+    if not classroom_url or not main_url:
+        logger.warning("CLASSROOM_DATABASE or DATABASE_URL not set — skipping ACL backfill")
+        return
+    try:
+        from modules.classroom.services.workspace_sync import _make_token, _share_folder_with_user
+
+        cl_engine = create_engine(classroom_url, pool_pre_ping=True)
+        main_engine = create_engine(main_url, pool_pre_ping=True)
+
+        with cl_engine.connect() as cl_conn, main_engine.connect() as main_conn:
+            rows = cl_conn.execute(text(
+                "SELECT DISTINCT owner, workspace_folder_id FROM classrooms "
+                "WHERE workspace_folder_id IS NOT NULL"
+            )).fetchall()
+
+            for owner_username, folder_id in rows:
+                user_row = main_conn.execute(
+                    text("SELECT id FROM users WHERE username = :u"),
+                    {"u": owner_username},
+                ).fetchone()
+                if not user_row:
+                    continue
+                teacher_uuid = str(user_row[0])
+                try:
+                    token = _make_token(teacher_uuid)
+                    ok = _share_folder_with_user(token, node_id=folder_id, user_id=teacher_uuid)
+                    if ok:
+                        logger.info(f"✅ Backfilled ACL for classroom/ folder {folder_id} (owner={owner_username})")
+                except Exception as exc:
+                    logger.warning(f"ACL backfill failed for folder {folder_id}: {exc}")
+    except Exception as exc:
+        logger.error(f"_backfill_classroom_workspace_acl failed: {exc}", exc_info=True)
+# ── END TEMPORARY ─────────────────────────────────────────────────────────────
+
+
 async def _presence_cleanup_loop() -> None:
     import os
 
@@ -361,6 +407,28 @@ async def _init_workspace_schema() -> None:
         logger.error(f"Workspace schema init failed: {e}", exc_info=True)
 
 
+async def _migrate_workspace_deleted_root_id() -> None:
+    """TEMPORARY: Add deleted_root_id column to workspace nodes table.
+    create_all skips existing tables so new columns need explicit ALTER.
+    Safe to run repeatedly — uses ADD COLUMN IF NOT EXISTS.
+    TODO: Remove once confirmed in Railway DB.
+    """
+    try:
+        from modules.workspace.db.session import get_db_config
+        config = get_db_config()
+        async with config.engine.begin() as conn:
+            from sqlalchemy import text
+            await conn.execute(text(
+                "ALTER TABLE nodes ADD COLUMN IF NOT EXISTS deleted_root_id VARCHAR(64)"
+            ))
+            await conn.execute(text(
+                "CREATE INDEX IF NOT EXISTS ix_nodes_deleted_root_id ON nodes (deleted_root_id)"
+            ))
+        logger.info("✅ nodes.deleted_root_id column ready")
+    except Exception as e:
+        logger.error(f"nodes.deleted_root_id migration failed: {e}", exc_info=True)
+
+
 def _run_alembic_migrations() -> None:
     """TEMPORARY: Run alembic upgrade head on startup. Remove after 009 migration is applied."""
     try:
@@ -382,6 +450,9 @@ async def lifespan(app: FastAPI):
     # Ensure workspace tables exist in PostgreSQL
     await _init_workspace_schema()
 
+    # TEMPORARY: add deleted_root_id column to nodes (workspace DB)
+    await _migrate_workspace_deleted_root_id()
+
     # TEMPORARY: apply pending alembic migrations (remove after 009 is confirmed)
     await asyncio.to_thread(_run_alembic_migrations)
 
@@ -390,6 +461,9 @@ async def lifespan(app: FastAPI):
 
     # TEMPORARY: add is_broadcast column to catchat_group_messages
     await asyncio.to_thread(_migrate_catchat_is_broadcast)
+
+    # TEMPORARY: share classroom/ workspace folder with teacher (Shared section fix)
+    await asyncio.to_thread(_backfill_classroom_workspace_acl)
     # END TEMPORARY
 
     # Initialize MongoDB cache

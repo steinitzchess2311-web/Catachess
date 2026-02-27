@@ -10,7 +10,7 @@ export type WorkspaceOptions = {
 
 export type SortKey = 'created' | 'modified' | null;
 export type SortDir = 'asc' | 'desc';
-export type WorkspaceMode = 'private' | 'public' | 'shared';
+export type WorkspaceMode = 'private' | 'public' | 'shared' | 'trash';
 
 export interface WorkspaceState {
     currentParentId: string;

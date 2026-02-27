@@ -19,7 +19,7 @@ export function createInitialState(startParentId: string): WorkspaceState {
 
 export function setMode(state: WorkspaceState, mode: WorkspaceMode) {
     state.mode = mode;
-    const rootLabel = { private: 'Root', public: 'Public', shared: 'Shared' }[mode];
+    const rootLabel = { private: 'Root', public: 'Public', shared: 'Shared', trash: 'Trash' }[mode];
     state.breadcrumbPath = [{ id: 'root', title: rootLabel }];
 }
 

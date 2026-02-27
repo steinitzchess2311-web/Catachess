@@ -18,7 +18,7 @@
   - 老师发布 train mode 作业。
   - 学生提交，老师查看完成状态与基础正确率。
 - 工作区联动：
-  - 创建有成员的班级后，自动出现 `My Classroom/{class name}/{student username}` 结构。
+  - 创建有成员的班级后，自动出现 `My Classroom/{student username}` 结构。-不按照班级划分！按照学生！老师可以自己修改student username文件夹
   - 学生在 classroom 中选择“share with teacher”后，内容进入对应目录。
 - 日历与提醒：
   - 作业/考试截止时间展示（学生端临期/逾期）。

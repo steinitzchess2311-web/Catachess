@@ -181,6 +181,7 @@ class NodeRepository:
         conditions = [
             Node.owner_id == owner_id,
             Node.parent_id.is_(None),
+            Node.visibility != Visibility.SHARED,
         ]
 
         if not include_deleted:
@@ -295,6 +296,42 @@ class NodeRepository:
         stmt = select(Node).where(and_(*conditions)).limit(limit)
         result = await self.session.execute(stmt)
         return result.scalars().all()
+
+    async def get_trash_roots(self, owner_id: str) -> Sequence[Node]:
+        """Return top-level deleted items (roots of each deletion group)."""
+        stmt = (
+            select(Node)
+            .where(
+                Node.owner_id == owner_id,
+                Node.deleted_root_id == Node.id,
+                Node.deleted_at.isnot(None),
+            )
+            .order_by(Node.deleted_at.desc())
+        )
+        result = await self.session.execute(stmt)
+        return result.scalars().all()
+
+    async def cascade_trash(self, root_path: str, root_id: str, deleted_at) -> None:
+        """Soft-delete + tag all descendants with the root's deleted_root_id."""
+        stmt = (
+            sa_update(Node)
+            .where(
+                Node.path.startswith(root_path),
+                Node.path != root_path,
+                Node.deleted_at.is_(None),
+            )
+            .values(deleted_at=deleted_at, deleted_root_id=root_id)
+        )
+        await self.session.execute(stmt)
+
+    async def cascade_restore(self, root_id: str) -> None:
+        """Clear deleted_at and deleted_root_id for entire deletion group."""
+        stmt = (
+            sa_update(Node)
+            .where(Node.deleted_root_id == root_id)
+            .values(deleted_at=None, deleted_root_id=None)
+        )
+        await self.session.execute(stmt)
 
     async def cascade_visibility(self, node_path: str, visibility: Visibility) -> None:
         """

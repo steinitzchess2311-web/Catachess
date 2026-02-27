@@ -31,6 +31,8 @@ export async function refreshNodes(state: WorkspaceState, parentId: string, rend
         url = `/api/v1/workspace/public-nodes?parent_id=${parentId}`;
     } else if (state.mode === 'shared') {
         url = `/api/v1/workspace/shared-nodes?parent_id=${parentId}`;
+    } else if (state.mode === 'trash') {
+        url = `/api/v1/workspace/nodes/trash`;
     } else {
         url = `/api/v1/workspace/nodes?parent_id=${parentId}`;
     }

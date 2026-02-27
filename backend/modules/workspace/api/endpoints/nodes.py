@@ -141,6 +141,19 @@ async def create_node(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
 
 
+@router.get("/trash", response_model=NodeListResponse)
+async def list_trash(
+    user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
+) -> NodeListResponse:
+    """List soft-deleted root nodes for the current user (recycle bin)."""
+    nodes = await node_service.node_repo.get_trash_roots(owner_id=user_id)
+    return NodeListResponse(
+        nodes=[NodeResponse.model_validate(n) for n in nodes],
+        total=len(nodes),
+    )
+
+
 @router.get("/{node_id}", response_model=NodeResponse)
 async def get_node(
     node_id: str,

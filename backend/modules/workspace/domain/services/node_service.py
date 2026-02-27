@@ -368,9 +368,13 @@ class NodeService:
         # Soft delete
         node.soft_delete()
         node.version += 1
+        node.deleted_root_id = node.id
 
         # Save
         node = await self.node_repo.update(node)
+
+        # Cascade to all descendants
+        await self.node_repo.cascade_trash(node.path, node.id, node.deleted_at)
 
         # Publish event
         workspace_id = await self._get_workspace_id_for_node(node.id)
@@ -410,8 +414,13 @@ class NodeService:
 
         node.restore()
         node.version += 1
+        node.deleted_root_id = None
 
         node = await self.node_repo.update(node)
+
+        # Cascade restore entire group
+        await self.node_repo.cascade_restore(node.id)
+
         await self.session.commit()
         return node
 

@@ -69,6 +69,27 @@ def _create_folder(token: str, title: str, parent_id: Optional[str]) -> Optional
         return None
 
 
+def _share_folder_with_user(token: str, node_id: str, user_id: str) -> bool:
+    """POST /api/v1/workspace/share/{node_id}/users. Returns True on success."""
+    try:
+        res = httpx.post(
+            f"{_api_base()}/api/v1/workspace/share/{node_id}/users",
+            json={"user_id": user_id, "permission": "editor", "inherit_to_children": False},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=5.0,
+        )
+        if res.status_code in (200, 201):
+            return True
+        log.warning(
+            f"[workspace_sync] _share_folder_with_user node={node_id} user={user_id} "
+            f"→ {res.status_code}: {res.text[:200]}"
+        )
+        return False
+    except Exception as exc:
+        log.error(f"[workspace_sync] _share_folder_with_user node={node_id} failed: {exc}")
+        return False
+
+
 def _rename_folder(token: str, node_id: str, new_title: str) -> bool:
     """PUT /api/v1/workspace/nodes/{node_id}. Returns True on success."""
     try:
@@ -106,6 +127,12 @@ def sync_get_or_create_root_folder(
     """
     if existing_root_folder_id:
         log.info(f"[workspace_sync] Reusing existing root folder {existing_root_folder_id}")
+        # Ensure ACL entry exists (idempotent: share service ignores duplicates)
+        try:
+            token = _make_token(teacher_uuid)
+            _share_folder_with_user(token, node_id=existing_root_folder_id, user_id=teacher_uuid)
+        except Exception:
+            pass
         return existing_root_folder_id
 
     try:
@@ -113,6 +140,8 @@ def sync_get_or_create_root_folder(
         node_id = _create_folder(token, title=_ROOT_FOLDER_TITLE, parent_id=None)
         if node_id:
             log.info(f"[workspace_sync] Created root folder '{_ROOT_FOLDER_TITLE}' (node={node_id})")
+            # Share with the teacher so it appears in the Shared section (not Private)
+            _share_folder_with_user(token, node_id=node_id, user_id=teacher_uuid)
         return node_id
     except Exception as exc:
         log.error(f"[workspace_sync] sync_get_or_create_root_folder failed: {exc}")

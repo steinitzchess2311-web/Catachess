@@ -7,7 +7,6 @@ import LogoutButton from '../../../../web/src/components/dialogBox/LogoutButton'
 import TestSign from '../../../../web/src/components/dialogBox/TestSign';
 import { WorkspaceState, WorkspaceElements, WorkspaceOptions } from './types';
 import { sortNodes, renameNode } from './nodeOperations';
-import { api } from '../../../assets/api';
 
 export function renderItems(
     state: WorkspaceState,
@@ -17,6 +16,7 @@ export function renderItems(
     handlers: {
         navigateToFolder: (id: string, title: string) => Promise<void>;
         openNodeActions: (node: any, disabledActions?: { move?: boolean; rename?: boolean; delete?: boolean }) => void;
+        openTrashActions: (node: any) => void;
         openMoveConfirm: (source: any, target: any) => void;
         openCreateModal: (type: 'folder' | 'study') => void;
         refreshNodes: () => void;
@@ -94,7 +94,7 @@ export function renderItems(
             event.preventDefault();
             event.stopPropagation();
             if (state.mode === 'trash') {
-                openTrashActions(node, itemDiv, handlers.refreshNodes);
+                handlers.openTrashActions(node);
                 return;
             }
             const disabledActions = state.mode !== 'private'
@@ -231,39 +231,6 @@ export function renderItems(
     }
 }
 
-function openTrashActions(node: any, anchor: HTMLElement, refreshNodes: () => void) {
-    document.querySelectorAll('.trash-action-popup').forEach(el => el.remove());
-
-    const popup = document.createElement('div');
-    popup.className = 'trash-action-popup';
-    popup.innerHTML = `
-        <button class="trash-action-btn trash-action-btn--restore">↩ Restore</button>
-        <button class="trash-action-btn trash-action-btn--delete">🗑 Delete forever</button>`;
-
-    document.body.appendChild(popup);
-
-    const rect = anchor.getBoundingClientRect();
-    popup.style.position = 'absolute';
-    popup.style.top = `${rect.bottom + window.scrollY + 4}px`;
-    popup.style.left = `${rect.left + window.scrollX}px`;
-
-    const dismiss = () => popup.remove();
-    setTimeout(() => document.addEventListener('click', dismiss, { once: true }), 0);
-
-    popup.querySelector('.trash-action-btn--restore')!.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        dismiss();
-        await api.post(`/api/v1/workspace/nodes/${node.id}/restore`, {});
-        refreshNodes();
-    });
-
-    popup.querySelector('.trash-action-btn--delete')!.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        dismiss();
-        await api.delete(`/api/v1/workspace/nodes/${node.id}/purge?version=${node.version}`);
-        refreshNodes();
-    });
-}
 
 export function renderReactComponents(
     container: HTMLElement,

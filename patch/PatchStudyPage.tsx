@@ -78,6 +78,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const [titleError, setTitleError] = useState<string | null>(null);
   const [showNavigationWarning, setShowNavigationWarning] = useState(false);
   const [navigationTarget, setNavigationTarget] = useState<Breadcrumb | null>(null);
+  const [isStudyDeleted, setIsStudyDeleted] = useState(false);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const lastSavedAtRef = useRef<number | null>(state.lastSavedAt);
   const layoutRef = useRef<HTMLDivElement | null>(null);
@@ -286,7 +287,10 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         ]).then(([crumbs, studyNode]) => {
           if (cancelled) return;
           setBreadcrumbs(crumbs);
-          if (studyNode) studyNodeRef.current = studyNode;
+          if (studyNode) {
+            studyNodeRef.current = studyNode;
+            setIsStudyDeleted(!!studyNode.deleted_at);
+          }
         });
 
         let chapter = sorted[0];
@@ -323,6 +327,28 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className={`patch-study-page ${className || ''}`}>
+      {isStudyDeleted && (
+        <div style={{
+          background: '#dc2626',
+          color: '#fff',
+          padding: '10px 20px',
+          fontSize: '0.875rem',
+          fontWeight: 500,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          zIndex: 100,
+        }}>
+          <span>🗑️</span>
+          <span>This study is in the Recycle Bin. Please restore it before making any changes.</span>
+          <a
+            href="/workspace/trash"
+            style={{ color: '#fff', textDecoration: 'underline', marginLeft: 'auto', whiteSpace: 'nowrap' }}
+          >
+            Go to Recycle Bin →
+          </a>
+        </div>
+      )}
       <div className={`patch-study-header-wrap${headerExpanded ? '' : ' is-collapsed'}`}>
         <div className="patch-study-header">
           {isEditingTitle ? (

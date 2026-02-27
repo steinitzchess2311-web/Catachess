@@ -2,7 +2,8 @@
 
 import { WorkspaceState, WorkspaceOptions, WorkspaceElements, ModalRoots } from './types';
 import { clearCache } from './state';
-import { openCreateModal, openMoveModal, openDeleteConfirm, openMoveConfirm, openRenameModal, openNodeActions, openShareModal } from './modals';
+import { api } from '../../../assets/api';
+import { openCreateModal, openMoveModal, openDeleteConfirm, openMoveConfirm, openRenameModal, openNodeActions, openShareModal, openTrashActionsModal } from './modals';
 import { refreshNodes as doRefreshNodes } from './nodeOperations';
 import { navigateToFolder as doNavigateToFolder } from './navigation';
 import { renderItems as doRenderItems } from './rendering';
@@ -18,6 +19,7 @@ export function createHandlerWrappers(
     let renderItems: (nodes: any[]) => void;
     let navigateToFolder: (id: string, title: string) => Promise<void>;
     let openNodeActionsWrapper: (node: any, disabledActions?: { move?: boolean; rename?: boolean; delete?: boolean }) => void;
+    let openTrashActionsWrapper: (node: any) => void;
 
     // refreshNodes implementation
     refreshNodes = async (parentId: string) => {
@@ -29,6 +31,7 @@ export function createHandlerWrappers(
         doRenderItems(state, elements, nodes, options, {
             navigateToFolder,
             openNodeActions: openNodeActionsWrapper,
+            openTrashActions: openTrashActionsWrapper,
             openMoveConfirm: openMoveConfirmWrapper,
             openCreateModal: openCreateModalWrapper,
             refreshNodes: () => refreshNodes(state.currentParentId),
@@ -82,6 +85,23 @@ export function createHandlerWrappers(
 
     const openShareModalWrapper = (node: any) => {
         openShareModal(modalRoots, node);
+    };
+
+    openTrashActionsWrapper = (node: any) => {
+        openTrashActionsModal(
+            modalRoots,
+            node,
+            async (n: any) => {
+                await api.post(`/api/v1/workspace/nodes/${n.id}/restore`, {});
+                clearCache(state);
+                refreshNodes(state.currentParentId);
+            },
+            async (n: any) => {
+                await api.delete(`/api/v1/workspace/nodes/${n.id}/purge?version=${n.version}`);
+                clearCache(state);
+                refreshNodes(state.currentParentId);
+            },
+        );
     };
 
     openNodeActionsWrapper = (node: any, disabledActions?: { move?: boolean; rename?: boolean; delete?: boolean }) => {

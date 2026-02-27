@@ -4,6 +4,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import CreateModal from '../../../../web/src/components/dialogBox/CreateModal';
 import NodeActionsModal from '../../../../web/src/components/dialogBox/NodeActionsModal';
+import TrashActionsModal from '../../../../web/src/components/dialogBox/TrashActionsModal';
 import NodeShareModal from '../../../../web/src/components/dialogBox/NodeShareModal';
 import MoveModal from '../../../../web/src/components/dialogBox/MoveModal';
 import RenameModal from '../../../../web/src/components/dialogBox/RenameModal';
@@ -224,6 +225,31 @@ export function openShareModal(
                     modalRoots.shareModalRoot.render(null);
                 }
             },
+        })
+    );
+}
+
+export function openTrashActionsModal(
+    modalRoots: ModalRoots,
+    node: any,
+    onRecover: (n: any) => void,
+    onDeleteForever: (n: any) => void,
+) {
+    if (!modalRoots.actionsModalContainer) {
+        modalRoots.actionsModalContainer = document.createElement('div');
+        modalRoots.actionsModalContainer.id = 'node-actions-modal-root';
+        document.body.appendChild(modalRoots.actionsModalContainer);
+        modalRoots.actionsModalRoot = ReactDOM.createRoot(modalRoots.actionsModalContainer);
+    }
+
+    const close = () => { if (modalRoots.actionsModalRoot) modalRoots.actionsModalRoot.render(null); };
+
+    modalRoots.actionsModalRoot!.render(
+        React.createElement(TrashActionsModal, {
+            node,
+            onClose: close,
+            onRecover: (n: any) => { close(); onRecover(n); },
+            onDeleteForever: (n: any) => { close(); onDeleteForever(n); },
         })
     );
 }

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import BlogEditor from "../BlogEditor";
+import BlogEditor from "../BlogEditor/index";
 import ToggleButton from "./ToggleButton";
 import PinnedButton from "./PinnedButton";
 import OfficialSection from "./OfficialSection";

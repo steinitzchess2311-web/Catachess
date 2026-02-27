@@ -281,6 +281,55 @@ async def _init_blog_db() -> None:
         else:
             logger.info("✅ Blog database is up to date")
 
+    # ── TEMPORARY: Create blog_comments + blog_comment_likes tables ──────────
+    # Run unconditionally — both statements are idempotent (IF NOT EXISTS).
+    # TODO: Remove this block after confirming tables exist in Railway DB.
+    try:
+        blog_db_url = os.getenv("BLOG_DATABASE_URL") or settings.DATABASE_URL
+        if blog_db_url:
+            engine = create_engine(blog_db_url)
+            with engine.begin() as conn:
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS blog_comments (
+                        id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        article_id   UUID NOT NULL,
+                        parent_id    UUID REFERENCES blog_comments(id) ON DELETE CASCADE,
+                        quote_id     UUID REFERENCES blog_comments(id) ON DELETE SET NULL,
+                        author_id    UUID NOT NULL,
+                        author_name  VARCHAR(100) NOT NULL,
+                        content      TEXT NOT NULL DEFAULT '',
+                        is_deleted   BOOLEAN NOT NULL DEFAULT false,
+                        edited       BOOLEAN NOT NULL DEFAULT false,
+                        edit_history JSONB NOT NULL DEFAULT '[]',
+                        like_count   INTEGER NOT NULL DEFAULT 0,
+                        version      INTEGER NOT NULL DEFAULT 1,
+                        created_at   TIMESTAMP NOT NULL DEFAULT NOW(),
+                        updated_at   TIMESTAMP NOT NULL DEFAULT NOW()
+                    );
+
+                    CREATE INDEX IF NOT EXISTS ix_blog_comments_article_id
+                        ON blog_comments(article_id);
+                    CREATE INDEX IF NOT EXISTS ix_blog_comments_parent_id
+                        ON blog_comments(parent_id);
+
+                    CREATE TABLE IF NOT EXISTS blog_comment_likes (
+                        id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                        comment_id UUID NOT NULL
+                            REFERENCES blog_comments(id) ON DELETE CASCADE,
+                        user_id    UUID NOT NULL,
+                        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                        CONSTRAINT blog_comment_likes_unique
+                            UNIQUE (comment_id, user_id)
+                    );
+
+                    CREATE INDEX IF NOT EXISTS ix_blog_comment_likes_comment
+                        ON blog_comment_likes(comment_id);
+                """))
+            logger.info("✅ blog_comments + blog_comment_likes tables ready")
+    except Exception as e:
+        logger.error(f"blog_comments migration failed: {e}", exc_info=True)
+    # ── END TEMPORARY ─────────────────────────────────────────────────────────
+
     except Exception as e:
         logger.error(f"Blog database initialization failed: {e}", exc_info=True)
         logger.warning("Blog module may not function correctly")

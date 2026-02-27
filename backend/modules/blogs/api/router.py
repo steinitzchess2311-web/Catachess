@@ -38,8 +38,10 @@ from modules.blogs.services.cache_service import get_blog_cache, BlogCacheServic
 from modules.blogs.services.image_service import get_image_service
 from modules.blogs.auth import require_editor, require_admin, get_current_user_optional
 from modules.blogs.utils.image_linker import sync_article_images
+from modules.blogs.api.comments_router import router as comments_router
 
 router = APIRouter(prefix="/api/blogs", tags=["Blogs"])
+router.include_router(comments_router)
 
 
 # ==================== Database Dependency ====================

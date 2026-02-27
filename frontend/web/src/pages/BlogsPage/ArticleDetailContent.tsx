@@ -13,6 +13,8 @@ import ErrorState from "./components/ErrorState";
 import { useBlogArticle } from "../../hooks/useBlogArticle";
 import { saveCategoryLastArticle, addRecentArticle } from "../../utils/articleHistory";
 import { blogApi } from "../../utils/blogApi";
+import { useUser } from "../../contexts/UserContext";
+import CommentSection from "./Comments";
 
 interface ArticleDetailContentProps {
   article?: BlogArticle | null;
@@ -32,6 +34,8 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
   const article = propArticle !== undefined ? propArticle : hookResult.article;
   const loading = propLoading !== undefined ? propLoading : hookResult.loading;
   const error = propArticle !== undefined ? null : hookResult.error;
+
+  const { userId, username, userRole } = useUser();
 
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
@@ -307,6 +311,14 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
           <span>{article.comment_count || 0}</span>
         </div>
       </div>
+
+      {/* Comments */}
+      <CommentSection
+        articleId={article.id}
+        currentUserId={userId ?? undefined}
+        currentUserName={username ?? undefined}
+        isAdmin={userRole === 'admin'}
+      />
     </div>
   );
 };

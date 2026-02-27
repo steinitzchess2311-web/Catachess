@@ -4,8 +4,13 @@ from dataclasses import dataclass
 
 from modules.opening_trainer.service import (
     STANDARD_START_FEN,
+    advance_until_prompt,
     build_eligibility_summary,
     build_unit_catalog,
+    get_leaf_unit,
+    get_line_by_signature,
+    normalize_san_for_compare,
+    pick_line_for_unit,
 )
 
 
@@ -281,3 +286,80 @@ def test_split_depth_limit_does_not_split_after_ply_8() -> None:
     assert catalog["eligibility"]["eligible"] is True
     assert catalog["total_units"] == 1
 
+
+def test_pick_line_and_lookup_are_stable() -> None:
+    chapter = FakeChapter(id="c1", title="A")
+    variations = _simple_standard_tree("c1")
+    variations.extend(
+        [
+            FakeVariation("c1-b3", "c1", "c1-w2", 2, "black", "Nc6", "f4a"),
+            FakeVariation("c1-w4", "c1", "c1-b3", 3, "white", "Bb5", "f5a"),
+            FakeVariation("c1-b4", "c1", "c1-w4", 3, "black", "a6", "f6a"),
+        ]
+    )
+    catalog = build_unit_catalog(
+        study_id="s1",
+        mode="chapter",
+        trainee_color="white",
+        chapters=[chapter],
+        variations_by_chapter={"c1": variations},
+    )
+    unit = get_leaf_unit(catalog)
+    assert unit is not None
+
+    pick1 = pick_line_for_unit(unit, seed=7)
+    pick2 = pick_line_for_unit(unit, seed=7)
+    assert pick1["line_signature"] == pick2["line_signature"]
+
+    line_steps = get_line_by_signature(unit, pick1["line_signature"])
+    assert line_steps is not None
+    assert len(line_steps) > 0
+
+
+def test_advance_until_prompt_skips_opponent_and_mastered_steps() -> None:
+    line_steps = [
+        {
+            "from_fen": "f0",
+            "to_fen": "f1",
+            "move_san": "e4",
+            "move_uci": "e2e4",
+            "color": "white",
+            "move_number": 1,
+            "ply": 1,
+        },
+        {
+            "from_fen": "f1",
+            "to_fen": "f2",
+            "move_san": "e5",
+            "move_uci": "e7e5",
+            "color": "black",
+            "move_number": 1,
+            "ply": 2,
+        },
+        {
+            "from_fen": "f2",
+            "to_fen": "f3",
+            "move_san": "Nf3",
+            "move_uci": "g1f3",
+            "color": "white",
+            "move_number": 2,
+            "ply": 3,
+        },
+    ]
+    result = advance_until_prompt(
+        line_steps=line_steps,
+        start_index=0,
+        trainee_color="white",
+        is_mastered=lambda step: step["move_san"] == "e4",
+    )
+    assert result["finished"] is False
+    assert result["next_index"] == 2
+    assert len(result["auto_moves"]) == 2
+    assert result["auto_moves"][0]["reason"] == "mastered_skip"
+    assert result["auto_moves"][1]["reason"] == "opponent"
+    assert result["prompt"]["move_san"] == "Nf3"
+
+
+def test_normalize_san_for_compare_strips_suffixes() -> None:
+    assert normalize_san_for_compare("Qh5+?!") == "Qh5"
+    assert normalize_san_for_compare("0-0") == "O-O"

@@ -495,6 +495,19 @@ async def get_article(
         }
         await cache.set_article(str(article_id), result)
 
+    # Compute is_liked for the current user (never cached — always fresh)
+    # Done BEFORE view_count update to avoid session state issues after commit/rollback
+    is_liked = False
+    if current_user:
+        try:
+            row = db.execute(
+                text("SELECT 1 FROM blog_likes WHERE article_id = :a AND user_id = :u"),
+                {"a": str(article_id), "u": str(current_user.id)}
+            ).fetchone()
+            is_liked = row is not None
+        except Exception:
+            pass
+
     # Persist view count increment to DB (fast indexed UPDATE, non-blocking feel)
     try:
         db.execute(
@@ -505,15 +518,6 @@ async def get_article(
         result["view_count"] = result.get("view_count", 0) + 1
     except Exception:
         db.rollback()
-
-    # Compute is_liked for the current user (never cached — always fresh)
-    is_liked = False
-    if current_user:
-        row = db.execute(
-            text("SELECT 1 FROM blog_likes WHERE article_id = :a AND user_id = :u"),
-            {"a": str(article_id), "u": str(current_user.id)}
-        ).fetchone()
-        is_liked = row is not None
 
     return ArticleResponse(**result, is_liked=is_liked)
 

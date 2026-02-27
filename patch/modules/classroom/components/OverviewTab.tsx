@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { listAssignments, getMyTodo, getChatGroupId } from '../api';
 import type { Classroom, Assignment, TodoItem } from '../types';
+import { WorkspaceShareModal } from './WorkspaceShareModal';
 import { CategoryBadge } from './CategoryBadge';
 import { StatusBadge } from './StatusBadge';
 import { ActivityFeed } from './ActivityFeed';
@@ -162,6 +163,8 @@ interface StudentOverviewProps {
 export const StudentOverview: React.FC<StudentOverviewProps> = ({ classroom }) => {
   const [todo, setTodo]     = useState<TodoItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareSuccessMsg, setShareSuccessMsg] = useState<string | null>(null);
 
   useEffect(() => {
     getMyTodo()
@@ -204,12 +207,39 @@ export const StudentOverview: React.FC<StudentOverviewProps> = ({ classroom }) =
         </div>
       </div>
 
-      {/* Class chat button */}
-      <div>
+      {/* Action buttons */}
+      <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <button className="cl-btn cl-btn-secondary" onClick={() => openCatachat(classroom.id)}>
           Open Class Chat →
         </button>
+        <button
+          className="cl-btn cl-btn-secondary"
+          onClick={() => { setShareSuccessMsg(null); setShowShareModal(true); }}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+          </svg>
+          Share to Teacher
+        </button>
+        {shareSuccessMsg && (
+          <span style={{ fontSize: '0.8rem', color: 'var(--cl-green, #4caf50)', fontWeight: 500 }}>
+            ✓ {shareSuccessMsg}
+          </span>
+        )}
       </div>
+
+      {showShareModal && (
+        <WorkspaceShareModal
+          classroomId={classroom.id}
+          onClose={() => setShowShareModal(false)}
+          onShared={(title) => {
+            setShowShareModal(false);
+            setShareSuccessMsg(`"${title}" shared with teacher`);
+            setTimeout(() => setShareSuccessMsg(null), 4000);
+          }}
+        />
+      )}
 
       {/* Todo list */}
       <div>

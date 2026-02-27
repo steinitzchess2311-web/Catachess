@@ -46,6 +46,9 @@ Submissions:
 
 Activity:
   GET    /api/classroom/classrooms/{id}/activity
+
+Workspace Shares:
+  POST   /api/classroom/classrooms/{id}/share-to-teacher  Share a node with teacher (student only)
 """
 from fastapi import APIRouter
 
@@ -54,6 +57,7 @@ from modules.classroom.api.endpoints.members import router as members_router
 from modules.classroom.api.endpoints.assignments import router as assignments_router
 from modules.classroom.api.endpoints.submissions import router as submissions_router
 from modules.classroom.api.endpoints.activity import router as activity_router
+from modules.classroom.api.endpoints.shares import router as shares_router
 
 router = APIRouter()
 
@@ -62,3 +66,4 @@ router.include_router(members_router)
 router.include_router(assignments_router)
 router.include_router(submissions_router)
 router.include_router(activity_router)
+router.include_router(shares_router)

@@ -145,3 +145,21 @@ export const getActivity = (classroomId: string): Promise<ActivityItem[]> =>
 
 export const getMyTodo = (): Promise<TodoItem[]> =>
   api.get(`${BASE}/my/todo`);
+
+// ─── Workspace Share ──────────────────────────────────────────────────────────
+
+/**
+ * Share a workspace node with the classroom teacher.
+ *
+ * Student-only action triggered from the classroom UI ("Share to Teacher").
+ * The node stays in the student's private workspace; the teacher receives
+ * viewer ACL and sees it in their workspace Shared section in real-time.
+ *
+ * This is distinct from the legacy workspace /share endpoint (which is still
+ * available for direct workspace sharing).
+ */
+export const shareToTeacher = (
+  classroomId: string,
+  nodeId: string,
+): Promise<{ ok: boolean; message: string }> =>
+  api.post(`${BASE}/${classroomId}/share-to-teacher`, { node_id: nodeId });

@@ -190,6 +190,57 @@ def sync_get_or_create_student_folder(
         return None
 
 
+def sync_share_node_with_teacher(
+    student_uuid: str,
+    node_id: str,
+    teacher_uuid: str,
+) -> bool:
+    """
+    Share a student's workspace node with their teacher.
+
+    Called when a student uses "Share to Teacher" in the classroom UI.
+    Uses the STUDENT's JWT so the workspace ACL check passes
+    (only the node's owner can share it).
+
+    Permission: 'viewer' — teacher sees the node and all changes in real-time,
+    but cannot edit. inherit_to_children=True so chapter content is also visible.
+
+    This is a pure ACL operation: the node stays in the student's private
+    workspace and the student can continue editing it normally.
+    The teacher will see it appear in their Shared section.
+
+    Returns True on success, False on failure. Never raises.
+    """
+    try:
+        token = _make_token(student_uuid)
+        res = httpx.post(
+            f"{_api_base()}/api/v1/workspace/share/{node_id}/users",
+            json={
+                "user_id": teacher_uuid,
+                "permission": "viewer",
+                "inherit_to_children": True,
+            },
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=5.0,
+        )
+        if res.status_code in (200, 201):
+            log.info(
+                f"[workspace_sync] Student {student_uuid} shared node {node_id} "
+                f"with teacher {teacher_uuid}"
+            )
+            return True
+        log.warning(
+            f"[workspace_sync] sync_share_node_with_teacher node={node_id} "
+            f"→ {res.status_code}: {res.text[:200]}"
+        )
+        return False
+    except Exception as exc:
+        log.error(
+            f"[workspace_sync] sync_share_node_with_teacher node={node_id} failed: {exc}"
+        )
+        return False
+
+
 def sync_rename_student_folder(
     teacher_uuid: str,
     folder_node_id: str,

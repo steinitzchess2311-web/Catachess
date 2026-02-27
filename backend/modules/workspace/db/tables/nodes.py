@@ -65,6 +65,12 @@ class Node(Base, TimestampMixin, SoftDeleteMixin):
     # Version for optimistic locking
     version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
 
+    # Recycle bin: id of the root node that triggered the soft-delete cascade.
+    # Set on the root and all its descendants when soft-deleted as a group.
+    # NULL means the node is not in the trash.
+    # Only nodes where deleted_root_id == id are shown in the trash UI.
+    deleted_root_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+
     # Relationships
     parent: Mapped["Node | None"] = relationship(
         "Node", remote_side=[id], back_populates="children"
@@ -81,6 +87,8 @@ class Node(Base, TimestampMixin, SoftDeleteMixin):
         Index("ix_nodes_path_prefix", "path", postgresql_using="gin", postgresql_ops={"path": "gin_trgm_ops"}),
         # Fast soft-delete filtering
         Index("ix_nodes_deleted_at", "deleted_at"),
+        # Fast trash queries (find root of each deleted group)
+        Index("ix_nodes_deleted_root_id", "deleted_root_id"),
     )
 
     def __repr__(self) -> str:

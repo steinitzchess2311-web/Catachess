@@ -909,3 +909,8 @@
   .cl-overview-stats { gap: 0.6rem; }
   .cl-ov-stat { min-width: 80px; }
 }
+
+/* ── WorkspaceShareModal row hover ───────────────────────────────────────── */
+.cl-ws-picker-row:hover {
+  background: var(--cl-surface, #f8fafc);
+}

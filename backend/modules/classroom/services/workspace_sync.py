@@ -190,29 +190,95 @@ def sync_get_or_create_student_folder(
         return None
 
 
+def _move_node(token: str, node_id: str, new_parent_id: str) -> bool:
+    """POST /api/v1/workspace/nodes/{node_id}/move. Returns True on success."""
+    try:
+        res = httpx.post(
+            f"{_api_base()}/api/v1/workspace/nodes/{node_id}/move",
+            json={"new_parent_id": new_parent_id},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=5.0,
+        )
+        if res.status_code in (200, 204):
+            return True
+        log.warning(
+            f"[workspace_sync] _move_node node={node_id} parent={new_parent_id} "
+            f"→ {res.status_code}: {res.text[:200]}"
+        )
+        return False
+    except Exception as exc:
+        log.error(f"[workspace_sync] _move_node node={node_id} failed: {exc}")
+        return False
+
+
 def sync_share_node_with_teacher(
     student_uuid: str,
     node_id: str,
     teacher_uuid: str,
+    student_folder_id: Optional[str] = None,
 ) -> bool:
     """
-    Share a student's workspace node with their teacher.
+    Share a student's workspace node with their teacher and place it inside
+    the student's subfolder in the teacher's classroom/ workspace.
 
-    Called when a student uses "Share to Teacher" in the classroom UI.
-    Uses the STUDENT's JWT so the workspace ACL check passes
-    (only the node's owner can share it).
+    Full flow when student_folder_id is provided:
+      1. Move the node into classroom/{student_username}/ (changes parent_id).
+         The node leaves the student's private root — this is expected.
+      2. Grant teacher 'viewer' ACL with inherit_to_children=True so the
+         teacher can read the node and all its children (study chapters).
+      3. Grant student 'editor' ACL on classroom/{student_username}/ so the
+         student can still access and edit their shared nodes via their
+         Shared section. (Idempotent — safe to call on every share.)
 
-    Permission: 'viewer' — teacher sees the node and all changes in real-time,
-    but cannot edit. inherit_to_children=True so chapter content is also visible.
+    Result for teacher: Shared → classroom/ → {username}/ → shared node  ✓
+    Result for student: Shared → {username}/ → shared node  (edit access) ✓
 
-    This is a pure ACL operation: the node stays in the student's private
-    workspace and the student can continue editing it normally.
-    The teacher will see it appear in their Shared section.
+    When student_folder_id is None (folder not yet provisioned), falls back
+    to a pure ACL share — node appears in teacher's Shared root.
 
     Returns True on success, False on failure. Never raises.
     """
     try:
-        token = _make_token(student_uuid)
+        student_token = _make_token(student_uuid)
+
+        if student_folder_id:
+            # Step 1: move node into classroom/{username}/
+            moved = _move_node(student_token, node_id=node_id, new_parent_id=student_folder_id)
+            if not moved:
+                log.warning(
+                    f"[workspace_sync] Could not move node {node_id} to "
+                    f"folder {student_folder_id}; falling back to ACL-only share"
+                )
+
+            # Step 2: give teacher viewer ACL on the node
+            _share_folder_with_user(student_token, node_id=node_id, user_id=teacher_uuid)
+
+            # Step 3: give student editor ACL on their own subfolder
+            # (teacher's token — teacher owns the folder)
+            teacher_token = _make_token(teacher_uuid)
+            res = httpx.post(
+                f"{_api_base()}/api/v1/workspace/share/{student_folder_id}/users",
+                json={
+                    "user_id": student_uuid,
+                    "permission": "editor",
+                    "inherit_to_children": True,
+                },
+                headers={"Authorization": f"Bearer {teacher_token}"},
+                timeout=5.0,
+            )
+            if res.status_code not in (200, 201):
+                log.warning(
+                    f"[workspace_sync] Could not grant student editor ACL on folder "
+                    f"{student_folder_id}: {res.status_code} {res.text[:200]}"
+                )
+
+            log.info(
+                f"[workspace_sync] Student {student_uuid} shared node {node_id} "
+                f"→ folder {student_folder_id} (teacher={teacher_uuid})"
+            )
+            return True
+
+        # Fallback: pure ACL share (no folder provisioned yet)
         res = httpx.post(
             f"{_api_base()}/api/v1/workspace/share/{node_id}/users",
             json={
@@ -220,17 +286,17 @@ def sync_share_node_with_teacher(
                 "permission": "viewer",
                 "inherit_to_children": True,
             },
-            headers={"Authorization": f"Bearer {token}"},
+            headers={"Authorization": f"Bearer {student_token}"},
             timeout=5.0,
         )
         if res.status_code in (200, 201):
             log.info(
                 f"[workspace_sync] Student {student_uuid} shared node {node_id} "
-                f"with teacher {teacher_uuid}"
+                f"with teacher {teacher_uuid} (ACL-only fallback)"
             )
             return True
         log.warning(
-            f"[workspace_sync] sync_share_node_with_teacher node={node_id} "
+            f"[workspace_sync] sync_share_node_with_teacher fallback node={node_id} "
             f"→ {res.status_code}: {res.text[:200]}"
         )
         return False

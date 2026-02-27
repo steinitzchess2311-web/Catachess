@@ -134,10 +134,21 @@ def share_to_teacher(
     # student_uuid is available directly from current_user (main DB object)
     student_uuid = str(current_user.id)
 
+    # Look up the student's subfolder in teacher's classroom/ workspace.
+    # This is set when the student joins/is added to the classroom.
+    student_folder_id: str | None = db.execute(
+        select(ClassroomMember.workspace_folder_id).where(
+            ClassroomMember.classroom_id == classroom_id,
+            ClassroomMember.username == current_user.username,
+            ClassroomMember.removed_at.is_(None),
+        )
+    ).scalar_one_or_none()
+
     ok = workspace_sync.sync_share_node_with_teacher(
         student_uuid=student_uuid,
         node_id=body.node_id,
         teacher_uuid=teacher_uuid,
+        student_folder_id=student_folder_id,
     )
     if not ok:
         raise HTTPException(

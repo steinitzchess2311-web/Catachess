@@ -1,12 +1,18 @@
 /**
  * WorkspaceShareModal
  * ───────────────────
- * Student picks a workspace node (study or folder) to share with the teacher
- * via the classroom "Share to Teacher" action.
+ * Student picks a workspace node (study or folder) to share with the teacher.
  *
- * NOTE: Uses inline styles + cl-* classes (classroom design system) intentionally —
- * this component lives in the classroom module which does not import analysis.css.
- * The legacy StudyPickerModal (analysis → send to study) is kept as-is.
+ * UX:
+ *  - Folders: click row body → navigate inside; "Share" button on right → share the folder itself
+ *  - Studies: click anywhere → share (no navigation needed)
+ *
+ * Shared node is moved into classroom/{student_username}/ in the teacher's
+ * workspace and the teacher gets viewer ACL. The student retains editor access
+ * to that folder via the return share.
+ *
+ * Uses inline styles + cl-* CSS variables (classroom design system).
+ * Does NOT depend on analysis.css (legacy StudyPickerModal).
  */
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -31,23 +37,26 @@ interface Props {
   onShared: (nodeTitle: string) => void;
 }
 
-// ── Icons ────────────────────────────────────────────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────────────────
 
-function FolderIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true" style={{ flexShrink: 0 }}>
-      <path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
-    </svg>
-  );
-}
+const FolderIcon = () => (
+  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true" style={{ flexShrink: 0 }}>
+    <path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+  </svg>
+);
 
-function StudyIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true" style={{ flexShrink: 0 }}>
-      <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3a3 3 0 110 6 3 3 0 010-6zm4 11H8v-.5c0-2 2-3 4-3s4 1 4 3v.5z" />
-    </svg>
-  );
-}
+const StudyIcon = () => (
+  <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true" style={{ flexShrink: 0 }}>
+    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 3a3 3 0 110 6 3 3 0 010-6zm4 11H8v-.5c0-2 2-3 4-3s4 1 4 3v.5z" />
+  </svg>
+);
+
+const ShareIcon = () => (
+  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+  </svg>
+);
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -57,7 +66,7 @@ export const WorkspaceShareModal: React.FC<Props> = ({ classroomId, onClose, onS
   ]);
   const [nodes, setNodes] = useState<PickerNode[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sharing, setSharing] = useState<string | null>(null);
+  const [sharing, setSharing] = useState<string | null>(null); // node_id being shared
   const [error, setError] = useState<string | null>(null);
 
   const currentParentId = breadcrumbs[breadcrumbs.length - 1].id;
@@ -108,12 +117,6 @@ export const WorkspaceShareModal: React.FC<Props> = ({ classroomId, onClose, onS
     }
   }, [classroomId, sharing, onShared]);
 
-  const handleNodeClick = useCallback((node: PickerNode) => {
-    if (sharing) return;
-    if (node.node_type === 'folder') navigateInto(node);
-    else handleShare(node);
-  }, [sharing, navigateInto, handleShare]);
-
   const handleOverlayClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) onClose();
   }, [onClose]);
@@ -130,13 +133,14 @@ export const WorkspaceShareModal: React.FC<Props> = ({ classroomId, onClose, onS
       }}
     >
       <div
+        onClick={e => e.stopPropagation()}
         style={{
           background: 'var(--cl-bg, #fff)',
           border: '1.5px solid var(--cl-border, #e2e8f0)',
           borderRadius: 12,
           width: 440,
           maxWidth: '92vw',
-          maxHeight: '75vh',
+          maxHeight: '72vh',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
@@ -146,38 +150,39 @@ export const WorkspaceShareModal: React.FC<Props> = ({ classroomId, onClose, onS
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '1rem 1.1rem 0.75rem',
+          padding: '0.9rem 1.1rem 0.7rem',
           borderBottom: '1px solid var(--cl-border, #e2e8f0)',
         }}>
-          <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700 }}>Share to Teacher</h3>
+          <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700 }}>Share to Teacher</h3>
           <button
             type="button"
             onClick={onClose}
             style={{
               background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: '1.3rem', lineHeight: 1, color: 'var(--cl-text-secondary, #64748b)',
-              padding: '0 2px',
+              fontSize: '1.3rem', lineHeight: 1,
+              color: 'var(--cl-text-secondary, #64748b)', padding: '0 2px',
             }}
           >×</button>
         </div>
 
         {/* Breadcrumb */}
         <div style={{
-          padding: '0.5rem 1.1rem',
-          fontSize: '0.8rem',
+          padding: '0.45rem 1.1rem',
+          fontSize: '0.78rem',
           color: 'var(--cl-text-secondary, #64748b)',
           borderBottom: '1px solid var(--cl-border, #e2e8f0)',
-          display: 'flex', flexWrap: 'wrap', gap: '0.15rem', alignItems: 'center',
+          display: 'flex', flexWrap: 'wrap', gap: '2px', alignItems: 'center',
         }}>
           {breadcrumbs.map((crumb, index) => (
             <React.Fragment key={crumb.id}>
-              {index > 0 && <span style={{ margin: '0 2px', opacity: 0.5 }}>/</span>}
+              {index > 0 && <span style={{ opacity: 0.4, margin: '0 1px' }}>/</span>}
               <span
                 onClick={() => index < breadcrumbs.length - 1 && navigateToBreadcrumb(index)}
                 style={{
                   cursor: index < breadcrumbs.length - 1 ? 'pointer' : 'default',
                   fontWeight: index === breadcrumbs.length - 1 ? 600 : 400,
-                  color: index < breadcrumbs.length - 1 ? 'var(--cl-accent, #3b82f6)' : 'inherit',
+                  color: index < breadcrumbs.length - 1
+                    ? 'var(--cl-accent, #3b82f6)' : 'inherit',
                   textDecoration: index < breadcrumbs.length - 1 ? 'underline' : 'none',
                 }}
               >
@@ -188,50 +193,88 @@ export const WorkspaceShareModal: React.FC<Props> = ({ classroomId, onClose, onS
         </div>
 
         {/* Node list */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '0.5rem 0' }}>
+        <div style={{ flex: 1, overflowY: 'auto' }}>
           {loading && (
-            <p style={{ padding: '1rem 1.1rem', margin: 0, color: 'var(--cl-text-secondary, #64748b)', fontSize: '0.85rem' }}>
+            <p style={{ padding: '1rem 1.1rem', margin: 0, fontSize: '0.85rem', color: 'var(--cl-text-secondary, #64748b)' }}>
               Loading…
             </p>
           )}
           {!loading && nodes.length === 0 && (
-            <p style={{ padding: '1rem 1.1rem', margin: 0, color: 'var(--cl-text-muted, #94a3b8)', fontSize: '0.85rem' }}>
+            <p style={{ padding: '1rem 1.1rem', margin: 0, fontSize: '0.85rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
               No folders or studies here.
             </p>
           )}
-          {!loading && nodes.map(node => (
-            <div
-              key={node.id}
-              onClick={() => handleNodeClick(node)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '0.6rem',
-                padding: '0.55rem 1.1rem',
-                cursor: sharing ? 'not-allowed' : 'pointer',
-                opacity: sharing && sharing !== node.id ? 0.45 : 1,
-                background: sharing === node.id ? 'var(--cl-surface, #f8fafc)' : 'transparent',
-                transition: 'background 0.1s',
-              }}
-              onMouseEnter={e => { if (!sharing) (e.currentTarget as HTMLDivElement).style.background = 'var(--cl-surface, #f8fafc)'; }}
-              onMouseLeave={e => { if (sharing !== node.id) (e.currentTarget as HTMLDivElement).style.background = 'transparent'; }}
-            >
-              {/* Icon */}
-              <span style={{ color: node.node_type === 'folder' ? 'var(--cl-accent, #3b82f6)' : 'var(--cl-text-secondary, #64748b)' }}>
-                {node.node_type === 'folder' ? <FolderIcon /> : <StudyIcon />}
-              </span>
+          {!loading && nodes.map(node => {
+            const isFolder = node.node_type === 'folder';
+            const isSharingThis = sharing === node.id;
 
-              {/* Title */}
-              <span style={{ fontSize: '0.875rem', fontWeight: 500, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {node.title}
-              </span>
+            return (
+              <div
+                key={node.id}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.55rem',
+                  padding: '0.5rem 1.1rem',
+                  opacity: sharing && !isSharingThis ? 0.45 : 1,
+                  transition: 'background 0.1s',
+                }}
+                className="cl-ws-picker-row"
+              >
+                {/* Left: icon + name (click = navigate for folder, share for study) */}
+                <div
+                  onClick={() => {
+                    if (sharing) return;
+                    if (isFolder) navigateInto(node);
+                    else handleShare(node);
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.5rem',
+                    flex: 1, minWidth: 0,
+                    cursor: sharing ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  <span style={{ color: isFolder ? 'var(--cl-accent, #3b82f6)' : 'var(--cl-text-secondary, #64748b)', flexShrink: 0 }}>
+                    {isFolder ? <FolderIcon /> : <StudyIcon />}
+                  </span>
+                  <span style={{
+                    fontSize: '0.875rem', fontWeight: 500,
+                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                  }}>
+                    {node.title}
+                  </span>
+                  {isFolder && (
+                    <span style={{ fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)', flexShrink: 0 }}>
+                      Open →
+                    </span>
+                  )}
+                </div>
 
-              {/* Action hint */}
-              <span style={{ fontSize: '0.76rem', color: 'var(--cl-text-muted, #94a3b8)', flexShrink: 0 }}>
-                {node.node_type === 'folder'
-                  ? 'Open →'
-                  : sharing === node.id ? 'Sharing…' : 'Share'}
-              </span>
-            </div>
-          ))}
+                {/* Right: Share button (visible for both folders and studies) */}
+                <button
+                  type="button"
+                  onClick={() => !sharing && handleShare(node)}
+                  disabled={!!sharing}
+                  title={`Share "${node.title}" with teacher`}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.3rem',
+                    fontSize: '0.75rem', fontWeight: 500,
+                    padding: '0.25rem 0.6rem',
+                    borderRadius: 6,
+                    border: '1px solid var(--cl-border, #e2e8f0)',
+                    background: isSharingThis ? 'var(--cl-surface, #f8fafc)' : 'transparent',
+                    color: isSharingThis
+                      ? 'var(--cl-text-muted, #94a3b8)'
+                      : 'var(--cl-accent, #3b82f6)',
+                    cursor: sharing ? 'not-allowed' : 'pointer',
+                    flexShrink: 0,
+                    transition: 'background 0.1s, color 0.1s',
+                  }}
+                >
+                  <ShareIcon />
+                  {isSharingThis ? 'Sharing…' : 'Share'}
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         {/* Error */}
@@ -249,12 +292,12 @@ export const WorkspaceShareModal: React.FC<Props> = ({ classroomId, onClose, onS
 
         {/* Footer */}
         <div style={{
-          padding: '0.65rem 1.1rem',
+          padding: '0.6rem 1.1rem',
           borderTop: '1px solid var(--cl-border, #e2e8f0)',
-          fontSize: '0.78rem',
+          fontSize: '0.77rem',
           color: 'var(--cl-text-muted, #94a3b8)',
         }}>
-          Select a study to share with your teacher. You keep full edit access.
+          Click <strong>Share</strong> to share with your teacher. Click a folder name to browse inside.
         </div>
       </div>
     </div>

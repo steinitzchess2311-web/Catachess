@@ -23,6 +23,7 @@ from modules.catchat.schemas.group import GroupMessageCreate, GroupMessageRespon
 from models.user import User
 
 router = APIRouter(prefix="/groups", tags=["catchat-group-messages"])
+ANNOUNCEMENT_PLACEHOLDER = "[📢ANNOUNCEMENT📢]"
 
 
 def _get_membership_or_403(
@@ -61,7 +62,7 @@ def get_group_messages(
             group_id=str(m.group_id),
             sender_id=str(m.sender_id),
             sender_name=m.sender_name,
-            content=m.content,
+            content=ANNOUNCEMENT_PLACEHOLDER if m.is_broadcast else m.content,
             created_at=m.created_at,
         )
         for m in msgs

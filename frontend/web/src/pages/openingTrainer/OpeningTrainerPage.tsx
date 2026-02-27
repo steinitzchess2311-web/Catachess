@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '@ui/assets/api';
@@ -234,12 +234,14 @@ export function OpeningTrainerPage() {
   const [progressMap, setProgressMap] = useState<Map<string, ProgressItem>>(new Map());
   const [activeRun, setActiveRun] = useState<ActiveRun | null>(null);
   const [answerInput, setAnswerInput] = useState('');
+  const [catalogVersion, setCatalogVersion] = useState(0);
 
   const [loadingEligibility, setLoadingEligibility] = useState(false);
   const [loadingUnits, setLoadingUnits] = useState(false);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [runningAction, setRunningAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const catalogScopeRef = useRef<string>('');
 
   const selectedUnit = useMemo(
     () => units.find((u) => u.id === selectedUnitId) || null,
@@ -251,6 +253,10 @@ export function OpeningTrainerPage() {
     setLoadingEligibility(true);
     setLoadingUnits(true);
     setError(null);
+    catalogScopeRef.current = '';
+    setCatalogVersion((prev) => prev + 1);
+    setUnits([]);
+    setSelectedUnitId(null);
     setActiveRun(null);
     setUnitDetail(null);
     setProgressMap(new Map());
@@ -258,8 +264,8 @@ export function OpeningTrainerPage() {
       const eligibilityData = await api.get(`/api/v1/opening-trainer/studies/${studyId}/eligibility`) as EligibilityResponse;
       setEligibility(eligibilityData);
       if (!eligibilityData.eligible) {
-        setUnits([]);
-        setSelectedUnitId(null);
+        catalogScopeRef.current = `${studyId}|${mode}|${color}|blocked`;
+        setCatalogVersion((prev) => prev + 1);
         return;
       }
 
@@ -270,6 +276,8 @@ export function OpeningTrainerPage() {
       setUnits(data.leaf_units || []);
       const first = data.leaf_units?.[0]?.id || null;
       setSelectedUnitId((prev) => (prev && data.leaf_units.some((u) => u.id === prev) ? prev : first));
+      catalogScopeRef.current = `${studyId}|${mode}|${color}`;
+      setCatalogVersion((prev) => prev + 1);
 
       const fenSet = new Set<string>();
       for (const unit of data.leaf_units || []) {
@@ -294,34 +302,35 @@ export function OpeningTrainerPage() {
     }
   }, [studyId, mode, color]);
 
-  const refreshUnitDetail = useCallback(async () => {
-    if (!studyId || !selectedUnitId || (eligibility && !eligibility.eligible)) {
-      setUnitDetail(null);
-      return;
-    }
-    setLoadingDetail(true);
-    try {
-      const detail = await api.get(
-        `/api/v1/opening-trainer/studies/${studyId}/units/${selectedUnitId}?mode=${mode}&color=${color}`,
-      ) as UnitDetailResponse;
-      setUnitDetail(detail);
-    } catch (e: unknown) {
-      setError(readApiError(e, 'Failed to load unit detail'));
-    } finally {
-      setLoadingDetail(false);
-    }
-  }, [studyId, selectedUnitId, mode, color, eligibility]);
-
   useEffect(() => {
     refreshUnits();
   }, [refreshUnits]);
 
   useEffect(() => {
-    refreshUnitDetail();
-  }, [refreshUnitDetail]);
+    const catalogScope = `${studyId}|${mode}|${color}`;
+    if (!studyId || !selectedUnitId) {
+      setLoadingDetail(false);
+      setUnitDetail(null);
+      return;
+    }
+    if (catalogScopeRef.current !== catalogScope) {
+      setLoadingDetail(false);
+      return;
+    }
+    setLoadingDetail(true);
+    api.get(
+      `/api/v1/opening-trainer/studies/${studyId}/units/${selectedUnitId}?mode=${mode}&color=${color}`,
+    ).then((detail) => {
+      setUnitDetail(detail as UnitDetailResponse);
+    }).catch((e: unknown) => {
+      setError(readApiError(e, 'Failed to load unit detail'));
+    }).finally(() => {
+      setLoadingDetail(false);
+    });
+  }, [studyId, mode, color, selectedUnitId, catalogVersion]);
 
   const startRun = useCallback(async () => {
-    if (!studyId || !selectedUnitId) return;
+    if (!studyId || !selectedUnitId || !units.some((unit) => unit.id === selectedUnitId)) return;
     setRunningAction(true);
     setError(null);
     try {
@@ -351,7 +360,7 @@ export function OpeningTrainerPage() {
     } finally {
       setRunningAction(false);
     }
-  }, [studyId, selectedUnitId, mode, color, trainingMode]);
+  }, [studyId, selectedUnitId, mode, color, trainingMode, units]);
 
   const submitAnswer = useCallback(async () => {
     if (!studyId || !activeRun || !answerInput.trim()) return;
@@ -556,7 +565,12 @@ export function OpeningTrainerPage() {
         <section className="ot-panel ot-panel-main">
           <div className="ot-panel-head">
             <h2>Training</h2>
-            <button type="button" className="ot-start" disabled={!selectedUnitId || runningAction} onClick={startRun}>
+            <button
+              type="button"
+              className="ot-start"
+              disabled={!selectedUnitId || runningAction || loadingUnits || !!(eligibility && !eligibility.eligible)}
+              onClick={startRun}
+            >
               {runningAction ? 'Processing...' : activeRun ? 'Restart Session' : 'Start Session'}
             </button>
           </div>

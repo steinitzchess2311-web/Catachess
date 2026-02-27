@@ -17,9 +17,10 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
     { id: "about", label: "Our Stories" },
     { id: "function", label: "Functions Intro" },
     { id: "devlog", label: "Developer Logs" },
+    { id: "pinned", label: "📌 Pinned Articles" },
   ];
 
-  const isOfficialRootActive = activeCategory === undefined || activeCategory === 'allblogs' || activeCategory === 'official';
+  const isOfficialRootActive = activeCategory === undefined || activeCategory === 'allblogs' || activeCategory === 'official' || activeCategory === 'pinned';
 
   return (
     <div>
@@ -83,7 +84,7 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
           paddingLeft: "54px",
           paddingTop: isOfficialOpen ? "4px" : "0px",
           paddingBottom: isOfficialOpen ? "4px" : "0px",
-          maxHeight: isOfficialOpen ? "220px" : "0px",
+          maxHeight: isOfficialOpen ? "300px" : "0px",
           opacity: isOfficialOpen ? 1 : 0,
           overflow: "hidden",
           transition: "max-height 0.22s ease, opacity 0.22s ease, padding 0.22s ease",

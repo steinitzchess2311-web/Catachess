@@ -6,7 +6,6 @@
 import React, { useState, useEffect } from "react";
 import BlogEditor from "../BlogEditor/index";
 import ToggleButton from "./ToggleButton";
-import PinnedButton from "./PinnedButton";
 import OfficialSection from "./OfficialSection";
 import CommunityButton from "./CommunityButton";
 import UserActionsSection from "./UserActionsSection";
@@ -33,7 +32,7 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
   const [editorOpen, setEditorOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    if (activeCategory === 'about' || activeCategory === 'function' || activeCategory === 'devlog' || activeCategory === 'official') {
+    if (['about', 'function', 'devlog', 'official', 'pinned'].includes(activeCategory ?? '')) {
       setIsOfficialOpen(true);
     }
   }, [activeCategory]);
@@ -45,13 +44,13 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
 
   // Handle category click — also resets viewMode to 'articles'
   const handleCategoryClick = (categoryId: string) => {
-    // Map UI category IDs to API category values
     const categoryMap: { [key: string]: string | undefined } = {
       'about': 'about',
       'function': 'function',
       'devlog': 'devlog',
-      'allblogs': 'official',  // Chessortag Official - all official blogs
-      'user': 'user',  // Community category
+      'allblogs': 'official',
+      'user': 'user',
+      'pinned': 'pinned',
     };
 
     onViewModeChange('articles');
@@ -110,13 +109,6 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
                 const displayCategory = viewMode === 'articles' ? activeCategory : '__none__';
                 return (
                   <>
-                    {/* Pinned Articles */}
-                    <PinnedButton
-                      activeCategory={displayCategory}
-                      onCategoryChange={onCategoryChange}
-                      onViewModeChange={onViewModeChange}
-                    />
-
                     {/* Community */}
                     <CommunityButton
                       activeCategory={displayCategory}

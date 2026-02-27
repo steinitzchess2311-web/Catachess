@@ -242,6 +242,8 @@ export function OpeningTrainerPage() {
   const [runningAction, setRunningAction] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const catalogScopeRef = useRef<string>('');
+  const unitsRequestSeqRef = useRef(0);
+  const detailRequestSeqRef = useRef(0);
 
   const selectedUnit = useMemo(
     () => units.find((u) => u.id === selectedUnitId) || null,
@@ -250,10 +252,12 @@ export function OpeningTrainerPage() {
 
   const refreshUnits = useCallback(async () => {
     if (!studyId) return;
+    const requestSeq = ++unitsRequestSeqRef.current;
     setLoadingEligibility(true);
     setLoadingUnits(true);
     setError(null);
     catalogScopeRef.current = '';
+    detailRequestSeqRef.current += 1;
     setCatalogVersion((prev) => prev + 1);
     setUnits([]);
     setSelectedUnitId(null);
@@ -261,7 +265,8 @@ export function OpeningTrainerPage() {
     setUnitDetail(null);
     setProgressMap(new Map());
     try {
-      const eligibilityData = await api.get(`/api/v1/opening-trainer/studies/${studyId}/eligibility`) as EligibilityResponse;
+      const eligibilityData = await api.get(`/api/v1/opening-trainer/studies/${encodeURIComponent(studyId)}/eligibility`) as EligibilityResponse;
+      if (requestSeq !== unitsRequestSeqRef.current) return;
       setEligibility(eligibilityData);
       if (!eligibilityData.eligible) {
         catalogScopeRef.current = `${studyId}|${mode}|${color}|blocked`;
@@ -270,8 +275,9 @@ export function OpeningTrainerPage() {
       }
 
       const data = await api.get(
-        `/api/v1/opening-trainer/studies/${studyId}/units?mode=${mode}&color=${color}`,
+        `/api/v1/opening-trainer/studies/${encodeURIComponent(studyId)}/units?mode=${mode}&color=${color}`,
       ) as UnitCatalogResponse;
+      if (requestSeq !== unitsRequestSeqRef.current) return;
       setEligibility(data.eligibility);
       setUnits(data.leaf_units || []);
       const first = data.leaf_units?.[0]?.id || null;
@@ -290,13 +296,16 @@ export function OpeningTrainerPage() {
         params.set('color', color);
         Array.from(fenSet).forEach((fen) => params.append('fens[]', fen));
         const progress = await api.get(`/api/v1/opening-trainer/progress?${params.toString()}`) as { items: ProgressItem[] };
+        if (requestSeq !== unitsRequestSeqRef.current) return;
         setProgressMap(buildProgressMap(progress.items || []));
       }
     } catch (e: unknown) {
+      if (requestSeq !== unitsRequestSeqRef.current) return;
       setUnits([]);
       setSelectedUnitId(null);
       setError(readApiError(e, 'Failed to load units'));
     } finally {
+      if (requestSeq !== unitsRequestSeqRef.current) return;
       setLoadingEligibility(false);
       setLoadingUnits(false);
     }
@@ -309,32 +318,46 @@ export function OpeningTrainerPage() {
   useEffect(() => {
     const catalogScope = `${studyId}|${mode}|${color}`;
     if (!studyId || !selectedUnitId) {
+      detailRequestSeqRef.current += 1;
       setLoadingDetail(false);
       setUnitDetail(null);
       return;
     }
     if (catalogScopeRef.current !== catalogScope) {
+      detailRequestSeqRef.current += 1;
       setLoadingDetail(false);
       return;
     }
+    const requestSeq = ++detailRequestSeqRef.current;
     setLoadingDetail(true);
     api.get(
-      `/api/v1/opening-trainer/studies/${studyId}/units/${selectedUnitId}?mode=${mode}&color=${color}`,
+      `/api/v1/opening-trainer/studies/${encodeURIComponent(studyId)}/units/${encodeURIComponent(selectedUnitId)}?mode=${mode}&color=${color}`,
     ).then((detail) => {
+      if (requestSeq !== detailRequestSeqRef.current) return;
       setUnitDetail(detail as UnitDetailResponse);
     }).catch((e: unknown) => {
+      if (requestSeq !== detailRequestSeqRef.current) return;
+      const statusCode = (e as { status?: unknown })?.status;
+      if (statusCode === 404) {
+        setUnitDetail(null);
+        if (units.length > 0 && selectedUnitId !== units[0].id) {
+          setSelectedUnitId(units[0].id);
+        }
+        return;
+      }
       setError(readApiError(e, 'Failed to load unit detail'));
     }).finally(() => {
+      if (requestSeq !== detailRequestSeqRef.current) return;
       setLoadingDetail(false);
     });
-  }, [studyId, mode, color, selectedUnitId, catalogVersion]);
+  }, [studyId, mode, color, selectedUnitId, catalogVersion, units]);
 
   const startRun = useCallback(async () => {
     if (!studyId || !selectedUnitId || !units.some((unit) => unit.id === selectedUnitId)) return;
     setRunningAction(true);
     setError(null);
     try {
-      const response = await api.post(`/api/v1/opening-trainer/studies/${studyId}/train/start`, {
+      const response = await api.post(`/api/v1/opening-trainer/studies/${encodeURIComponent(studyId)}/train/start`, {
         mode,
         color,
         training_mode: trainingMode,
@@ -367,7 +390,7 @@ export function OpeningTrainerPage() {
     setRunningAction(true);
     setError(null);
     try {
-      const response = await api.post(`/api/v1/opening-trainer/studies/${studyId}/train/answer`, {
+      const response = await api.post(`/api/v1/opening-trainer/studies/${encodeURIComponent(studyId)}/train/answer`, {
         session: activeRun.session,
         user_move_san: answerInput.trim(),
       }) as AnswerResponse;

@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from "react";
-import { EyeOpenIcon, ChatBubbleIcon, HandIcon } from "@radix-ui/react-icons";
+import { EyeOpenIcon, ChatBubbleIcon, HeartIcon, HeartFilledIcon } from "@radix-ui/react-icons";
 import { BlogArticle } from "../../types/blog";
 import MarkdownRenderer from "./components/MarkdownRenderer";
 import LoadingState from "./components/LoadingState";
@@ -264,7 +264,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
             display: "flex",
             alignItems: "center",
             gap: "8px",
-            color: isLiked ? "#2563eb" : "#64748b",
+            color: isLiked ? "#e11d48" : "#64748b",
             border: "none",
             background: "transparent",
             cursor: liking ? "wait" : "pointer",
@@ -276,8 +276,8 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
           }}
           onMouseEnter={(e) => {
             if (!isLiked) {
-              e.currentTarget.style.color = "#2563eb";
-              e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.08)";
+              e.currentTarget.style.color = "#e11d48";
+              e.currentTarget.style.backgroundColor = "rgba(225, 29, 72, 0.08)";
             }
           }}
           onMouseLeave={(e) => {
@@ -287,14 +287,10 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
             }
           }}
         >
-          <HandIcon
-            width={18}
-            height={18}
-            style={{
-              fill: isLiked ? "#2563eb" : "none",
-              transform: "rotate(0deg)"
-            }}
-          />
+          {isLiked
+            ? <HeartFilledIcon width={18} height={18} style={{ color: "#e11d48" }} />
+            : <HeartIcon width={18} height={18} />
+          }
           <span>{likeCount}</span>
         </button>
 

@@ -7,6 +7,7 @@ import React, { useState, useEffect } from "react";
 import BlogEditor from "../BlogEditor/index";
 import ToggleButton from "./ToggleButton";
 import OfficialSection from "./OfficialSection";
+import PinnedButton from "./PinnedButton";
 import CommunityButton from "./CommunityButton";
 import UserActionsSection from "./UserActionsSection";
 import CollapsedView from "./CollapsedView";
@@ -32,7 +33,7 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
   const [editorOpen, setEditorOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    if (['about', 'function', 'devlog', 'official', 'pinned'].includes(activeCategory ?? '')) {
+    if (['about', 'function', 'devlog', 'official'].includes(activeCategory ?? '')) {
       setIsOfficialOpen(true);
     }
   }, [activeCategory]);
@@ -121,6 +122,13 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
                       isOfficialOpen={isOfficialOpen}
                       setIsOfficialOpen={setIsOfficialOpen}
                       onCategoryClick={handleCategoryClick}
+                    />
+
+                    {/* Pinned Articles — same level as Community & Official */}
+                    <PinnedButton
+                      activeCategory={displayCategory}
+                      onCategoryChange={onCategoryChange}
+                      onViewModeChange={onViewModeChange}
                     />
                   </>
                 );

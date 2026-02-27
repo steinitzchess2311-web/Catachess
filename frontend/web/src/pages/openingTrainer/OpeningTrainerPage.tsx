@@ -249,6 +249,8 @@ export function OpeningTrainerPage() {
     () => units.find((u) => u.id === selectedUnitId) || null,
     [selectedUnitId, units],
   );
+  const activeCatalogScope = `${studyId}|${mode}|${color}`;
+  const isCatalogReady = catalogScopeRef.current === activeCatalogScope;
 
   const refreshUnits = useCallback(async () => {
     if (!studyId) return;
@@ -353,7 +355,16 @@ export function OpeningTrainerPage() {
   }, [studyId, mode, color, selectedUnitId, catalogVersion, units]);
 
   const startRun = useCallback(async () => {
-    if (!studyId || !selectedUnitId || !units.some((unit) => unit.id === selectedUnitId)) return;
+    if (
+      !studyId ||
+      !selectedUnitId ||
+      !units.some((unit) => unit.id === selectedUnitId) ||
+      !isCatalogReady ||
+      loadingUnits ||
+      loadingEligibility
+    ) {
+      return;
+    }
     setRunningAction(true);
     setError(null);
     try {
@@ -379,11 +390,26 @@ export function OpeningTrainerPage() {
       });
       setAnswerInput('');
     } catch (e: unknown) {
+      const statusCode = (e as { status?: unknown })?.status;
+      if (statusCode === 404) {
+        refreshUnits();
+      }
       setError(readApiError(e, 'Failed to start training'));
     } finally {
       setRunningAction(false);
     }
-  }, [studyId, selectedUnitId, mode, color, trainingMode, units]);
+  }, [
+    studyId,
+    selectedUnitId,
+    mode,
+    color,
+    trainingMode,
+    units,
+    isCatalogReady,
+    loadingUnits,
+    loadingEligibility,
+    refreshUnits,
+  ]);
 
   const submitAnswer = useCallback(async () => {
     if (!studyId || !activeRun || !answerInput.trim()) return;
@@ -591,7 +617,14 @@ export function OpeningTrainerPage() {
             <button
               type="button"
               className="ot-start"
-              disabled={!selectedUnitId || runningAction || loadingUnits || !!(eligibility && !eligibility.eligible)}
+              disabled={
+                !selectedUnitId ||
+                runningAction ||
+                loadingUnits ||
+                loadingEligibility ||
+                !isCatalogReady ||
+                !!(eligibility && !eligibility.eligible)
+              }
               onClick={startRun}
             >
               {runningAction ? 'Processing...' : activeRun ? 'Restart Session' : 'Start Session'}

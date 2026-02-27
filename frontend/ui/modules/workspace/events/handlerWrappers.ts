@@ -30,7 +30,8 @@ export function createHandlerWrappers(
             navigateToFolder,
             openNodeActions: openNodeActionsWrapper,
             openMoveConfirm: openMoveConfirmWrapper,
-            openCreateModal: openCreateModalWrapper
+            openCreateModal: openCreateModalWrapper,
+            refreshNodes: () => refreshNodes(state.currentParentId),
         });
     };
 

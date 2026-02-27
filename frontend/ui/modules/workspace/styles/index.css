@@ -512,3 +512,85 @@
 #logout-button-container {
     margin-top: auto;
 }
+
+/* ── Recycle Bin mode ──────────────────────────────────────────────────── */
+.mode-nav-divider {
+    height: 1px;
+    background: var(--border);
+    margin: var(--space-xs) 0;
+    opacity: 0.6;
+}
+
+.mode-btn--trash {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: var(--font-sm);
+}
+
+.mode-btn--trash:hover {
+    background: rgba(220, 38, 38, 0.06);
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+.mode-btn--trash.active {
+    background: rgba(220, 38, 38, 0.1);
+    border-color: #dc2626;
+    color: #dc2626;
+    font-weight: 600;
+}
+
+.mode-btn-icon {
+    flex-shrink: 0;
+    opacity: 0.8;
+}
+
+/* Trashed items — muted appearance */
+.grid-item--trashed {
+    opacity: 0.65;
+    filter: grayscale(0.3);
+}
+
+.grid-item--trashed:hover {
+    opacity: 0.85;
+    filter: none;
+}
+
+/* Trash context menu popup */
+.trash-action-popup {
+    position: absolute;
+    z-index: 9999;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-2);
+    overflow: hidden;
+    min-width: 160px;
+}
+
+.trash-action-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    font-size: var(--font-sm);
+    color: var(--text-main);
+    transition: background 0.12s;
+}
+
+.trash-action-btn:hover {
+    background: var(--hover-bg, rgba(0,0,0,0.05));
+}
+
+.trash-action-btn--delete {
+    color: #dc2626;
+}
+
+.trash-action-btn--delete:hover {
+    background: rgba(220, 38, 38, 0.06);
+}

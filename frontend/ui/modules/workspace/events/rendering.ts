@@ -58,7 +58,12 @@ export function renderItems(
 
         // Public root view: show "by <username>" if available; otherwise fall back to date
         const isPublicRoot = state.mode === 'public' && state.currentParentId === 'root';
-        if (isPublicRoot && node.owner_username) {
+        if (state.mode === 'trash') {
+            const deletedDate = new Date(node.deleted_at).toLocaleDateString();
+            itemDiv.querySelector('.item-meta')!.textContent = `Deleted: ${deletedDate}`;
+            itemDiv.classList.add('grid-item--trashed');
+            itemDiv.setAttribute('draggable', 'false');
+        } else if (isPublicRoot && node.owner_username) {
             itemDiv.querySelector('.item-meta')!.textContent = `by ${node.owner_username}`;
         } else {
             const dateToDisplay = state.sortKey === 'created' ? node.created_at : node.updated_at;
@@ -68,6 +73,7 @@ export function renderItems(
         }
 
         itemDiv.addEventListener('click', (event) => {
+            if (state.mode === 'trash') return;
             if (event.button !== 0) return;
             const target = event.target as HTMLElement;
             if (target.closest('.item-title') || target.closest('.item-title-input')) return;
@@ -87,6 +93,10 @@ export function renderItems(
         itemDiv.addEventListener('contextmenu', (event) => {
             event.preventDefault();
             event.stopPropagation();
+            if (state.mode === 'trash') {
+                openTrashActions(node, itemDiv, handlers.refreshNodes);
+                return;
+            }
             const disabledActions = state.mode !== 'private'
                 ? { move: true, rename: true, delete: true }
                 : undefined;
@@ -219,6 +229,40 @@ export function renderItems(
             });
         });
     }
+}
+
+function openTrashActions(node: any, anchor: HTMLElement, refreshNodes: () => void) {
+    document.querySelectorAll('.trash-action-popup').forEach(el => el.remove());
+
+    const popup = document.createElement('div');
+    popup.className = 'trash-action-popup';
+    popup.innerHTML = `
+        <button class="trash-action-btn trash-action-btn--restore">↩ Restore</button>
+        <button class="trash-action-btn trash-action-btn--delete">🗑 Delete forever</button>`;
+
+    document.body.appendChild(popup);
+
+    const rect = anchor.getBoundingClientRect();
+    popup.style.position = 'absolute';
+    popup.style.top = `${rect.bottom + window.scrollY + 4}px`;
+    popup.style.left = `${rect.left + window.scrollX}px`;
+
+    const dismiss = () => popup.remove();
+    setTimeout(() => document.addEventListener('click', dismiss, { once: true }), 0);
+
+    popup.querySelector('.trash-action-btn--restore')!.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        dismiss();
+        await api.post(`/api/v1/workspace/nodes/${node.id}/restore`, {});
+        refreshNodes();
+    });
+
+    popup.querySelector('.trash-action-btn--delete')!.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        dismiss();
+        await api.delete(`/api/v1/workspace/nodes/${node.id}/purge?version=${node.version}`);
+        refreshNodes();
+    });
 }
 
 export function renderReactComponents(

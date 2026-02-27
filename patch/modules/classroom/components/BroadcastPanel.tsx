@@ -32,7 +32,11 @@ export const BroadcastPanel: React.FC<Props> = ({ classroomId, refreshKey }) => 
       .finally(() => setLoading(false));
   }, [classroomId, refreshKey]);
 
-  async function handleDelete(id: string) {
+  async function handleDelete(id?: string) {
+    if (!id) {
+      alert('Announcement id is missing. Refresh and try again.');
+      return;
+    }
     if (!confirm('Delete this announcement?')) return;
     try {
       await deleteBroadcast(classroomId, id);

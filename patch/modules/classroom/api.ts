@@ -64,8 +64,20 @@ export const getChatGroupId = (id: string): Promise<{ catchat_group_id: string |
 export const broadcastMessage = (id: string, content: string): Promise<{ broadcast_id: string; created_at: string }> =>
   api.post(`${BASE}/${id}/broadcast`, { content });
 
-export const listBroadcasts = (id: string, limit = 5): Promise<import('./types').BroadcastItem[]> =>
-  api.get(`${BASE}/${id}/broadcasts?limit=${limit}`);
+export const listBroadcasts = async (id: string, limit = 5): Promise<import('./types').BroadcastItem[]> => {
+  const rows = await api.get(`${BASE}/${id}/broadcasts?limit=${limit}`);
+  if (!Array.isArray(rows)) return [];
+
+  return rows
+    .map((row: any) => ({
+      // Backend currently returns broadcast_id/sender_username.
+      id: row?.id ?? row?.broadcast_id ?? '',
+      sender_name: row?.sender_name ?? row?.sender_username ?? 'Teacher',
+      content: row?.content ?? '',
+      created_at: row?.created_at ?? new Date().toISOString(),
+    }))
+    .filter((row: import('./types').BroadcastItem) => Boolean(row.id));
+};
 
 export const deleteBroadcast = (classroomId: string, messageId: string): Promise<void> =>
   api.delete(`${BASE}/${classroomId}/broadcasts/${messageId}`);

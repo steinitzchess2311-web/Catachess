@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
-import { getClassroom, archiveClassroom, unarchiveClassroom, deleteClassroom, renameClassroom, leaveClassroom } from './api';
+import { getClassroom, archiveClassroom, unarchiveClassroom, deleteClassroom, renameClassroom, leaveClassroom, listMembers } from './api';
 import type { Classroom } from './types';
 import { RoleBadge } from './components/RoleBadge';
 import { TeacherOverview, StudentOverview, openClassChat } from './components/overview';
@@ -38,6 +38,7 @@ export const ClassroomDetailPage: React.FC = () => {
         setClassroom(prev => ({
           ...fresh,
           my_role: fresh.my_role ?? prev?.my_role ?? 'student',
+          member_count: fresh.member_count ?? prev?.member_count ?? 0,
         }));
       })
       .catch(err => {
@@ -46,6 +47,15 @@ export const ClassroomDetailPage: React.FC = () => {
       .finally(() => setLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  useEffect(() => {
+    if (!classroom?.id) return;
+    listMembers(classroom.id)
+      .then(rows => {
+        setClassroom(prev => (prev ? { ...prev, member_count: rows.length } : prev));
+      })
+      .catch(() => {});
+  }, [classroom?.id]);
 
   const isTeacher = classroom?.my_role === 'owner' || classroom?.my_role === 'teacher';
   const isOwner = classroom?.my_role === 'owner';
@@ -233,7 +243,14 @@ export const ClassroomDetailPage: React.FC = () => {
               : <StudentOverview classroom={classroom} focusTasksSignal={focusTasksSignal} />
           )}
           {tab === 'assignments' && <AssignmentsTab classroom={classroom} createRequestToken={createRequestToken} />}
-          {tab === 'members' && <MembersTab classroom={classroom} />}
+          {tab === 'members' && (
+            <MembersTab
+              classroom={classroom}
+              onCountChange={(count) => {
+                setClassroom(prev => (prev ? { ...prev, member_count: count } : prev));
+              }}
+            />
+          )}
         </div>
 
       </div>

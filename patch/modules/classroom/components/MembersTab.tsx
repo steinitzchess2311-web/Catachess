@@ -8,9 +8,10 @@ import { avatarColor } from '../utils';
 
 interface Props {
   classroom: Classroom;
+  onCountChange?: (count: number) => void;
 }
 
-export const MembersTab: React.FC<Props> = ({ classroom }) => {
+export const MembersTab: React.FC<Props> = ({ classroom, onCountChange }) => {
   const [members, setMembers] = useState<ClassroomMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -20,16 +21,23 @@ export const MembersTab: React.FC<Props> = ({ classroom }) => {
 
   useEffect(() => {
     listMembers(classroom.id)
-      .then(setMembers)
+      .then(rows => {
+        setMembers(rows);
+        onCountChange?.(rows.length);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [classroom.id]);
+  }, [classroom.id, onCountChange]);
 
   async function handleRemove(username: string) {
     if (!confirm(`Remove ${username} from this classroom?`)) return;
     try {
       await removeMember(classroom.id, username);
-      setMembers(prev => prev.filter(m => m.username !== username));
+      setMembers(prev => {
+        const next = prev.filter(m => m.username !== username);
+        onCountChange?.(next.length);
+        return next;
+      });
     } catch (err: any) {
       alert(err?.message || 'Failed to remove member.');
     }
@@ -128,7 +136,11 @@ export const MembersTab: React.FC<Props> = ({ classroom }) => {
           classroomId={classroom.id}
           onClose={() => setShowAddModal(false)}
           onAdded={member => {
-            setMembers(prev => [...prev, member]);
+            setMembers(prev => {
+              const next = [...prev, member];
+              onCountChange?.(next.length);
+              return next;
+            });
             setShowAddModal(false);
           }}
         />

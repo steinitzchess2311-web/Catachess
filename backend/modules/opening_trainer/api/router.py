@@ -1,6 +1,7 @@
 """Opening Trainer APIs."""
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -12,6 +13,9 @@ from core.log.log_api import logger
 from core.security.current_user import get_current_user
 from models.user import User
 from modules.opening_trainer.db import get_opening_trainer_db
+from modules.opening_trainer.r2_adapter import build_variations_from_r2_tree
+from modules.workspace.storage.keys import R2Keys
+from modules.workspace.storage.r2_client import create_r2_client_from_env
 from modules.opening_trainer.schemas import (
     OpeningTrainerColor,
     OpeningTrainerEligibilityResponse,
@@ -288,9 +292,50 @@ async def _load_study_context(
     chapters = list(await study_repo.get_chapters_for_study(study_id, order_by_order=True))
     variations_by_chapter: dict[str, list] = {}
     for chapter in chapters:
-        variations_by_chapter[chapter.id] = list(await variation_repo.get_variations_for_chapter(chapter.id))
+        sql_vars = list(await variation_repo.get_variations_for_chapter(chapter.id))
+        if sql_vars:
+            variations_by_chapter[chapter.id] = sql_vars
+        else:
+            # SQL is empty — chapter was saved via patch editor (R2-only path).
+            # Fall back to reading the R2 tree and computing FENs with python-chess.
+            variations_by_chapter[chapter.id] = _load_variations_from_r2(chapter)
 
     return chapters, variations_by_chapter
+
+
+def _load_variations_from_r2(chapter: Any) -> list:
+    """Fallback: build synthetic variation objects from R2 tree JSON.
+
+    Called when the SQL variations table is empty for a chapter, which happens
+    when the chapter was created or edited exclusively via the patch editor
+    (PUT /study-patch/chapter/{id}/tree), which only writes to R2.
+    """
+    try:
+        from patch.backend.study.models import StudyTreeDTO  # local import — avoid circular dep
+
+        r2_client = create_r2_client_from_env()
+        key = R2Keys.chapter_tree_json(chapter.id)
+        if not r2_client.exists(key):
+            return []
+
+        content = r2_client.download_json(key)
+        tree_data = json.loads(content)
+        tree = StudyTreeDTO(**tree_data)
+        starting_fen = getattr(chapter, "starting_fen", None)
+        variations = build_variations_from_r2_tree(tree, starting_fen)
+        logger.info(
+            "opening_trainer: loaded %d variations from R2 for chapter %s",
+            len(variations),
+            chapter.id,
+        )
+        return variations
+    except Exception as exc:
+        logger.warning(
+            "opening_trainer: R2 fallback failed for chapter %s: %s",
+            chapter.id,
+            exc,
+        )
+        return []
 
 
 async def _build_catalog(

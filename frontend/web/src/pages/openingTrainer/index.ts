@@ -1,0 +1,2 @@
+export { OpeningTrainerPage } from './OpeningTrainerPage';
+

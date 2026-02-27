@@ -1,0 +1,579 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Chessboard } from 'react-chessboard';
+import { useNavigate, useParams } from 'react-router-dom';
+import { api } from '@ui/assets/api';
+import './OpeningTrainerPage.css';
+
+type TrainerMode = 'chapter' | 'merged';
+type TrainerColor = 'white' | 'black';
+type TrainingMode = 'quiz' | 'learn' | 'preview';
+
+interface EligibilityResponse {
+  eligible: boolean;
+  reasons: string[];
+  stats: {
+    total_chapters: number;
+    standard_start_chapters: number;
+    trainable_chapters: number;
+    max_line_ply: number;
+    lines_ge_5_ply: number;
+  };
+}
+
+interface RequiredMove {
+  from_fen: string;
+  move_san: string;
+  move_uci?: string | null;
+  color: TrainerColor;
+  move_number: number;
+  ply: number;
+}
+
+interface LeafUnit {
+  id: string;
+  title: string;
+  chapter_id?: string | null;
+  line_count: number;
+  max_ply: number;
+  required_move_count: number;
+  required_fens: string[];
+  required_moves: RequiredMove[];
+  path: string[];
+}
+
+interface UnitCatalogResponse {
+  study_id: string;
+  mode: TrainerMode;
+  color: TrainerColor;
+  eligibility: EligibilityResponse;
+  leaf_units: LeafUnit[];
+  total_units: number;
+}
+
+interface LineStep {
+  from_fen: string;
+  to_fen: string;
+  move_san: string;
+  move_uci?: string | null;
+  color: TrainerColor;
+  move_number: number;
+  ply: number;
+}
+
+interface UnitLine {
+  signature: string;
+  steps: LineStep[];
+}
+
+interface UnitDetailResponse {
+  study_id: string;
+  mode: TrainerMode;
+  color: TrainerColor;
+  unit: LeafUnit;
+  lines: UnitLine[];
+}
+
+interface ProgressItem {
+  from_fen: string;
+  move_san: string;
+  color: TrainerColor;
+  mastered: boolean;
+  correct_count: number;
+  wrong_count: number;
+  consecutive_correct: number;
+}
+
+interface SessionState {
+  study_id: string;
+  mode: TrainerMode;
+  color: TrainerColor;
+  training_mode: TrainingMode;
+  unit_id: string;
+  line_signature: string;
+  line_index: number;
+  line_count: number;
+  step_index: number;
+  seed: number;
+}
+
+interface PromptMove {
+  from_fen: string;
+  move_san: string;
+  move_uci?: string | null;
+  color: TrainerColor;
+  move_number: number;
+  ply: number;
+}
+
+interface AutoMove extends PromptMove {
+  to_fen: string;
+  reason: string;
+}
+
+interface TrainingProgress {
+  from_fen: string;
+  move_san: string;
+  mastered: boolean;
+  correct_count: number;
+  wrong_count: number;
+  consecutive_correct: number;
+}
+
+interface StartResponse {
+  session: SessionState;
+  unit: LeafUnit;
+  auto_moves: AutoMove[];
+  prompt: PromptMove | null;
+  finished: boolean;
+}
+
+interface AnswerResponse {
+  correct: boolean;
+  expected_move_san: string;
+  session: SessionState;
+  auto_moves: AutoMove[];
+  prompt: PromptMove | null;
+  finished: boolean;
+  progress: TrainingProgress | null;
+}
+
+interface ActiveRun {
+  session: SessionState;
+  unit: LeafUnit;
+  prompt: PromptMove | null;
+  finished: boolean;
+  boardFen: string;
+  lastProgress: TrainingProgress | null;
+  feedback: string | null;
+}
+
+function toFenForBoard(fen: string | null | undefined): string {
+  const value = (fen || '').trim();
+  if (!value) return 'start';
+  const fields = value.split(/\s+/);
+  if (fields.length === 4) return `${value} 0 1`;
+  if (fields.length === 5) return `${value} 1`;
+  return value;
+}
+
+function progressKey(fromFen: string, moveSan: string): string {
+  return `${fromFen}::${moveSan}`;
+}
+
+function buildProgressMap(items: ProgressItem[]): Map<string, ProgressItem> {
+  const map = new Map<string, ProgressItem>();
+  for (const item of items) {
+    map.set(progressKey(item.from_fen, item.move_san), item);
+  }
+  return map;
+}
+
+function getUnitMastery(unit: LeafUnit, progressMap: Map<string, ProgressItem>): { mastered: number; total: number } {
+  const total = unit.required_moves.length;
+  if (total === 0) return { mastered: 0, total: 0 };
+  let mastered = 0;
+  for (const move of unit.required_moves) {
+    const item = progressMap.get(progressKey(move.from_fen, move.move_san));
+    if (item?.mastered) mastered += 1;
+  }
+  return { mastered, total };
+}
+
+export function OpeningTrainerPage() {
+  const { id } = useParams<{ id?: string }>();
+  const navigate = useNavigate();
+
+  const studyId = id || '';
+  const [mode, setMode] = useState<TrainerMode>('chapter');
+  const [color, setColor] = useState<TrainerColor>('white');
+  const [trainingMode, setTrainingMode] = useState<TrainingMode>('quiz');
+
+  const [eligibility, setEligibility] = useState<EligibilityResponse | null>(null);
+  const [units, setUnits] = useState<LeafUnit[]>([]);
+  const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+  const [unitDetail, setUnitDetail] = useState<UnitDetailResponse | null>(null);
+  const [progressMap, setProgressMap] = useState<Map<string, ProgressItem>>(new Map());
+  const [activeRun, setActiveRun] = useState<ActiveRun | null>(null);
+  const [answerInput, setAnswerInput] = useState('');
+
+  const [loadingEligibility, setLoadingEligibility] = useState(false);
+  const [loadingUnits, setLoadingUnits] = useState(false);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [runningAction, setRunningAction] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const selectedUnit = useMemo(
+    () => units.find((u) => u.id === selectedUnitId) || null,
+    [selectedUnitId, units],
+  );
+
+  const refreshEligibility = useCallback(async () => {
+    if (!studyId) return;
+    setLoadingEligibility(true);
+    try {
+      const data = await api.get(`/api/v1/opening-trainer/studies/${studyId}/eligibility`);
+      setEligibility(data);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load eligibility');
+    } finally {
+      setLoadingEligibility(false);
+    }
+  }, [studyId]);
+
+  const refreshUnits = useCallback(async () => {
+    if (!studyId) return;
+    setLoadingUnits(true);
+    setError(null);
+    setActiveRun(null);
+    setUnitDetail(null);
+    setProgressMap(new Map());
+    try {
+      const data = await api.get(
+        `/api/v1/opening-trainer/studies/${studyId}/units?mode=${mode}&color=${color}`,
+      ) as UnitCatalogResponse;
+      setEligibility(data.eligibility);
+      setUnits(data.leaf_units || []);
+      const first = data.leaf_units?.[0]?.id || null;
+      setSelectedUnitId((prev) => (prev && data.leaf_units.some((u) => u.id === prev) ? prev : first));
+
+      const fenSet = new Set<string>();
+      for (const unit of data.leaf_units || []) {
+        for (const fen of unit.required_fens || []) {
+          fenSet.add(fen);
+        }
+      }
+      if (fenSet.size > 0) {
+        const params = new URLSearchParams();
+        params.set('color', color);
+        Array.from(fenSet).forEach((fen) => params.append('fens[]', fen));
+        const progress = await api.get(`/api/v1/opening-trainer/progress?${params.toString()}`) as { items: ProgressItem[] };
+        setProgressMap(buildProgressMap(progress.items || []));
+      }
+    } catch (e: any) {
+      setUnits([]);
+      setSelectedUnitId(null);
+      setError(e?.message || 'Failed to load units');
+    } finally {
+      setLoadingUnits(false);
+    }
+  }, [studyId, mode, color]);
+
+  const refreshUnitDetail = useCallback(async () => {
+    if (!studyId || !selectedUnitId) {
+      setUnitDetail(null);
+      return;
+    }
+    setLoadingDetail(true);
+    try {
+      const detail = await api.get(
+        `/api/v1/opening-trainer/studies/${studyId}/units/${selectedUnitId}?mode=${mode}&color=${color}`,
+      ) as UnitDetailResponse;
+      setUnitDetail(detail);
+    } catch (e: any) {
+      setError(e?.message || 'Failed to load unit detail');
+    } finally {
+      setLoadingDetail(false);
+    }
+  }, [studyId, selectedUnitId, mode, color]);
+
+  useEffect(() => {
+    refreshEligibility();
+  }, [refreshEligibility]);
+
+  useEffect(() => {
+    refreshUnits();
+  }, [refreshUnits]);
+
+  useEffect(() => {
+    refreshUnitDetail();
+  }, [refreshUnitDetail]);
+
+  const startRun = useCallback(async () => {
+    if (!studyId || !selectedUnitId) return;
+    setRunningAction(true);
+    setError(null);
+    try {
+      const response = await api.post(`/api/v1/opening-trainer/studies/${studyId}/train/start`, {
+        mode,
+        color,
+        training_mode: trainingMode,
+        unit_id: selectedUnitId,
+      }) as StartResponse;
+      const boardFen = toFenForBoard(
+        response.prompt?.from_fen || response.auto_moves?.[response.auto_moves.length - 1]?.to_fen || 'start',
+      );
+      setActiveRun({
+        session: response.session,
+        unit: response.unit,
+        prompt: response.prompt,
+        finished: response.finished,
+        boardFen,
+        lastProgress: null,
+        feedback: null,
+      });
+      setAnswerInput('');
+    } catch (e: any) {
+      setError(e?.message || 'Failed to start training');
+    } finally {
+      setRunningAction(false);
+    }
+  }, [studyId, selectedUnitId, mode, color, trainingMode]);
+
+  const submitAnswer = useCallback(async () => {
+    if (!studyId || !activeRun || !answerInput.trim()) return;
+    setRunningAction(true);
+    setError(null);
+    try {
+      const response = await api.post(`/api/v1/opening-trainer/studies/${studyId}/train/answer`, {
+        session: activeRun.session,
+        user_move_san: answerInput.trim(),
+      }) as AnswerResponse;
+
+      const boardFen = toFenForBoard(
+        response.prompt?.from_fen || response.auto_moves?.[response.auto_moves.length - 1]?.to_fen || activeRun.boardFen,
+      );
+
+      if (response.progress) {
+        setProgressMap((prev) => {
+          const next = new Map(prev);
+          next.set(
+            progressKey(response.progress.from_fen, response.progress.move_san),
+            {
+              from_fen: response.progress.from_fen,
+              move_san: response.progress.move_san,
+              color: activeRun.session.color,
+              mastered: response.progress.mastered,
+              correct_count: response.progress.correct_count,
+              wrong_count: response.progress.wrong_count,
+              consecutive_correct: response.progress.consecutive_correct,
+            },
+          );
+          return next;
+        });
+      }
+
+      setActiveRun((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          session: response.session,
+          prompt: response.prompt,
+          finished: response.finished,
+          boardFen,
+          lastProgress: response.progress || prev.lastProgress,
+          feedback: response.correct ? 'Correct move.' : `Expected: ${response.expected_move_san}`,
+        };
+      });
+      setAnswerInput('');
+    } catch (e: any) {
+      setError(e?.message || 'Failed to submit answer');
+    } finally {
+      setRunningAction(false);
+    }
+  }, [studyId, activeRun, answerInput]);
+
+  const totalMastered = useMemo(() => {
+    if (!selectedUnit) return { mastered: 0, total: 0 };
+    return getUnitMastery(selectedUnit, progressMap);
+  }, [selectedUnit, progressMap]);
+
+  return (
+    <div className="ot-page">
+      <div className="ot-bg-shape ot-bg-shape-a" />
+      <div className="ot-bg-shape ot-bg-shape-b" />
+      <header className="ot-topbar">
+        <button type="button" className="ot-back" onClick={() => navigate(-1)}>
+          Back to Study
+        </button>
+        <div className="ot-title-wrap">
+          <p className="ot-kicker">Opening Trainer</p>
+          <h1>Repertoire Flight Deck</h1>
+        </div>
+        <div className="ot-controls">
+          <label>
+            Mode
+            <select value={mode} onChange={(e) => setMode(e.target.value as TrainerMode)}>
+              <option value="chapter">Chapter</option>
+              <option value="merged">Merged</option>
+            </select>
+          </label>
+          <label>
+            Color
+            <select value={color} onChange={(e) => setColor(e.target.value as TrainerColor)}>
+              <option value="white">White</option>
+              <option value="black">Black</option>
+            </select>
+          </label>
+          <label>
+            Training
+            <select value={trainingMode} onChange={(e) => setTrainingMode(e.target.value as TrainingMode)}>
+              <option value="quiz">Quiz</option>
+              <option value="learn">Learn</option>
+              <option value="preview">Preview</option>
+            </select>
+          </label>
+        </div>
+      </header>
+
+      {error && <div className="ot-alert">{error}</div>}
+
+      <main className="ot-layout">
+        <section className="ot-panel ot-panel-left">
+          <div className="ot-panel-head">
+            <h2>Units</h2>
+            {(loadingUnits || loadingEligibility) && <span>Loading...</span>}
+          </div>
+
+          {eligibility && !eligibility.eligible ? (
+            <div className="ot-blocked">
+              <h3>Study Not Ready</h3>
+              <ul>
+                {eligibility.reasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className="ot-unit-list">
+              {units.map((unit) => {
+                const mastery = getUnitMastery(unit, progressMap);
+                const ratio = mastery.total > 0 ? Math.round((mastery.mastered / mastery.total) * 100) : 0;
+                return (
+                  <button
+                    type="button"
+                    key={unit.id}
+                    className={`ot-unit-card${unit.id === selectedUnitId ? ' is-active' : ''}`}
+                    onClick={() => {
+                      setSelectedUnitId(unit.id);
+                      setActiveRun(null);
+                    }}
+                  >
+                    <div className="ot-unit-title">{unit.title}</div>
+                    <div className="ot-unit-meta">
+                      <span>{unit.line_count} lines</span>
+                      <span>ply {unit.max_ply}</span>
+                    </div>
+                    <div className="ot-progress-row">
+                      <div className="ot-progress-track">
+                        <div className="ot-progress-fill" style={{ width: `${ratio}%` }} />
+                      </div>
+                      <span>{mastery.mastered}/{mastery.total}</span>
+                    </div>
+                  </button>
+                );
+              })}
+              {units.length === 0 && !loadingUnits && (
+                <div className="ot-empty">No trainable units yet.</div>
+              )}
+            </div>
+          )}
+        </section>
+
+        <section className="ot-panel ot-panel-main">
+          <div className="ot-panel-head">
+            <h2>Training</h2>
+            <button type="button" className="ot-start" disabled={!selectedUnitId || runningAction} onClick={startRun}>
+              {runningAction ? 'Starting...' : 'Start Session'}
+            </button>
+          </div>
+
+          <div className="ot-main-grid">
+            <div className="ot-board-card">
+              <Chessboard
+                id="opening-trainer-board"
+                position={activeRun ? activeRun.boardFen : 'start'}
+                arePiecesDraggable={false}
+                boardOrientation={color}
+                customDarkSquareStyle={{ backgroundColor: '#4f7ccf' }}
+                customLightSquareStyle={{ backgroundColor: '#eef4ff' }}
+              />
+            </div>
+
+            <div className="ot-session-card">
+              {!activeRun ? (
+                <div className="ot-session-empty">
+                  Pick a unit and start a session.
+                </div>
+              ) : (
+                <>
+                  <div className="ot-session-line">
+                    <span>Unit</span>
+                    <strong>{activeRun.unit.title}</strong>
+                  </div>
+                  <div className="ot-session-line">
+                    <span>Status</span>
+                    <strong>{activeRun.finished ? 'Completed' : 'In progress'}</strong>
+                  </div>
+                  <div className="ot-session-line">
+                    <span>Mastery</span>
+                    <strong>{totalMastered.mastered}/{totalMastered.total}</strong>
+                  </div>
+                  {activeRun.prompt && (
+                    <div className="ot-prompt-box">
+                      <p>Your move ({activeRun.prompt.color})</p>
+                      <div>
+                        Move {activeRun.prompt.move_number} ({activeRun.prompt.ply} ply)
+                      </div>
+                    </div>
+                  )}
+                  {!activeRun.finished && activeRun.prompt && (
+                    <div className="ot-answer-row">
+                      <input
+                        value={answerInput}
+                        onChange={(e) => setAnswerInput(e.target.value)}
+                        placeholder="Enter SAN (e.g. Nf3)"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') submitAnswer();
+                        }}
+                      />
+                      <button type="button" disabled={runningAction || !answerInput.trim()} onClick={submitAnswer}>
+                        Submit
+                      </button>
+                    </div>
+                  )}
+                  {activeRun.feedback && <div className="ot-feedback">{activeRun.feedback}</div>}
+                  {activeRun.lastProgress && (
+                    <div className="ot-progress-stats">
+                      <span>Streak: {activeRun.lastProgress.consecutive_correct}</span>
+                      <span>Correct: {activeRun.lastProgress.correct_count}</span>
+                      <span>Wrong: {activeRun.lastProgress.wrong_count}</span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="ot-panel ot-panel-right">
+          <div className="ot-panel-head">
+            <h2>Line Preview</h2>
+            {loadingDetail && <span>Loading...</span>}
+          </div>
+          {unitDetail ? (
+            <div className="ot-line-list">
+              {unitDetail.lines.map((line) => (
+                <div className="ot-line-card" key={line.signature}>
+                  <div className="ot-line-label">{line.signature.slice(0, 10)}</div>
+                  <div className="ot-line-moves">
+                    {line.steps.map((step, idx) => (
+                      <span key={`${line.signature}-${idx}`}>
+                        {step.color === 'white' ? `${step.move_number}.` : `${step.move_number}...`}{step.move_san}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {unitDetail.lines.length === 0 && <div className="ot-empty">No lines</div>}
+            </div>
+          ) : (
+            <div className="ot-empty">Select a unit to inspect lines.</div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+export default OpeningTrainerPage;
+

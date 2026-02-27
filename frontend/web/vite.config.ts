@@ -13,6 +13,7 @@ export default defineConfig({
       "@patch": path.resolve(__dirname, "../../patch"),
       // Resolve chess.js for patch directory files
       "chess.js": path.resolve(__dirname, "node_modules/chess.js"),
+      "@radix-ui/react-icons": path.resolve(__dirname, "node_modules/@radix-ui/react-icons"),
     },
     // Ensure modules are resolved from frontend/web/node_modules for patch files
     dedupe: ["react", "react-dom", "react-router-dom", "chess.js", "react-chessboard"],

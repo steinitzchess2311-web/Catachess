@@ -64,6 +64,7 @@ class OpeningTrainerEligibilityResponse(BaseModel):
 class OpeningTrainerRequiredMove(BaseModel):
     from_fen: str
     move_san: str
+    move_uci: str | None = None
     color: OpeningTrainerColor
     move_number: int
     ply: int
@@ -103,6 +104,118 @@ class OpeningTrainerUnitsResponse(BaseModel):
     roots: list[OpeningTrainerUnitNode]
     leaf_units: list[OpeningTrainerLeafUnit]
     total_units: int
+
+
+class OpeningTrainerLineStep(BaseModel):
+    from_fen: str
+    to_fen: str
+    move_san: str
+    move_uci: str | None = None
+    color: OpeningTrainerColor
+    move_number: int
+    ply: int
+
+
+class OpeningTrainerLine(BaseModel):
+    signature: str
+    steps: list[OpeningTrainerLineStep]
+
+
+class OpeningTrainerUnitDetailResponse(BaseModel):
+    study_id: str
+    mode: OpeningTrainerMode
+    color: OpeningTrainerColor
+    unit: OpeningTrainerLeafUnit
+    lines: list[OpeningTrainerLine]
+
+
+class OpeningTrainerTrainingMode(str, Enum):
+    learn = "learn"
+    quiz = "quiz"
+    preview = "preview"
+
+
+class OpeningTrainerSessionState(BaseModel):
+    study_id: str
+    mode: OpeningTrainerMode
+    color: OpeningTrainerColor
+    training_mode: OpeningTrainerTrainingMode
+    unit_id: str
+    line_signature: str
+    line_index: int
+    line_count: int
+    step_index: int
+    seed: int
+
+
+class OpeningTrainerAutoMove(BaseModel):
+    from_fen: str
+    to_fen: str
+    move_san: str
+    move_uci: str | None = None
+    color: OpeningTrainerColor
+    move_number: int
+    ply: int
+    reason: str
+
+
+class OpeningTrainerPrompt(BaseModel):
+    from_fen: str
+    move_san: str
+    move_uci: str | None = None
+    color: OpeningTrainerColor
+    move_number: int
+    ply: int
+
+
+class OpeningTrainerTrainingStartRequest(BaseModel):
+    mode: OpeningTrainerMode = OpeningTrainerMode.chapter
+    color: OpeningTrainerColor = OpeningTrainerColor.white
+    training_mode: OpeningTrainerTrainingMode = OpeningTrainerTrainingMode.quiz
+    unit_id: str | None = None
+    seed: int | None = Field(default=None, ge=0)
+
+
+class OpeningTrainerTrainingProgress(BaseModel):
+    from_fen: str
+    move_san: str
+    color: OpeningTrainerColor
+    correct_count: int
+    wrong_count: int
+    consecutive_correct: int
+    mastered: bool
+    last_practiced_at: datetime | None
+
+
+class OpeningTrainerTrainingStartResponse(BaseModel):
+    session: OpeningTrainerSessionState
+    unit: OpeningTrainerLeafUnit
+    auto_moves: list[OpeningTrainerAutoMove]
+    prompt: OpeningTrainerPrompt | None = None
+    finished: bool
+
+
+class OpeningTrainerTrainingAnswerRequest(BaseModel):
+    session: OpeningTrainerSessionState
+    user_move_san: str = Field(min_length=1, max_length=20)
+
+    @field_validator("user_move_san")
+    @classmethod
+    def _strip_answer(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("user_move_san cannot be empty")
+        return normalized
+
+
+class OpeningTrainerTrainingAnswerResponse(BaseModel):
+    correct: bool
+    expected_move_san: str
+    session: OpeningTrainerSessionState
+    auto_moves: list[OpeningTrainerAutoMove]
+    prompt: OpeningTrainerPrompt | None = None
+    finished: bool
+    progress: OpeningTrainerTrainingProgress | None = None
 
 
 OpeningTrainerUnitNode.model_rebuild()

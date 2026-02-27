@@ -1,0 +1,438 @@
+.ot-page {
+  --ot-bg: #e9f1ff;
+  --ot-surface: #ffffff;
+  --ot-ink: #0f1e3a;
+  --ot-sub: #4a628f;
+  --ot-primary: #1f5fff;
+  --ot-primary-2: #16a6d9;
+  --ot-border: #c9dafb;
+  --ot-shadow: 0 18px 45px rgba(17, 66, 164, 0.12);
+  min-height: calc(100vh - 120px);
+  background: radial-gradient(circle at 8% 20%, #f7fbff 0%, var(--ot-bg) 38%, #dce8ff 100%);
+  padding: 28px 26px 34px;
+  position: relative;
+  overflow: hidden;
+  font-family: "Space Grotesk", "Avenir Next", "Segoe UI", sans-serif;
+  color: var(--ot-ink);
+}
+
+.ot-bg-shape {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(0.3px);
+}
+
+.ot-bg-shape-a {
+  width: 540px;
+  height: 540px;
+  right: -180px;
+  top: -180px;
+  background: radial-gradient(circle, rgba(31, 95, 255, 0.22) 0%, rgba(31, 95, 255, 0) 72%);
+}
+
+.ot-bg-shape-b {
+  width: 420px;
+  height: 420px;
+  left: -140px;
+  bottom: -180px;
+  background: radial-gradient(circle, rgba(22, 166, 217, 0.22) 0%, rgba(22, 166, 217, 0) 74%);
+}
+
+.ot-topbar {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 140px 1fr auto;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.ot-back {
+  border: 1px solid var(--ot-border);
+  background: #f8fbff;
+  color: var(--ot-sub);
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.ot-back:hover {
+  border-color: #8eb0f4;
+  color: var(--ot-ink);
+}
+
+.ot-title-wrap h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 2vw, 2rem);
+  letter-spacing: -0.02em;
+}
+
+.ot-kicker {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  color: var(--ot-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.11em;
+}
+
+.ot-controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ot-controls label {
+  display: grid;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--ot-sub);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ot-controls select {
+  border: 1px solid var(--ot-border);
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 8px 10px;
+  min-width: 108px;
+  color: var(--ot-ink);
+  font-weight: 700;
+}
+
+.ot-alert {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(135deg, #ffe6e4, #ffd4d0);
+  border: 1px solid #f4a19a;
+  color: #8c1f16;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  font-weight: 600;
+}
+
+.ot-layout {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 290px minmax(0, 1fr) 320px;
+}
+
+.ot-panel {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(194, 214, 251, 0.9);
+  border-radius: 18px;
+  box-shadow: var(--ot-shadow);
+  backdrop-filter: blur(8px);
+  min-height: 600px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ot-panel-head {
+  padding: 14px 14px 10px;
+  border-bottom: 1px solid rgba(201, 218, 251, 0.8);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.ot-panel-head h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.ot-panel-head span {
+  font-size: 0.78rem;
+  color: var(--ot-sub);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ot-unit-list,
+.ot-line-list {
+  padding: 10px;
+  display: grid;
+  gap: 10px;
+  overflow: auto;
+}
+
+.ot-unit-card {
+  border: 1px solid var(--ot-border);
+  background: linear-gradient(145deg, #fafdff 0%, #f2f7ff 100%);
+  border-radius: 14px;
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  animation: ot-rise 260ms ease both;
+}
+
+.ot-unit-card:hover {
+  transform: translateY(-2px);
+  border-color: #8eb1f8;
+  box-shadow: 0 10px 26px rgba(42, 92, 182, 0.16);
+}
+
+.ot-unit-card.is-active {
+  border-color: var(--ot-primary);
+  box-shadow: 0 0 0 2px rgba(31, 95, 255, 0.2);
+}
+
+.ot-unit-title {
+  font-weight: 800;
+  font-size: 0.95rem;
+  margin-bottom: 8px;
+}
+
+.ot-unit-meta {
+  display: flex;
+  justify-content: space-between;
+  color: var(--ot-sub);
+  font-size: 0.78rem;
+  margin-bottom: 8px;
+}
+
+.ot-progress-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.76rem;
+  color: var(--ot-sub);
+}
+
+.ot-progress-track {
+  height: 8px;
+  border-radius: 99px;
+  background: #d7e3fb;
+  overflow: hidden;
+}
+
+.ot-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--ot-primary), var(--ot-primary-2));
+}
+
+.ot-main-grid {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(290px, 1.2fr) minmax(240px, 0.8fr);
+  gap: 12px;
+  flex: 1;
+}
+
+.ot-board-card {
+  border: 1px solid var(--ot-border);
+  border-radius: 14px;
+  padding: 12px;
+  background: #fbfdff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ot-board-card > div {
+  width: 100%;
+  max-width: 540px;
+}
+
+.ot-session-card {
+  border: 1px solid var(--ot-border);
+  border-radius: 14px;
+  padding: 12px;
+  background: linear-gradient(160deg, #ffffff, #f2f7ff 70%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ot-session-empty {
+  color: var(--ot-sub);
+  font-weight: 600;
+}
+
+.ot-session-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.86rem;
+}
+
+.ot-session-line span {
+  color: var(--ot-sub);
+}
+
+.ot-prompt-box {
+  border: 1px solid #99b9ff;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #edf4ff, #f8fbff);
+  padding: 10px;
+}
+
+.ot-prompt-box p {
+  margin: 0 0 4px;
+  font-weight: 700;
+  color: #1a56dd;
+}
+
+.ot-answer-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.ot-answer-row input {
+  border: 1px solid var(--ot-border);
+  border-radius: 10px;
+  padding: 10px;
+  font-weight: 700;
+}
+
+.ot-answer-row button,
+.ot-start {
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--ot-primary) 0%, #4b7efe 60%, var(--ot-primary-2) 100%);
+  color: #fff;
+  font-weight: 800;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.ot-start:disabled,
+.ot-answer-row button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ot-feedback {
+  border-radius: 10px;
+  background: #ecf4ff;
+  border: 1px solid #bdd5ff;
+  padding: 8px 10px;
+  font-weight: 700;
+  color: #244d9b;
+}
+
+.ot-progress-stats {
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(3, 1fr);
+  font-size: 0.78rem;
+}
+
+.ot-progress-stats span {
+  border: 1px solid var(--ot-border);
+  background: #f8fbff;
+  border-radius: 8px;
+  padding: 6px 8px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.ot-line-card {
+  border: 1px solid var(--ot-border);
+  border-radius: 12px;
+  background: #f9fcff;
+  padding: 10px;
+}
+
+.ot-line-label {
+  font-size: 0.72rem;
+  color: var(--ot-sub);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.ot-line-moves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.8rem;
+}
+
+.ot-line-moves span {
+  background: #edf4ff;
+  border: 1px solid #c8dcff;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-weight: 700;
+  color: #274f99;
+}
+
+.ot-empty,
+.ot-blocked {
+  margin: 12px;
+  border: 1px dashed var(--ot-border);
+  border-radius: 12px;
+  padding: 14px;
+  color: var(--ot-sub);
+  font-weight: 600;
+}
+
+.ot-blocked h3 {
+  margin: 0 0 8px;
+  color: #b24527;
+}
+
+.ot-blocked ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+@keyframes ot-rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 1240px) {
+  .ot-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .ot-panel {
+    min-height: unset;
+  }
+
+  .ot-main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .ot-page {
+    padding: 18px 12px 22px;
+  }
+
+  .ot-topbar {
+    grid-template-columns: 1fr;
+  }
+
+  .ot-controls {
+    width: 100%;
+  }
+
+  .ot-controls label {
+    width: calc(50% - 6px);
+  }
+
+  .ot-controls select {
+    min-width: 0;
+    width: 100%;
+  }
+}
+

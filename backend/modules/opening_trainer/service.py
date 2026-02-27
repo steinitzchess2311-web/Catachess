@@ -4,7 +4,9 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 import hashlib
-from typing import Any
+import random
+import secrets
+from typing import Any, Callable
 
 
 STANDARD_START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -19,6 +21,7 @@ class TrainerStep:
     to_state_id: str
     to_fen: str
     san: str
+    uci: str
     color: str
     move_number: int
     ply: int
@@ -163,6 +166,7 @@ def _extract_chapter_lines(
             move_number = getattr(child, "move_number", 1)
             color = getattr(child, "color", "white")
             san = getattr(child, "san", "")
+            uci = getattr(child, "uci", "")
             ply = _ply_of(move_number, color)
             step_key = f"{state_id}|{color}|{san}|{to_state_id}|{ply}"
 
@@ -172,6 +176,7 @@ def _extract_chapter_lines(
                 to_state_id=to_state_id,
                 to_fen=to_fen,
                 san=san,
+                uci=uci,
                 color=color,
                 move_number=move_number,
                 ply=ply,
@@ -257,12 +262,32 @@ def _build_leaf_node(
         {
             "from_fen": step.from_fen,
             "move_san": step.san,
+            "move_uci": step.uci,
             "color": step.color,
             "move_number": step.move_number,
             "ply": step.ply,
         }
         for step in required_steps
     ]
+    line_payloads = []
+    for line in sorted(lines, key=_line_signature):
+        line_payloads.append(
+            {
+                "signature": _line_signature(line),
+                "steps": [
+                    {
+                        "from_fen": step.from_fen,
+                        "to_fen": step.to_fen,
+                        "move_san": step.san,
+                        "move_uci": step.uci,
+                        "color": step.color,
+                        "move_number": step.move_number,
+                        "ply": step.ply,
+                    }
+                    for step in line
+                ],
+            }
+        )
     required_fens = sorted({step.from_fen for step in required_steps})
     line_count = len(lines)
     max_ply = max((max((step.ply for step in line), default=0) for line in lines), default=0)
@@ -296,6 +321,7 @@ def _build_leaf_node(
         "required_fens": required_fens,
         "required_moves": required_moves,
         "path": path_labels,
+        "_lines": line_payloads,
     }
     return node, leaf_summary
 
@@ -462,3 +488,97 @@ def build_unit_catalog(
         "total_units": len(leaf_units),
     }
 
+
+def normalize_san_for_compare(san: str | None) -> str:
+    value = (san or "").strip()
+    if not value:
+        return value
+    value = value.replace("0-0-0", "O-O-O").replace("0-0", "O-O")
+    while value and value[-1] in {"+", "#", "!", "?"}:
+        value = value[:-1]
+    return value
+
+
+def get_leaf_unit(catalog: dict[str, Any], unit_id: str | None = None) -> dict[str, Any] | None:
+    leaf_units = list(catalog.get("leaf_units") or [])
+    if not leaf_units:
+        return None
+    if unit_id:
+        for unit in leaf_units:
+            if unit.get("id") == unit_id:
+                return unit
+        return None
+    return sorted(leaf_units, key=lambda unit: (unit.get("chapter_id") or "", "/".join(unit.get("path") or []), unit.get("title") or ""))[0]
+
+
+def pick_line_for_unit(unit: dict[str, Any], seed: int | None = None) -> dict[str, Any]:
+    lines = list(unit.get("_lines") or [])
+    if not lines:
+        raise ValueError("Unit has no playable lines")
+
+    effective_seed = seed if seed is not None else secrets.randbelow(2**31)
+    rng = random.Random(effective_seed)
+    line_index = rng.randrange(len(lines))
+    selected = lines[line_index]
+    return {
+        "seed": effective_seed,
+        "line_index": line_index,
+        "line_signature": selected["signature"],
+        "line_count": len(lines),
+        "steps": selected["steps"],
+    }
+
+
+def get_line_by_signature(unit: dict[str, Any], line_signature: str) -> list[dict[str, Any]] | None:
+    for line in unit.get("_lines") or []:
+        if line.get("signature") == line_signature:
+            return line.get("steps") or []
+    return None
+
+
+def advance_until_prompt(
+    *,
+    line_steps: list[dict[str, Any]],
+    start_index: int,
+    trainee_color: str,
+    is_mastered: Callable[[dict[str, Any]], bool],
+) -> dict[str, Any]:
+    idx = start_index
+    auto_moves: list[dict[str, Any]] = []
+
+    while idx < len(line_steps):
+        step = line_steps[idx]
+        step_color = step.get("color")
+        if step_color != trainee_color:
+            auto_moves.append(
+                {
+                    **step,
+                    "reason": "opponent",
+                }
+            )
+            idx += 1
+            continue
+
+        if is_mastered(step):
+            auto_moves.append(
+                {
+                    **step,
+                    "reason": "mastered_skip",
+                }
+            )
+            idx += 1
+            continue
+
+        return {
+            "next_index": idx,
+            "auto_moves": auto_moves,
+            "prompt": step,
+            "finished": False,
+        }
+
+    return {
+        "next_index": idx,
+        "auto_moves": auto_moves,
+        "prompt": None,
+        "finished": True,
+    }

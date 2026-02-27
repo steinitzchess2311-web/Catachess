@@ -1,5 +1,5 @@
 /**
- * CommentInput — textarea + submit/cancel buttons
+ * CommentInput — textarea + submit/cancel buttons.
  * Used for both root comments and nested replies.
  */
 import React, { useState, useRef, useEffect } from 'react';
@@ -17,7 +17,7 @@ interface Props {
 }
 
 export const CommentInput: React.FC<Props> = ({
-  placeholder = '写下你的评论…',
+  placeholder = 'Add a comment…',
   initialValue = '',
   authorName,
   isReply = false,
@@ -50,18 +50,16 @@ export const CommentInput: React.FC<Props> = ({
     if (e.key === 'Escape' && onCancel) onCancel();
   };
 
-  const initials = authorName
-    ? authorName.slice(0, 2).toUpperCase()
-    : '?';
-
-  const charColor = content.length > MAX_LEN * 0.9 ? 'warn' : '';
+  const initials = authorName ? authorName.slice(0, 2).toUpperCase() : '?';
+  const overLimit = content.length > MAX_LEN;
 
   return (
     <div className="comment-input-wrap">
       <div className="comment-input-inner">
-        {/* Avatar */}
-        <div className={`comment-avatar ${isReply ? 'sm' : ''}`}
-          style={{ background: stringToColor(authorName ?? 'X') }}>
+        <div
+          className={`comment-avatar ${isReply ? 'sm' : ''}`}
+          style={{ background: stringToColor(authorName ?? 'X') }}
+        >
           {initials}
         </div>
 
@@ -76,21 +74,21 @@ export const CommentInput: React.FC<Props> = ({
             onKeyDown={handleKeyDown}
           />
           <div className="comment-input-footer">
-            <span className={`comment-char-count ${charColor}`}>
+            <span className={`comment-char-count ${overLimit ? 'warn' : ''}`}>
               {content.length} / {MAX_LEN}
             </span>
             <div className="comment-input-actions">
               {onCancel && (
                 <button className="btn-comment-cancel" onClick={onCancel}>
-                  取消
+                  Cancel
                 </button>
               )}
               <button
                 className="btn-comment-submit"
-                disabled={!content.trim() || content.length > MAX_LEN || submitting}
+                disabled={!content.trim() || overLimit || submitting}
                 onClick={handleSubmit}
               >
-                {submitting ? '发送中…' : (isReply ? '回复' : '评论')}
+                {submitting ? 'Posting…' : (isReply ? 'Reply' : 'Comment')}
               </button>
             </div>
           </div>
@@ -100,8 +98,8 @@ export const CommentInput: React.FC<Props> = ({
   );
 };
 
-/** Deterministic pastel color from a string */
-function stringToColor(str: string): string {
+/** Deterministic color from a string */
+export function stringToColor(str: string): string {
   const COLORS = [
     '#2563eb', '#7c3aed', '#db2777', '#059669',
     '#d97706', '#0891b2', '#4f46e5', '#be185d',
@@ -110,5 +108,3 @@ function stringToColor(str: string): string {
   for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
   return COLORS[Math.abs(hash) % COLORS.length];
 }
-
-export { stringToColor };

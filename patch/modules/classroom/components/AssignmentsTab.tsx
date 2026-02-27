@@ -20,9 +20,10 @@ const CATEGORY_FILTERS: { label: string; value: AssignmentCategory | 'all' }[] =
 
 interface Props {
   classroom: Classroom;
+  createRequestToken?: number;
 }
 
-export const AssignmentsTab: React.FC<Props> = ({ classroom }) => {
+export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken = 0 }) => {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading]         = useState(true);
   const [filter, setFilter]           = useState<AssignmentCategory | 'all'>('all');
@@ -43,6 +44,11 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom }) => {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [classroom.id, filter]);
+
+  useEffect(() => {
+    if (!createRequestToken) return;
+    setShowCreate(true);
+  }, [createRequestToken]);
 
   async function handleDelete(id: string, title: string) {
     if (!confirm(`Retract "${title}"? This cannot be undone.`)) return;
@@ -103,7 +109,6 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom }) => {
               onOpen={() => isTeacher ? setStatsTarget(a) : setDetailTarget(a)}
               onEdit={() => setEditTarget(a)}
               onDelete={() => handleDelete(a.id, a.title)}
-              onStudentOpen={() => setDetailTarget(a)}
             />
           ))}
         </div>
@@ -168,7 +173,6 @@ interface RowProps {
   onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onStudentOpen: () => void;
 }
 
 const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, onEdit, onDelete }) => {

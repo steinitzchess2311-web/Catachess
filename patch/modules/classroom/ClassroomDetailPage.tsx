@@ -5,7 +5,7 @@ import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
 import { getClassroom, archiveClassroom, unarchiveClassroom, deleteClassroom, renameClassroom, leaveClassroom } from './api';
 import type { Classroom } from './types';
 import { RoleBadge } from './components/RoleBadge';
-import { TeacherOverview, StudentOverview } from './components/OverviewTab';
+import { TeacherOverview, StudentOverview, openClassChat } from './components/overview';
 import { MembersTab } from './components/MembersTab';
 import { AssignmentsTab } from './components/AssignmentsTab';
 import { BroadcastModal } from './components/BroadcastModal';
@@ -18,34 +18,29 @@ export const ClassroomDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ── If we navigated from the list page, the classroom object (with my_role)
-  // is already available in router state — use it immediately so role-based UI
-  // renders correctly on first paint without waiting for the fetch.
   const stateClassroom = (location.state as { classroom?: Classroom } | null)?.classroom ?? null;
 
   const [classroom, setClassroom] = useState<Classroom | null>(stateClassroom);
-  const [loading, setLoading] = useState(!stateClassroom); // skip loading if we already have data
+  const [loading, setLoading] = useState(!stateClassroom);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<Tab>('overview');
   const [showBroadcast, setShowBroadcast] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const [broadcastRefreshKey, setBroadcastRefreshKey] = useState(0);
+  const [createRequestToken, setCreateRequestToken] = useState(0);
+  const [focusTasksSignal, setFocusTasksSignal] = useState(0);
 
   useEffect(() => {
     if (!id) return;
-    // Always fetch fresh data. If the backend returns my_role in the detail
-    // endpoint, great. If not, preserve the my_role we already have from the
-    // list page so identity determination is never broken.
+
     getClassroom(id)
       .then(fresh => {
         setClassroom(prev => ({
           ...fresh,
-          // my_role may be absent in the detail response — keep the known value
           my_role: fresh.my_role ?? prev?.my_role ?? 'student',
         }));
       })
       .catch(err => {
-        // If we already have stale data, don't wipe it — just show no error
         if (!stateClassroom) setError(err?.message || 'Classroom not found.');
       })
       .finally(() => setLoading(false));
@@ -54,6 +49,7 @@ export const ClassroomDetailPage: React.FC = () => {
 
   const isTeacher = classroom?.my_role === 'owner' || classroom?.my_role === 'teacher';
   const isOwner = classroom?.my_role === 'owner';
+  const memberCount = classroom?.member_count ?? 0;
 
   async function handleArchive() {
     if (!classroom || !confirm(`Archive "${classroom.name}"? Members can still view it, but no new tasks can be posted.`)) return;
@@ -88,8 +84,6 @@ export const ClassroomDetailPage: React.FC = () => {
       alert(err?.message || 'Failed to leave classroom.');
     }
   }
-
-  // ─── Loading ───────────────────────────────────────────────────────────────
 
   if (loading) {
     return (
@@ -126,19 +120,16 @@ export const ClassroomDetailPage: React.FC = () => {
     );
   }
 
-  // ─── Tabs definition ───────────────────────────────────────────────────────
-
   const TABS: { key: Tab; label: string }[] = [
     { key: 'overview', label: 'Overview' },
     { key: 'assignments', label: 'Assignments' },
-    { key: 'members', label: `Members (${classroom.member_count})` },
+    { key: 'members', label: `Members (${memberCount})` },
   ];
 
   return (
     <div className="cl-root cl-page">
       <div className="cl-page-inner">
 
-        {/* Header */}
         <div className="cl-detail-header">
           <div className="cl-detail-title-wrap">
             <Link to="/classroom" className="cl-detail-back">
@@ -148,23 +139,36 @@ export const ClassroomDetailPage: React.FC = () => {
             <h1 className="cl-detail-title">{classroom.name}</h1>
             <div className="cl-detail-meta">
               <RoleBadge role={classroom.my_role} />
-              {classroom.archived_at && (
-                <span className="cl-card__archived">Archived</span>
-              )}
-              <span style={{ fontSize: '0.78rem', color: 'var(--cl-text-muted)' }}>
-                {classroom.member_count} member{classroom.member_count !== 1 ? 's' : ''}
+              {classroom.archived_at && <span className="cl-card__archived">Archived</span>}
+              <span className="cl-detail-member-count">
+                {memberCount} member{memberCount !== 1 ? 's' : ''}
               </span>
             </div>
           </div>
 
-          {/* Actions */}
           <div className="cl-detail-actions">
-            {/* Leave — available to teachers and students (not owner) */}
-            {!isOwner && (
-              <button className="cl-btn cl-btn-ghost cl-btn-sm" onClick={handleLeave} style={{ color: 'var(--cl-overdue)' }}>
-                Leave Class
+            {isTeacher ? (
+              <button
+                className="cl-btn cl-btn-primary cl-btn-sm"
+                onClick={() => {
+                  setTab('assignments');
+                  setCreateRequestToken(t => t + 1);
+                }}
+              >
+                + Create Assignment
+              </button>
+            ) : (
+              <button
+                className="cl-btn cl-btn-primary cl-btn-sm"
+                onClick={() => {
+                  setTab('overview');
+                  setFocusTasksSignal(k => k + 1);
+                }}
+              >
+                Continue Tasks
               </button>
             )}
+
             {isTeacher && (
               <button className="cl-btn cl-btn-secondary cl-btn-sm" onClick={() => setShowBroadcast(true)}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -173,36 +177,41 @@ export const ClassroomDetailPage: React.FC = () => {
                 Announce
               </button>
             )}
-            {isOwner && (
-              <div style={{ position: 'relative' }}>
-                <button
-                  className="cl-btn-icon"
-                  title="Settings"
-                  onClick={() => setShowSettings(o => !o)}
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-                  </svg>
-                </button>
-                {showSettings && (
-                  <SettingsDropdown
-                    classroom={classroom}
-                    onArchive={handleArchive}
-                    onDelete={handleDelete}
-                    onRename={async (name) => {
-                      const updated = await renameClassroom(classroom.id, name);
-                      setClassroom(updated);
-                      setShowSettings(false);
-                    }}
-                    onClose={() => setShowSettings(false)}
-                  />
-                )}
-              </div>
-            )}
+
+            <button className="cl-btn cl-btn-secondary cl-btn-sm" onClick={() => openClassChat(classroom.id)}>
+              Open Class Chat →
+            </button>
+
+            <div className="cl-more-wrap">
+              <button className="cl-btn cl-btn-ghost cl-btn-sm" onClick={() => setShowMore(v => !v)}>
+                More
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+              </button>
+              {showMore && (
+                <ClassroomMoreMenu
+                  classroom={classroom}
+                  isTeacher={isTeacher}
+                  isOwner={isOwner}
+                  onArchive={handleArchive}
+                  onDelete={handleDelete}
+                  onLeave={handleLeave}
+                  onRename={async (name) => {
+                    const updated = await renameClassroom(classroom.id, name);
+                    setClassroom(prev => ({
+                      ...updated,
+                      my_role: updated.my_role ?? prev?.my_role ?? classroom.my_role,
+                    }));
+                    setShowMore(false);
+                  }}
+                  onClose={() => setShowMore(false)}
+                />
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="cl-tabs" role="tablist">
           {TABS.map(t => (
             <button
@@ -217,14 +226,13 @@ export const ClassroomDetailPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Tab content */}
         <div role="tabpanel">
           {tab === 'overview' && (
             isTeacher
-              ? <TeacherOverview classroom={classroom} onBroadcast={() => setShowBroadcast(true)} broadcastRefreshKey={broadcastRefreshKey} />
-              : <StudentOverview classroom={classroom} />
+              ? <TeacherOverview classroom={classroom} broadcastRefreshKey={broadcastRefreshKey} />
+              : <StudentOverview classroom={classroom} focusTasksSignal={focusTasksSignal} />
           )}
-          {tab === 'assignments' && <AssignmentsTab classroom={classroom} />}
+          {tab === 'assignments' && <AssignmentsTab classroom={classroom} createRequestToken={createRequestToken} />}
           {tab === 'members' && <MembersTab classroom={classroom} />}
         </div>
 
@@ -235,82 +243,54 @@ export const ClassroomDetailPage: React.FC = () => {
           classroomId={classroom.id}
           classroomName={classroom.name}
           onClose={() => setShowBroadcast(false)}
-          onSent={() => { setBroadcastRefreshKey(k => k + 1); setShowBroadcast(false); }}
+          onSent={() => {
+            setBroadcastRefreshKey(k => k + 1);
+            setShowBroadcast(false);
+          }}
         />
       )}
     </div>
   );
 };
 
-// ─── Settings dropdown ────────────────────────────────────────────────────────
-
-interface SettingsDropdownProps {
+interface ClassroomMoreMenuProps {
   classroom: Classroom;
+  isTeacher: boolean;
+  isOwner: boolean;
   onArchive: () => void;
   onDelete: () => void;
+  onLeave: () => void;
   onRename: (name: string) => Promise<void>;
   onClose: () => void;
 }
 
-const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ classroom, onArchive, onDelete, onRename, onClose }) => {
+const ClassroomMoreMenu: React.FC<ClassroomMoreMenuProps> = ({
+  classroom,
+  isTeacher,
+  isOwner,
+  onArchive,
+  onDelete,
+  onLeave,
+  onRename,
+  onClose,
+}) => {
   const [renaming, setRenaming] = useState(false);
   const [newName, setNewName] = useState(classroom.name);
   const [renameLoading, setRenameLoading] = useState(false);
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       const target = e.target as Element;
-      if (!target.closest('.cl-settings-dropdown')) onClose();
+      if (!target.closest('.cl-more-wrap')) onClose();
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [onClose]);
 
-  return (
-    <div
-      className="cl-settings-dropdown"
-      style={{
-        position: 'absolute',
-        right: 0,
-        top: '110%',
-        background: 'var(--cl-surface)',
-        borderRadius: 'var(--cl-radius)',
-        boxShadow: 'var(--cl-shadow-modal)',
-        border: '1.5px solid var(--cl-border)',
-        zIndex: 200,
-        minWidth: 200,
-        overflow: 'hidden',
-        animation: 'cl-slide-up 0.15s ease',
-      }}
-    >
-      {!renaming ? (
-        <>
-          <button
-            className="cl-btn cl-btn-ghost"
-            style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, padding: '0.65rem 1rem' }}
-            onClick={() => setRenaming(true)}
-          >
-            Rename
-          </button>
-          <button
-            className="cl-btn cl-btn-ghost"
-            style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, padding: '0.65rem 1rem' }}
-            onClick={() => { onArchive(); onClose(); }}
-          >
-            {classroom.archived_at ? 'Unarchive' : 'Archive'}
-          </button>
-          <hr style={{ border: 'none', borderTop: '1px solid var(--cl-border)', margin: 0 }} />
-          <button
-            className="cl-btn cl-btn-ghost"
-            style={{ width: '100%', justifyContent: 'flex-start', borderRadius: 0, padding: '0.65rem 1rem', color: 'var(--cl-overdue)' }}
-            onClick={() => { onDelete(); onClose(); }}
-          >
-            Dissolve Class
-          </button>
-        </>
-      ) : (
-        <div style={{ padding: '0.85rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+  if (renaming) {
+    return (
+      <div className="cl-settings-dropdown">
+        <div className="cl-menu-rename">
           <span className="cl-label">Rename classroom</span>
           <input
             className="cl-input"
@@ -320,29 +300,73 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({ classroom, onArchiv
             onKeyDown={async e => {
               if (e.key === 'Enter') {
                 setRenameLoading(true);
-                try { await onRename(newName.trim()); }
-                finally { setRenameLoading(false); }
+                try {
+                  await onRename(newName.trim());
+                } finally {
+                  setRenameLoading(false);
+                }
               }
               if (e.key === 'Escape') setRenaming(false);
             }}
           />
-          <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+          <div className="cl-menu-rename-actions">
             <button className="cl-btn cl-btn-ghost cl-btn-sm" onClick={() => setRenaming(false)}>Cancel</button>
             <button
               className="cl-btn cl-btn-primary cl-btn-sm"
               disabled={renameLoading || !newName.trim()}
               onClick={async () => {
                 setRenameLoading(true);
-                try { await onRename(newName.trim()); }
-                finally { setRenameLoading(false); }
+                try {
+                  await onRename(newName.trim());
+                } finally {
+                  setRenameLoading(false);
+                }
               }}
             >
               {renameLoading ? 'Saving…' : 'Save'}
             </button>
           </div>
         </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="cl-settings-dropdown">
+      {isTeacher && classroom.workspace_folder_id && (
+        <a
+          href={`/workspace?folder=${classroom.workspace_folder_id}`}
+          target="_blank"
+          rel="noreferrer"
+          className="cl-menu-link"
+        >
+          Student Folders
+        </a>
+      )}
+
+      {isOwner && (
+        <>
+          <button className="cl-menu-item" onClick={() => setRenaming(true)}>Rename Classroom</button>
+          <button className="cl-menu-item" onClick={() => { onArchive(); onClose(); }}>
+            {classroom.archived_at ? 'Unarchive' : 'Archive'}
+          </button>
+        </>
+      )}
+
+      {!isOwner && (
+        <button className="cl-menu-item cl-menu-item--danger" onClick={() => { onLeave(); onClose(); }}>
+          Leave Class
+        </button>
+      )}
+
+      {isOwner && (
+        <>
+          <hr className="cl-menu-divider" />
+          <button className="cl-menu-item cl-menu-item--danger" onClick={() => { onDelete(); onClose(); }}>
+            Dissolve Class
+          </button>
+        </>
       )}
     </div>
   );
 };
-

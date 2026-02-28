@@ -1,7 +1,8 @@
 // ─── AssignmentsTab ───────────────────────────────────────────────────────────
 
 import React, { useEffect, useState } from 'react';
-import { listAssignments, deleteAssignment } from '../api';
+import { useNavigate } from 'react-router-dom';
+import { listAssignments, deleteAssignment, openMaterial } from '../api';
 import type { Classroom, Assignment, AssignmentCategory } from '../types';
 import { CategoryBadge } from './CategoryBadge';
 import { StatusBadge } from './StatusBadge';
@@ -34,7 +35,22 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
   const [editTarget, setEditTarget]           = useState<Assignment | null>(null);
   const [detailTarget, setDetailTarget]       = useState<Assignment | null>(null);
 
+  const navigate = useNavigate();
   const isTeacher = classroom.my_role === 'owner' || classroom.my_role === 'teacher';
+  const [openingMaterialId, setOpeningMaterialId] = useState<string | null>(null);
+
+  async function handleOpenMaterial(a: Assignment) {
+    if (openingMaterialId) return;
+    setOpeningMaterialId(a.id);
+    try {
+      const res = await openMaterial(classroom.id, a.id);
+      navigate(`/workspace/shared/classroom/study/${res.fork_study_id}?mode=material`);
+    } catch (err: any) {
+      alert(err?.message || 'Failed to open material. Please try again.');
+    } finally {
+      setOpeningMaterialId(null);
+    }
+  }
 
   useEffect(() => {
     setLoading(true);
@@ -109,6 +125,8 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
               onOpen={() => isTeacher ? setStatsTarget(a) : setDetailTarget(a)}
               onEdit={() => setEditTarget(a)}
               onDelete={() => handleDelete(a.id, a.title)}
+              onOpenMaterial={() => handleOpenMaterial(a)}
+              openingMaterial={openingMaterialId === a.id}
             />
           ))}
         </div>
@@ -173,9 +191,11 @@ interface RowProps {
   onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onOpenMaterial: () => void;
+  openingMaterial: boolean;
 }
 
-const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, onEdit, onDelete }) => {
+const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, onEdit, onDelete, onOpenMaterial, openingMaterial }) => {
   const dueModifier = a.due_date ? dueCssModifier(a.due_date) : 'normal';
   const isOverdue   = a.due_date ? new Date(a.due_date) < new Date() : false;
 
@@ -262,6 +282,16 @@ const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, o
               <StatusBadge status={a.my_submission.status} />
             ) : (
               <span className="cl-status-badge cl-status-badge--not_started">Not Started</span>
+            )}
+            {a.category === 'material' && a.source_type === 'study' && (
+              <button
+                className="cl-btn cl-btn-primary cl-btn-sm"
+                onClick={e => { e.stopPropagation(); onOpenMaterial(); }}
+                disabled={openingMaterial}
+                style={{ flexShrink: 0 }}
+              >
+                {openingMaterial ? 'Opening…' : 'Open Material'}
+              </button>
             )}
             {a.category !== 'material' && (
               <button

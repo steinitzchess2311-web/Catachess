@@ -1,7 +1,8 @@
 // ─── AssignmentDetailModal — student view: full details + submission flow ─────
 
 import React, { useEffect, useState } from 'react';
-import { upsertSubmission, getMySubmission } from '../api';
+import { useNavigate } from 'react-router-dom';
+import { upsertSubmission, getMySubmission, openMaterial } from '../api';
 import type { Assignment, Submission } from '../types';
 import { CategoryBadge } from './CategoryBadge';
 import { StatusBadge } from './StatusBadge';
@@ -20,11 +21,26 @@ export const AssignmentDetailModal: React.FC<Props> = ({
   onClose,
   onSubmitted,
 }) => {
+  const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState(false);
+  const [openingMaterial, setOpeningMaterial] = useState(false);
+
+  async function handleOpenMaterial() {
+    if (openingMaterial) return;
+    setOpeningMaterial(true);
+    try {
+      const res = await openMaterial(classroomId, assignment.id);
+      navigate(`/workspace/shared/classroom/study/${res.fork_study_id}?mode=material`);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to open material.');
+    } finally {
+      setOpeningMaterial(false);
+    }
+  }
 
   const latestSub = submissions[submissions.length - 1] ?? null;
   const alreadySubmitted = latestSub?.status === 'submitted';
@@ -251,8 +267,17 @@ export const AssignmentDetailModal: React.FC<Props> = ({
         <div className="cl-modal__footer">
           <button className="cl-btn cl-btn-secondary" onClick={onClose}>Close</button>
 
-          {/* Material: no submit */}
-          {assignment.category === 'material' && (
+          {/* Material: open fork */}
+          {assignment.category === 'material' && assignment.source_type === 'study' && (
+            <button
+              className="cl-btn cl-btn-primary"
+              onClick={handleOpenMaterial}
+              disabled={openingMaterial}
+            >
+              {openingMaterial ? 'Opening…' : 'Open Material'}
+            </button>
+          )}
+          {assignment.category === 'material' && assignment.source_type !== 'study' && (
             <span style={{ fontSize: '0.82rem', color: 'var(--cl-text-muted)', alignSelf: 'center' }}>
               Reading material — no submission required
             </span>

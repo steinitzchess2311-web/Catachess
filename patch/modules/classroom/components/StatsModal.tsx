@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getAssignmentStats } from '../api';
-import type { AssignmentStats, Assignment } from '../types';
+import { getAssignmentStats, listForks } from '../api';
+import type { AssignmentStats, Assignment, MaterialFork } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { avatarColor } from '../utils';
 
@@ -14,6 +14,10 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
   const [stats, setStats] = useState<AssignmentStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [forks, setForks] = useState<MaterialFork[]>([]);
+  const [forksLoading, setForksLoading] = useState(false);
+
+  const isMaterial = assignment.category === 'material' && assignment.source_type === 'study';
 
   useEffect(() => {
     getAssignmentStats(classroomId, assignment.id)
@@ -21,6 +25,15 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
       .catch(err => setError(err?.message || 'Failed to load stats.'))
       .finally(() => setLoading(false));
   }, [classroomId, assignment.id]);
+
+  useEffect(() => {
+    if (!isMaterial) return;
+    setForksLoading(true);
+    listForks(classroomId, assignment.id)
+      .then(setForks)
+      .catch(() => {})
+      .finally(() => setForksLoading(false));
+  }, [classroomId, assignment.id, isMaterial]);
 
   return (
     <div className="cl-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -110,6 +123,49 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
                 </div>
               )}
             </>
+          )}
+
+          {/* Material forks section */}
+          {isMaterial && (
+            <div style={{ marginTop: '1.25rem' }}>
+              <p className="cl-section-label" style={{ marginBottom: '0.6rem' }}>Student Forks</p>
+              {forksLoading ? (
+                <div className="cl-skeleton" style={{ height: 32, borderRadius: 6 }} />
+              ) : forks.length === 0 ? (
+                <p style={{ fontSize: '0.85rem', color: 'var(--cl-text-muted)' }}>No students have opened this material yet.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {forks.map(f => (
+                    <div key={f.student_username} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.5rem 0.6rem',
+                      borderRadius: 6,
+                      background: 'var(--cl-bg)',
+                    }}>
+                      <div className="cl-member-avatar" style={{ width: 28, height: 28, fontSize: '0.78rem', background: avatarColor(f.student_username), color: '#fff' }}>
+                        {f.student_username?.[0]?.toUpperCase()}
+                      </div>
+                      <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 500 }}>{f.student_username}</span>
+                      <a
+                        href={`/workspace/shared/classroom/study/${f.fork_study_id}?mode=material`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="cl-btn cl-btn-secondary cl-btn-sm"
+                        style={{ textDecoration: 'none' }}
+                        onClick={e => e.stopPropagation()}
+                      >
+                        View Fork
+                      </a>
+                      <span style={{ fontSize: '0.73rem', color: 'var(--cl-text-muted)' }}>
+                        {f.created_at ? new Date(f.created_at).toLocaleDateString() : ''}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
 

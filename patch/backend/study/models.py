@@ -11,6 +11,7 @@ class StudyNodeDTO(BaseModel):
     # v2 optional fields – shapes (circles/arrows) and clock (centiseconds)
     shapes: Optional[List[Dict[str, Any]]] = None
     clock: Optional[int] = None
+    is_base: Optional[bool] = None
 
     model_config = {
         "extra": "forbid"

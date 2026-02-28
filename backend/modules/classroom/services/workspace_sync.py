@@ -307,6 +307,156 @@ def sync_share_node_with_teacher(
         return False
 
 
+# ── Fork helpers (material feature) ──────────────────────────────────────────
+
+def _create_study(token: str, title: str, parent_folder_id: Optional[str]) -> Optional[str]:
+    """POST /api/v1/workspace/studies. Returns new study_id or None."""
+    payload: dict = {"title": title, "visibility": "shared"}
+    if parent_folder_id:
+        payload["parent_id"] = parent_folder_id
+    try:
+        res = httpx.post(
+            f"{_api_base()}/api/v1/workspace/studies",
+            json=payload,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10.0,
+        )
+        if res.status_code in (200, 201):
+            data = res.json()
+            return data.get("id") or data.get("study_id")
+        log.warning(f"[workspace_sync] _create_study '{title}' → {res.status_code}: {res.text[:200]}")
+        return None
+    except Exception as exc:
+        log.error(f"[workspace_sync] _create_study '{title}' failed: {exc}")
+        return None
+
+
+def _create_chapter(token: str, study_id: str, title: str) -> Optional[str]:
+    """POST /api/v1/workspace/studies/{study_id}/chapters. Returns chapter_id or None."""
+    try:
+        res = httpx.post(
+            f"{_api_base()}/api/v1/workspace/studies/{study_id}/chapters",
+            json={"title": title},
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10.0,
+        )
+        if res.status_code in (200, 201):
+            data = res.json()
+            return data.get("id") or data.get("chapter_id")
+        log.warning(f"[workspace_sync] _create_chapter '{title}' → {res.status_code}: {res.text[:200]}")
+        return None
+    except Exception as exc:
+        log.error(f"[workspace_sync] _create_chapter '{title}' failed: {exc}")
+        return None
+
+
+def _get_tree(token: str, chapter_id: str) -> Optional[dict]:
+    """GET /api/v1/workspace/studies/study-patch/chapter/{chapter_id}/tree. Returns raw tree JSON or None."""
+    try:
+        res = httpx.get(
+            f"{_api_base()}/api/v1/workspace/studies/study-patch/chapter/{chapter_id}/tree",
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10.0,
+        )
+        if res.status_code == 200:
+            data = res.json()
+            return data.get("tree") if "tree" in data else data
+        log.warning(f"[workspace_sync] _get_tree chapter={chapter_id} → {res.status_code}: {res.text[:200]}")
+        return None
+    except Exception as exc:
+        log.error(f"[workspace_sync] _get_tree chapter={chapter_id} failed: {exc}")
+        return None
+
+
+def _put_tree(token: str, chapter_id: str, tree_data: dict) -> bool:
+    """PUT /api/v1/workspace/studies/study-patch/chapter/{chapter_id}/tree. Returns True on success."""
+    try:
+        res = httpx.put(
+            f"{_api_base()}/api/v1/workspace/studies/study-patch/chapter/{chapter_id}/tree",
+            json=tree_data,
+            headers={"Authorization": f"Bearer {token}"},
+            timeout=10.0,
+        )
+        if res.status_code in (200, 204):
+            return True
+        log.warning(f"[workspace_sync] _put_tree chapter={chapter_id} → {res.status_code}: {res.text[:200]}")
+        return False
+    except Exception as exc:
+        log.error(f"[workspace_sync] _put_tree chapter={chapter_id} failed: {exc}")
+        return False
+
+
+def _stamp_is_base(tree_data: dict) -> dict:
+    """Deep-copy tree and stamp is_base=true on every node."""
+    import copy
+    tree = copy.deepcopy(tree_data)
+    nodes = tree.get("nodes", {})
+    for node in nodes.values():
+        node["is_base"] = True
+    return tree
+
+
+def sync_fork_material(
+    teacher_uuid: str,
+    student_uuid: str,
+    student_folder_id: Optional[str],
+    source_study_id: str,
+    source_chapter_id: str,
+    assignment_title: str,
+) -> Optional[tuple]:
+    """
+    Fork a teacher's chapter into the student's workspace folder.
+
+    1. GET teacher's tree
+    2. Stamp is_base=true on all nodes
+    3. Create study in student's folder (teacher token — teacher owns the folder)
+    4. Create chapter, PUT stamped tree
+    5. Share study with student as editor
+    6. Return (fork_study_id, fork_chapter_id) or None on failure
+    """
+    try:
+        teacher_token = _make_token(teacher_uuid)
+
+        # 1. Get source tree
+        raw_tree = _get_tree(teacher_token, source_chapter_id)
+        if not raw_tree:
+            log.error(f"[workspace_sync] sync_fork_material: could not get source tree chapter={source_chapter_id}")
+            return None
+
+        # 2. Stamp is_base
+        stamped_tree = _stamp_is_base(raw_tree)
+
+        # 3. Create study in student's folder (teacher owns it)
+        study_title = f"[Material] {assignment_title}"[:200]
+        fork_study_id = _create_study(teacher_token, study_title, student_folder_id)
+        if not fork_study_id:
+            log.error("[workspace_sync] sync_fork_material: could not create fork study")
+            return None
+
+        # 4. Create chapter + PUT tree
+        fork_chapter_id = _create_chapter(teacher_token, fork_study_id, "Chapter 1")
+        if not fork_chapter_id:
+            log.error("[workspace_sync] sync_fork_material: could not create fork chapter")
+            return None
+
+        ok = _put_tree(teacher_token, fork_chapter_id, stamped_tree)
+        if not ok:
+            log.warning("[workspace_sync] sync_fork_material: tree upload failed but continuing")
+
+        # 5. Share study with student as editor
+        _share_folder_with_user(teacher_token, node_id=fork_study_id, user_id=student_uuid)
+
+        log.info(
+            f"[workspace_sync] Forked material: study={fork_study_id} chapter={fork_chapter_id} "
+            f"student={student_uuid}"
+        )
+        return (fork_study_id, fork_chapter_id)
+
+    except Exception as exc:
+        log.error(f"[workspace_sync] sync_fork_material failed: {exc}")
+        return None
+
+
 def sync_rename_student_folder(
     teacher_uuid: str,
     folder_node_id: str,

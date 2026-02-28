@@ -135,9 +135,15 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_SHAPES', nodeId, shapes });
   }, []);
 
-  const deleteMove = useCallback((nodeId: string) => dispatch({ type: 'DELETE_MOVE', nodeId }), []);
+  const deleteMove = useCallback((nodeId: string) => {
+    if (state.tree.nodes[nodeId]?.is_base) return;
+    dispatch({ type: 'DELETE_MOVE', nodeId });
+  }, [state.tree.nodes]);
 
-  const promoteVariation = useCallback((nodeId: string) => dispatch({ type: 'PROMOTE_VARIATION', nodeId }), []);
+  const promoteVariation = useCallback((nodeId: string) => {
+    if (state.tree.nodes[nodeId]?.is_base) return;
+    dispatch({ type: 'PROMOTE_VARIATION', nodeId });
+  }, [state.tree.nodes]);
 
   const undo = useCallback(() => dispatch({ type: 'UNDO' }), []);
 

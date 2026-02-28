@@ -47,6 +47,10 @@ Submissions:
 Activity:
   GET    /api/classroom/classrooms/{id}/activity
 
+Materials:
+  POST   /api/classroom/classrooms/{id}/assignments/{aid}/open-material  Fork material (student)
+  GET    /api/classroom/classrooms/{id}/assignments/{aid}/forks          List forks (teacher+)
+
 Workspace Shares:
   POST   /api/classroom/classrooms/{id}/share-to-teacher  Share a node with teacher (student only)
 """
@@ -58,6 +62,7 @@ from modules.classroom.api.endpoints.assignments import router as assignments_ro
 from modules.classroom.api.endpoints.submissions import router as submissions_router
 from modules.classroom.api.endpoints.activity import router as activity_router
 from modules.classroom.api.endpoints.shares import router as shares_router
+from modules.classroom.api.endpoints.materials import router as materials_router
 
 router = APIRouter()
 
@@ -67,3 +72,4 @@ router.include_router(assignments_router)
 router.include_router(submissions_router)
 router.include_router(activity_router)
 router.include_router(shares_router)
+router.include_router(materials_router)

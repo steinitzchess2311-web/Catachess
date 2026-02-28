@@ -170,6 +170,22 @@ export const getMyTodo = (): Promise<TodoItem[]> =>
  * This is distinct from the legacy workspace /share endpoint (which is still
  * available for direct workspace sharing).
  */
+// ─── Material Forks ──────────────────────────────────────────────────────────
+
+export const openMaterial = (
+  classroomId: string,
+  assignmentId: string,
+): Promise<import('./types').OpenMaterialResponse> =>
+  api.post(`${BASE}/${classroomId}/assignments/${assignmentId}/open-material`, {});
+
+export const listForks = (
+  classroomId: string,
+  assignmentId: string,
+): Promise<import('./types').MaterialFork[]> =>
+  api.get(`${BASE}/${classroomId}/assignments/${assignmentId}/forks`);
+
+// ─── Workspace Share ──────────────────────────────────────────────────────────
+
 export const shareToTeacher = (
   classroomId: string,
   nodeId: string,

@@ -166,3 +166,18 @@ export interface InviteInfo {
   invite_code: string;
   invite_active: boolean;
 }
+
+// ─── Material Fork Types ─────────────────────────────────────────────────────
+
+export interface OpenMaterialResponse {
+  fork_study_id: string;
+  fork_chapter_id: string;
+  is_new: boolean;
+}
+
+export interface MaterialFork {
+  student_username: string;
+  fork_study_id: string;
+  fork_chapter_id: string;
+  created_at: string;
+}

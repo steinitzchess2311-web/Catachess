@@ -121,6 +121,11 @@ const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
     return <MoveTreeUnavailable onReload={handleReload} className={className} />;
   }
 
+  const isMaterialFork = React.useMemo(
+    () => Object.values(tree.nodes).some(n => n.is_base),
+    [tree.nodes]
+  );
+
   const rootNode = tree.nodes[tree.rootId];
   if (!rootNode || !tree.nodes[cursorNodeId]) {
     return <MoveTreeUnavailable onReload={handleReload} className={className} />;
@@ -153,38 +158,52 @@ const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
             collapsedVariations={collapsedVariations}
             onToggleVariation={toggleVariation}
             onContextMenu={handleContextMenu}
+            isMaterialFork={isMaterialFork}
           />
         )}
       </div>
-      {menuState && (
-        <div
-          className="patch-context-menu"
-          style={{ top: menuState.y, left: menuState.x }}
-          onMouseLeave={() => setMenuState(null)}
-        >
-          <button
-            type="button"
-            className="patch-context-item"
-            disabled={!menuState.canPromote}
-            onClick={() => {
-              onPromoteVariation(menuState.nodeId);
-              setMenuState(null);
-            }}
+      {menuState && (() => {
+        const menuNode = tree.nodes[menuState.nodeId];
+        const isBase = menuNode?.is_base;
+        return (
+          <div
+            className="patch-context-menu"
+            style={{ top: menuState.y, left: menuState.x }}
+            onMouseLeave={() => setMenuState(null)}
           >
-            Promote to Mainline
-          </button>
-          <button
-            type="button"
-            className="patch-context-item is-danger"
-            onClick={() => {
-              setConfirmDeleteId(menuState.nodeId);
-              setMenuState(null);
-            }}
-          >
-            Delete Branch
-          </button>
-        </div>
-      )}
+            {!isBase && (
+              <button
+                type="button"
+                className="patch-context-item"
+                disabled={!menuState.canPromote}
+                onClick={() => {
+                  onPromoteVariation(menuState.nodeId);
+                  setMenuState(null);
+                }}
+              >
+                Promote to Mainline
+              </button>
+            )}
+            {!isBase && (
+              <button
+                type="button"
+                className="patch-context-item is-danger"
+                onClick={() => {
+                  setConfirmDeleteId(menuState.nodeId);
+                  setMenuState(null);
+                }}
+              >
+                Delete Branch
+              </button>
+            )}
+            {isBase && (
+              <div style={{ padding: '6px 12px', color: '#999', fontSize: '12px' }}>
+                Base material (read-only)
+              </div>
+            )}
+          </div>
+        );
+      })()}
       {confirmDeleteId && (
         <div className="patch-confirm-overlay">
           <div className="patch-confirm-card">
@@ -256,6 +275,7 @@ interface MoveBranchProps {
   collapsedVariations: Set<string>;
   onToggleVariation: (nodeId: string) => void;
   onContextMenu: (nodeId: string, event: React.MouseEvent) => void;
+  isMaterialFork: boolean;
 }
 
 // React.memo prevents re-renders when only MoveTreeDisplay's local UI state
@@ -272,6 +292,7 @@ const MoveBranch = React.memo(function MoveBranch({
   collapsedVariations,
   onToggleVariation,
   onContextMenu,
+  isMaterialFork,
 }: MoveBranchProps) {
   if (!startNodeId) return null;
 
@@ -324,6 +345,7 @@ const MoveBranch = React.memo(function MoveBranch({
                 collapsedVariations={collapsedVariations}
                 onToggleVariation={onToggleVariation}
                 onContextMenu={onContextMenu}
+                isMaterialFork={isMaterialFork}
               />
             )}
           </div>
@@ -373,7 +395,7 @@ const MoveBranch = React.memo(function MoveBranch({
       if (hasRootVariations) {
         lines.push(
           <div key={`line-white-${currentId}`} className="move-line" style={lineStyle}>
-            <MoveItem nodeId={whiteNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}.`} onContextMenu={onContextMenu} />
+            <MoveItem nodeId={whiteNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}.`} onContextMenu={onContextMenu} isMaterialFork={isMaterialFork} />
             <div />
           </div>
         );
@@ -383,7 +405,7 @@ const MoveBranch = React.memo(function MoveBranch({
             <div key={`line-black-${blackNode.id}`} className="move-line" style={lineStyle}>
               <div />
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <MoveItem nodeId={blackNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}...`} onContextMenu={onContextMenu} />
+                <MoveItem nodeId={blackNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}...`} onContextMenu={onContextMenu} isMaterialFork={isMaterialFork} />
               </div>
             </div>
           );
@@ -398,7 +420,7 @@ const MoveBranch = React.memo(function MoveBranch({
       } else if (shouldSplitPair) {
         lines.push(
           <div key={`line-white-${currentId}`} className="move-line" style={lineStyle}>
-            <MoveItem nodeId={whiteNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}.`} onContextMenu={onContextMenu} />
+            <MoveItem nodeId={whiteNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}.`} onContextMenu={onContextMenu} isMaterialFork={isMaterialFork} />
             <div />
           </div>
         );
@@ -408,7 +430,7 @@ const MoveBranch = React.memo(function MoveBranch({
             <div key={`line-black-${blackNode.id}`} className="move-line" style={lineStyle}>
               <div />
               <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <MoveItem nodeId={blackNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}...`} onContextMenu={onContextMenu} />
+                <MoveItem nodeId={blackNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}...`} onContextMenu={onContextMenu} isMaterialFork={isMaterialFork} />
               </div>
             </div>
           );
@@ -421,9 +443,9 @@ const MoveBranch = React.memo(function MoveBranch({
       } else if (blackNode) {
         lines.push(
           <div key={`line-pair-${currentId}`} className="move-line" style={lineStyle}>
-            <MoveItem nodeId={whiteNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}.`} onContextMenu={onContextMenu} />
+            <MoveItem nodeId={whiteNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}.`} onContextMenu={onContextMenu} isMaterialFork={isMaterialFork} />
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-              <MoveItem nodeId={blackNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}...`} onContextMenu={onContextMenu} />
+              <MoveItem nodeId={blackNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}...`} onContextMenu={onContextMenu} isMaterialFork={isMaterialFork} />
             </div>
           </div>
         );
@@ -432,7 +454,7 @@ const MoveBranch = React.memo(function MoveBranch({
       } else {
         lines.push(
           <div key={`line-white-${currentId}`} className="move-line" style={lineStyle}>
-            <MoveItem nodeId={whiteNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}.`} onContextMenu={onContextMenu} />
+            <MoveItem nodeId={whiteNode.id} nodes={nodes} cursorNodeId={cursorNodeId} onSelect={onSelect} isMainline={isMainline} prefix={`${moveNumber}.`} onContextMenu={onContextMenu} isMaterialFork={isMaterialFork} />
             <div />
           </div>
         );
@@ -479,6 +501,7 @@ interface MoveItemProps {
   isMainline: boolean;
   prefix?: string;
   onContextMenu: (nodeId: string, event: React.MouseEvent) => void;
+  isMaterialFork: boolean;
 }
 
 // Custom comparator: only re-renders when this node's own data changes OR its
@@ -495,7 +518,8 @@ function moveItemPropsAreEqual(prev: MoveItemProps, next: MoveItemProps): boolea
     prev.isMainline === next.isMainline &&
     prev.prefix === next.prefix &&
     prev.onSelect === next.onSelect &&
-    prev.onContextMenu === next.onContextMenu
+    prev.onContextMenu === next.onContextMenu &&
+    prev.isMaterialFork === next.isMaterialFork
   );
 }
 
@@ -507,13 +531,15 @@ const MoveItem = React.memo(function MoveItem({
   isMainline,
   prefix = '',
   onContextMenu,
+  isMaterialFork,
 }: MoveItemProps) {
   const node = nodes[nodeId];
   if (!node) return null;
 
   const isActive = cursorNodeId === nodeId;
-  const trainedColor = '#2563eb';
-  const inactiveColor = node.trained ? trainedColor : (isMainline ? '#000' : '#444');
+  const studentColor = '#2563eb';
+  const isStudentNode = isMaterialFork && !node.is_base && node.san !== '';
+  const inactiveColor = (node.trained || isStudentNode) ? studentColor : (isMainline ? '#000' : '#444');
 
   return (
     <div

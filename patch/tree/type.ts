@@ -112,6 +112,12 @@ export interface StudyNode {
    * true = shown in blue in the move tree.
    */
   trained?: boolean;
+
+  /**
+   * Whether this node is part of the teacher's original material.
+   * true = cannot be deleted/promoted by the student.
+   */
+  is_base?: boolean;
 }
 
 /**

@@ -415,6 +415,38 @@ def _backfill_classroom_workspace_acl() -> None:
 # ── END TEMPORARY ─────────────────────────────────────────────────────────────
 
 
+# ── TEMPORARY: Create material_forks table in classroom DB ────────────────────
+def _migrate_material_forks() -> None:
+    import os
+    from sqlalchemy import create_engine, text
+
+    url = os.getenv("CLASSROOM_DATABASE")
+    if not url:
+        logger.warning("CLASSROOM_DATABASE not set — skipping material_forks migration")
+        return
+    try:
+        engine = create_engine(url, pool_pre_ping=True)
+        with engine.begin() as conn:
+            conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS material_forks (
+                    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    assignment_id   UUID NOT NULL,
+                    student_username VARCHAR(50) NOT NULL,
+                    fork_study_id   VARCHAR(64) NOT NULL,
+                    fork_chapter_id VARCHAR(64) NOT NULL,
+                    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                    CONSTRAINT uq_material_fork_assignment_student
+                        UNIQUE (assignment_id, student_username)
+                );
+                CREATE INDEX IF NOT EXISTS ix_material_forks_assignment_id
+                    ON material_forks(assignment_id);
+            """))
+        logger.info("✅ material_forks table ready")
+    except Exception as e:
+        logger.error(f"material_forks migration failed: {e}", exc_info=True)
+# ── END TEMPORARY ─────────────────────────────────────────────────────────────
+
+
 async def _presence_cleanup_loop() -> None:
     import os
 
@@ -525,6 +557,10 @@ async def lifespan(app: FastAPI):
 
     # TEMPORARY: share classroom/ workspace folder with teacher (Shared section fix)
     await asyncio.to_thread(_backfill_classroom_workspace_acl)
+    # END TEMPORARY
+
+    # TEMPORARY: create material_forks table in classroom DB
+    await asyncio.to_thread(_migrate_material_forks)
     # END TEMPORARY
 
     # Initialize MongoDB cache

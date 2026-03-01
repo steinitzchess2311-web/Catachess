@@ -445,13 +445,8 @@ class NodeService:
         return await self.node_repo.get_children(parent_id)
 
     async def _update_descendant_paths(self, node: Node, old_path: str) -> None:
-        """Update paths of all descendants after move."""
-        descendants = await self.node_repo.get_descendants(old_path)
-        for desc in descendants:
-            # Replace old path prefix with new path
-            desc.path = desc.path.replace(old_path, node.path, 1)
-            desc.depth = desc.path.count("/") - 2
-            await self.node_repo.update(desc)
+        """Bulk-update paths of all descendants after move — single SQL statement."""
+        await self.node_repo.bulk_update_paths(old_path, node.path)
 
     async def _get_workspace_id_for_node(self, node_id: str) -> str | None:
         """Get workspace ID for a node."""

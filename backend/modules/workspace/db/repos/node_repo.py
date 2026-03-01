@@ -333,6 +333,38 @@ class NodeRepository:
         )
         await self.session.execute(stmt)
 
+    async def bulk_update_paths(self, old_path: str, new_path: str) -> None:
+        """
+        Atomically rewrite paths for all descendants after a node move.
+
+        Replaces the old path prefix with the new one using a single SQL UPDATE
+        instead of loading all descendants and updating them one-by-one (N+1).
+
+        Also recomputes depth from the new path (depth = number of '/' chars - 2).
+        """
+        from sqlalchemy import text, func as sqlfunc
+
+        # Use regexp_replace to swap the leading old_path with new_path in one statement.
+        # PostgreSQL: regexp_replace(path, '^<escaped>', new_path)
+        # We escape the old_path to avoid regex metacharacter issues.
+        escaped = old_path.replace("/", "\\/")
+        await self.session.execute(
+            sa_update(Node)
+            .where(
+                Node.path.startswith(old_path),
+                Node.path != old_path,
+            )
+            .values(
+                path=text(
+                    f"regexp_replace(path, '^{escaped}', '{new_path}')"
+                ),
+                depth=text(
+                    f"length(regexp_replace(path, '^{escaped}', '{new_path}')) "
+                    f"- length(replace(regexp_replace(path, '^{escaped}', '{new_path}'), '/', '')) - 2"
+                ),
+            )
+        )
+
     async def cascade_visibility(self, node_path: str, visibility: Visibility) -> None:
         """
         Bulk-update visibility of all descendants of a node.

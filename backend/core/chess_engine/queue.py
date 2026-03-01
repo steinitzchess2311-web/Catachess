@@ -227,12 +227,17 @@ class EngineQueue:
                 )
 
                 try:
-                    # Call engine
-                    result = engine_callable(
-                        fen=request.fen,
-                        depth=request.depth,
-                        multipv=request.multipv,
-                        engine=request.engine,
+                    # Delegate the synchronous engine call to a thread-pool
+                    # worker so it never blocks the event loop.
+                    loop = asyncio.get_running_loop()
+                    result = await loop.run_in_executor(
+                        None,  # default ThreadPoolExecutor
+                        lambda: engine_callable(
+                            fen=request.fen,
+                            depth=request.depth,
+                            multipv=request.multipv,
+                            engine=request.engine,
+                        ),
                     )
 
                     processing_time = time.time() - processing_start

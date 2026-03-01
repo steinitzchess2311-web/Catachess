@@ -32,21 +32,23 @@ export function PositionGameList({ fen, players }: Props) {
   const [sort, setSort] = useState<SortOrder>('elo_desc');
   const { games, loading, error, hasMore, loadMore, total } = useMastersGames(fen, players, sort);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
 
-  // Infinite scroll: trigger loadMore when sentinel enters viewport
+  // Infinite scroll: use the list container as root so it works inside any scroll parent
   useEffect(() => {
     const el = sentinelRef.current;
-    if (!el) return;
+    const root = listRef.current;
+    if (!el || !root) return;
     const io = new IntersectionObserver(
       entries => { if (entries[0].isIntersecting) loadMore(); },
-      { rootMargin: '200px' },
+      { root, rootMargin: '200px' },
     );
     io.observe(el);
     return () => io.disconnect();
   }, [loadMore]);
 
   return (
-    <div className="explorer-games">
+    <div className="explorer-games" ref={listRef} style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
       {/* Sort bar */}
       <div className="explorer-pgames-header">
         <div className="explorer-pgames-sort">

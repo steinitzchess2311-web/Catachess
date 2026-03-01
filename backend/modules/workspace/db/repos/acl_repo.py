@@ -122,6 +122,23 @@ class ACLRepository:
         await self.session.flush()
         return len(acls)
 
+    async def get_acls_for_user_and_objects(
+        self, user_id: str, object_ids: list[str]
+    ) -> dict[str, ACL]:
+        """
+        Fetch ACL entries for a user across multiple objects in one query.
+
+        Returns:
+            Mapping of object_id → ACL (only entries that exist are included).
+        """
+        if not object_ids:
+            return {}
+        stmt = select(ACL).where(
+            and_(ACL.user_id == user_id, ACL.object_id.in_(object_ids))
+        )
+        result = await self.session.execute(stmt)
+        return {acl.object_id: acl for acl in result.scalars().all()}
+
     async def check_permission(
         self, object_id: str, user_id: str, required_permission: Permission
     ) -> bool:

@@ -152,10 +152,18 @@ class SearchService:
             limit=page_size * 3,  # Fetch extra for filtering
         )
 
-        # Filter by permissions
+        # Batch-fetch ACL entries for all candidate nodes — one query instead of N
+        node_ids = [n.id for n in nodes]
+        acl_map = await self.acl_repo.get_acls_for_user_and_objects(user_id, node_ids)
+
+        from modules.workspace.domain.policies.permissions import _node_to_model, _acl_to_model
+        from modules.workspace.domain.policies.permissions_core import PermissionPolicy
+
         filtered_results = []
         for node in nodes:
-            if await can_read(self.acl_repo, node, user_id):
+            acl = acl_map.get(node.id)
+            acl_model = _acl_to_model(acl) if acl is not None else None
+            if node is not None and PermissionPolicy.can_read(_node_to_model(node), user_id, acl_model):
                 filtered_results.append(
                     SearchResult(
                         target_id=node.id,

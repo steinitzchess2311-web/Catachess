@@ -208,9 +208,10 @@ export function LargePgnImportModal({ content, filename, studyId, onClose }: Lar
     let chaptersSkipped  = 0;
     let studiesCreated   = 0;
 
+    type ImportSubPhase = 'folder' | 'study' | 'creating' | 'uploading';
     const setImporting = (
       studyIndex: number,
-      subPhase: Phase & { name: 'importing' })['subPhase'],
+      subPhase: ImportSubPhase,
       done: number,
       total: number,
     ) => {

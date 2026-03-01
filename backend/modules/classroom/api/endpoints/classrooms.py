@@ -95,6 +95,23 @@ def _member_count(db: Session, classroom_id: uuid.UUID) -> int:
     return (count or 0) + 1
 
 
+def _batch_member_counts(db: Session, classroom_ids: list[uuid.UUID]) -> dict[uuid.UUID, int]:
+    """Single GROUP BY query for member counts across multiple classrooms."""
+    if not classroom_ids:
+        return {}
+    rows = db.execute(
+        select(ClassroomMember.classroom_id, func.count().label("cnt"))
+        .where(
+            ClassroomMember.classroom_id.in_(classroom_ids),
+            ClassroomMember.removed_at.is_(None),
+        )
+        .group_by(ClassroomMember.classroom_id)
+    ).all()
+    counts = {row.classroom_id: row.cnt for row in rows}
+    # +1 for owner (not in members table)
+    return {cid: counts.get(cid, 0) + 1 for cid in classroom_ids}
+
+
 # ── Create ────────────────────────────────────────────────────────────────────
 
 @router.post("/classrooms", response_model=ClassroomResponse, status_code=201)
@@ -182,6 +199,10 @@ def list_my_classrooms(
         )
     ).scalars().all() if member_classroom_ids else []
 
+    # Batch member counts — one GROUP BY query instead of N individual queries
+    all_classroom_ids = list({c.id for c in list(owned) + list(member_classrooms)})
+    member_counts = _batch_member_counts(db, all_classroom_ids)
+
     result = []
     seen: set = set()
 
@@ -190,7 +211,7 @@ def list_my_classrooms(
         result.append(ClassroomListItem(
             id=str(c.id), name=c.name, owner=c.owner,
             my_role="owner",
-            member_count=_member_count(db, c.id),
+            member_count=member_counts.get(c.id, 1),
             archived_at=c.archived_at, created_at=c.created_at,
             workspace_folder_id=c.workspace_folder_id,
         ))
@@ -201,7 +222,7 @@ def list_my_classrooms(
         result.append(ClassroomListItem(
             id=str(c.id), name=c.name, owner=c.owner,
             my_role=member_role_map.get(c.id, "student"),
-            member_count=_member_count(db, c.id),
+            member_count=member_counts.get(c.id, 1),
             archived_at=c.archived_at, created_at=c.created_at,
             workspace_folder_id=c.workspace_folder_id,
         ))

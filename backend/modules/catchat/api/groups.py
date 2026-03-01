@@ -180,9 +180,19 @@ def list_my_groups(
         .order_by(Group.last_message_at.desc())
     ).scalars().all()
 
+    # Batch: load all members for all groups in one query instead of N queries
+    all_members = db.execute(
+        select(GroupMember)
+        .where(GroupMember.group_id.in_(group_ids))
+        .order_by(GroupMember.joined_at)
+    ).scalars().all()
+    members_by_group: dict[uuid.UUID, list[GroupMember]] = {}
+    for m in all_members:
+        members_by_group.setdefault(m.group_id, []).append(m)
+
     result = []
     for g in groups:
-        members = _load_members(db, g.id)
+        members = members_by_group.get(g.id, [])
         result.append(_to_response(g, members, current_user.id))
     return result
 

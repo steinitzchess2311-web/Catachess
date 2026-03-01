@@ -96,6 +96,58 @@ def _is_visible_to(db: Session, assignment_id: uuid.UUID, username: str) -> bool
     return row is not None
 
 
+def _batch_visible_ids(
+    db: Session, assignment_ids: list[uuid.UUID], username: str
+) -> set[uuid.UUID]:
+    """Return the set of assignment IDs visible to `username` — single query."""
+    if not assignment_ids:
+        return set()
+    rows = db.execute(
+        select(AssignmentTarget.assignment_id).where(
+            AssignmentTarget.assignment_id.in_(assignment_ids),
+            (AssignmentTarget.target_type == "all") |
+            ((AssignmentTarget.target_type == "user") & (AssignmentTarget.username == username)),
+        ).distinct()
+    ).scalars().all()
+    return set(rows)
+
+
+def _batch_latest_submissions(
+    db: Session, assignment_ids: list[uuid.UUID], username: str
+) -> dict[uuid.UUID, Submission]:
+    """Return the latest submission per assignment for `username` — single query."""
+    if not assignment_ids:
+        return {}
+    rows = db.execute(
+        select(Submission).where(
+            Submission.assignment_id.in_(assignment_ids),
+            Submission.username == username,
+        )
+    ).scalars().all()
+    latest: dict[uuid.UUID, Submission] = {}
+    for s in rows:
+        if s.assignment_id not in latest or s.attempt > latest[s.assignment_id].attempt:
+            latest[s.assignment_id] = s
+    return latest
+
+
+def _batch_submission_counts(
+    db: Session, assignment_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, int]:
+    """Return submitted-count per assignment for teacher view — single query."""
+    if not assignment_ids:
+        return {}
+    rows = db.execute(
+        select(Submission.assignment_id, func.count().label("cnt"))
+        .where(
+            Submission.assignment_id.in_(assignment_ids),
+            Submission.status == "submitted",
+        )
+        .group_by(Submission.assignment_id)
+    ).all()
+    return {row.assignment_id: row.cnt for row in rows}
+
+
 def _to_response(a: Assignment, targets, db: Session) -> AssignmentResponse:
     return AssignmentResponse(
         id=str(a.id), classroom_id=str(a.classroom_id),
@@ -169,36 +221,37 @@ def list_assignments(
 
     assignments = db.execute(query.order_by(Assignment.created_at.desc())).scalars().all()
 
+    assignment_ids = [a.id for a in assignments]
+
+    if role == "student":
+        # Batch: which assignments are visible to this student?
+        visible_ids = _batch_visible_ids(db, assignment_ids, username)
+        # Batch: latest submission per assignment
+        latest_subs = _batch_latest_submissions(db, assignment_ids, username)
+    else:
+        # Batch: submitted count per assignment
+        sub_counts = _batch_submission_counts(db, assignment_ids)
+
     result = []
     for a in assignments:
-        if role == "student" and not _is_visible_to(db, a.id, username):
-            continue
-
         if role == "student":
-            # Find latest submission by this student
-            sub = db.execute(
-                select(Submission).where(
-                    Submission.assignment_id == a.id,
-                    Submission.username == username,
-                ).order_by(Submission.attempt.desc()).limit(1)
-            ).scalar_one_or_none()
-            my_submission = {"status": sub.status, "score": sub.score, "attempt": sub.attempt} if sub else None
+            if a.id not in visible_ids:
+                continue
+            sub = latest_subs.get(a.id)
+            my_submission = (
+                {"status": sub.status, "score": sub.score, "attempt": sub.attempt}
+                if sub else None
+            )
             result.append(AssignmentListItem(
                 id=str(a.id), title=a.title, category=a.category,
                 type=a.type, due_date=a.due_date, created_at=a.created_at,
                 my_submission=my_submission,
             ))
         else:
-            sub_count = db.execute(
-                select(func.count()).where(
-                    Submission.assignment_id == a.id,
-                    Submission.status == "submitted",
-                )
-            ).scalar_one()
             result.append(AssignmentListItem(
                 id=str(a.id), title=a.title, category=a.category,
                 type=a.type, due_date=a.due_date, created_at=a.created_at,
-                submission_count=sub_count,
+                submission_count=sub_counts.get(a.id, 0),
             ))
 
     return result

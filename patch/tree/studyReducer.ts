@@ -114,11 +114,20 @@ export const initialState: StudyState = {
 // Helpers
 // =============================================================================
 
+/** Maximum number of undo snapshots retained. Older entries are evicted. */
+const MAX_HISTORY = 50;
+
 /** Creates a history snapshot (excludes the history stack itself). */
 export const createSnapshot = (state: StudyState): StudyStateSnapshot => {
   const { history, ...snapshot } = state;
   return { ...snapshot, currentPath: [...snapshot.currentPath] };
 };
+
+/** Append a snapshot to the history stack, capped at MAX_HISTORY. */
+function pushHistory(history: StudyStateSnapshot[], snapshot: StudyStateSnapshot): StudyStateSnapshot[] {
+  const next = [...history, snapshot];
+  return next.length > MAX_HISTORY ? next.slice(next.length - MAX_HISTORY) : next;
+}
 
 // =============================================================================
 // Reducer
@@ -233,7 +242,7 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
           error: singleStep.error
             ? { type: 'REPLAY_ERROR', message: singleStep.error, context: { illegalMoveIndex: singleStep.illegalMoveIndex }, timestamp: Date.now() }
             : null,
-          history: [...state.history, snapshot],
+          history: pushHistory(state.history, snapshot),
         };
       } catch (e: any) {
         return {

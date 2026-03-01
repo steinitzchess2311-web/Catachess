@@ -396,6 +396,7 @@ export function NewChapterModal({
   // ── Render ───────────────────────────────────────────────────────────────
 
   return (
+    <>
     <div className="patch-modal-overlay" role="dialog" aria-modal="true">
       <div className="patch-modal">
         <h3>New Chapter</h3>
@@ -553,5 +554,6 @@ export function NewChapterModal({
         onClose={() => setLargeFile(null)}
       />
     )}
+    </>
   );
 }

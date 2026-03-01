@@ -551,7 +551,7 @@ export function NewChapterModal({
         content={largeFile.content}
         filename={largeFile.filename}
         studyId={studyId}
-        onClose={() => setLargeFile(null)}
+        onClose={() => { setLargeFile(null); onClose(); }}
       />
     )}
     </>

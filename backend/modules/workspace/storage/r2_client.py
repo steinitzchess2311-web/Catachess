@@ -334,22 +334,34 @@ class R2Client:
         return content_bytes.decode("utf-8")
 
 
+# Module-level singleton — created on first call, reused for all subsequent calls.
+# boto3 S3 client is thread-safe for concurrent reads/writes (boto3 docs confirm).
+_r2_singleton: R2Client | None = None
+
+
 def create_r2_client_from_env() -> R2Client:
     """
-    Create R2 client from environment variables.
+    Return the process-wide R2Client singleton, creating it on first call.
 
-    Expected variables:
+    Using a singleton avoids re-initialising boto3 (SSL context + connection pool)
+    on every request, which previously added ~20–50 ms of overhead per call.
+
+    Expected environment variables:
     - R2_ENDPOINT
     - R2_ACCESS_KEY
     - R2_SECRET_KEY
     - R2_BUCKET
 
     Returns:
-        Configured R2Client
+        Singleton R2Client
 
     Raises:
-        ValueError: If required env vars are missing
+        ValueError: If required env vars are missing on first call
     """
+    global _r2_singleton
+    if _r2_singleton is not None:
+        return _r2_singleton
+
     import os
 
     endpoint = os.getenv("R2_ENDPOINT")
@@ -370,4 +382,5 @@ def create_r2_client_from_env() -> R2Client:
         bucket=bucket,
     )
 
-    return R2Client(config)
+    _r2_singleton = R2Client(config)
+    return _r2_singleton

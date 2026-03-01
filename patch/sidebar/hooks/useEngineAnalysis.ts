@@ -48,7 +48,6 @@ export function useEngineAnalysis({
   const [nps, setNps] = useState<number | null>(null);
 
   const inFlightRef = useRef(false);
-  const pollRef = useRef<number | null>(null);
   const debounceRef = useRef<number | null>(null);
   const nextAllowedRef = useRef<number>(0);
   const currentFenRef = useRef<string>(fen);
@@ -119,9 +118,10 @@ export function useEngineAnalysis({
     }
   };
 
-  // Main analysis effect with debounce + polling.
+  // Main analysis effect with debounce — single request per FEN change.
   // Debounce: wait 150 ms before starting so rapid FEN changes (arrow-key
   // navigation) don't thrash the engine with start/stop cycles.
+  // WASM engine already streams depth updates via onUpdate — no polling needed.
   useEffect(() => {
     if (!enabled) return;
 
@@ -131,28 +131,21 @@ export function useEngineAnalysis({
     lastPrecomputeParamsRef.current = { fen, multipv };
 
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; }
 
     debounceRef.current = window.setTimeout(() => {
       analyzePosition(fen);
-      pollRef.current = window.setInterval(() => analyzePosition(fen), 2000);
     }, 150);
 
     return () => {
       if (debounceRef.current) { window.clearTimeout(debounceRef.current); debounceRef.current = null; }
       stopAnalysis();
       inFlightRef.current = false;
-      if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; }
     };
   }, [enabled, fen, multipv]);
 
   // Reset state when disabled
   useEffect(() => {
     if (enabled) return;
-    if (pollRef.current) {
-      window.clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
     setStatus('idle');
     setHealth('down');
     setLines([]);

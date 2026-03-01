@@ -49,18 +49,20 @@ async def list_public_studies(
 @browse_router.get("/public-nodes", response_model=NodeListResponse)
 async def list_public_nodes(
     parent_id: str | None = Query(None),
+    limit: int = Query(40, ge=1, le=100),
+    offset: int = Query(0, ge=0),
     session: AsyncSession = Depends(get_session),
 ) -> NodeListResponse:
     """
     Browse the public node tree.
 
-    - parent_id omitted or "root": top-level public folders/studies
+    - parent_id omitted or "root": top-level public folders/studies (paginated)
     - parent_id UUID: children of that public folder
 
     No authentication required.
     """
     repo = NodeRepository(session)
-    nodes = await repo.get_public_nodes(parent_id=parent_id)
+    nodes = await repo.get_public_nodes(parent_id=parent_id, limit=limit, offset=offset)
 
     # At root view, attach owner_username so the frontend can show "by <user>"
     is_root = parent_id is None or str(parent_id).startswith("root")

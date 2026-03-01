@@ -23,6 +23,10 @@ export interface WorkspaceState {
     selectedItemIds: Set<string>;
     currentNodes: any[];
     mode: WorkspaceMode;
+    /** Offset for the next page of public-root nodes (infinite scroll) */
+    publicOffset: number;
+    /** Whether there are more public-root pages to load */
+    publicHasMore: boolean;
 }
 
 export interface WorkspaceElements {

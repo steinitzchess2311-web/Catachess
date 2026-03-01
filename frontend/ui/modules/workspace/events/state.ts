@@ -14,6 +14,8 @@ export function createInitialState(startParentId: string): WorkspaceState {
         selectedItemIds: new Set<string>(),
         currentNodes: [],
         mode: 'private' as WorkspaceMode,
+        publicOffset: 0,
+        publicHasMore: false,
     };
 }
 

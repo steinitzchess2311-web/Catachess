@@ -594,3 +594,11 @@
 .trash-action-btn--delete:hover {
     background: rgba(220, 38, 38, 0.06);
 }
+
+/* ── Infinite scroll sentinel (public mode) ───────────────────────────────── */
+.infinite-scroll-sentinel {
+    display: block;
+    height: 1px;
+    grid-column: 1 / -1;
+    pointer-events: none;
+}

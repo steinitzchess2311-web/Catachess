@@ -4,9 +4,9 @@ import { WorkspaceState, WorkspaceOptions, WorkspaceElements, ModalRoots } from 
 import { clearCache } from './state';
 import { api } from '../../../assets/api';
 import { openCreateModal, openMoveModal, openDeleteConfirm, openMoveConfirm, openRenameModal, openNodeActions, openShareModal, openTrashActionsModal } from './modals';
-import { refreshNodes as doRefreshNodes } from './nodeOperations';
+import { refreshNodes as doRefreshNodes, loadMorePublicNodes } from './nodeOperations';
 import { navigateToFolder as doNavigateToFolder } from './navigation';
-import { renderItems as doRenderItems } from './rendering';
+import { renderItems as doRenderItems, appendNodeCards } from './rendering';
 
 export function createHandlerWrappers(
     state: WorkspaceState,
@@ -21,8 +21,54 @@ export function createHandlerWrappers(
     let openNodeActionsWrapper: (node: any, disabledActions?: { move?: boolean; rename?: boolean; delete?: boolean }) => void;
     let openTrashActionsWrapper: (node: any) => void;
 
+    // ── Infinite scroll state ──────────────────────────────────────────────────
+    let _scrollObserver: IntersectionObserver | null = null;
+    let _scrollSentinel: HTMLElement | null = null;
+
+    function teardownInfiniteScroll() {
+        if (_scrollObserver) { _scrollObserver.disconnect(); _scrollObserver = null; }
+        if (_scrollSentinel) { _scrollSentinel.remove(); _scrollSentinel = null; }
+    }
+
+    function setupInfiniteScroll() {
+        teardownInfiniteScroll();
+        const isPublicRoot = state.mode === 'public' && (
+            !state.currentParentId || state.currentParentId.startsWith('root')
+        );
+        if (!isPublicRoot || !state.publicHasMore) return;
+
+        const sentinel = document.createElement('div');
+        sentinel.className = 'infinite-scroll-sentinel';
+        // Sentinel spans full grid row but is invisible; placed after last card
+        sentinel.style.cssText = 'height:1px;grid-column:1/-1;pointer-events:none;';
+        elements.itemsGrid.appendChild(sentinel);
+        _scrollSentinel = sentinel;
+
+        _scrollObserver = new IntersectionObserver((entries) => {
+            if (!entries[0].isIntersecting) return;
+            // Disconnect immediately to prevent double-triggering
+            if (_scrollObserver) { _scrollObserver.disconnect(); _scrollObserver = null; }
+            if (_scrollSentinel) { _scrollSentinel.remove(); _scrollSentinel = null; }
+
+            loadMorePublicNodes(
+                state,
+                state.currentParentId,
+                (newNodes) => appendNodeCards(state, elements, newNodes, {
+                    navigateToFolder,
+                    openNodeActions: openNodeActionsWrapper,
+                }, options),
+            ).then((hasMore) => {
+                if (hasMore) setupInfiniteScroll();
+            });
+        }, { threshold: 0.1 });
+
+        _scrollObserver.observe(sentinel);
+    }
+    // ── End infinite scroll ────────────────────────────────────────────────────
+
     // refreshNodes implementation
     refreshNodes = async (parentId: string) => {
+        teardownInfiniteScroll();
         await doRefreshNodes(state, parentId, renderItems);
     };
 
@@ -36,6 +82,8 @@ export function createHandlerWrappers(
             openCreateModal: openCreateModalWrapper,
             refreshNodes: () => refreshNodes(state.currentParentId),
         });
+        // After rendering, set up infinite scroll if in public root mode
+        setupInfiniteScroll();
     };
 
     // navigateToFolder implementation

@@ -413,7 +413,7 @@ class NodeRepository:
         return node.visibility == Visibility.PUBLIC
 
     async def get_public_nodes(
-        self, parent_id: str | None = None
+        self, parent_id: str | None = None, limit: int = 40, offset: int = 0
     ) -> Sequence[Node]:
         """
         Get publicly browseable nodes.
@@ -446,6 +446,8 @@ class NodeRepository:
                     ),
                 )
                 .order_by(Node.created_at.desc())
+                .limit(min(limit, 100))
+                .offset(offset)
             )
             result = await self.session.execute(stmt)
             return result.scalars().all()

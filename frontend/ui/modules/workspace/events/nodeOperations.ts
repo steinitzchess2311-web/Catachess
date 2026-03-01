@@ -25,10 +25,20 @@ export function sortNodes(state: WorkspaceState, nodes: any[]): any[] {
     return sorted;
 }
 
+const PUBLIC_PAGE_SIZE = 40;
+
 export async function refreshNodes(state: WorkspaceState, parentId: string, renderItems: (nodes: any[]) => void) {
     let url: string;
+    const isPublicRoot = state.mode === 'public' && (!parentId || parentId.startsWith('root'));
+
     if (state.mode === 'public') {
-        url = `/api/v1/workspace/public-nodes?parent_id=${parentId}`;
+        if (isPublicRoot) {
+            // Reset pagination on every fresh navigation
+            state.publicOffset = 0;
+            url = `/api/v1/workspace/public-nodes?parent_id=${parentId}&limit=${PUBLIC_PAGE_SIZE}&offset=0`;
+        } else {
+            url = `/api/v1/workspace/public-nodes?parent_id=${parentId}`;
+        }
     } else if (state.mode === 'shared') {
         url = `/api/v1/workspace/shared-nodes?parent_id=${parentId}`;
     } else if (state.mode === 'trash') {
@@ -38,10 +48,43 @@ export async function refreshNodes(state: WorkspaceState, parentId: string, rend
     }
     try {
         const response = await api.get(url);
+        if (isPublicRoot) {
+            state.publicHasMore = response.nodes.length === PUBLIC_PAGE_SIZE;
+        }
         renderItems(response.nodes);
     } catch (error) {
         console.error('Failed to fetch nodes:', error);
         renderItems([]);
+    }
+}
+
+/**
+ * Fetch the next page of public root nodes and append their cards to the grid
+ * without clearing existing cards. Used by IntersectionObserver infinite scroll.
+ *
+ * Returns true if there may be more pages, false when exhausted.
+ */
+export async function loadMorePublicNodes(
+    state: WorkspaceState,
+    parentId: string,
+    appendCards: (newNodes: any[]) => void,
+): Promise<boolean> {
+    state.publicOffset += PUBLIC_PAGE_SIZE;
+    const url = `/api/v1/workspace/public-nodes?parent_id=${parentId}&limit=${PUBLIC_PAGE_SIZE}&offset=${state.publicOffset}`;
+    try {
+        const response = await api.get(url);
+        const newNodes: any[] = response.nodes ?? [];
+        state.publicHasMore = newNodes.length === PUBLIC_PAGE_SIZE;
+        if (newNodes.length > 0) {
+            // Add to currentNodes so state stays consistent
+            state.currentNodes = [...state.currentNodes, ...newNodes];
+            appendCards(newNodes);
+        }
+        return state.publicHasMore;
+    } catch (error) {
+        console.error('Failed to load more public nodes:', error);
+        state.publicHasMore = false;
+        return false;
     }
 }
 

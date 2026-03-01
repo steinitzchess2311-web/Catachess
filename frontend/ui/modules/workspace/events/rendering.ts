@@ -232,6 +232,89 @@ export function renderItems(
 }
 
 
+/**
+ * Append new node cards to the existing grid without clearing it.
+ * Used for infinite-scroll page loads in public mode.
+ * Cards are created from the same templates as renderItems but without
+ * drag/rename support (public mode doesn't allow those actions anyway).
+ */
+export function appendNodeCards(
+    state: WorkspaceState,
+    elements: WorkspaceElements,
+    newNodes: any[],
+    handlers: {
+        navigateToFolder: (id: string, title: string) => Promise<void>;
+        openNodeActions: (node: any, disabledActions?: { move?: boolean; rename?: boolean; delete?: boolean }) => void;
+    },
+    options: WorkspaceOptions,
+) {
+    const folderTpl = document.getElementById('folder-item-template') as HTMLTemplateElement;
+    const studyTpl = document.getElementById('study-item-template') as HTMLTemplateElement;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const newCards: HTMLElement[] = [];
+
+    newNodes.forEach(node => {
+        const tpl = node.node_type === 'folder' ? folderTpl : studyTpl;
+        const item = document.importNode(tpl.content, true);
+        const itemDiv = item.querySelector('.grid-item') as HTMLElement;
+        itemDiv.setAttribute('data-id', node.id);
+        itemDiv.setAttribute('data-type', node.node_type);
+        itemDiv.setAttribute('data-version', String(node.version));
+        itemDiv.setAttribute('data-parent-id', node.parent_id ?? '');
+        itemDiv.setAttribute('draggable', 'false');
+        itemDiv.querySelector('.item-title')!.textContent = node.title;
+
+        // Public root: show "by <username>" or date
+        if (node.owner_username) {
+            itemDiv.querySelector('.item-meta')!.textContent = `by ${node.owner_username}`;
+        } else {
+            const date = new Date(node.updated_at).toLocaleDateString();
+            itemDiv.querySelector('.item-meta')!.textContent = `Modified: ${date}`;
+        }
+
+        itemDiv.addEventListener('click', (event) => {
+            if (event.button !== 0) return;
+            if (event.detail > 1) return;
+            if (node.node_type === 'folder') {
+                handlers.navigateToFolder(node.id, node.title);
+                return;
+            }
+            if (options.onOpenStudy) {
+                const topFolder = state.breadcrumbPath[1];
+                options.onOpenStudy(node.id, { mode: state.mode, topFolder: topFolder ? topFolder.title : null });
+            } else {
+                window.location.assign(`/workspace/${node.id}`);
+            }
+        });
+
+        itemDiv.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            handlers.openNodeActions(node, { move: true, rename: true, delete: true });
+        });
+
+        elements.itemsGrid.appendChild(item);
+        newCards.push(itemDiv);
+    });
+
+    // Entrance animation for new cards only
+    if (!reduceMotion && newCards.length > 0) {
+        newCards.forEach((card, index) => {
+            const delay = Math.min(index, 10) * 22;
+            card.style.setProperty('--enter-delay', `${delay}ms`);
+            card.classList.add('grid-item--preenter');
+        });
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                newCards.forEach(card => {
+                    card.classList.remove('grid-item--preenter');
+                    card.classList.add('grid-item--enter');
+                });
+            });
+        });
+    }
+}
+
 export function renderReactComponents(
     container: HTMLElement,
     mode: string

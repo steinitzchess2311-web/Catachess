@@ -1,6 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '@ui/assets/api';
 import { importMultiPgn } from '../pgn/import';
+import { LargePgnImportModal } from './LargePgnImportModal';
+
+/** Files above this threshold are handled by LargePgnImportModal instead. */
+const LARGE_FILE_THRESHOLD = 500_000;
 
 // ---------------------------------------------------------------------------
 // Title helpers
@@ -144,6 +148,9 @@ export function NewChapterModal({
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
+  // Large-file split import
+  const [largeFile, setLargeFile] = useState<{ content: string; filename: string } | null>(null);
+
   const busy = isCreating || isImporting;
 
   useEffect(() => {
@@ -184,7 +191,13 @@ export function NewChapterModal({
     const reader = new FileReader();
     reader.onload = (ev) => {
       const content = ev.target?.result as string;
-      if (content) setPgnText(content);
+      if (!content) return;
+      // Large files go through the dedicated split-import flow
+      if (content.length > LARGE_FILE_THRESHOLD) {
+        setLargeFile({ content, filename: file.name });
+      } else {
+        setPgnText(content);
+      }
     };
     reader.readAsText(file);
     e.target.value = '';
@@ -530,5 +543,15 @@ export function NewChapterModal({
         </div>
       </div>
     </div>
+
+    {/* Large-file split import — rendered outside the regular modal */}
+    {largeFile && (
+      <LargePgnImportModal
+        content={largeFile.content}
+        filename={largeFile.filename}
+        studyId={studyId}
+        onClose={() => setLargeFile(null)}
+      />
+    )}
   );
 }

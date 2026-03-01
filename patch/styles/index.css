@@ -1987,6 +1987,139 @@ main {
   100% { transform: translateX(300%); }
 }
 
+/* ── Large PGN Import Modal ──────────────────────────────────────────────── */
+
+.patch-modal--large-pgn {
+  width: 420px;
+}
+
+/* Preview table */
+.large-pgn-preview {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.large-pgn-preview__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  color: #374151;
+}
+
+.large-pgn-preview__row strong {
+  color: #111;
+}
+
+.large-pgn-preview__folder {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+}
+
+.large-pgn-preview__warn {
+  font-size: 12px;
+  color: #b45309;
+  background: rgba(217, 119, 6, 0.08);
+  border-radius: 4px;
+  padding: 6px 8px;
+  margin-top: 4px;
+}
+
+/* Study dot progress strip */
+.large-pgn-studies-progress {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 4px;
+}
+
+.large-pgn-study-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e5e7eb;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.large-pgn-study-dot.done {
+  background: #22c55e;
+}
+
+.large-pgn-study-dot.active {
+  background: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+  animation: large-pgn-pulse 1s ease-in-out infinite;
+}
+
+@keyframes large-pgn-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+/* Done screen */
+.large-pgn-done {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.large-pgn-done__icon {
+  font-size: 28px;
+  color: #16a34a;
+  line-height: 1;
+}
+
+.large-pgn-done__summary {
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.5;
+}
+
+.large-pgn-done__skipped {
+  font-size: 12px;
+  color: #b45309;
+}
+
+.large-pgn-done__errors {
+  width: 100%;
+  font-size: 12px;
+  color: #6b7280;
+  text-align: left;
+}
+
+.large-pgn-done__errors summary {
+  cursor: pointer;
+  color: #b91c1c;
+  margin-bottom: 6px;
+}
+
+.large-pgn-done__errors ul {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
 /* ── Game Viewer Page ─────────────────────────────────────────────────────── */
 
 .game-viewer-page {

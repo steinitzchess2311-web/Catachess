@@ -170,9 +170,13 @@ export interface InviteInfo {
 // ─── Material Fork Types ─────────────────────────────────────────────────────
 
 export interface OpenMaterialResponse {
-  fork_study_id: string;
-  fork_chapter_id: string;
-  is_new: boolean;
+  // Legacy fork flow
+  fork_study_id?: string;
+  fork_chapter_id?: string;
+  is_new?: boolean;
+  // New ACL share flow
+  study_id?: string;
+  shared?: boolean;
 }
 
 export interface MaterialFork {

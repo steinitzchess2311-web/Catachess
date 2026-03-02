@@ -86,9 +86,14 @@ def _resolve_user_uuid(username: str) -> str | None:
 
 # ── Open Material ────────────────────────────────────────────────────────────
 
+class OpenMaterialShareResponse(BaseModel):
+    """Returned when material is a shared study (ACL-based, no fork)."""
+    study_id: str
+    shared: bool
+
+
 @router.post(
     "/classrooms/{classroom_id}/assignments/{assignment_id}/open-material",
-    response_model=OpenMaterialResponse,
 )
 def open_material(
     classroom_id: uuid.UUID,
@@ -97,8 +102,11 @@ def open_material(
     db: Session = Depends(get_db),
 ):
     """
-    Student opens a material assignment. If no fork exists yet, one is created
-    by deep-copying the teacher's chapter into the student's workspace folder.
+    Student opens a material assignment.
+
+    Two modes based on source_ref format:
+    - "{study_id}/{chapter_id}" (legacy): deep-copy fork into student workspace
+    - "{study_id}" (new): share teacher's study with student via ACL (viewer)
     """
     classroom = _get_classroom_or_404(db, classroom_id)
     role = _my_role(classroom, current_user.username, db)
@@ -118,6 +126,37 @@ def open_material(
     if assignment.category != "material" or assignment.source_type != "study":
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Assignment is not a study material")
 
+    source_ref = assignment.source_ref or ""
+    parts = source_ref.split("/", 1)
+    source_study_id = parts[0]
+    if not source_study_id:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Invalid source_ref: missing study ID")
+
+    is_legacy_fork = len(parts) == 2 and bool(parts[1])
+
+    # ── New flow: ACL share (no fork) ────────────────────────────────────
+    if not is_legacy_fork:
+        teacher_uuid = _resolve_user_uuid(classroom.owner)
+        if not teacher_uuid:
+            raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not resolve teacher account")
+
+        student_uuid = str(current_user.id)
+
+        # Share the study with the student as viewer
+        from modules.classroom.services.workspace_sync import _make_token, _share_folder_with_user
+        teacher_token = _make_token(teacher_uuid)
+        ok = _share_folder_with_user(teacher_token, node_id=source_study_id, user_id=student_uuid)
+        if not ok:
+            logger.warning(
+                f"open_material: ACL share failed study={source_study_id} student={student_uuid}"
+            )
+            # Non-fatal — student might already have access
+
+        return OpenMaterialShareResponse(study_id=source_study_id, shared=True)
+
+    # ── Legacy flow: deep-copy fork ──────────────────────────────────────
+    source_chapter_id = parts[1]
+
     # Check for existing fork
     existing = db.execute(
         select(MaterialFork).where(
@@ -133,14 +172,6 @@ def open_material(
             is_new=False,
         )
 
-    # Parse source_ref = "{study_id}/{chapter_id}"
-    source_ref = assignment.source_ref or ""
-    parts = source_ref.split("/", 1)
-    if len(parts) != 2:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Invalid source_ref format")
-    source_study_id, source_chapter_id = parts
-
-    # Resolve UUIDs
     teacher_uuid = _resolve_user_uuid(classroom.owner)
     if not teacher_uuid:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Could not resolve teacher account")
@@ -158,7 +189,6 @@ def open_material(
     student_folder_id = member.workspace_folder_id if member else None
 
     if not student_folder_id and classroom.workspace_folder_id:
-        # Lazy backfill: create student subfolder now
         ws_folder_id = workspace_sync.sync_get_or_create_student_folder(
             teacher_uuid=teacher_uuid,
             root_folder_id=classroom.workspace_folder_id,
@@ -187,7 +217,6 @@ def open_material(
 
     fork_study_id, fork_chapter_id = result
 
-    # Save to DB
     fork = MaterialFork(
         assignment_id=assignment_id,
         student_username=current_user.username,

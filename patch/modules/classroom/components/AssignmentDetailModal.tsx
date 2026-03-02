@@ -47,7 +47,8 @@ export const AssignmentDetailModal: React.FC<Props> = ({
     setOpeningMaterial(true);
     try {
       const res = await openMaterial(classroomId, assignment.id);
-      navigate(`/workspace/shared/classroom/study/${res.fork_study_id}?mode=material`);
+      const studyId = res.study_id || res.fork_study_id;
+      navigate(`/workspace/shared/classroom/study/${studyId}?mode=material`);
     } catch (err: any) {
       setError(err?.message || 'Failed to open material.');
     } finally {

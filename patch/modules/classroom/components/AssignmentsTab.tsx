@@ -44,7 +44,8 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
     setOpeningMaterialId(a.id);
     try {
       const res = await openMaterial(classroom.id, a.id);
-      navigate(`/workspace/shared/classroom/study/${res.fork_study_id}?mode=material`);
+      const studyId = res.study_id || res.fork_study_id;
+      navigate(`/workspace/shared/classroom/study/${studyId}?mode=material`);
     } catch (err: any) {
       alert(err?.message || 'Failed to open material. Please try again.');
     } finally {

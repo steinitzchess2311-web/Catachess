@@ -130,27 +130,42 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
             <>
               {/* Overview chips */}
               <div className="cl-stats-overview">
-                <div className="cl-stat-chip cl-stat-chip--submitted">
-                  <span className="cl-stat-chip__value">{stats.submitted}</span>
-                  <span className="cl-stat-chip__label">Submitted</span>
-                </div>
-                <div className="cl-stat-chip cl-stat-chip--accent">
-                  <span className="cl-stat-chip__value">{stats.in_progress}</span>
-                  <span className="cl-stat-chip__label">In Progress</span>
-                </div>
-                <div className="cl-stat-chip">
-                  <span className="cl-stat-chip__value">{stats.not_started}</span>
-                  <span className="cl-stat-chip__label">Not Started</span>
-                </div>
-                <div className="cl-stat-chip cl-stat-chip--overdue">
-                  <span className="cl-stat-chip__value">{stats.overdue}</span>
-                  <span className="cl-stat-chip__label">Overdue</span>
-                </div>
-                {stats.avg_score != null && (
-                  <div className="cl-stat-chip cl-stat-chip--accent">
-                    <span className="cl-stat-chip__value">{Math.round(stats.avg_score * 100)}%</span>
-                    <span className="cl-stat-chip__label">Avg Score</span>
-                  </div>
+                {isMaterial ? (
+                  <>
+                    <div className="cl-stat-chip cl-stat-chip--submitted">
+                      <span className="cl-stat-chip__value">{stats.submitted}</span>
+                      <span className="cl-stat-chip__label">Done</span>
+                    </div>
+                    <div className="cl-stat-chip">
+                      <span className="cl-stat-chip__value">{stats.not_started + stats.in_progress}</span>
+                      <span className="cl-stat-chip__label">Undone</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="cl-stat-chip cl-stat-chip--submitted">
+                      <span className="cl-stat-chip__value">{stats.submitted}</span>
+                      <span className="cl-stat-chip__label">Submitted</span>
+                    </div>
+                    <div className="cl-stat-chip cl-stat-chip--accent">
+                      <span className="cl-stat-chip__value">{stats.in_progress}</span>
+                      <span className="cl-stat-chip__label">In Progress</span>
+                    </div>
+                    <div className="cl-stat-chip">
+                      <span className="cl-stat-chip__value">{stats.not_started}</span>
+                      <span className="cl-stat-chip__label">Not Started</span>
+                    </div>
+                    <div className="cl-stat-chip cl-stat-chip--overdue">
+                      <span className="cl-stat-chip__value">{stats.overdue}</span>
+                      <span className="cl-stat-chip__label">Overdue</span>
+                    </div>
+                    {stats.avg_score != null && (
+                      <div className="cl-stat-chip cl-stat-chip--accent">
+                        <span className="cl-stat-chip__value">{Math.round(stats.avg_score * 100)}%</span>
+                        <span className="cl-stat-chip__label">Avg Score</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 

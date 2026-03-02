@@ -147,14 +147,28 @@ def open_material(
 
     student_uuid = str(current_user.id)
 
-    # Get student's workspace folder
-    student_folder_id: str | None = db.execute(
-        select(ClassroomMember.workspace_folder_id).where(
+    # Get student's workspace folder (lazy backfill if missing)
+    member = db.execute(
+        select(ClassroomMember).where(
             ClassroomMember.classroom_id == classroom_id,
             ClassroomMember.username == current_user.username,
             ClassroomMember.removed_at.is_(None),
         )
     ).scalar_one_or_none()
+    student_folder_id = member.workspace_folder_id if member else None
+
+    if not student_folder_id and classroom.workspace_folder_id:
+        # Lazy backfill: create student subfolder now
+        ws_folder_id = workspace_sync.sync_get_or_create_student_folder(
+            teacher_uuid=teacher_uuid,
+            root_folder_id=classroom.workspace_folder_id,
+            student_username=current_user.username,
+            existing_student_folder_id=None,
+        )
+        if ws_folder_id and member:
+            member.workspace_folder_id = ws_folder_id
+            db.commit()
+            student_folder_id = ws_folder_id
 
     # Fork
     result = workspace_sync.sync_fork_material(

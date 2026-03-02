@@ -1,17 +1,17 @@
 """
 Contact Teacher endpoint
 ========================
-POST   /classrooms/{id}/contact-teacher   Open/create private or group chat with teacher(s)
+POST   /classrooms/{id}/contact-teacher   Open/create group chat with teacher(s)
 
-Student-only. For classrooms with 1 teacher, creates a private CataChat
-conversation. For multiple teachers, creates a group chat with all teachers
-and the student. Idempotent — returns existing chat if one already exists.
+Student-only. Always creates a CataChat group (even for 1 teacher) so both
+sides can easily find it. Named "{student_username} - {classroom_name}".
+Idempotent — returns existing group if one already exists.
 """
 import os
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, and_, create_engine, func
+from sqlalchemy import select, create_engine, func
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import Session as CatchatSession
 
@@ -32,7 +32,7 @@ def contact_teacher(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Create or retrieve a private/group chat between student and classroom teachers."""
+    """Create or retrieve a group chat between student and classroom teachers."""
     classroom = _get_classroom_or_404(db, classroom_id)
     role = _my_role(classroom, current_user.username, db)
     if role not in ("student",):
@@ -65,47 +65,18 @@ def contact_teacher(
 
     try:
         with CatchatSession(engine) as cdb:
-            student_id = current_user.id
-
-            if len(teacher_ids) == 1:
-                return _open_private_conversation(cdb, student_id, teacher_ids[0][1])
-            else:
-                return _open_group_chat(cdb, student_id, current_user.username, teacher_ids, classroom.name)
-
+            return _open_group_chat(
+                cdb,
+                student_id=current_user.id,
+                student_username=current_user.username,
+                teacher_ids=teacher_ids,
+                classroom_name=classroom.name,
+            )
     except HTTPException:
         raise
     except Exception as exc:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Chat service error: {exc}")
 
-
-# ── Private conversation (1 teacher) ─────────────────────────────────────────
-
-def _open_private_conversation(
-    cdb: CatchatSession,
-    student_id: uuid.UUID,
-    teacher_id: uuid.UUID,
-) -> ContactTeacherResponse:
-    """Create or retrieve a 1-on-1 conversation using sorted-pair upsert."""
-    from modules.catchat.db.models.conversation import Conversation
-
-    u1, u2 = (student_id, teacher_id) if student_id < teacher_id else (teacher_id, student_id)
-
-    conv = cdb.execute(
-        select(Conversation).where(
-            and_(Conversation.user1_id == u1, Conversation.user2_id == u2)
-        )
-    ).scalar_one_or_none()
-
-    if not conv:
-        conv = Conversation(user1_id=u1, user2_id=u2)
-        cdb.add(conv)
-        cdb.commit()
-        cdb.refresh(conv)
-
-    return ContactTeacherResponse(chat_type="conversation", chat_id=str(conv.id))
-
-
-# ── Group chat (multiple teachers) ───────────────────────────────────────────
 
 def _open_group_chat(
     cdb: CatchatSession,
@@ -114,7 +85,10 @@ def _open_group_chat(
     teacher_ids: list[tuple[str, uuid.UUID]],
     classroom_name: str,
 ) -> ContactTeacherResponse:
-    """Create or retrieve a group chat with the student and all teachers."""
+    """Create or retrieve a group chat with the student and all teachers.
+
+    Group name: "{student_username} - {classroom_name}"
+    """
     from modules.catchat.db.models.group import Group
     from modules.catchat.db.models.group_member import GroupMember
 
@@ -137,8 +111,9 @@ def _open_group_chat(
             return ContactTeacherResponse(chat_type="group", chat_id=str(gid))
 
     # Create new group
+    group_name = f"{student_username} - {classroom_name}"
     group = Group(
-        name=f"{classroom_name} — Contact",
+        name=group_name,
         created_by=student_id,
     )
     cdb.add(group)

@@ -194,7 +194,7 @@ export const ClassroomDetailPage: React.FC = () => {
                         const res = await contactTeacher(classroom.id);
                         const token = localStorage.getItem('auth_token') || '';
                         window.open(
-                          `https://catachat.catachess.com/${res.chat_type === 'conversation' ? 'conversation' : 'group'}/${res.chat_id}?token=${encodeURIComponent(token)}`,
+                          `https://catachat.catachess.com/group/${res.chat_id}?token=${encodeURIComponent(token)}`,
                           '_blank',
                         );
                       } catch (err: any) {

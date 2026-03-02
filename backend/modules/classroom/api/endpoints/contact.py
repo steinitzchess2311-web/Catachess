@@ -71,6 +71,7 @@ def contact_teacher(
                 student_username=current_user.username,
                 teacher_ids=teacher_ids,
                 classroom_name=classroom.name,
+                classroom_id=str(classroom.id),
             )
     except HTTPException:
         raise
@@ -84,6 +85,7 @@ def _open_group_chat(
     student_username: str,
     teacher_ids: list[tuple[str, uuid.UUID]],
     classroom_name: str,
+    classroom_id: str = "",
 ) -> ContactTeacherResponse:
     """Create or retrieve a group chat with the student and all teachers.
 
@@ -115,6 +117,11 @@ def _open_group_chat(
     group = Group(
         name=group_name,
         created_by=student_id,
+        metadata={
+            "source": "classroom",
+            "classroom_id": classroom_id,
+            "classroom_name": classroom_name,
+        },
     )
     cdb.add(group)
     cdb.flush()

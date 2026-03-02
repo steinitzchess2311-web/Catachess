@@ -366,6 +366,26 @@ def _migrate_catchat_is_broadcast() -> None:
         logger.info("✅ catchat_group_messages.is_broadcast column ready")
     except Exception as exc:
         logger.error(f"is_broadcast migration failed: {exc}", exc_info=True)
+# ── TEMPORARY: Add metadata JSONB column to catchat_groups ─────────────────────
+# Stores structured data like {"source": "classroom", "classroom_id": "..."}
+# so the CataChat frontend can group classroom chats into folders.
+def _migrate_catchat_group_metadata() -> None:
+    import os
+    from sqlalchemy import create_engine, text
+
+    url = os.getenv("CATCHAT_DATABASE")
+    if not url:
+        return
+    try:
+        engine = create_engine(url, pool_pre_ping=True)
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE catchat_groups "
+                "ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT NULL"
+            ))
+        logger.info("✅ catchat_groups.metadata column ready")
+    except Exception as exc:
+        logger.error(f"catchat_groups.metadata migration failed: {exc}", exc_info=True)
 # ── END TEMPORARY ─────────────────────────────────────────────────────────────
 
 
@@ -576,6 +596,9 @@ async def lifespan(app: FastAPI):
 
     # TEMPORARY: add is_broadcast column to catchat_group_messages
     await asyncio.to_thread(_migrate_catchat_is_broadcast)
+
+    # TEMPORARY: add metadata JSONB column to catchat_groups
+    await asyncio.to_thread(_migrate_catchat_group_metadata)
 
     # TEMPORARY: share classroom/ workspace folder with teacher (Shared section fix)
     await asyncio.to_thread(_backfill_classroom_workspace_acl)

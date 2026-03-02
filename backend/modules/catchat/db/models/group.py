@@ -12,7 +12,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import String, DateTime
+from sqlalchemy import String, DateTime, JSON
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -33,3 +33,6 @@ class Group(Base):
     last_message_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )
+    # Optional structured metadata for categorisation (e.g. classroom source).
+    # Example: {"source": "classroom", "classroom_id": "...", "classroom_name": "..."}
+    metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=None)

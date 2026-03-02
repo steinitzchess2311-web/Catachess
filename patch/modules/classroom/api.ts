@@ -196,8 +196,8 @@ export const uploadMaterial = async (
   return api.post(`${BASE}/${classroomId}/assignments/${assignmentId}/upload-material`, formData);
 };
 
-export const downloadMaterialUrl = (classroomId: string, assignmentId: string): string =>
-  `${BASE}/${classroomId}/assignments/${assignmentId}/download-material`;
+export const downloadMaterialUrl = (classroomId: string, assignmentId: string, preview = false): string =>
+  `${BASE}/${classroomId}/assignments/${assignmentId}/download-material${preview ? '?preview=1' : ''}`;
 
 export const shareToTeacher = (
   classroomId: string,

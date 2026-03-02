@@ -97,13 +97,13 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
                       </p>
                     )}
                   </div>
-                  <a
-                    href={downloadMaterialUrl(classroomId, assignment.id)}
+                  <button
                     className="cl-btn cl-btn-secondary cl-btn-sm"
-                    style={{ textDecoration: 'none', flexShrink: 0 }}
+                    style={{ flexShrink: 0 }}
+                    onClick={() => window.open(downloadMaterialUrl(classroomId, assignment.id, true), '_blank')}
                   >
-                    Download
-                  </a>
+                    Open
+                  </button>
                 </div>
               )}
               {isStudyMaterial && (

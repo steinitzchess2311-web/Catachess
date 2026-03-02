@@ -359,11 +359,13 @@ def upload_material(
 def download_material(
     classroom_id: uuid.UUID,
     assignment_id: uuid.UUID,
+    preview: bool = False,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    Download the uploaded material file. Any classroom member.
+    Download or preview the uploaded material file. Any classroom member.
+    Pass ?preview=1 to open inline (images, PDF, text) instead of downloading.
     """
     classroom = _get_classroom_or_404(db, classroom_id)
     _my_role(classroom, current_user.username, db)  # membership check
@@ -397,8 +399,9 @@ def download_material(
         logger.exception("Failed to download material from R2")
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to retrieve file.")
 
+    disposition = "inline" if preview else "attachment"
     return Response(
         content=data,
         media_type=content_type,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
     )

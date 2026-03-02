@@ -37,7 +37,6 @@ export const AssignmentDetailModal: React.FC<Props> = ({
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [openingStudy, setOpeningStudy] = useState(false);
-  const [downloading, setDownloading] = useState(false);
 
   const isMaterial = assignment.category === 'material';
   const isStudy = isMaterial && assignment.source_type === 'study';
@@ -58,30 +57,6 @@ export const AssignmentDetailModal: React.FC<Props> = ({
       setError(err?.message || 'Failed to open study.');
     } finally {
       setOpeningStudy(false);
-    }
-  }
-
-  // ── Upload: download file ──────────────────────────────────────────────
-  async function handleDownload() {
-    if (downloading) return;
-    setDownloading(true);
-    setError('');
-    try {
-      const url = downloadMaterialUrl(classroomId, assignment.id);
-      const response = await fetch(url, { credentials: 'include' });
-      if (!response.ok) throw new Error('Download failed');
-      const blob = await response.blob();
-      const ref = parseSourceRef(assignment.source_ref);
-      const filename = ref?.name || 'download';
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to download file.');
-    } finally {
-      setDownloading(false);
     }
   }
 
@@ -243,14 +218,14 @@ export const AssignmentDetailModal: React.FC<Props> = ({
               {/* Upload material */}
               {isUpload && uploadRef && (
                 <div
-                  onClick={handleDownload}
+                  onClick={() => window.open(downloadMaterialUrl(classroomId, assignment.id, true), '_blank')}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '0.7rem',
                     background: 'var(--cl-surface, #f8fafc)',
                     border: '1.5px solid var(--cl-border, #e2e8f0)',
                     borderRadius: 10,
                     padding: '0.85rem 1rem',
-                    cursor: downloading ? 'wait' : 'pointer',
+                    cursor: 'pointer',
                     transition: 'border-color 0.15s',
                   }}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--cl-accent, #3b82f6)')}
@@ -262,11 +237,11 @@ export const AssignmentDetailModal: React.FC<Props> = ({
                       {uploadRef.name || 'Attached file'}
                     </p>
                     <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: 'var(--cl-text-muted)' }}>
-                      {uploadRef.size != null ? formatSize(uploadRef.size) : 'Click to download'}
+                      {uploadRef.size != null ? formatSize(uploadRef.size) : 'Click to preview'}
                     </p>
                   </div>
                   <span style={{ fontSize: '0.85rem', color: 'var(--cl-accent, #3b82f6)', fontWeight: 600, flexShrink: 0 }}>
-                    {downloading ? 'Downloading…' : 'Download →'}
+                    Open →
                   </span>
                 </div>
               )}

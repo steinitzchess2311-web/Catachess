@@ -234,7 +234,7 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
                           {s.username?.[0]?.toUpperCase()}
                         </div>
                         <span style={{ flex: 1, fontSize: '0.85rem', fontWeight: 500 }}>{s.username}</span>
-                        <StatusBadge status={s.status as any} />
+                        <StatusBadge status={s.status as any} isMaterial={isMaterial} />
                         {s.score != null && (
                           <span style={{ fontSize: '0.82rem', color: 'var(--cl-text-secondary)', minWidth: 40, textAlign: 'right' }}>
                             {Math.round(s.score * 100)}%

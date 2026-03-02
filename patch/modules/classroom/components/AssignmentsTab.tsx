@@ -285,7 +285,7 @@ const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, o
         {!isTeacher && (
           <>
             {a.my_submission ? (
-              <StatusBadge status={a.my_submission.status} />
+              <StatusBadge status={a.my_submission.status} isMaterial={a.category === 'material'} />
             ) : (
               <span className="cl-status-badge cl-status-badge--not_started">Not Started</span>
             )}

@@ -1,7 +1,7 @@
 import React from 'react';
 import type { SubmissionStatus } from '../types';
 
-interface Props { status: SubmissionStatus; }
+interface Props { status: SubmissionStatus; isMaterial?: boolean; }
 
 const LABELS: Record<SubmissionStatus, string> = {
   submitted:   'Submitted',
@@ -10,8 +10,15 @@ const LABELS: Record<SubmissionStatus, string> = {
   overdue:     'Overdue',
 };
 
-export const StatusBadge: React.FC<Props> = ({ status }) => (
+const MATERIAL_LABELS: Record<SubmissionStatus, string> = {
+  submitted:   'Finished',
+  in_progress: 'In Progress',
+  not_started: 'Not Started',
+  overdue:     'Overdue',
+};
+
+export const StatusBadge: React.FC<Props> = ({ status, isMaterial }) => (
   <span className={`cl-status-badge cl-status-badge--${status}`}>
-    {LABELS[status]}
+    {(isMaterial ? MATERIAL_LABELS : LABELS)[status]}
   </span>
 );

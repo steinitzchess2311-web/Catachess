@@ -138,7 +138,7 @@ export const StudentOverview: React.FC<StudentOverviewProps> = ({ classroom, foc
                     {loadingDetail === item.assignment_id ? (
                       <span className="cl-status-badge">Loading…</span>
                     ) : (
-                      <StatusBadge status={item.my_status as any} />
+                      <StatusBadge status={item.my_status as any} isMaterial={item.category === 'material'} />
                     )}
                   </div>
                 </div>

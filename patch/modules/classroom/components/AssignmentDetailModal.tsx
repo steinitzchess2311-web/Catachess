@@ -20,9 +20,24 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function parseSourceRef(ref: string | null | undefined): { key?: string; name?: string; size?: number; content_type?: string } | null {
-  if (!ref) return null;
-  try { return JSON.parse(ref); } catch { return null; }
+interface UploadEntry { key: string; name: string; size?: number; content_type?: string }
+
+function parseSourceRef(ref: string | null | undefined): { study_id?: string; uploads: UploadEntry[] } {
+  if (!ref) return { uploads: [] };
+  try {
+    const parsed = JSON.parse(ref);
+    // New multi-upload format: { study_id?, uploads: [...] }
+    if (parsed.uploads) return { study_id: parsed.study_id, uploads: parsed.uploads };
+    // Legacy single-upload format: { key, name, size, content_type }
+    if (parsed.key) return { uploads: [parsed as UploadEntry] };
+    // Study-only format: { study_id }
+    if (parsed.study_id) return { study_id: parsed.study_id, uploads: [] };
+    // Plain string study_id (oldest format)
+    return { uploads: [] };
+  } catch {
+    // source_ref is a plain study ID string
+    return { study_id: ref, uploads: [] };
+  }
 }
 
 export const AssignmentDetailModal: React.FC<Props> = ({
@@ -37,13 +52,12 @@ export const AssignmentDetailModal: React.FC<Props> = ({
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [openingStudy, setOpeningStudy] = useState(false);
-  const [previewing, setPreviewing] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  const [busyKey, setBusyKey] = useState<string | null>(null); // key of file being previewed/downloaded
 
   const isMaterial = assignment.category === 'material';
-  const isStudy = isMaterial && assignment.source_type === 'study';
-  const isUpload = isMaterial && assignment.source_type === 'upload';
-  const uploadRef = isUpload ? parseSourceRef(assignment.source_ref) : null;
+  const sourceInfo = isMaterial ? parseSourceRef(assignment.source_ref) : { uploads: [] };
+  const hasStudy = isMaterial && (assignment.source_type === 'study' || !!sourceInfo.study_id);
+  const uploads = sourceInfo.uploads;
 
   // ── Study: call open-material API → share ACL → open new tab ──────────
   async function handleOpenStudy() {
@@ -63,45 +77,42 @@ export const AssignmentDetailModal: React.FC<Props> = ({
   }
 
   // ── Upload: preview in new window (fetch with auth → blob URL) ───────
-  async function handlePreview() {
-    if (previewing) return;
-    setPreviewing(true);
+  async function handlePreview(upload: UploadEntry) {
+    if (busyKey) return;
+    setBusyKey(upload.key);
     setError('');
     try {
-      const url = downloadMaterialUrl(classroomId, assignment.id, true);
+      const url = downloadMaterialUrl(classroomId, assignment.id, { preview: true, fileKey: upload.key });
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Failed to load file');
       const blob = await res.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, '_blank');
+      window.open(URL.createObjectURL(blob), '_blank');
     } catch (err: any) {
       setError(err?.message || 'Failed to preview file.');
     } finally {
-      setPreviewing(false);
+      setBusyKey(null);
     }
   }
 
   // ── Upload: download file ──────────────────────────────────────────────
-  async function handleDownload() {
-    if (downloading) return;
-    setDownloading(true);
+  async function handleDownload(upload: UploadEntry) {
+    if (busyKey) return;
+    setBusyKey(upload.key);
     setError('');
     try {
-      const url = downloadMaterialUrl(classroomId, assignment.id);
+      const url = downloadMaterialUrl(classroomId, assignment.id, { fileKey: upload.key });
       const res = await fetch(url, { credentials: 'include' });
       if (!res.ok) throw new Error('Download failed');
       const blob = await res.blob();
-      const ref = parseSourceRef(assignment.source_ref);
-      const filename = ref?.name || 'download';
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = filename;
+      a.download = upload.name || 'download';
       a.click();
       URL.revokeObjectURL(a.href);
     } catch (err: any) {
       setError(err?.message || 'Failed to download file.');
     } finally {
-      setDownloading(false);
+      setBusyKey(null);
     }
   }
 
@@ -226,79 +237,84 @@ export const AssignmentDetailModal: React.FC<Props> = ({
 
           {/* ── Material section ─────────────────────────────────────────── */}
           {isMaterial && (
-            <div>
-              <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Material</p>
-
-              {/* Study material */}
-              {isStudy && (
-                <div
-                  onClick={handleOpenStudy}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '0.7rem',
-                    background: 'var(--cl-surface, #f8fafc)',
-                    border: '1.5px solid var(--cl-border, #e2e8f0)',
-                    borderRadius: 10,
-                    padding: '0.85rem 1rem',
-                    cursor: openingStudy ? 'wait' : 'pointer',
-                    transition: 'border-color 0.15s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--cl-accent, #3b82f6)')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--cl-border, #e2e8f0)')}
-                >
-                  <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>📖</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>
-                      Workspace Study
-                    </p>
-                    <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: 'var(--cl-text-muted)' }}>
-                      Click to open in new tab
-                    </p>
-                  </div>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--cl-accent, #3b82f6)', fontWeight: 600, flexShrink: 0 }}>
-                    {openingStudy ? 'Opening…' : 'Open →'}
-                  </span>
-                </div>
-              )}
-
-              {/* Upload material */}
-              {isUpload && uploadRef && (
-                <div
-                  onClick={handlePreview}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: '0.7rem',
-                    background: 'var(--cl-surface, #f8fafc)',
-                    border: '1.5px solid var(--cl-border, #e2e8f0)',
-                    borderRadius: 10,
-                    padding: '0.85rem 1rem',
-                    cursor: previewing ? 'wait' : 'pointer',
-                    transition: 'border-color 0.15s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--cl-accent, #3b82f6)')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--cl-border, #e2e8f0)')}
-                >
-                  <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>📎</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {uploadRef.name || 'Attached file'}
-                    </p>
-                    <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: 'var(--cl-text-muted)' }}>
-                      {uploadRef.size != null ? formatSize(uploadRef.size) : 'Click to open'}
-                    </p>
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                    <button
-                      className="cl-btn cl-btn-secondary cl-btn-sm"
-                      onClick={handleDownload}
-                      disabled={downloading}
-                    >
-                      {downloading ? '...' : 'Download'}
-                    </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {/* Study material (top) */}
+              {hasStudy && (
+                <div>
+                  <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Workspace Study</p>
+                  <div
+                    onClick={handleOpenStudy}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.7rem',
+                      background: 'var(--cl-surface, #f8fafc)',
+                      border: '1.5px solid var(--cl-border, #e2e8f0)',
+                      borderRadius: 10,
+                      padding: '0.85rem 1rem',
+                      cursor: openingStudy ? 'wait' : 'pointer',
+                      transition: 'border-color 0.15s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--cl-accent, #3b82f6)')}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--cl-border, #e2e8f0)')}
+                  >
+                    <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>📖</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>Workspace Study</p>
+                      <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: 'var(--cl-text-muted)' }}>Click to open in new tab</p>
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: 'var(--cl-accent, #3b82f6)', fontWeight: 600, flexShrink: 0 }}>
+                      {openingStudy ? 'Opening…' : 'Open →'}
+                    </span>
                   </div>
                 </div>
               )}
 
-              {/* No source */}
-              {!assignment.source_type && (
+              {/* Uploaded materials (bottom) — only shown when uploads exist */}
+              {uploads.length > 0 && (
+                <div>
+                  <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Uploaded Materials</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {uploads.map((u, i) => (
+                      <div
+                        key={u.key || i}
+                        onClick={() => handlePreview(u)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.7rem',
+                          background: 'var(--cl-surface, #f8fafc)',
+                          border: '1.5px solid var(--cl-border, #e2e8f0)',
+                          borderRadius: 10,
+                          padding: '0.7rem 1rem',
+                          cursor: busyKey === u.key ? 'wait' : 'pointer',
+                          transition: 'border-color 0.15s',
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--cl-accent, #3b82f6)')}
+                        onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--cl-border, #e2e8f0)')}
+                      >
+                        <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>📎</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {u.name || 'Attached file'}
+                          </p>
+                          {u.size != null && (
+                            <p style={{ margin: '2px 0 0', fontSize: '0.72rem', color: 'var(--cl-text-muted)' }}>{formatSize(u.size)}</p>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                          <button
+                            className="cl-btn cl-btn-secondary cl-btn-sm"
+                            onClick={() => handleDownload(u)}
+                            disabled={busyKey === u.key}
+                          >
+                            {busyKey === u.key ? '...' : 'Download'}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* No source at all */}
+              {!hasStudy && uploads.length === 0 && (
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--cl-text-muted)' }}>
                   No material attached.
                 </p>

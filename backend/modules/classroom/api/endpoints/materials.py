@@ -337,15 +337,31 @@ def upload_material(
         logger.exception("Failed to upload material to R2")
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to upload file. Please try again.")
 
-    # Update assignment
-    source_ref_json = json.dumps({
-        "key": key,
-        "name": filename,
-        "size": len(content),
-        "content_type": content_type,
-    })
-    assignment.source_type = "upload"
-    assignment.source_ref = source_ref_json
+    # Update assignment — append to uploads array in source_ref
+    new_upload = {"key": key, "name": filename, "size": len(content), "content_type": content_type}
+
+    # Parse existing source_ref
+    existing_ref = {}
+    if assignment.source_ref:
+        try:
+            existing_ref = json.loads(assignment.source_ref)
+        except (json.JSONDecodeError, TypeError):
+            existing_ref = {}
+
+    # Migrate old single-upload format to new multi-upload format
+    if "key" in existing_ref and "uploads" not in existing_ref:
+        old_upload = {k: existing_ref[k] for k in ("key", "name", "size", "content_type") if k in existing_ref}
+        existing_ref = {"uploads": [old_upload]}
+
+    # Preserve study_id if present
+    uploads = existing_ref.get("uploads", [])
+    uploads.append(new_upload)
+    existing_ref["uploads"] = uploads
+
+    assignment.source_ref = json.dumps(existing_ref)
+    # Set source_type to "upload" if no study, keep "study" if study exists
+    if not existing_ref.get("study_id"):
+        assignment.source_type = "upload"
     db.commit()
 
     return {"ok": True, "name": filename, "size": len(content)}
@@ -360,12 +376,14 @@ def download_material(
     classroom_id: uuid.UUID,
     assignment_id: uuid.UUID,
     preview: bool = False,
+    file_key: str = "",
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
-    Download or preview the uploaded material file. Any classroom member.
-    Pass ?preview=1 to open inline (images, PDF, text) instead of downloading.
+    Download or preview an uploaded material file. Any classroom member.
+    Pass ?preview=1 to open inline. Pass ?file_key=... to select a specific file
+    from multi-upload assignments.
     """
     classroom = _get_classroom_or_404(db, classroom_id)
     _my_role(classroom, current_user.username, db)  # membership check
@@ -380,7 +398,7 @@ def download_material(
     if not assignment:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Assignment not found")
 
-    if assignment.source_type != "upload" or not assignment.source_ref:
+    if not assignment.source_ref:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Assignment has no uploaded material")
 
     try:
@@ -388,9 +406,26 @@ def download_material(
     except (json.JSONDecodeError, TypeError):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Invalid source_ref")
 
-    key = ref.get("key", "")
-    filename = ref.get("name", "download")
-    content_type = ref.get("content_type", "application/octet-stream")
+    # Resolve file info — support both old single-upload and new multi-upload format
+    if "uploads" in ref:
+        uploads = ref["uploads"]
+        if not uploads:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="No uploaded files")
+        if file_key:
+            matched = [u for u in uploads if u.get("key") == file_key]
+            if not matched:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="File not found")
+            target = matched[0]
+        else:
+            target = uploads[0]  # default to first
+        key = target.get("key", "")
+        filename = target.get("name", "download")
+        content_type = target.get("content_type", "application/octet-stream")
+    else:
+        # Legacy single-upload format
+        key = ref.get("key", "")
+        filename = ref.get("name", "download")
+        content_type = ref.get("content_type", "application/octet-stream")
 
     try:
         storage = get_classroom_storage()

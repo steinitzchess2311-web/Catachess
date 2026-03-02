@@ -196,8 +196,13 @@ export const uploadMaterial = async (
   return api.post(`${BASE}/${classroomId}/assignments/${assignmentId}/upload-material`, formData);
 };
 
-export const downloadMaterialUrl = (classroomId: string, assignmentId: string, preview = false): string =>
-  `${BASE}/${classroomId}/assignments/${assignmentId}/download-material${preview ? '?preview=1' : ''}`;
+export const downloadMaterialUrl = (classroomId: string, assignmentId: string, opts?: { preview?: boolean; fileKey?: string }): string => {
+  const params = new URLSearchParams();
+  if (opts?.preview) params.set('preview', '1');
+  if (opts?.fileKey) params.set('file_key', opts.fileKey);
+  const qs = params.toString();
+  return `${BASE}/${classroomId}/assignments/${assignmentId}/download-material${qs ? `?${qs}` : ''}`;
+};
 
 export const shareToTeacher = (
   classroomId: string,

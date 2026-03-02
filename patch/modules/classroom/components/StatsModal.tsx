@@ -10,9 +10,19 @@ interface Props {
   onClose: () => void;
 }
 
-function parseSourceRef(ref: string | null | undefined): { key?: string; name?: string; size?: number; content_type?: string } | null {
-  if (!ref) return null;
-  try { return JSON.parse(ref); } catch { return null; }
+interface UploadEntry { key: string; name: string; size?: number; content_type?: string }
+
+function parseSourceRef(ref: string | null | undefined): { study_id?: string; uploads: UploadEntry[] } {
+  if (!ref) return { uploads: [] };
+  try {
+    const parsed = JSON.parse(ref);
+    if (parsed.uploads) return { study_id: parsed.study_id, uploads: parsed.uploads };
+    if (parsed.key) return { uploads: [parsed as UploadEntry] };
+    if (parsed.study_id) return { study_id: parsed.study_id, uploads: [] };
+    return { uploads: [] };
+  } catch {
+    return { study_id: ref, uploads: [] };
+  }
 }
 
 function formatSize(bytes: number): string {
@@ -29,9 +39,10 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
   const [forksLoading, setForksLoading] = useState(false);
 
   const isMaterial = assignment.category === 'material';
-  const isStudyMaterial = isMaterial && assignment.source_type === 'study';
-  const isUploadMaterial = isMaterial && assignment.source_type === 'upload';
-  const uploadRef = isUploadMaterial ? parseSourceRef(assignment.source_ref) : null;
+  const sourceInfo = isMaterial ? parseSourceRef(assignment.source_ref) : { uploads: [] };
+  const hasStudy = isMaterial && (assignment.source_type === 'study' || !!sourceInfo.study_id);
+  const isStudyMaterial = hasStudy;
+  const uploads = sourceInfo.uploads;
 
   useEffect(() => {
     getAssignmentStats(classroomId, assignment.id)
@@ -76,74 +87,85 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
 
           {/* Material source info — always visible for material assignments */}
           {isMaterial && (
-            <div style={{ marginBottom: '1rem' }}>
-              <p className="cl-section-label" style={{ marginBottom: '0.5rem' }}>Material Source</p>
-              {isUploadMaterial && uploadRef && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '0.6rem',
-                  background: 'var(--cl-bg)',
-                  border: '1px solid var(--cl-border, #e2e8f0)',
-                  borderRadius: 8,
-                  padding: '0.6rem 0.8rem',
-                }}>
-                  <span style={{ fontSize: '1.1rem' }}>📎</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {uploadRef.name || 'Uploaded file'}
-                    </p>
-                    {uploadRef.size != null && (
-                      <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted)' }}>
-                        {formatSize(uploadRef.size)}
-                      </p>
-                    )}
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
-                    <button
-                      className="cl-btn cl-btn-secondary cl-btn-sm"
-                      onClick={async () => {
-                        const url = downloadMaterialUrl(classroomId, assignment.id, true);
-                        const res = await fetch(url, { credentials: 'include' });
-                        if (res.ok) {
-                          const blob = await res.blob();
-                          window.open(URL.createObjectURL(blob), '_blank');
-                        }
-                      }}
-                    >
-                      Open
-                    </button>
-                    <button
-                      className="cl-btn cl-btn-secondary cl-btn-sm"
-                      onClick={async () => {
-                        const url = downloadMaterialUrl(classroomId, assignment.id);
-                        const res = await fetch(url, { credentials: 'include' });
-                        if (res.ok) {
-                          const blob = await res.blob();
-                          const a = document.createElement('a');
-                          a.href = URL.createObjectURL(blob);
-                          a.download = uploadRef?.name || 'download';
-                          a.click();
-                          URL.revokeObjectURL(a.href);
-                        }
-                      }}
-                    >
-                      Download
-                    </button>
+            <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {/* Study section */}
+              {hasStudy && (
+                <div>
+                  <p className="cl-section-label" style={{ marginBottom: '0.4rem' }}>Workspace Study</p>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.6rem',
+                    background: 'var(--cl-bg)',
+                    border: '1px solid var(--cl-border, #e2e8f0)',
+                    borderRadius: 8,
+                    padding: '0.6rem 0.8rem',
+                  }}>
+                    <span style={{ fontSize: '1.1rem' }}>📖</span>
+                    <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 500 }}>Workspace study</p>
                   </div>
                 </div>
               )}
-              {isStudyMaterial && (
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: '0.6rem',
-                  background: 'var(--cl-bg)',
-                  border: '1px solid var(--cl-border, #e2e8f0)',
-                  borderRadius: 8,
-                  padding: '0.6rem 0.8rem',
-                }}>
-                  <span style={{ fontSize: '1.1rem' }}>📖</span>
-                  <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 500 }}>Workspace study</p>
+
+              {/* Uploaded materials section */}
+              {uploads.length > 0 && (
+                <div>
+                  <p className="cl-section-label" style={{ marginBottom: '0.4rem' }}>Uploaded Materials</p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {uploads.map((u, i) => (
+                      <div key={u.key || i} style={{
+                        display: 'flex', alignItems: 'center', gap: '0.6rem',
+                        background: 'var(--cl-bg)',
+                        border: '1px solid var(--cl-border, #e2e8f0)',
+                        borderRadius: 8,
+                        padding: '0.6rem 0.8rem',
+                      }}>
+                        <span style={{ fontSize: '1.1rem' }}>📎</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {u.name || 'Uploaded file'}
+                          </p>
+                          {u.size != null && (
+                            <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted)' }}>{formatSize(u.size)}</p>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                          <button
+                            className="cl-btn cl-btn-secondary cl-btn-sm"
+                            onClick={async () => {
+                              const url = downloadMaterialUrl(classroomId, assignment.id, { preview: true, fileKey: u.key });
+                              const res = await fetch(url, { credentials: 'include' });
+                              if (res.ok) {
+                                const blob = await res.blob();
+                                window.open(URL.createObjectURL(blob), '_blank');
+                              }
+                            }}
+                          >
+                            Open
+                          </button>
+                          <button
+                            className="cl-btn cl-btn-secondary cl-btn-sm"
+                            onClick={async () => {
+                              const url = downloadMaterialUrl(classroomId, assignment.id, { fileKey: u.key });
+                              const res = await fetch(url, { credentials: 'include' });
+                              if (res.ok) {
+                                const blob = await res.blob();
+                                const a = document.createElement('a');
+                                a.href = URL.createObjectURL(blob);
+                                a.download = u.name || 'download';
+                                a.click();
+                                URL.revokeObjectURL(a.href);
+                              }
+                            }}
+                          >
+                            Download
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              {!assignment.source_type && (
+
+              {!hasStudy && uploads.length === 0 && (
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--cl-text-muted)' }}>
                   No material source attached.
                 </p>

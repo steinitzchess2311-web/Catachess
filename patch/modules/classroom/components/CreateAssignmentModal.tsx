@@ -27,7 +27,7 @@ export const CreateAssignmentModal: React.FC<Props> = ({ classroomId, onClose, o
   const [error, setError] = useState('');
 
   // Material-specific state
-  const [materialFile, setMaterialFile] = useState<File | null>(null);
+  const [materialFiles, setMaterialFiles] = useState<File[]>([]);
   const [workspaceSelection, setWorkspaceSelection] = useState<WorkspaceSelection | null>(null);
   const [showWorkspacePicker, setShowWorkspacePicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -51,16 +51,17 @@ export const CreateAssignmentModal: React.FC<Props> = ({ classroomId, onClose, o
       };
 
       if (isMaterial) {
-        // No type field for material
-        if (workspaceSelection) {
-          payload.source_type = 'study';
-          payload.source_ref = workspaceSelection.id;
-        } else if (materialFile) {
-          payload.source_type = 'upload';
-        } else {
+        // No type field for material — both workspace + uploads can coexist
+        if (!workspaceSelection && materialFiles.length === 0) {
           setError('Please select a workspace item or upload a file.');
           setLoading(false);
           return;
+        }
+        if (workspaceSelection) {
+          payload.source_type = 'study';
+          payload.source_ref = JSON.stringify({ study_id: workspaceSelection.id });
+        } else {
+          payload.source_type = 'upload';
         }
       } else {
         payload.type = type;
@@ -68,13 +69,14 @@ export const CreateAssignmentModal: React.FC<Props> = ({ classroomId, onClose, o
 
       const assignment = await createAssignment(classroomId, payload);
 
-      // If file upload, do the second step
-      if (isMaterial && materialFile) {
-        try {
-          await uploadMaterial(classroomId, assignment.id, materialFile);
-        } catch {
-          // Assignment was created but upload failed — still close with success
-          // Teacher can re-upload later
+      // Upload all files (sequential to avoid race on source_ref)
+      if (isMaterial && materialFiles.length > 0) {
+        for (const f of materialFiles) {
+          try {
+            await uploadMaterial(classroomId, assignment.id, f);
+          } catch {
+            // Assignment was created but upload failed — still close with success
+          }
         }
       }
 
@@ -87,16 +89,16 @@ export const CreateAssignmentModal: React.FC<Props> = ({ classroomId, onClose, o
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (file) {
-      setMaterialFile(file);
-      setWorkspaceSelection(null); // clear the other option
+    const files = e.target.files;
+    if (files) {
+      setMaterialFiles(prev => [...prev, ...Array.from(files)]);
     }
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
   }
 
   function handleWorkspaceSelect(node: PickerNode) {
     setWorkspaceSelection({ id: node.id, title: node.title, node_type: node.node_type });
-    setMaterialFile(null); // clear the other option
     setShowWorkspacePicker(false);
   }
 
@@ -170,105 +172,98 @@ export const CreateAssignmentModal: React.FC<Props> = ({ classroomId, onClose, o
               {/* Material source picker */}
               {isMaterial && (
                 <div className="cl-field">
-                  <label className="cl-label">Material Source</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-                    {/* Upload File card */}
-                    <div
-                      onClick={() => fileInputRef.current?.click()}
-                      style={{
-                        border: `1.5px solid ${materialFile ? 'var(--cl-accent, #3b82f6)' : 'var(--cl-border, #e2e8f0)'}`,
-                        borderRadius: 10,
-                        padding: '0.8rem',
-                        cursor: 'pointer',
-                        background: materialFile ? 'var(--cl-accent-light, #eff6ff)' : 'var(--cl-surface, #f8fafc)',
-                        transition: 'border-color 0.15s, background 0.15s',
-                        minHeight: 72,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        style={{ display: 'none' }}
-                        onChange={handleFileSelect}
-                        accept=".pdf,.pgn,.png,.jpg,.jpeg,.gif,.doc,.docx,.ppt,.pptx,.txt,.zip"
-                      />
-                      {materialFile ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <span style={{ fontSize: '1rem' }}>📎</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {materialFile.name}
-                            </p>
-                            <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
-                              {formatSize(materialFile.size)}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={e => { e.stopPropagation(); setMaterialFile(null); }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: 'var(--cl-text-muted)', padding: 0 }}
-                          >×</button>
-                        </div>
-                      ) : (
-                        <>
-                          <p style={{ margin: '0 0 2px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--cl-text)' }}>
-                            Upload File
+                  <label className="cl-label">Workspace Study</label>
+                  {/* Workspace card */}
+                  <div
+                    onClick={() => setShowWorkspacePicker(true)}
+                    style={{
+                      border: `1.5px solid ${workspaceSelection ? 'var(--cl-accent, #3b82f6)' : 'var(--cl-border, #e2e8f0)'}`,
+                      borderRadius: 10,
+                      padding: '0.8rem',
+                      cursor: 'pointer',
+                      background: workspaceSelection ? 'var(--cl-accent-light, #eff6ff)' : 'var(--cl-surface, #f8fafc)',
+                      transition: 'border-color 0.15s, background 0.15s',
+                      minHeight: 56,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {workspaceSelection ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span style={{ fontSize: '1rem' }}>{workspaceSelection.node_type === 'folder' ? '📁' : '📖'}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {workspaceSelection.title}
                           </p>
                           <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
-                            PDF, PGN, images, docs…
+                            {workspaceSelection.node_type === 'folder' ? 'Folder' : 'Study'}
                           </p>
-                        </>
-                      )}
-                    </div>
-
-                    {/* Workspace card */}
-                    <div
-                      onClick={() => setShowWorkspacePicker(true)}
-                      style={{
-                        border: `1.5px solid ${workspaceSelection ? 'var(--cl-accent, #3b82f6)' : 'var(--cl-border, #e2e8f0)'}`,
-                        borderRadius: 10,
-                        padding: '0.8rem',
-                        cursor: 'pointer',
-                        background: workspaceSelection ? 'var(--cl-accent-light, #eff6ff)' : 'var(--cl-surface, #f8fafc)',
-                        transition: 'border-color 0.15s, background 0.15s',
-                        minHeight: 72,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      {workspaceSelection ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <span style={{ fontSize: '1rem' }}>{workspaceSelection.node_type === 'folder' ? '📁' : '📖'}</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {workspaceSelection.title}
-                            </p>
-                            <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
-                              {workspaceSelection.node_type === 'folder' ? 'Folder' : 'Study'}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={e => { e.stopPropagation(); setWorkspaceSelection(null); }}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--cl-accent)', padding: 0, fontWeight: 600 }}
-                          >Change</button>
                         </div>
-                      ) : (
-                        <>
-                          <p style={{ margin: '0 0 2px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--cl-text)' }}>
-                            Select from Workspace
-                          </p>
-                          <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
-                            Study or folder
-                          </p>
-                        </>
-                      )}
-                    </div>
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); setWorkspaceSelection(null); }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--cl-accent)', padding: 0, fontWeight: 600 }}
+                        >Change</button>
+                      </div>
+                    ) : (
+                      <>
+                        <p style={{ margin: '0 0 2px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--cl-text)' }}>
+                          Select from Workspace
+                        </p>
+                        <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
+                          Study or folder (optional)
+                        </p>
+                      </>
+                    )}
                   </div>
+
+                  {/* Uploaded files section */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={handleFileSelect}
+                    accept=".pdf,.pgn,.png,.jpg,.jpeg,.gif,.doc,.docx,.ppt,.pptx,.txt,.zip"
+                  />
+                  {materialFiles.length > 0 && (
+                    <div style={{ marginTop: '0.6rem' }}>
+                      <p style={{ margin: '0 0 0.4rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        Uploaded Materials
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {materialFiles.map((f, i) => (
+                          <div key={i} style={{
+                            display: 'flex', alignItems: 'center', gap: '0.4rem',
+                            background: 'var(--cl-surface, #f8fafc)',
+                            border: '1px solid var(--cl-border, #e2e8f0)',
+                            borderRadius: 8,
+                            padding: '0.45rem 0.6rem',
+                          }}>
+                            <span style={{ fontSize: '0.9rem' }}>📎</span>
+                            <p style={{ margin: 0, flex: 1, fontSize: '0.8rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {f.name}
+                            </p>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--cl-text-muted)' }}>{formatSize(f.size)}</span>
+                            <button
+                              type="button"
+                              onClick={() => setMaterialFiles(prev => prev.filter((_, idx) => idx !== i))}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: 'var(--cl-text-muted)', padding: 0, lineHeight: 1 }}
+                            >×</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    className="cl-btn cl-btn-secondary cl-btn-sm"
+                    style={{ marginTop: '0.5rem' }}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    + Add File{materialFiles.length > 0 ? 's' : ''}
+                  </button>
                 </div>
               )}
 

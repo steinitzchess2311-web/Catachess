@@ -62,7 +62,7 @@ def get_group_messages(
             group_id=str(m.group_id),
             sender_id=str(m.sender_id),
             sender_name=m.sender_name,
-            content=ANNOUNCEMENT_PLACEHOLDER if m.is_broadcast else m.content,
+            content=f"{ANNOUNCEMENT_PLACEHOLDER}\n{m.content}" if m.is_broadcast else m.content,
             created_at=m.created_at,
         )
         for m in msgs

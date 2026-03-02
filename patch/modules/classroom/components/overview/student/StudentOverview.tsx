@@ -1,10 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { getMyTodo } from '../../../api';
-import type { Classroom, TodoItem } from '../../../types';
+import { getMyTodo, getAssignment } from '../../../api';
+import type { Classroom, TodoItem, Assignment } from '../../../types';
 import { WorkspaceShareModal } from '../../WorkspaceShareModal';
+import { AssignmentDetailModal } from '../../AssignmentDetailModal';
 import { StatusBadge } from '../../StatusBadge';
+import { CategoryBadge } from '../../CategoryBadge';
 import { BroadcastBanner } from '../../BroadcastBanner';
-import { formatDue } from '../../../utils';
+import { formatDue, dueCssModifier } from '../../../utils';
 
 interface StudentOverviewProps {
   classroom: Classroom;
@@ -16,6 +18,8 @@ export const StudentOverview: React.FC<StudentOverviewProps> = ({ classroom, foc
   const [loading, setLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareSuccessMsg, setShareSuccessMsg] = useState<string | null>(null);
+  const [detailTarget, setDetailTarget] = useState<Assignment | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState<string | null>(null);
   const tasksRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -37,6 +41,19 @@ export const StudentOverview: React.FC<StudentOverviewProps> = ({ classroom, foc
     if (!focusTasksSignal || !tasksRef.current) return;
     tasksRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [focusTasksSignal]);
+
+  async function handleOpenTask(item: TodoItem) {
+    if (loadingDetail) return;
+    setLoadingDetail(item.assignment_id);
+    try {
+      const full = await getAssignment(classroom.id, item.assignment_id);
+      setDetailTarget(full);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingDetail(null);
+    }
+  }
 
   const overdueCount = useMemo(() => todo.filter(t => t.urgency === 'overdue').length, [todo]);
   const dueSoonCount = useMemo(() => todo.filter(t => t.urgency === 'due_soon').length, [todo]);
@@ -90,22 +107,69 @@ export const StudentOverview: React.FC<StudentOverviewProps> = ({ classroom, foc
             <p className="cl-empty__sub">No pending tasks in this class.</p>
           </div>
         ) : (
-          <div className="cl-todo-list">
-            {todo.map(item => (
-              <div key={item.assignment_id} className={`cl-todo-item cl-todo-item--${item.urgency}`}>
-                <div className={`cl-urgency-dot cl-urgency-dot--${item.urgency}`} />
-                <div className="cl-todo-item__body">
-                  <p className="cl-todo-item__title">{item.title}</p>
-                  <p className="cl-todo-item__sub">
-                    {item.due_date ? `Due ${formatDue(item.due_date)}` : 'No due date'}
-                  </p>
+          <div className="cl-asgn-list">
+            {todo.map(item => {
+              const dueModifier = item.due_date ? dueCssModifier(item.due_date) : 'normal';
+              const isOverdue = item.due_date ? new Date(item.due_date) < new Date() : false;
+              return (
+                <div
+                  key={item.assignment_id}
+                  className="cl-asgn-card"
+                  onClick={() => handleOpenTask(item)}
+                  style={{ cursor: 'pointer' }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e => e.key === 'Enter' && handleOpenTask(item)}
+                >
+                  <div className="cl-asgn-card__left">
+                    <span className="cl-asgn-card__title">{item.title}</span>
+                    <div className="cl-asgn-card__sub">
+                      <CategoryBadge category={item.category} />
+                      {item.due_date ? (
+                        <span className={`cl-asgn-card__due cl-asgn-card__due--${dueModifier}`}>
+                          {isOverdue ? 'Was due' : 'Due'} {formatDue(item.due_date)}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.76rem', color: 'var(--cl-text-muted)' }}>No due date</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="cl-asgn-card__right">
+                    {loadingDetail === item.assignment_id ? (
+                      <span className="cl-status-badge">Loading…</span>
+                    ) : (
+                      <StatusBadge status={item.my_status as any} />
+                    )}
+                  </div>
                 </div>
-                <StatusBadge status={item.my_status as any} />
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
+
+      {detailTarget && (
+        <AssignmentDetailModal
+          classroomId={classroom.id}
+          assignment={detailTarget}
+          onClose={() => setDetailTarget(null)}
+          onSubmitted={() => {
+            setDetailTarget(null);
+            // Refresh todo list
+            getMyTodo()
+              .then(all =>
+                setTodo(
+                  all.filter(t =>
+                    !t.classroom_id
+                      ? t.classroom_name === classroom.name
+                      : t.classroom_id === classroom.id,
+                  ),
+                ),
+              )
+              .catch(() => {});
+          }}
+        />
+      )}
 
       {showShareModal && (
         <WorkspaceShareModal

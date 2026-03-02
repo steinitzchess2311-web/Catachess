@@ -45,7 +45,7 @@ export interface Assignment {
   title: string;
   description?: string;
   category: AssignmentCategory;
-  type: AssignmentType;
+  type?: AssignmentType | null;
   source_type?: 'study' | 'lichess' | 'upload' | null;
   source_ref?: string | null;
   due_date: string | null;
@@ -70,7 +70,7 @@ export interface AssignmentUpdatePayload {
 
 export interface AssignmentCreatePayload {
   category: AssignmentCategory;
-  type: AssignmentType;
+  type?: AssignmentType | null;
   title: string;
   description?: string;
   source_type?: 'study' | 'lichess' | 'upload' | null;

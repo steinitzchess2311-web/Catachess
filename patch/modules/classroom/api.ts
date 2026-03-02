@@ -186,6 +186,19 @@ export const listForks = (
 
 // ─── Workspace Share ──────────────────────────────────────────────────────────
 
+export const uploadMaterial = async (
+  classroomId: string,
+  assignmentId: string,
+  file: File,
+): Promise<{ ok: boolean; name: string; size: number }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return api.post(`${BASE}/${classroomId}/assignments/${assignmentId}/upload-material`, formData);
+};
+
+export const downloadMaterialUrl = (classroomId: string, assignmentId: string): string =>
+  `${BASE}/${classroomId}/assignments/${assignmentId}/download-material`;
+
 export const shareToTeacher = (
   classroomId: string,
   nodeId: string,

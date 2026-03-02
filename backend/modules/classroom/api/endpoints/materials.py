@@ -1,12 +1,17 @@
 """
-Material fork endpoints
-=======================
-POST  /classrooms/{id}/assignments/{aid}/open-material   Student opens material → fork
-GET   /classrooms/{id}/assignments/{aid}/forks            Teacher views all forks
+Material fork endpoints + file upload/download
+===============================================
+POST  /classrooms/{id}/assignments/{aid}/open-material    Student opens material → fork
+GET   /classrooms/{id}/assignments/{aid}/forks             Teacher views all forks
+POST  /classrooms/{id}/assignments/{aid}/upload-material   Upload file to R2 (teacher+)
+GET   /classrooms/{id}/assignments/{aid}/download-material Stream file from R2 (any member)
 """
+import json
+import logging
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi.responses import Response
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -18,7 +23,11 @@ from modules.classroom.db.models.member import ClassroomMember
 from modules.classroom.db.models.assignment import Assignment
 from modules.classroom.db.models.material_fork import MaterialFork
 from modules.classroom.services import workspace_sync
+from modules.classroom.storage.client import get_classroom_storage
+from modules.classroom.storage.keys import material_key
 from models.user import User
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["classroom-materials"])
 
@@ -214,3 +223,139 @@ def list_forks(
         )
         for f in forks
     ]
+
+
+# ── Upload Material ──────────────────────────────────────────────────────────
+
+_MAX_UPLOAD_SIZE = 50 * 1024 * 1024  # 50 MB
+_ALLOWED_EXTENSIONS = {
+    ".pdf", ".pgn", ".png", ".jpg", ".jpeg", ".gif",
+    ".doc", ".docx", ".ppt", ".pptx", ".txt", ".zip",
+}
+
+
+@router.post(
+    "/classrooms/{classroom_id}/assignments/{assignment_id}/upload-material",
+    status_code=200,
+)
+def upload_material(
+    classroom_id: uuid.UUID,
+    assignment_id: uuid.UUID,
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Upload a file as material for an assignment. Teacher+ only.
+    Stores to R2 and updates assignment source_type/source_ref.
+    """
+    classroom = _get_classroom_or_404(db, classroom_id)
+    role = _my_role(classroom, current_user.username, db)
+    if role not in ("owner", "teacher"):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, detail="Teacher role required")
+
+    assignment = db.execute(
+        select(Assignment).where(
+            Assignment.id == assignment_id,
+            Assignment.classroom_id == classroom_id,
+            Assignment.deleted_at.is_(None),
+        )
+    ).scalar_one_or_none()
+    if not assignment:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Assignment not found")
+
+    # Validate filename extension
+    filename = file.filename or "upload"
+    ext = ""
+    if "." in filename:
+        ext = "." + filename.rsplit(".", 1)[1].lower()
+    if ext not in _ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail=f"File type '{ext}' not allowed. Allowed: {', '.join(sorted(_ALLOWED_EXTENSIONS))}",
+        )
+
+    # Read file content with size check
+    content = file.file.read()
+    if len(content) > _MAX_UPLOAD_SIZE:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            detail=f"File too large. Maximum size is {_MAX_UPLOAD_SIZE // (1024*1024)} MB.",
+        )
+
+    # Upload to R2
+    key = material_key(str(classroom_id), str(assignment_id), filename)
+    content_type = file.content_type or "application/octet-stream"
+
+    try:
+        storage = get_classroom_storage()
+        storage.put_object(key, content, content_type=content_type)
+    except Exception:
+        logger.exception("Failed to upload material to R2")
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to upload file. Please try again.")
+
+    # Update assignment
+    source_ref_json = json.dumps({
+        "key": key,
+        "name": filename,
+        "size": len(content),
+        "content_type": content_type,
+    })
+    assignment.source_type = "upload"
+    assignment.source_ref = source_ref_json
+    db.commit()
+
+    return {"ok": True, "name": filename, "size": len(content)}
+
+
+# ── Download Material ────────────────────────────────────────────────────────
+
+@router.get(
+    "/classrooms/{classroom_id}/assignments/{assignment_id}/download-material",
+)
+def download_material(
+    classroom_id: uuid.UUID,
+    assignment_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Download the uploaded material file. Any classroom member.
+    """
+    classroom = _get_classroom_or_404(db, classroom_id)
+    _my_role(classroom, current_user.username, db)  # membership check
+
+    assignment = db.execute(
+        select(Assignment).where(
+            Assignment.id == assignment_id,
+            Assignment.classroom_id == classroom_id,
+            Assignment.deleted_at.is_(None),
+        )
+    ).scalar_one_or_none()
+    if not assignment:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Assignment not found")
+
+    if assignment.source_type != "upload" or not assignment.source_ref:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Assignment has no uploaded material")
+
+    try:
+        ref = json.loads(assignment.source_ref)
+    except (json.JSONDecodeError, TypeError):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, detail="Invalid source_ref")
+
+    key = ref.get("key", "")
+    filename = ref.get("name", "download")
+    content_type = ref.get("content_type", "application/octet-stream")
+
+    try:
+        storage = get_classroom_storage()
+        data = storage.get_object(key)
+    except Exception:
+        logger.exception("Failed to download material from R2")
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Failed to retrieve file.")
+
+    return Response(
+        content=data,
+        media_type=content_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

@@ -447,6 +447,28 @@ def _migrate_material_forks() -> None:
 # ── END TEMPORARY ─────────────────────────────────────────────────────────────
 
 
+# ── TEMPORARY: Make assignments.type nullable in classroom DB ─────────────────
+def _migrate_assignment_type_nullable() -> None:
+    import os
+    from sqlalchemy import create_engine, text
+
+    url = os.getenv("CLASSROOM_DATABASE")
+    if not url:
+        logger.warning("CLASSROOM_DATABASE not set — skipping assignment type migration")
+        return
+    try:
+        engine = create_engine(url, pool_pre_ping=True)
+        with engine.begin() as conn:
+            conn.execute(text(
+                "ALTER TABLE assignments ALTER COLUMN type DROP NOT NULL"
+            ))
+        logger.info("✅ assignments.type is now nullable")
+    except Exception as e:
+        # Column might already be nullable — that's fine
+        logger.info(f"assignments.type nullable migration: {e}")
+# ── END TEMPORARY ─────────────────────────────────────────────────────────────
+
+
 async def _presence_cleanup_loop() -> None:
     import os
 
@@ -561,6 +583,10 @@ async def lifespan(app: FastAPI):
 
     # TEMPORARY: create material_forks table in classroom DB
     await asyncio.to_thread(_migrate_material_forks)
+    # END TEMPORARY
+
+    # TEMPORARY: make assignments.type nullable in classroom DB
+    await asyncio.to_thread(_migrate_assignment_type_nullable)
     # END TEMPORARY
 
     # Initialize MongoDB cache

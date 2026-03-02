@@ -35,7 +35,7 @@ _VALID_SOURCE_TYPES = {"study", "lichess", "upload"}
 
 class AssignmentCreate(BaseModel):
     category: str = Field(..., pattern="^(material|assignment|exam)$")
-    type: str
+    type: Optional[str] = None
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
     source_type: Optional[str] = None
@@ -47,10 +47,18 @@ class AssignmentCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_type_for_category(self) -> "AssignmentCreate":
-        allowed = _VALID_TYPES.get(self.category, set())
-        if self.type not in allowed:
+        # type is optional for material category; required for others
+        if self.type is not None:
+            allowed = _VALID_TYPES.get(self.category, set())
+            if self.type not in allowed:
+                raise ValueError(
+                    f"type '{self.type}' is not valid for category '{self.category}'. "
+                    f"Allowed: {sorted(allowed)}"
+                )
+        elif self.category != "material":
+            allowed = _VALID_TYPES.get(self.category, set())
             raise ValueError(
-                f"type '{self.type}' is not valid for category '{self.category}'. "
+                f"type is required for category '{self.category}'. "
                 f"Allowed: {sorted(allowed)}"
             )
         if self.source_type and self.source_type not in _VALID_SOURCE_TYPES:
@@ -73,7 +81,7 @@ class AssignmentResponse(BaseModel):
     classroom_id: str
     created_by: str
     category: str
-    type: str
+    type: Optional[str]
     title: str
     description: Optional[str]
     source_type: Optional[str]
@@ -92,7 +100,7 @@ class AssignmentListItem(BaseModel):
     id: str
     title: str
     category: str
-    type: str
+    type: Optional[str]
     due_date: Optional[datetime]
     created_at: datetime
     # Student view

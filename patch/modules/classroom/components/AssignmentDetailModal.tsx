@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { upsertSubmission, getMySubmission, openMaterial } from '../api';
+import { upsertSubmission, getMySubmission, openMaterial, downloadMaterialUrl } from '../api';
+import { api } from '@ui/assets/api';
 import type { Assignment, Submission } from '../types';
 import { CategoryBadge } from './CategoryBadge';
 import { StatusBadge } from './StatusBadge';
@@ -13,6 +14,17 @@ interface Props {
   assignment: Assignment;
   onClose: () => void;
   onSubmitted: () => void; // refresh the list
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function parseSourceRef(ref: string | null | undefined): { key?: string; name?: string; size?: number; content_type?: string } | null {
+  if (!ref) return null;
+  try { return JSON.parse(ref); } catch { return null; }
 }
 
 export const AssignmentDetailModal: React.FC<Props> = ({
@@ -28,6 +40,7 @@ export const AssignmentDetailModal: React.FC<Props> = ({
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [openingMaterial, setOpeningMaterial] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   async function handleOpenMaterial() {
     if (openingMaterial) return;
@@ -39,6 +52,29 @@ export const AssignmentDetailModal: React.FC<Props> = ({
       setError(err?.message || 'Failed to open material.');
     } finally {
       setOpeningMaterial(false);
+    }
+  }
+
+  async function handleDownload() {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const url = downloadMaterialUrl(classroomId, assignment.id);
+      // Use a hidden link to trigger the download via the authenticated API
+      const response = await fetch(url, { credentials: 'include' });
+      if (!response.ok) throw new Error('Download failed');
+      const blob = await response.blob();
+      const ref = parseSourceRef(assignment.source_ref);
+      const filename = ref?.name || 'download';
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (err: any) {
+      setError(err?.message || 'Failed to download file.');
+    } finally {
+      setDownloading(false);
     }
   }
 
@@ -92,6 +128,9 @@ export const AssignmentDetailModal: React.FC<Props> = ({
 
   const dueModifier = assignment.due_date ? dueCssModifier(assignment.due_date) : 'normal';
 
+  // Parse upload source_ref for display
+  const uploadRef = assignment.source_type === 'upload' ? parseSourceRef(assignment.source_ref) : null;
+
   return (
     <div className="cl-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div
@@ -106,9 +145,11 @@ export const AssignmentDetailModal: React.FC<Props> = ({
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
               <CategoryBadge category={assignment.category} />
-              <span style={{ fontSize: '0.75rem', color: 'var(--cl-text-muted)', textTransform: 'capitalize' }}>
-                {assignment.type}
-              </span>
+              {assignment.type && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--cl-text-muted)', textTransform: 'capitalize' }}>
+                  {assignment.type}
+                </span>
+              )}
             </div>
             <h2
               className="cl-modal__title"
@@ -173,6 +214,37 @@ export const AssignmentDetailModal: React.FC<Props> = ({
               <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--cl-text)', whiteSpace: 'pre-wrap' }}>
                 {assignment.description}
               </p>
+            </div>
+          )}
+
+          {/* Upload material info */}
+          {uploadRef && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: '0.6rem',
+              background: 'var(--cl-surface, #f8fafc)',
+              border: '1px solid var(--cl-border, #e2e8f0)',
+              borderRadius: 8,
+              padding: '0.7rem 0.9rem',
+            }}>
+              <span style={{ fontSize: '1.2rem' }}>📎</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {uploadRef.name || 'Attached file'}
+                </p>
+                {uploadRef.size != null && (
+                  <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted)' }}>
+                    {formatSize(uploadRef.size)}
+                  </p>
+                )}
+              </div>
+              <button
+                className="cl-btn cl-btn-primary cl-btn-sm"
+                onClick={handleDownload}
+                disabled={downloading}
+                style={{ flexShrink: 0 }}
+              >
+                {downloading ? 'Downloading…' : 'Download'}
+              </button>
             </div>
           )}
 
@@ -267,7 +339,7 @@ export const AssignmentDetailModal: React.FC<Props> = ({
         <div className="cl-modal__footer">
           <button className="cl-btn cl-btn-secondary" onClick={onClose}>Close</button>
 
-          {/* Material: open fork */}
+          {/* Material: open fork (study source) */}
           {assignment.category === 'material' && assignment.source_type === 'study' && (
             <button
               className="cl-btn cl-btn-primary"
@@ -277,7 +349,16 @@ export const AssignmentDetailModal: React.FC<Props> = ({
               {openingMaterial ? 'Opening…' : 'Open Material'}
             </button>
           )}
-          {assignment.category === 'material' && assignment.source_type !== 'study' && (
+
+          {/* Material: upload — download button is inline above */}
+          {assignment.category === 'material' && assignment.source_type === 'upload' && (
+            <span style={{ fontSize: '0.82rem', color: 'var(--cl-text-muted)', alignSelf: 'center' }}>
+              Reading material — no submission required
+            </span>
+          )}
+
+          {/* Material: no source — fallback message */}
+          {assignment.category === 'material' && !assignment.source_type && (
             <span style={{ fontSize: '0.82rem', color: 'var(--cl-text-muted)', alignSelf: 'center' }}>
               Reading material — no submission required
             </span>

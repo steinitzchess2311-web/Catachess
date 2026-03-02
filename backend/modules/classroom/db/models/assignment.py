@@ -46,7 +46,7 @@ class Assignment(Base):
 
     category: Mapped[str] = mapped_column(String(10), nullable=False)
     # 'material' | 'assignment' | 'exam'
-    type: Mapped[str] = mapped_column(String(20), nullable=False)
+    type: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     # material:   'workspace' | 'upload'
     # assignment: 'tactics' | 'opening' | 'trainer' | 'upload'
     # exam:       'tactics' | 'opening'

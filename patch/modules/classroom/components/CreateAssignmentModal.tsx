@@ -220,11 +220,11 @@ export const CreateAssignmentModal: React.FC<Props> = ({ classroomId, onClose, o
                     <div
                       onClick={() => fileInputRef.current?.click()}
                       style={{
-                        border: `1.5px solid ${materialFiles.length > 0 ? 'var(--cl-accent, #3b82f6)' : 'var(--cl-border, #e2e8f0)'}`,
+                        border: '1.5px solid var(--cl-border, #e2e8f0)',
                         borderRadius: 10,
                         padding: '0.8rem',
                         cursor: 'pointer',
-                        background: materialFiles.length > 0 ? 'var(--cl-accent-light, #eff6ff)' : 'var(--cl-surface, #f8fafc)',
+                        background: 'var(--cl-surface, #f8fafc)',
                         transition: 'border-color 0.15s, background 0.15s',
                         minHeight: 72,
                         display: 'flex',
@@ -232,28 +232,12 @@ export const CreateAssignmentModal: React.FC<Props> = ({ classroomId, onClose, o
                         justifyContent: 'center',
                       }}
                     >
-                      {materialFiles.length > 0 ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <span style={{ fontSize: '1rem' }}>📎</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 600 }}>
-                              {materialFiles.length} file{materialFiles.length > 1 ? 's' : ''} selected
-                            </p>
-                            <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
-                              Click to add more
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <p style={{ margin: '0 0 2px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--cl-text)' }}>
-                            Upload File
-                          </p>
-                          <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
-                            PDF, PGN, images, docs…
-                          </p>
-                        </>
-                      )}
+                      <p style={{ margin: '0 0 2px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--cl-text)' }}>
+                        Upload File
+                      </p>
+                      <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
+                        PDF, PGN, images, docs…
+                      </p>
                     </div>
 
                     {/* Workspace card */}

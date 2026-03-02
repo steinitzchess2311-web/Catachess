@@ -97,13 +97,38 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
                       </p>
                     )}
                   </div>
-                  <button
-                    className="cl-btn cl-btn-secondary cl-btn-sm"
-                    style={{ flexShrink: 0 }}
-                    onClick={() => window.open(downloadMaterialUrl(classroomId, assignment.id, true), '_blank')}
-                  >
-                    Open
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                    <button
+                      className="cl-btn cl-btn-secondary cl-btn-sm"
+                      onClick={async () => {
+                        const url = downloadMaterialUrl(classroomId, assignment.id, true);
+                        const res = await fetch(url, { credentials: 'include' });
+                        if (res.ok) {
+                          const blob = await res.blob();
+                          window.open(URL.createObjectURL(blob), '_blank');
+                        }
+                      }}
+                    >
+                      Open
+                    </button>
+                    <button
+                      className="cl-btn cl-btn-secondary cl-btn-sm"
+                      onClick={async () => {
+                        const url = downloadMaterialUrl(classroomId, assignment.id);
+                        const res = await fetch(url, { credentials: 'include' });
+                        if (res.ok) {
+                          const blob = await res.blob();
+                          const a = document.createElement('a');
+                          a.href = URL.createObjectURL(blob);
+                          a.download = uploadRef?.name || 'download';
+                          a.click();
+                          URL.revokeObjectURL(a.href);
+                        }
+                      }}
+                    >
+                      Download
+                    </button>
+                  </div>
                 </div>
               )}
               {isStudyMaterial && (

@@ -244,13 +244,15 @@ def list_assignments(
             )
             result.append(AssignmentListItem(
                 id=str(a.id), title=a.title, category=a.category,
-                type=a.type, due_date=a.due_date, created_at=a.created_at,
+                type=a.type, source_type=a.source_type, source_ref=a.source_ref,
+                due_date=a.due_date, created_at=a.created_at,
                 my_submission=my_submission,
             ))
         else:
             result.append(AssignmentListItem(
                 id=str(a.id), title=a.title, category=a.category,
-                type=a.type, due_date=a.due_date, created_at=a.created_at,
+                type=a.type, source_type=a.source_type, source_ref=a.source_ref,
+                due_date=a.due_date, created_at=a.created_at,
                 submission_count=sub_counts.get(a.id, 0),
             ))
 

@@ -76,6 +76,12 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
     }
   }
 
+  function refreshList() {
+    listAssignments(classroom.id, filter !== 'all' ? { category: filter } : undefined)
+      .then(setAssignments)
+      .catch(() => {});
+  }
+
   return (
     <div>
       {/* Toolbar */}
@@ -126,6 +132,7 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
               onEdit={() => setEditTarget(a)}
               onDelete={() => handleDelete(a.id, a.title)}
               onOpenMaterial={() => handleOpenMaterial(a)}
+              onViewDetail={() => setDetailTarget(a)}
               openingMaterial={openingMaterialId === a.id}
             />
           ))}
@@ -171,10 +178,7 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
           assignment={detailTarget}
           onClose={() => setDetailTarget(null)}
           onSubmitted={() => {
-            // Refresh list to update submission status
-            listAssignments(classroom.id, filter !== 'all' ? { category: filter } : undefined)
-              .then(setAssignments)
-              .catch(() => {});
+            refreshList();
             setDetailTarget(null);
           }}
         />
@@ -185,6 +189,18 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
 
 // ─── Assignment row ───────────────────────────────────────────────────────────
 
+function materialSourceLabel(a: Assignment): string | null {
+  if (a.category !== 'material') return null;
+  if (a.source_type === 'upload') {
+    try {
+      const ref = JSON.parse(a.source_ref || '{}');
+      return ref.name || 'Uploaded file';
+    } catch { return 'Uploaded file'; }
+  }
+  if (a.source_type === 'study') return 'Workspace study';
+  return null;
+}
+
 interface RowProps {
   assignment: Assignment;
   isTeacher: boolean;
@@ -192,12 +208,14 @@ interface RowProps {
   onEdit: () => void;
   onDelete: () => void;
   onOpenMaterial: () => void;
+  onViewDetail: () => void;
   openingMaterial: boolean;
 }
 
-const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, onEdit, onDelete, onOpenMaterial, openingMaterial }) => {
+const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, onEdit, onDelete, onOpenMaterial, onViewDetail, openingMaterial }) => {
   const dueModifier = a.due_date ? dueCssModifier(a.due_date) : 'normal';
   const isOverdue   = a.due_date ? new Date(a.due_date) < new Date() : false;
+  const sourceLabel = materialSourceLabel(a);
 
   return (
     <div
@@ -213,9 +231,16 @@ const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, o
         <span className="cl-asgn-card__title">{a.title}</span>
         <div className="cl-asgn-card__sub">
           <CategoryBadge category={a.category} />
-          <span style={{ fontSize: '0.76rem', color: 'var(--cl-text-muted)', textTransform: 'capitalize' }}>
-            {a.type}
-          </span>
+          {a.type && (
+            <span style={{ fontSize: '0.76rem', color: 'var(--cl-text-muted)', textTransform: 'capitalize' }}>
+              {a.type}
+            </span>
+          )}
+          {sourceLabel && (
+            <span style={{ fontSize: '0.72rem', color: 'var(--cl-text-secondary)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+              {a.source_type === 'upload' ? '📎' : '📖'} {sourceLabel}
+            </span>
+          )}
           {a.due_date ? (
             <span className={`cl-asgn-card__due cl-asgn-card__due--${dueModifier}`}>
               {isOverdue ? 'Was due' : 'Due'} {formatDue(a.due_date)}
@@ -275,7 +300,7 @@ const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, o
           </>
         )}
 
-        {/* Student: submission status + open button */}
+        {/* Student: submission status + action button */}
         {!isTeacher && (
           <>
             {a.my_submission ? (
@@ -283,6 +308,7 @@ const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, o
             ) : (
               <span className="cl-status-badge cl-status-badge--not_started">Not Started</span>
             )}
+            {/* Material: study → fork; upload → open detail for download */}
             {a.category === 'material' && a.source_type === 'study' && (
               <button
                 className="cl-btn cl-btn-primary cl-btn-sm"
@@ -293,6 +319,25 @@ const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, o
                 {openingMaterial ? 'Opening…' : 'Open Material'}
               </button>
             )}
+            {a.category === 'material' && a.source_type === 'upload' && (
+              <button
+                className="cl-btn cl-btn-primary cl-btn-sm"
+                onClick={e => { e.stopPropagation(); onViewDetail(); }}
+                style={{ flexShrink: 0 }}
+              >
+                View Material
+              </button>
+            )}
+            {a.category === 'material' && !a.source_type && (
+              <button
+                className="cl-btn cl-btn-secondary cl-btn-sm"
+                onClick={e => { e.stopPropagation(); onViewDetail(); }}
+                style={{ flexShrink: 0 }}
+              >
+                View
+              </button>
+            )}
+            {/* Non-material: open detail */}
             {a.category !== 'material' && (
               <button
                 className="cl-btn cl-btn-primary cl-btn-sm"

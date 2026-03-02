@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getAssignmentStats, listForks } from '../api';
+import { getAssignmentStats, listForks, downloadMaterialUrl } from '../api';
 import type { AssignmentStats, Assignment, MaterialFork } from '../types';
 import { StatusBadge } from './StatusBadge';
 import { avatarColor } from '../utils';
@@ -10,6 +10,17 @@ interface Props {
   onClose: () => void;
 }
 
+function parseSourceRef(ref: string | null | undefined): { key?: string; name?: string; size?: number; content_type?: string } | null {
+  if (!ref) return null;
+  try { return JSON.parse(ref); } catch { return null; }
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }) => {
   const [stats, setStats] = useState<AssignmentStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -17,7 +28,10 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
   const [forks, setForks] = useState<MaterialFork[]>([]);
   const [forksLoading, setForksLoading] = useState(false);
 
-  const isMaterial = assignment.category === 'material' && assignment.source_type === 'study';
+  const isMaterial = assignment.category === 'material';
+  const isStudyMaterial = isMaterial && assignment.source_type === 'study';
+  const isUploadMaterial = isMaterial && assignment.source_type === 'upload';
+  const uploadRef = isUploadMaterial ? parseSourceRef(assignment.source_ref) : null;
 
   useEffect(() => {
     getAssignmentStats(classroomId, assignment.id)
@@ -27,13 +41,13 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
   }, [classroomId, assignment.id]);
 
   useEffect(() => {
-    if (!isMaterial) return;
+    if (!isStudyMaterial) return;
     setForksLoading(true);
     listForks(classroomId, assignment.id)
       .then(setForks)
       .catch(() => {})
       .finally(() => setForksLoading(false));
-  }, [classroomId, assignment.id, isMaterial]);
+  }, [classroomId, assignment.id, isStudyMaterial]);
 
   return (
     <div className="cl-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -59,6 +73,58 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
           )}
 
           {error && <div className="cl-error-banner">{error}</div>}
+
+          {/* Material source info — always visible for material assignments */}
+          {isMaterial && (
+            <div style={{ marginBottom: '1rem' }}>
+              <p className="cl-section-label" style={{ marginBottom: '0.5rem' }}>Material Source</p>
+              {isUploadMaterial && uploadRef && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '0.6rem',
+                  background: 'var(--cl-bg)',
+                  border: '1px solid var(--cl-border, #e2e8f0)',
+                  borderRadius: 8,
+                  padding: '0.6rem 0.8rem',
+                }}>
+                  <span style={{ fontSize: '1.1rem' }}>📎</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {uploadRef.name || 'Uploaded file'}
+                    </p>
+                    {uploadRef.size != null && (
+                      <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted)' }}>
+                        {formatSize(uploadRef.size)}
+                      </p>
+                    )}
+                  </div>
+                  <a
+                    href={downloadMaterialUrl(classroomId, assignment.id)}
+                    className="cl-btn cl-btn-secondary cl-btn-sm"
+                    style={{ textDecoration: 'none', flexShrink: 0 }}
+                  >
+                    Download
+                  </a>
+                </div>
+              )}
+              {isStudyMaterial && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: '0.6rem',
+                  background: 'var(--cl-bg)',
+                  border: '1px solid var(--cl-border, #e2e8f0)',
+                  borderRadius: 8,
+                  padding: '0.6rem 0.8rem',
+                }}>
+                  <span style={{ fontSize: '1.1rem' }}>📖</span>
+                  <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 500 }}>Workspace study</p>
+                </div>
+              )}
+              {!assignment.source_type && (
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--cl-text-muted)' }}>
+                  No material source attached.
+                </p>
+              )}
+            </div>
+          )}
 
           {stats && (
             <>
@@ -125,8 +191,8 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
             </>
           )}
 
-          {/* Material forks section */}
-          {isMaterial && (
+          {/* Material forks section (study materials only) */}
+          {isStudyMaterial && (
             <div style={{ marginTop: '1.25rem' }}>
               <p className="cl-section-label" style={{ marginBottom: '0.6rem' }}>Student Forks</p>
               {forksLoading ? (

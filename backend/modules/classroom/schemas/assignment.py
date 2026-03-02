@@ -101,6 +101,8 @@ class AssignmentListItem(BaseModel):
     title: str
     category: str
     type: Optional[str]
+    source_type: Optional[str] = None
+    source_ref: Optional[str] = None
     due_date: Optional[datetime]
     created_at: datetime
     # Student view

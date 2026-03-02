@@ -289,14 +289,16 @@ const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, o
             ) : (
               <span className="cl-status-badge cl-status-badge--not_started">Not Started</span>
             )}
-            {/* All types: open detail modal */}
-            <button
-              className="cl-btn cl-btn-primary cl-btn-sm"
-              onClick={e => { e.stopPropagation(); a.category === 'material' ? onViewDetail() : onOpen(); }}
-              style={{ flexShrink: 0 }}
-            >
-              {a.category === 'material' ? 'View' : a.my_submission?.status === 'submitted' ? 'View' : 'Open'}
-            </button>
+            {/* Non-material: explicit action button */}
+            {a.category !== 'material' && (
+              <button
+                className="cl-btn cl-btn-primary cl-btn-sm"
+                onClick={e => { e.stopPropagation(); onOpen(); }}
+                style={{ flexShrink: 0 }}
+              >
+                {a.my_submission?.status === 'submitted' ? 'View' : 'Open'}
+              </button>
+            )}
           </>
         )}
       </div>

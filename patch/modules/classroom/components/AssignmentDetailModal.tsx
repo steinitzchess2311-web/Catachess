@@ -1,9 +1,7 @@
 // ─── AssignmentDetailModal — student view: full details + submission flow ─────
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { upsertSubmission, getMySubmission, openMaterial, downloadMaterialUrl } from '../api';
-import { api } from '@ui/assets/api';
 import type { Assignment, Submission } from '../types';
 import { CategoryBadge } from './CategoryBadge';
 import { StatusBadge } from './StatusBadge';
@@ -13,7 +11,7 @@ interface Props {
   classroomId: string;
   assignment: Assignment;
   onClose: () => void;
-  onSubmitted: () => void; // refresh the list
+  onSubmitted: () => void;
 }
 
 function formatSize(bytes: number): string {
@@ -33,35 +31,43 @@ export const AssignmentDetailModal: React.FC<Props> = ({
   onClose,
   onSubmitted,
 }) => {
-  const navigate = useNavigate();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loadingSubs, setLoadingSubs] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState(false);
-  const [openingMaterial, setOpeningMaterial] = useState(false);
+  const [openingStudy, setOpeningStudy] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  async function handleOpenMaterial() {
-    if (openingMaterial) return;
-    setOpeningMaterial(true);
+  const isMaterial = assignment.category === 'material';
+  const isStudy = isMaterial && assignment.source_type === 'study';
+  const isUpload = isMaterial && assignment.source_type === 'upload';
+  const uploadRef = isUpload ? parseSourceRef(assignment.source_ref) : null;
+
+  // ── Study: call open-material API → share ACL → open new tab ──────────
+  async function handleOpenStudy() {
+    if (openingStudy) return;
+    setOpeningStudy(true);
+    setError('');
     try {
       const res = await openMaterial(classroomId, assignment.id);
       const studyId = res.study_id || res.fork_study_id;
-      navigate(`/workspace/shared/classroom/study/${studyId}?mode=material`);
+      // Open in new browser window — precise navigation to study page
+      window.open(`/workspace/shared/classroom/${studyId}`, '_blank');
     } catch (err: any) {
-      setError(err?.message || 'Failed to open material.');
+      setError(err?.message || 'Failed to open study.');
     } finally {
-      setOpeningMaterial(false);
+      setOpeningStudy(false);
     }
   }
 
+  // ── Upload: download file ──────────────────────────────────────────────
   async function handleDownload() {
     if (downloading) return;
     setDownloading(true);
+    setError('');
     try {
       const url = downloadMaterialUrl(classroomId, assignment.id);
-      // Use a hidden link to trigger the download via the authenticated API
       const response = await fetch(url, { credentials: 'include' });
       if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
@@ -87,12 +93,13 @@ export const AssignmentDetailModal: React.FC<Props> = ({
   const isOverdue = assignment.due_date ? new Date(assignment.due_date) < new Date() : false;
 
   useEffect(() => {
+    if (isMaterial) { setLoadingSubs(false); return; } // materials have no submissions
     setLoadingSubs(true);
     getMySubmission(classroomId, assignment.id)
       .then(setSubmissions)
       .catch(() => setSubmissions([]))
       .finally(() => setLoadingSubs(false));
-  }, [classroomId, assignment.id]);
+  }, [classroomId, assignment.id, isMaterial]);
 
   async function handleSubmit() {
     setSubmitting(true);
@@ -123,14 +130,11 @@ export const AssignmentDetailModal: React.FC<Props> = ({
         submitted_at: null,
       }]);
     } catch {
-      // silent — non-critical
+      // silent
     }
   }
 
   const dueModifier = assignment.due_date ? dueCssModifier(assignment.due_date) : 'normal';
-
-  // Parse upload source_ref for display
-  const uploadRef = assignment.source_type === 'upload' ? parseSourceRef(assignment.source_ref) : null;
 
   return (
     <div className="cl-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
@@ -152,11 +156,7 @@ export const AssignmentDetailModal: React.FC<Props> = ({
                 </span>
               )}
             </div>
-            <h2
-              className="cl-modal__title"
-              id="asgn-detail-title"
-              style={{ fontSize: '1.1rem', marginTop: 2 }}
-            >
+            <h2 className="cl-modal__title" id="asgn-detail-title" style={{ fontSize: '1.1rem', marginTop: 2 }}>
               {assignment.title}
             </h2>
           </div>
@@ -174,34 +174,22 @@ export const AssignmentDetailModal: React.FC<Props> = ({
           <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
             {assignment.due_date && (
               <div>
-                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 3px' }}>
-                  Due
-                </p>
+                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 3px' }}>Due</p>
                 <p className={`cl-asgn-card__due cl-asgn-card__due--${dueModifier}`} style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600 }}>
-                  {new Date(assignment.due_date).toLocaleString(undefined, {
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-                  })}
+                  {new Date(assignment.due_date).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </p>
               </div>
             )}
-            {assignment.time_limit && (
+            {assignment.time_limit != null && assignment.time_limit > 0 && (
               <div>
-                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 3px' }}>
-                  Time Limit
-                </p>
-                <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600 }}>
-                  {Math.floor(assignment.time_limit / 60)} min
-                </p>
+                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 3px' }}>Time Limit</p>
+                <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600 }}>{Math.floor(assignment.time_limit / 60)} min</p>
               </div>
             )}
-            {assignment.max_attempts && (
+            {assignment.max_attempts != null && assignment.max_attempts > 0 && (
               <div>
-                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 3px' }}>
-                  Attempts
-                </p>
-                <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600 }}>
-                  {attemptCount} / {assignment.max_attempts}
-                </p>
+                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 3px' }}>Attempts</p>
+                <p style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600 }}>{attemptCount} / {assignment.max_attempts}</p>
               </div>
             )}
           </div>
@@ -209,164 +197,178 @@ export const AssignmentDetailModal: React.FC<Props> = ({
           {/* Description */}
           {assignment.description && (
             <div>
-              <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>
-                Instructions
-              </p>
+              <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>Instructions</p>
               <p style={{ margin: 0, fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--cl-text)', whiteSpace: 'pre-wrap' }}>
                 {assignment.description}
               </p>
             </div>
           )}
 
-          {/* Upload material info */}
-          {uploadRef && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '0.6rem',
-              background: 'var(--cl-surface, #f8fafc)',
-              border: '1px solid var(--cl-border, #e2e8f0)',
-              borderRadius: 8,
-              padding: '0.7rem 0.9rem',
-            }}>
-              <span style={{ fontSize: '1.2rem' }}>📎</span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {uploadRef.name || 'Attached file'}
+          {/* ── Material section ─────────────────────────────────────────── */}
+          {isMaterial && (
+            <div>
+              <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Material</p>
+
+              {/* Study material */}
+              {isStudy && (
+                <div
+                  onClick={handleOpenStudy}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.7rem',
+                    background: 'var(--cl-surface, #f8fafc)',
+                    border: '1.5px solid var(--cl-border, #e2e8f0)',
+                    borderRadius: 10,
+                    padding: '0.85rem 1rem',
+                    cursor: openingStudy ? 'wait' : 'pointer',
+                    transition: 'border-color 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--cl-accent, #3b82f6)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--cl-border, #e2e8f0)')}
+                >
+                  <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>📖</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>
+                      Workspace Study
+                    </p>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: 'var(--cl-text-muted)' }}>
+                      Click to open in new tab
+                    </p>
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--cl-accent, #3b82f6)', fontWeight: 600, flexShrink: 0 }}>
+                    {openingStudy ? 'Opening…' : 'Open →'}
+                  </span>
+                </div>
+              )}
+
+              {/* Upload material */}
+              {isUpload && uploadRef && (
+                <div
+                  onClick={handleDownload}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '0.7rem',
+                    background: 'var(--cl-surface, #f8fafc)',
+                    border: '1.5px solid var(--cl-border, #e2e8f0)',
+                    borderRadius: 10,
+                    padding: '0.85rem 1rem',
+                    cursor: downloading ? 'wait' : 'pointer',
+                    transition: 'border-color 0.15s',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--cl-accent, #3b82f6)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--cl-border, #e2e8f0)')}
+                >
+                  <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>📎</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {uploadRef.name || 'Attached file'}
+                    </p>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: 'var(--cl-text-muted)' }}>
+                      {uploadRef.size != null ? formatSize(uploadRef.size) : 'Click to download'}
+                    </p>
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--cl-accent, #3b82f6)', fontWeight: 600, flexShrink: 0 }}>
+                    {downloading ? 'Downloading…' : 'Download →'}
+                  </span>
+                </div>
+              )}
+
+              {/* No source */}
+              {!assignment.source_type && (
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--cl-text-muted)' }}>
+                  No material attached.
                 </p>
-                {uploadRef.size != null && (
-                  <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted)' }}>
-                    {formatSize(uploadRef.size)}
+              )}
+            </div>
+          )}
+
+          {/* ── Submission section (non-material only) ───────────────────── */}
+          {!isMaterial && (
+            <>
+              <hr className="cl-divider" style={{ margin: 0 }} />
+
+              <div>
+                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 10px' }}>
+                  My Submissions
+                </p>
+
+                {loadingSubs ? (
+                  <div className="cl-skeleton" style={{ height: 36, borderRadius: 8 }} />
+                ) : submissions.length === 0 ? (
+                  <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--cl-text-secondary)' }}>
+                    Not started yet.
                   </p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {submissions.map((sub, i) => (
+                      <div
+                        key={sub.id || i}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '0.75rem',
+                          background: 'var(--cl-bg)', borderRadius: 8, padding: '0.6rem 0.8rem',
+                        }}
+                      >
+                        <span style={{ fontSize: '0.78rem', color: 'var(--cl-text-muted)', minWidth: 60 }}>
+                          Attempt {sub.attempt}
+                        </span>
+                        <StatusBadge status={sub.status as any} />
+                        {sub.score != null && (
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--cl-accent)' }}>
+                            {Math.round(sub.score * 100)}%
+                          </span>
+                        )}
+                        {sub.submitted_at && (
+                          <span style={{ fontSize: '0.73rem', color: 'var(--cl-text-muted)', marginLeft: 'auto' }}>
+                            {new Date(sub.submitted_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
-              <button
-                className="cl-btn cl-btn-primary cl-btn-sm"
-                onClick={handleDownload}
-                disabled={downloading}
-                style={{ flexShrink: 0 }}
-              >
-                {downloading ? 'Downloading…' : 'Download'}
-              </button>
-            </div>
-          )}
 
-          <hr className="cl-divider" style={{ margin: 0 }} />
+              {/* Overdue warning */}
+              {isOverdue && !alreadySubmitted && (
+                <div className="cl-error-banner">
+                  This assignment is past due. Submitting now will be marked as late.
+                </div>
+              )}
 
-          {/* Submission status */}
-          <div>
-            <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 10px' }}>
-              My Submissions
-            </p>
-
-            {loadingSubs ? (
-              <div className="cl-skeleton" style={{ height: 36, borderRadius: 8 }} />
-            ) : submissions.length === 0 ? (
-              <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--cl-text-secondary)' }}>
-                Not started yet.
-              </p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {submissions.map((sub, i) => (
-                  <div
-                    key={sub.id || i}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      background: 'var(--cl-bg)',
-                      borderRadius: 8,
-                      padding: '0.6rem 0.8rem',
-                    }}
-                  >
-                    <span style={{ fontSize: '0.78rem', color: 'var(--cl-text-muted)', minWidth: 60 }}>
-                      Attempt {sub.attempt}
-                    </span>
-                    <StatusBadge status={sub.status as any} />
-                    {sub.score != null && (
-                      <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--cl-accent)' }}>
-                        {Math.round(sub.score * 100)}%
-                      </span>
-                    )}
-                    {sub.submitted_at && (
-                      <span style={{ fontSize: '0.73rem', color: 'var(--cl-text-muted)', marginLeft: 'auto' }}>
-                        {new Date(sub.submitted_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    )}
+              {/* Confirm submit */}
+              {confirmed && canRetry && !alreadySubmitted && (
+                <div style={{
+                  background: 'var(--cl-accent-light)',
+                  border: '1.5px solid #c7d2fe',
+                  borderRadius: 10,
+                  padding: '1rem 1.1rem',
+                  display: 'flex', flexDirection: 'column', gap: '0.75rem',
+                }}>
+                  <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--cl-accent)', fontWeight: 600 }}>
+                    Ready to submit?
+                  </p>
+                  <p style={{ margin: 0, fontSize: '0.83rem', color: 'var(--cl-text-secondary)' }}>
+                    Once submitted, your attempt will be recorded. Your teacher will be able to see your submission.
+                  </p>
+                  {error && <div className="cl-error-banner">{error}</div>}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button className="cl-btn cl-btn-secondary cl-btn-sm" onClick={() => setConfirmed(false)}>Cancel</button>
+                    <button className="cl-btn cl-btn-primary cl-btn-sm" onClick={handleSubmit} disabled={submitting}>
+                      {submitting ? 'Submitting…' : 'Confirm Submit'}
+                    </button>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Overdue warning */}
-          {isOverdue && !alreadySubmitted && (
-            <div className="cl-error-banner">
-              This assignment is past due. Submitting now will be marked as late.
-            </div>
-          )}
-
-          {/* Confirm submit UI */}
-          {confirmed && canRetry && !alreadySubmitted && (
-            <div style={{
-              background: 'var(--cl-accent-light)',
-              border: '1.5px solid #c7d2fe',
-              borderRadius: 10,
-              padding: '1rem 1.1rem',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.75rem',
-            }}>
-              <p style={{ margin: 0, fontSize: '0.88rem', color: 'var(--cl-accent)', fontWeight: 600 }}>
-                Ready to submit?
-              </p>
-              <p style={{ margin: 0, fontSize: '0.83rem', color: 'var(--cl-text-secondary)' }}>
-                Once submitted, your attempt will be recorded. Your teacher will be able to see your submission.
-              </p>
-              {error && <div className="cl-error-banner">{error}</div>}
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <button className="cl-btn cl-btn-secondary cl-btn-sm" onClick={() => setConfirmed(false)}>
-                  Cancel
-                </button>
-                <button className="cl-btn cl-btn-primary cl-btn-sm" onClick={handleSubmit} disabled={submitting}>
-                  {submitting ? 'Submitting…' : 'Confirm Submit'}
-                </button>
-              </div>
-            </div>
+                </div>
+              )}
+            </>
           )}
 
           {error && !confirmed && <div className="cl-error-banner">{error}</div>}
         </div>
 
-        {/* Footer actions */}
+        {/* Footer */}
         <div className="cl-modal__footer">
           <button className="cl-btn cl-btn-secondary" onClick={onClose}>Close</button>
 
-          {/* Material: open fork (study source) */}
-          {assignment.category === 'material' && assignment.source_type === 'study' && (
-            <button
-              className="cl-btn cl-btn-primary"
-              onClick={handleOpenMaterial}
-              disabled={openingMaterial}
-            >
-              {openingMaterial ? 'Opening…' : 'Open Material'}
-            </button>
-          )}
-
-          {/* Material: upload — download button is inline above */}
-          {assignment.category === 'material' && assignment.source_type === 'upload' && (
-            <span style={{ fontSize: '0.82rem', color: 'var(--cl-text-muted)', alignSelf: 'center' }}>
-              Reading material — no submission required
-            </span>
-          )}
-
-          {/* Material: no source — fallback message */}
-          {assignment.category === 'material' && !assignment.source_type && (
-            <span style={{ fontSize: '0.82rem', color: 'var(--cl-text-muted)', alignSelf: 'center' }}>
-              Reading material — no submission required
-            </span>
-          )}
-
-          {/* Assignment / Exam: submit flow */}
-          {assignment.category !== 'material' && (
+          {/* Non-material: submit flow */}
+          {!isMaterial && (
             <>
               {alreadySubmitted && !canRetry && (
                 <span style={{ fontSize: '0.82rem', color: 'var(--cl-ok)', fontWeight: 600, alignSelf: 'center' }}>
@@ -377,9 +379,7 @@ export const AssignmentDetailModal: React.FC<Props> = ({
                 <button
                   className="cl-btn cl-btn-primary"
                   onClick={() => {
-                    if (!latestSub || latestSub.status === 'submitted') {
-                      handleStartProgress();
-                    }
+                    if (!latestSub || latestSub.status === 'submitted') handleStartProgress();
                     setConfirmed(true);
                   }}
                   disabled={loadingSubs}

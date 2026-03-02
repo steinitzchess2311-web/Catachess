@@ -1,8 +1,8 @@
 // ─── AssignmentsTab ───────────────────────────────────────────────────────────
 
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { listAssignments, deleteAssignment, openMaterial } from '../api';
+
+import { listAssignments, deleteAssignment } from '../api';
 import type { Classroom, Assignment, AssignmentCategory } from '../types';
 import { CategoryBadge } from './CategoryBadge';
 import { StatusBadge } from './StatusBadge';
@@ -35,23 +35,7 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
   const [editTarget, setEditTarget]           = useState<Assignment | null>(null);
   const [detailTarget, setDetailTarget]       = useState<Assignment | null>(null);
 
-  const navigate = useNavigate();
   const isTeacher = classroom.my_role === 'owner' || classroom.my_role === 'teacher';
-  const [openingMaterialId, setOpeningMaterialId] = useState<string | null>(null);
-
-  async function handleOpenMaterial(a: Assignment) {
-    if (openingMaterialId) return;
-    setOpeningMaterialId(a.id);
-    try {
-      const res = await openMaterial(classroom.id, a.id);
-      const studyId = res.study_id || res.fork_study_id;
-      navigate(`/workspace/shared/classroom/study/${studyId}?mode=material`);
-    } catch (err: any) {
-      alert(err?.message || 'Failed to open material. Please try again.');
-    } finally {
-      setOpeningMaterialId(null);
-    }
-  }
 
   useEffect(() => {
     setLoading(true);
@@ -132,9 +116,7 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
               onOpen={() => isTeacher ? setStatsTarget(a) : setDetailTarget(a)}
               onEdit={() => setEditTarget(a)}
               onDelete={() => handleDelete(a.id, a.title)}
-              onOpenMaterial={() => handleOpenMaterial(a)}
               onViewDetail={() => setDetailTarget(a)}
-              openingMaterial={openingMaterialId === a.id}
             />
           ))}
         </div>
@@ -208,12 +190,10 @@ interface RowProps {
   onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
-  onOpenMaterial: () => void;
   onViewDetail: () => void;
-  openingMaterial: boolean;
 }
 
-const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, onEdit, onDelete, onOpenMaterial, onViewDetail, openingMaterial }) => {
+const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, onEdit, onDelete, onViewDetail }) => {
   const dueModifier = a.due_date ? dueCssModifier(a.due_date) : 'normal';
   const isOverdue   = a.due_date ? new Date(a.due_date) < new Date() : false;
   const sourceLabel = materialSourceLabel(a);
@@ -309,45 +289,14 @@ const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, o
             ) : (
               <span className="cl-status-badge cl-status-badge--not_started">Not Started</span>
             )}
-            {/* Material: study → fork; upload → open detail for download */}
-            {a.category === 'material' && a.source_type === 'study' && (
-              <button
-                className="cl-btn cl-btn-primary cl-btn-sm"
-                onClick={e => { e.stopPropagation(); onOpenMaterial(); }}
-                disabled={openingMaterial}
-                style={{ flexShrink: 0 }}
-              >
-                {openingMaterial ? 'Opening…' : 'Open Material'}
-              </button>
-            )}
-            {a.category === 'material' && a.source_type === 'upload' && (
-              <button
-                className="cl-btn cl-btn-primary cl-btn-sm"
-                onClick={e => { e.stopPropagation(); onViewDetail(); }}
-                style={{ flexShrink: 0 }}
-              >
-                View Material
-              </button>
-            )}
-            {a.category === 'material' && !a.source_type && (
-              <button
-                className="cl-btn cl-btn-secondary cl-btn-sm"
-                onClick={e => { e.stopPropagation(); onViewDetail(); }}
-                style={{ flexShrink: 0 }}
-              >
-                View
-              </button>
-            )}
-            {/* Non-material: open detail */}
-            {a.category !== 'material' && (
-              <button
-                className="cl-btn cl-btn-primary cl-btn-sm"
-                onClick={e => { e.stopPropagation(); onOpen(); }}
-                style={{ flexShrink: 0 }}
-              >
-                {a.my_submission?.status === 'submitted' ? 'View' : 'Open'}
-              </button>
-            )}
+            {/* All types: open detail modal */}
+            <button
+              className="cl-btn cl-btn-primary cl-btn-sm"
+              onClick={e => { e.stopPropagation(); a.category === 'material' ? onViewDetail() : onOpen(); }}
+              style={{ flexShrink: 0 }}
+            >
+              {a.category === 'material' ? 'View' : a.my_submission?.status === 'submitted' ? 'View' : 'Open'}
+            </button>
           </>
         )}
       </div>

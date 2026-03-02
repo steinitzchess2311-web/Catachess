@@ -167,17 +167,7 @@ export const ClassroomDetailPage: React.FC = () => {
               >
                 + Create Assignment
               </button>
-            ) : (
-              <button
-                className="cl-btn cl-btn-primary cl-btn-sm"
-                onClick={() => {
-                  setTab('overview');
-                  setFocusTasksSignal(k => k + 1);
-                }}
-              >
-                Continue Tasks
-              </button>
-            )}
+            ) : null}
 
             {isTeacher && (
               <button className="cl-btn cl-btn-secondary cl-btn-sm" onClick={() => setShowBroadcast(true)}>

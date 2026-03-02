@@ -272,41 +272,46 @@ export const CreateAssignmentModal: React.FC<Props> = ({ classroomId, onClose, o
                 </div>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMaterial ? '1fr' : '1fr 1fr 1fr', gap: '0.75rem' }}>
                 <div className="cl-field">
-                  <label className="cl-label" htmlFor="asgn-due">Due date</label>
+                  <label className="cl-label" htmlFor="asgn-due">Due date (optional)</label>
                   <input
                     id="asgn-due"
                     className="cl-input"
                     type="datetime-local"
                     value={dueDate}
+                    min={new Date().toISOString().slice(0, 16)}
                     onChange={e => setDueDate(e.target.value)}
                   />
                 </div>
-                <div className="cl-field">
-                  <label className="cl-label" htmlFor="asgn-attempts">Max attempts</label>
-                  <input
-                    id="asgn-attempts"
-                    className="cl-input"
-                    type="number"
-                    min="1"
-                    placeholder="Unlimited"
-                    value={maxAttempts}
-                    onChange={e => setMaxAttempts(e.target.value)}
-                  />
-                </div>
-                <div className="cl-field">
-                  <label className="cl-label" htmlFor="asgn-timelimit">Time limit (min)</label>
-                  <input
-                    id="asgn-timelimit"
-                    className="cl-input"
-                    type="number"
-                    min="1"
-                    placeholder="None"
-                    value={timeLimit}
-                    onChange={e => setTimeLimit(e.target.value)}
-                  />
-                </div>
+                {!isMaterial && (
+                  <>
+                    <div className="cl-field">
+                      <label className="cl-label" htmlFor="asgn-attempts">Max attempts</label>
+                      <input
+                        id="asgn-attempts"
+                        className="cl-input"
+                        type="number"
+                        min="1"
+                        placeholder="Unlimited"
+                        value={maxAttempts}
+                        onChange={e => setMaxAttempts(e.target.value)}
+                      />
+                    </div>
+                    <div className="cl-field">
+                      <label className="cl-label" htmlFor="asgn-timelimit">Time limit (min)</label>
+                      <input
+                        id="asgn-timelimit"
+                        className="cl-input"
+                        type="number"
+                        min="1"
+                        placeholder="None"
+                        value={timeLimit}
+                        onChange={e => setTimeLimit(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
               {error && <div className="cl-error-banner">{error}</div>}

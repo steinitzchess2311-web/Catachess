@@ -70,12 +70,17 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
   return (
     <div>
       {/* Toolbar */}
-      <div className="cl-section-header" style={{ marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+      <div className="cl-section-header cl-asgn-toolbar">
+        <div className={isTeacher ? 'cl-asgn-filter-row' : 'patch-sidebar-tabs cl-asgn-filter-tabs'}>
           {CATEGORY_FILTERS.map(f => (
             <button
+              type="button"
               key={f.value}
-              className={`cl-btn cl-btn-sm ${filter === f.value ? 'cl-btn-primary' : 'cl-btn-secondary'}`}
+              className={
+                isTeacher
+                  ? `cl-btn cl-btn-sm ${filter === f.value ? 'cl-btn-primary' : 'cl-btn-secondary'}`
+                  : `patch-sidebar-tab${filter === f.value ? ' is-active' : ''}`
+              }
               onClick={() => setFilter(f.value)}
             >
               {f.label}

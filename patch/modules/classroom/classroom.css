@@ -917,6 +917,23 @@
   margin-bottom: 0.85rem;
 }
 
+.cl-asgn-toolbar {
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.cl-asgn-filter-row {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.cl-asgn-filter-tabs {
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
 .cl-section-title {
   font-size: 0.95rem;
   font-weight: 700;
@@ -1083,6 +1100,11 @@
   .cl-overview-stats { gap: 0.6rem; }
   .cl-ov-stat { min-width: 80px; }
   .cl-overview-layout { grid-template-columns: 1fr; }
+  .cl-asgn-filter-tabs {
+    width: 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
 }
 
 /* ── WorkspaceShareModal row hover ───────────────────────────────────────── */

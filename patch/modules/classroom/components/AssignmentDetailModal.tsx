@@ -58,6 +58,16 @@ export const AssignmentDetailModal: React.FC<Props> = ({
   const sourceInfo = isMaterial ? parseSourceRef(assignment.source_ref) : { uploads: [] };
   const hasStudy = isMaterial && (assignment.source_type === 'study' || !!sourceInfo.study_id);
   const uploads = sourceInfo.uploads;
+  const [markedDone, setMarkedDone] = useState(false);
+
+  // ── Auto-mark material as done on first interaction ─────────────────
+  function markMaterialDone() {
+    if (!isMaterial || markedDone) return;
+    setMarkedDone(true);
+    upsertSubmission(classroomId, assignment.id, { status: 'submitted' })
+      .then(() => onSubmitted())
+      .catch(() => {}); // best-effort
+  }
 
   // ── Study: call open-material API → share ACL → open new tab ──────────
   async function handleOpenStudy() {
@@ -69,6 +79,7 @@ export const AssignmentDetailModal: React.FC<Props> = ({
       const studyId = res.study_id || res.fork_study_id;
       // Open in new browser window — precise navigation to study page
       window.open(`/workspace/shared/classroom/${studyId}`, '_blank');
+      markMaterialDone();
     } catch (err: any) {
       setError(err?.message || 'Failed to open study.');
     } finally {
@@ -87,6 +98,7 @@ export const AssignmentDetailModal: React.FC<Props> = ({
       if (!res.ok) throw new Error('Failed to load file');
       const blob = await res.blob();
       window.open(URL.createObjectURL(blob), '_blank');
+      markMaterialDone();
     } catch (err: any) {
       setError(err?.message || 'Failed to preview file.');
     } finally {
@@ -109,6 +121,7 @@ export const AssignmentDetailModal: React.FC<Props> = ({
       a.download = upload.name || 'download';
       a.click();
       URL.revokeObjectURL(a.href);
+      markMaterialDone();
     } catch (err: any) {
       setError(err?.message || 'Failed to download file.');
     } finally {

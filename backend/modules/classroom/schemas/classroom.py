@@ -79,3 +79,8 @@ class BroadcastItem(BaseModel):
     sender_username: str
     content: str
     created_at: datetime
+
+
+class ContactTeacherResponse(BaseModel):
+    chat_type: str   # "conversation" | "group"
+    chat_id: str

@@ -1,6 +1,6 @@
 """
-Classroom endpoints
-===================
+Classroom CRUD endpoints (integration file)
+============================================
 POST   /classrooms                    Create a classroom
 GET    /classrooms                    List my classrooms
 GET    /classrooms/{id}               Classroom detail
@@ -8,21 +8,23 @@ PATCH  /classrooms/{id}               Rename
 DELETE /classrooms/{id}               Soft-delete (owner only)
 POST   /classrooms/{id}/archive       Archive (owner only)
 POST   /classrooms/{id}/unarchive     Restore from archive (owner only)
-GET    /classrooms/{id}/invite        Get current invite code
-POST   /classrooms/{id}/invite/reset  Refresh invite code
-PATCH  /classrooms/{id}/invite        Enable/disable invite code
-POST   /classrooms/join               Join via invite code
-GET    /classrooms/{id}/chat          Get catchat_group_id for frontend routing
-POST   /classrooms/{id}/broadcast     Send announcement via catachat
-GET    /classrooms/{id}/broadcasts    List broadcast messages (any member)
-DELETE /classrooms/{id}/broadcasts/{mid}  Delete a broadcast (teacher+)
+
+Shared helpers exported for use by sibling endpoint modules:
+  _get_classroom_or_404, _my_role, _require_teacher, _require_owner,
+  _member_count, _batch_member_counts, _gen_invite_code, _to_response,
+  _resolve_user_uuid
+
+Related endpoint modules (registered separately in router.py):
+  invites.py      — invite code management + join
+  broadcasts.py   — chat link, broadcast send/list/delete
+  contact.py      — contact-teacher (student→teacher chat)
 """
 import random
 import string
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
@@ -32,8 +34,6 @@ from modules.classroom.db.models.classroom import Classroom
 from modules.classroom.db.models.member import ClassroomMember
 from modules.classroom.schemas.classroom import (
     ClassroomCreate, ClassroomUpdate, ClassroomResponse, ClassroomListItem,
-    InviteToggle, InviteResponse, JoinByCode, ChatLinkResponse,
-    BroadcastCreate, BroadcastResponse, BroadcastItem,
 )
 from modules.classroom.services import catachat_sync, workspace_sync
 from models.user import User
@@ -43,7 +43,8 @@ router = APIRouter(tags=["classroom-classrooms"])
 _INVITE_CHARS = string.ascii_uppercase + string.digits
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── Shared helpers ───────────────────────────────────────────────────────────
+# These are imported by invites.py, broadcasts.py, contact.py, etc.
 
 def _gen_invite_code() -> str:
     return "".join(random.choices(_INVITE_CHARS, k=8))
@@ -112,7 +113,34 @@ def _batch_member_counts(db: Session, classroom_ids: list[uuid.UUID]) -> dict[uu
     return {cid: counts.get(cid, 0) + 1 for cid in classroom_ids}
 
 
-# ── Create ────────────────────────────────────────────────────────────────────
+def _resolve_user_uuid(username: str) -> str | None:
+    """Resolve a username to UUID from the main DB."""
+    from core.db.deps import get_db as get_main_db
+    for main_db in get_main_db():
+        user = main_db.execute(
+            select(User).where(User.username == username)
+        ).scalar_one_or_none()
+        if user:
+            return str(user.id)
+        break
+    return None
+
+
+def _to_response(c: Classroom) -> ClassroomResponse:
+    return ClassroomResponse(
+        id=str(c.id),
+        name=c.name,
+        owner=c.owner,
+        invite_code=c.invite_code,
+        invite_active=c.invite_active,
+        catchat_group_id=str(c.catchat_group_id) if c.catchat_group_id else None,
+        workspace_folder_id=c.workspace_folder_id,
+        created_at=c.created_at,
+        archived_at=c.archived_at,
+    )
+
+
+# ── Create ───────────────────────────────────────────────────────────────────
 
 @router.post("/classrooms", response_model=ClassroomResponse, status_code=201)
 def create_classroom(
@@ -165,7 +193,7 @@ def create_classroom(
     return _to_response(classroom)
 
 
-# ── List ──────────────────────────────────────────────────────────────────────
+# ── List ─────────────────────────────────────────────────────────────────────
 
 @router.get("/classrooms", response_model=list[ClassroomListItem])
 def list_my_classrooms(
@@ -231,7 +259,7 @@ def list_my_classrooms(
     return result
 
 
-# ── Detail ────────────────────────────────────────────────────────────────────
+# ── Detail ───────────────────────────────────────────────────────────────────
 
 @router.get("/classrooms/{classroom_id}", response_model=ClassroomResponse)
 def get_classroom(
@@ -244,7 +272,7 @@ def get_classroom(
     return _to_response(classroom)
 
 
-# ── Rename ────────────────────────────────────────────────────────────────────
+# ── Rename ───────────────────────────────────────────────────────────────────
 
 @router.patch("/classrooms/{classroom_id}", response_model=ClassroomResponse)
 def rename_classroom(
@@ -262,7 +290,7 @@ def rename_classroom(
     return _to_response(classroom)
 
 
-# ── Delete ────────────────────────────────────────────────────────────────────
+# ── Delete ───────────────────────────────────────────────────────────────────
 
 @router.delete("/classrooms/{classroom_id}", status_code=204)
 def delete_classroom(
@@ -277,7 +305,7 @@ def delete_classroom(
     db.commit()
 
 
-# ── Archive / Unarchive ───────────────────────────────────────────────────────
+# ── Archive / Unarchive ──────────────────────────────────────────────────────
 
 @router.post("/classrooms/{classroom_id}/archive", response_model=ClassroomResponse)
 def archive_classroom(
@@ -306,316 +334,3 @@ def unarchive_classroom(
     db.commit()
     db.refresh(classroom)
     return _to_response(classroom)
-
-
-# ── Invite code ───────────────────────────────────────────────────────────────
-
-@router.get("/classrooms/{classroom_id}/invite", response_model=InviteResponse)
-def get_invite(
-    classroom_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    classroom = _get_classroom_or_404(db, classroom_id)
-    _require_teacher(classroom, current_user.username, db)
-    return InviteResponse(invite_code=classroom.invite_code, invite_active=classroom.invite_active)
-
-
-@router.post("/classrooms/{classroom_id}/invite/reset", response_model=InviteResponse)
-def reset_invite(
-    classroom_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    classroom = _get_classroom_or_404(db, classroom_id)
-    _require_teacher(classroom, current_user.username, db)
-    classroom.invite_code = _gen_invite_code()
-    db.commit()
-    return InviteResponse(invite_code=classroom.invite_code, invite_active=classroom.invite_active)
-
-
-@router.patch("/classrooms/{classroom_id}/invite", response_model=InviteResponse)
-def toggle_invite(
-    classroom_id: uuid.UUID,
-    body: InviteToggle,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    classroom = _get_classroom_or_404(db, classroom_id)
-    _require_teacher(classroom, current_user.username, db)
-    classroom.invite_active = body.active
-    db.commit()
-    return InviteResponse(invite_code=classroom.invite_code, invite_active=classroom.invite_active)
-
-
-# ── Join via invite code ──────────────────────────────────────────────────────
-
-@router.post("/classrooms/join", response_model=ClassroomListItem, status_code=201)
-def join_classroom(
-    body: JoinByCode,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    classroom = db.execute(
-        select(Classroom).where(
-            Classroom.invite_code == body.invite_code.upper(),
-            Classroom.invite_active.is_(True),
-            Classroom.deleted_at.is_(None),
-        )
-    ).scalar_one_or_none()
-    if not classroom:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Invalid or inactive invite code")
-
-    username = current_user.username
-
-    # Owner trying to join their own classroom
-    if classroom.owner == username:
-        raise HTTPException(status.HTTP_409_CONFLICT, detail="You are the owner of this classroom")
-
-    # Check if already a member (active or removed)
-    existing = db.execute(
-        select(ClassroomMember).where(
-            ClassroomMember.classroom_id == classroom.id,
-            ClassroomMember.username == username,
-        )
-    ).scalar_one_or_none()
-
-    if existing:
-        if existing.removed_at is None:
-            raise HTTPException(status.HTTP_409_CONFLICT, detail="Already a member")
-        # Re-join: restore the row
-        existing.removed_at = None
-        existing.role = "student"
-        db.commit()
-    else:
-        db.add(ClassroomMember(
-            classroom_id=classroom.id,
-            username=username,
-            role="student",
-        ))
-        db.commit()
-
-    catachat_sync.sync_add_member(
-        classroom.catchat_group_id,
-        user_id=str(current_user.id),
-        username=username,
-        classroom_role="student",
-    )
-
-    # Sync workspace: get or create student subfolder under 'My Classroom/'.
-    # If the student is already in another classroom of the same teacher,
-    # reuse their existing folder rather than creating a duplicate.
-    if classroom.workspace_folder_id:
-        from models.user import User as UserModel
-        from core.db.deps import get_db as get_main_db
-        for main_db in get_main_db():
-            teacher = main_db.execute(
-                select(UserModel).where(UserModel.username == classroom.owner)
-            ).scalar_one_or_none()
-            if teacher:
-                # Check if this student already has a folder under this teacher
-                existing_student_folder = db.execute(
-                    select(ClassroomMember.workspace_folder_id)
-                    .join(Classroom, ClassroomMember.classroom_id == Classroom.id)
-                    .where(
-                        Classroom.owner == classroom.owner,
-                        Classroom.deleted_at.is_(None),
-                        ClassroomMember.username == username,
-                        ClassroomMember.workspace_folder_id.is_not(None),
-                        ClassroomMember.removed_at.is_(None),
-                    )
-                    .limit(1)
-                ).scalar_one_or_none()
-
-                member_row = db.execute(
-                    select(ClassroomMember).where(
-                        ClassroomMember.classroom_id == classroom.id,
-                        ClassroomMember.username == username,
-                        ClassroomMember.removed_at.is_(None),
-                    )
-                ).scalar_one_or_none()
-
-                ws_folder_id = workspace_sync.sync_get_or_create_student_folder(
-                    teacher_uuid=str(teacher.id),
-                    root_folder_id=classroom.workspace_folder_id,
-                    student_username=username,
-                    existing_student_folder_id=existing_student_folder,
-                )
-                if ws_folder_id and member_row:
-                    member_row.workspace_folder_id = ws_folder_id
-                    db.commit()
-            break
-
-    return ClassroomListItem(
-        id=str(classroom.id), name=classroom.name, owner=classroom.owner,
-        my_role="student",
-        member_count=_member_count(db, classroom.id),
-        archived_at=classroom.archived_at, created_at=classroom.created_at,
-        workspace_folder_id=classroom.workspace_folder_id,
-    )
-
-
-# ── Chat link ─────────────────────────────────────────────────────────────────
-
-@router.get("/classrooms/{classroom_id}/chat", response_model=ChatLinkResponse)
-def get_chat_link(
-    classroom_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    classroom = _get_classroom_or_404(db, classroom_id)
-    _my_role(classroom, current_user.username, db)
-    return ChatLinkResponse(
-        catchat_group_id=str(classroom.catchat_group_id) if classroom.catchat_group_id else None
-    )
-
-
-# ── Broadcast ─────────────────────────────────────────────────────────────────
-
-@router.post("/classrooms/{classroom_id}/broadcast", response_model=BroadcastResponse, status_code=201)
-def broadcast(
-    classroom_id: uuid.UUID,
-    body: BroadcastCreate,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    classroom = _get_classroom_or_404(db, classroom_id)
-    _require_teacher(classroom, current_user.username, db)
-
-    if not classroom.catchat_group_id:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="Chat not available for this classroom")
-
-    # Write broadcast as a GroupMessage into catchat DB
-    try:
-        from modules.catchat.db.models.group_message import GroupMessage
-        from modules.catchat.db.models.group import Group
-        from modules.catchat.db.session import Base  # noqa
-        from sqlalchemy import create_engine
-        from sqlalchemy.orm import Session as CatchatSession
-        import os
-
-        engine = create_engine(os.getenv("CATCHAT_DATABASE"), pool_pre_ping=True)
-        with CatchatSession(engine) as cdb:
-            msg = GroupMessage(
-                group_id=classroom.catchat_group_id,
-                sender_id=current_user.id,
-                sender_name=current_user.username,
-                content=body.content,
-                is_broadcast=True,
-            )
-            cdb.add(msg)
-            # Update group's last_message_at so it surfaces in sidebar
-            group = cdb.get(Group, classroom.catchat_group_id)
-            if group:
-                from datetime import datetime
-                group.last_message_at = datetime.utcnow()
-            cdb.commit()
-            cdb.refresh(msg)
-            return BroadcastResponse(
-                broadcast_id=str(msg.id),
-                created_at=msg.created_at,
-            )
-    except Exception as exc:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Broadcast failed: {exc}")
-
-
-# ── List broadcasts ───────────────────────────────────────────────────────────
-
-@router.get("/classrooms/{classroom_id}/broadcasts", response_model=list[BroadcastItem])
-def list_broadcasts(
-    classroom_id: uuid.UUID,
-    limit: int = Query(20, ge=1, le=100),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    classroom = _get_classroom_or_404(db, classroom_id)
-    _my_role(classroom, current_user.username, db)   # any member can read
-
-    if not classroom.catchat_group_id:
-        return []
-
-    try:
-        from modules.catchat.db.models.group_message import GroupMessage
-        from sqlalchemy import create_engine, select as sa_select, desc
-        from sqlalchemy.orm import Session as CatchatSession
-        import os
-
-        engine = create_engine(os.getenv("CATCHAT_DATABASE"), pool_pre_ping=True)
-        with CatchatSession(engine) as cdb:
-            rows = cdb.execute(
-                sa_select(GroupMessage)
-                .where(
-                    GroupMessage.group_id == classroom.catchat_group_id,
-                    GroupMessage.is_broadcast.is_(True),
-                )
-                .order_by(desc(GroupMessage.created_at))
-                .limit(limit)
-            ).scalars().all()
-            return [
-                BroadcastItem(
-                    broadcast_id=str(r.id),
-                    sender_username=r.sender_name,
-                    content=r.content,
-                    created_at=r.created_at,
-                )
-                for r in rows
-            ]
-    except Exception as exc:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Broadcasts unavailable: {exc}")
-
-
-# ── Delete broadcast ───────────────────────────────────────────────────────────
-
-@router.delete("/classrooms/{classroom_id}/broadcasts/{broadcast_id}", status_code=204)
-def delete_broadcast(
-    classroom_id: uuid.UUID,
-    broadcast_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    classroom = _get_classroom_or_404(db, classroom_id)
-    _require_teacher(classroom, current_user.username, db)
-
-    if not classroom.catchat_group_id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Chat not available")
-
-    try:
-        from modules.catchat.db.models.group_message import GroupMessage
-        from sqlalchemy import create_engine
-        from sqlalchemy.orm import Session as CatchatSession
-        import os
-
-        engine = create_engine(os.getenv("CATCHAT_DATABASE"), pool_pre_ping=True)
-        with CatchatSession(engine) as cdb:
-            from sqlalchemy import select as sa_select
-            msg = cdb.execute(
-                sa_select(GroupMessage).where(
-                    GroupMessage.id == broadcast_id,
-                    GroupMessage.group_id == classroom.catchat_group_id,
-                    GroupMessage.is_broadcast.is_(True),
-                )
-            ).scalar_one_or_none()
-            if not msg:
-                raise HTTPException(status.HTTP_404_NOT_FOUND, detail="Broadcast not found")
-            cdb.delete(msg)
-            cdb.commit()
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail=f"Delete failed: {exc}")
-
-
-# ── Serialisation helper ──────────────────────────────────────────────────────
-
-def _to_response(c: Classroom) -> ClassroomResponse:
-    return ClassroomResponse(
-        id=str(c.id),
-        name=c.name,
-        owner=c.owner,
-        invite_code=c.invite_code,
-        invite_active=c.invite_active,
-        catchat_group_id=str(c.catchat_group_id) if c.catchat_group_id else None,
-        workspace_folder_id=c.workspace_folder_id,
-        created_at=c.created_at,
-        archived_at=c.archived_at,
-    )

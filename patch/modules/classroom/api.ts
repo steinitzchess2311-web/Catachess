@@ -204,6 +204,9 @@ export const downloadMaterialUrl = (classroomId: string, assignmentId: string, o
   return `${BASE}/${classroomId}/assignments/${assignmentId}/download-material${qs ? `?${qs}` : ''}`;
 };
 
+export const contactTeacher = (classroomId: string): Promise<{ chat_type: string; chat_id: string }> =>
+  api.post(`${BASE}/${classroomId}/contact-teacher`, {});
+
 export const shareToTeacher = (
   classroomId: string,
   nodeId: string,

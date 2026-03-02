@@ -2,13 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
-import { getClassroom, archiveClassroom, unarchiveClassroom, deleteClassroom, renameClassroom, leaveClassroom, listMembers } from './api';
+import { getClassroom, archiveClassroom, unarchiveClassroom, deleteClassroom, renameClassroom, leaveClassroom, listMembers, contactTeacher } from './api';
 import type { Classroom } from './types';
 import { RoleBadge } from './components/RoleBadge';
 import { TeacherOverview, StudentOverview, openClassChat } from './components/overview';
 import { MembersTab } from './components/MembersTab';
 import { AssignmentsTab } from './components/AssignmentsTab';
 import { BroadcastModal } from './components/BroadcastModal';
+import { WorkspaceShareModal } from './components/WorkspaceShareModal';
 import './classroom.css';
 
 type Tab = 'overview' | 'assignments' | 'members';
@@ -29,6 +30,10 @@ export const ClassroomDetailPage: React.FC = () => {
   const [broadcastRefreshKey, setBroadcastRefreshKey] = useState(0);
   const [createRequestToken, setCreateRequestToken] = useState(0);
   const [focusTasksSignal, setFocusTasksSignal] = useState(0);
+  const [showContactMenu, setShowContactMenu] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareSuccessMsg, setShareSuccessMsg] = useState<string | null>(null);
+  const [contactLoading, setContactLoading] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -167,7 +172,47 @@ export const ClassroomDetailPage: React.FC = () => {
               >
                 + Create Assignment
               </button>
-            ) : null}
+            ) : (
+              <div className="cl-more-wrap">
+                <button
+                  className="cl-btn cl-btn-primary cl-btn-sm"
+                  onClick={() => setShowContactMenu(v => !v)}
+                >
+                  Contact Teacher
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </button>
+                {showContactMenu && (
+                  <ContactTeacherMenu
+                    classroomId={classroom.id}
+                    loading={contactLoading}
+                    onMessage={async () => {
+                      if (contactLoading) return;
+                      setContactLoading(true);
+                      try {
+                        const res = await contactTeacher(classroom.id);
+                        const token = localStorage.getItem('auth_token') || '';
+                        window.open(
+                          `https://catachat.catachess.com/${res.chat_type === 'conversation' ? 'conversation' : 'group'}/${res.chat_id}?token=${encodeURIComponent(token)}`,
+                          '_blank',
+                        );
+                      } catch (err: any) {
+                        alert(err?.message || 'Failed to open chat');
+                      } finally {
+                        setContactLoading(false);
+                        setShowContactMenu(false);
+                      }
+                    }}
+                    onShare={() => {
+                      setShowShareModal(true);
+                      setShowContactMenu(false);
+                    }}
+                    onClose={() => setShowContactMenu(false)}
+                  />
+                )}
+              </div>
+            )}
 
             {isTeacher && (
               <button className="cl-btn cl-btn-secondary cl-btn-sm" onClick={() => setShowBroadcast(true)}>
@@ -256,9 +301,61 @@ export const ClassroomDetailPage: React.FC = () => {
           }}
         />
       )}
+
+      {showShareModal && (
+        <WorkspaceShareModal
+          classroomId={classroom.id}
+          onClose={() => setShowShareModal(false)}
+          onShared={title => {
+            setShowShareModal(false);
+            setShareSuccessMsg(`"${title}" shared with teacher`);
+            setTimeout(() => setShareSuccessMsg(null), 4000);
+          }}
+        />
+      )}
+
+      {shareSuccessMsg && (
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'var(--cl-bg-success, #d4edda)', color: 'var(--cl-text-success, #155724)', padding: '8px 18px', borderRadius: 8, fontSize: '0.85rem', zIndex: 1000 }}>
+          {shareSuccessMsg}
+        </div>
+      )}
     </div>
   );
 };
+
+// ── Contact Teacher dropdown ──────────────────────────────────────────────────
+
+interface ContactTeacherMenuProps {
+  classroomId: string;
+  loading: boolean;
+  onMessage: () => void;
+  onShare: () => void;
+  onClose: () => void;
+}
+
+const ContactTeacherMenu: React.FC<ContactTeacherMenuProps> = ({ loading, onMessage, onShare, onClose }) => {
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as Element;
+      if (!target.closest('.cl-more-wrap')) onClose();
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  return (
+    <div className="cl-settings-dropdown">
+      <button className="cl-menu-item" onClick={onMessage} disabled={loading}>
+        {loading ? 'Opening…' : 'Message via CataChat'}
+      </button>
+      <button className="cl-menu-item" onClick={onShare}>
+        Share Workspace
+      </button>
+    </div>
+  );
+};
+
+// ── More menu ─────────────────────────────────────────────────────────────────
 
 interface ClassroomMoreMenuProps {
   classroom: Classroom;

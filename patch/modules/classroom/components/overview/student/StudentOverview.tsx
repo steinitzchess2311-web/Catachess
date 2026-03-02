@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { getMyTodo, getAssignment } from '../../../api';
 import type { Classroom, TodoItem, Assignment } from '../../../types';
-import { WorkspaceShareModal } from '../../WorkspaceShareModal';
 import { AssignmentDetailModal } from '../../AssignmentDetailModal';
 import { StatusBadge } from '../../StatusBadge';
 import { CategoryBadge } from '../../CategoryBadge';
@@ -16,8 +15,6 @@ interface StudentOverviewProps {
 export const StudentOverview: React.FC<StudentOverviewProps> = ({ classroom, focusTasksSignal = 0 }) => {
   const [todo, setTodo] = useState<TodoItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [shareSuccessMsg, setShareSuccessMsg] = useState<string | null>(null);
   const [detailTarget, setDetailTarget] = useState<Assignment | null>(null);
   const [loadingDetail, setLoadingDetail] = useState<string | null>(null);
   const tasksRef = useRef<HTMLElement | null>(null);
@@ -81,18 +78,7 @@ export const StudentOverview: React.FC<StudentOverviewProps> = ({ classroom, foc
       <section className="cl-panel" ref={tasksRef}>
         <div className="cl-section-header cl-section-header--compact">
           <h3 className="cl-section-title">My Tasks</h3>
-          <button
-            className="cl-btn cl-btn-secondary cl-btn-sm"
-            onClick={() => {
-              setShareSuccessMsg(null);
-              setShowShareModal(true);
-            }}
-          >
-            Share to Teacher
-          </button>
         </div>
-
-        {shareSuccessMsg && <p className="cl-inline-success">{shareSuccessMsg}</p>}
 
         {loading ? (
           <div className="cl-stack-sm">
@@ -171,17 +157,6 @@ export const StudentOverview: React.FC<StudentOverviewProps> = ({ classroom, foc
         />
       )}
 
-      {showShareModal && (
-        <WorkspaceShareModal
-          classroomId={classroom.id}
-          onClose={() => setShowShareModal(false)}
-          onShared={title => {
-            setShowShareModal(false);
-            setShareSuccessMsg(`\"${title}\" shared with teacher`);
-            setTimeout(() => setShareSuccessMsg(null), 4000);
-          }}
-        />
-      )}
     </div>
   );
 };

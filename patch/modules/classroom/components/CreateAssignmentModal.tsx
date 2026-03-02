@@ -172,63 +172,11 @@ export const CreateAssignmentModal: React.FC<Props> = ({ classroomId, onClose, o
               {/* Material source picker */}
               {isMaterial && (
                 <div className="cl-field">
-                  <label className="cl-label">Workspace Study</label>
-                  {/* Workspace card */}
-                  <div
-                    onClick={() => setShowWorkspacePicker(true)}
-                    style={{
-                      border: `1.5px solid ${workspaceSelection ? 'var(--cl-accent, #3b82f6)' : 'var(--cl-border, #e2e8f0)'}`,
-                      borderRadius: 10,
-                      padding: '0.8rem',
-                      cursor: 'pointer',
-                      background: workspaceSelection ? 'var(--cl-accent-light, #eff6ff)' : 'var(--cl-surface, #f8fafc)',
-                      transition: 'border-color 0.15s, background 0.15s',
-                      minHeight: 56,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {workspaceSelection ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span style={{ fontSize: '1rem' }}>{workspaceSelection.node_type === 'folder' ? '📁' : '📖'}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {workspaceSelection.title}
-                          </p>
-                          <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
-                            {workspaceSelection.node_type === 'folder' ? 'Folder' : 'Study'}
-                          </p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={e => { e.stopPropagation(); setWorkspaceSelection(null); }}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--cl-accent)', padding: 0, fontWeight: 600 }}
-                        >Change</button>
-                      </div>
-                    ) : (
-                      <>
-                        <p style={{ margin: '0 0 2px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--cl-text)' }}>
-                          Select from Workspace
-                        </p>
-                        <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
-                          Study or folder (optional)
-                        </p>
-                      </>
-                    )}
-                  </div>
+                  <label className="cl-label">Material Source</label>
 
-                  {/* Uploaded files section */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    style={{ display: 'none' }}
-                    onChange={handleFileSelect}
-                    accept=".pdf,.pgn,.png,.jpg,.jpeg,.gif,.doc,.docx,.ppt,.pptx,.txt,.zip"
-                  />
+                  {/* Uploaded files section — only visible when files added */}
                   {materialFiles.length > 0 && (
-                    <div style={{ marginTop: '0.6rem' }}>
+                    <div style={{ marginBottom: '0.6rem' }}>
                       <p style={{ margin: '0 0 0.4rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                         Uploaded Materials
                       </p>
@@ -256,14 +204,103 @@ export const CreateAssignmentModal: React.FC<Props> = ({ classroomId, onClose, o
                       </div>
                     </div>
                   )}
-                  <button
-                    type="button"
-                    className="cl-btn cl-btn-secondary cl-btn-sm"
-                    style={{ marginTop: '0.5rem' }}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    + Add File{materialFiles.length > 0 ? 's' : ''}
-                  </button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={handleFileSelect}
+                    accept=".pdf,.pgn,.png,.jpg,.jpeg,.gif,.doc,.docx,.ppt,.pptx,.txt,.zip"
+                  />
+
+                  {/* Two side-by-side cards: Upload File | Select from Workspace */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                    {/* Upload File card */}
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        border: `1.5px solid ${materialFiles.length > 0 ? 'var(--cl-accent, #3b82f6)' : 'var(--cl-border, #e2e8f0)'}`,
+                        borderRadius: 10,
+                        padding: '0.8rem',
+                        cursor: 'pointer',
+                        background: materialFiles.length > 0 ? 'var(--cl-accent-light, #eff6ff)' : 'var(--cl-surface, #f8fafc)',
+                        transition: 'border-color 0.15s, background 0.15s',
+                        minHeight: 72,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {materialFiles.length > 0 ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ fontSize: '1rem' }}>📎</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 600 }}>
+                              {materialFiles.length} file{materialFiles.length > 1 ? 's' : ''} selected
+                            </p>
+                            <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
+                              Click to add more
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p style={{ margin: '0 0 2px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--cl-text)' }}>
+                            Upload File
+                          </p>
+                          <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
+                            PDF, PGN, images, docs…
+                          </p>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Workspace card */}
+                    <div
+                      onClick={() => setShowWorkspacePicker(true)}
+                      style={{
+                        border: `1.5px solid ${workspaceSelection ? 'var(--cl-accent, #3b82f6)' : 'var(--cl-border, #e2e8f0)'}`,
+                        borderRadius: 10,
+                        padding: '0.8rem',
+                        cursor: 'pointer',
+                        background: workspaceSelection ? 'var(--cl-accent-light, #eff6ff)' : 'var(--cl-surface, #f8fafc)',
+                        transition: 'border-color 0.15s, background 0.15s',
+                        minHeight: 72,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {workspaceSelection ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ fontSize: '1rem' }}>{workspaceSelection.node_type === 'folder' ? '📁' : '📖'}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontSize: '0.82rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {workspaceSelection.title}
+                            </p>
+                            <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
+                              {workspaceSelection.node_type === 'folder' ? 'Folder' : 'Study'}
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={e => { e.stopPropagation(); setWorkspaceSelection(null); }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', color: 'var(--cl-accent)', padding: 0, fontWeight: 600 }}
+                          >Change</button>
+                        </div>
+                      ) : (
+                        <>
+                          <p style={{ margin: '0 0 2px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--cl-text)' }}>
+                            Select from Workspace
+                          </p>
+                          <p style={{ margin: 0, fontSize: '0.72rem', color: 'var(--cl-text-muted, #94a3b8)' }}>
+                            Study or folder
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 

@@ -192,10 +192,11 @@ export const ClassroomDetailPage: React.FC = () => {
                       setContactLoading(true);
                       try {
                         const res = await contactTeacher(classroom.id);
-                        const token = localStorage.getItem('auth_token') || '';
+                        const token = localStorage.getItem('catachess_token') || sessionStorage.getItem('catachess_token') || '';
                         window.open(
-                          `https://catachat.catachess.com/group/${res.chat_id}?token=${encodeURIComponent(token)}`,
+                          `https://catachat.catachess.com/group/${res.chat_id}${token ? `?token=${encodeURIComponent(token)}` : ''}`,
                           '_blank',
+                          'noopener,noreferrer',
                         );
                       } catch (err: any) {
                         alert(err?.message || 'Failed to open chat');

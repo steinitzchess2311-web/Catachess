@@ -96,16 +96,20 @@ def _open_group_chat(
 
     all_user_ids = sorted([student_id] + [tid for _, tid in teacher_ids])
 
-    # Look for existing group with exactly these members
-    existing_groups = cdb.execute(
+    # Look for existing contact group (must have metadata.source = "classroom")
+    # This avoids matching the classroom's main group chat.
+    candidate_ids = cdb.execute(
         select(GroupMember.group_id)
         .where(GroupMember.user_id.in_(all_user_ids))
         .group_by(GroupMember.group_id)
         .having(func.count() == len(all_user_ids))
     ).scalars().all()
 
-    for gid in existing_groups:
-        # Verify exact match (no extra members)
+    for gid in candidate_ids:
+        group = cdb.get(Group, gid)
+        if not group or not group.metadata or group.metadata.get("source") != "classroom":
+            continue
+        # Verify exact member count (no extra members)
         member_count = cdb.execute(
             select(func.count()).where(GroupMember.group_id == gid)
         ).scalar_one()

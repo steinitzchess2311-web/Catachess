@@ -370,6 +370,7 @@ def _migrate_catchat_is_broadcast() -> None:
 # Stores structured data like {"source": "classroom", "classroom_id": "..."}
 # so the CataChat frontend can group classroom chats into folders.
 def _migrate_catchat_group_metadata() -> None:
+    import json
     import os
     from sqlalchemy import create_engine, text
 
@@ -383,9 +384,29 @@ def _migrate_catchat_group_metadata() -> None:
                 "ALTER TABLE catchat_groups "
                 "ADD COLUMN IF NOT EXISTS meta JSONB DEFAULT NULL"
             ))
-        logger.info("✅ catchat_groups.metadata column ready")
+        logger.info("✅ catchat_groups.meta column ready")
+
+        # Backfill existing class group chats with meta
+        classroom_url = os.getenv("CLASSROOM_DATABASE")
+        if classroom_url:
+            cl_engine = create_engine(classroom_url, pool_pre_ping=True)
+            with cl_engine.begin() as cl_conn:
+                rows = cl_conn.execute(text(
+                    "SELECT id, catchat_group_id FROM classrooms "
+                    "WHERE catchat_group_id IS NOT NULL AND deleted_at IS NULL"
+                )).fetchall()
+            for row in rows:
+                conn.execute(text(
+                    "UPDATE catchat_groups SET meta = :meta "
+                    "WHERE id = :gid AND meta IS NULL"
+                ), {
+                    "meta": json.dumps({"source": "class_group", "classroom_id": str(row[0])}),
+                    "gid": str(row[1]),
+                })
+            logger.info(f"✅ Backfilled meta for {len(rows)} class group chats")
+
     except Exception as exc:
-        logger.error(f"catchat_groups.metadata migration failed: {exc}", exc_info=True)
+        logger.error(f"catchat_groups.meta migration failed: {exc}", exc_info=True)
 # ── END TEMPORARY ─────────────────────────────────────────────────────────────
 
 
@@ -597,7 +618,7 @@ async def lifespan(app: FastAPI):
     # TEMPORARY: add is_broadcast column to catchat_group_messages
     await asyncio.to_thread(_migrate_catchat_is_broadcast)
 
-    # TEMPORARY: add metadata JSONB column to catchat_groups
+    # TEMPORARY: add meta JSONB column to catchat_groups + backfill class groups
     await asyncio.to_thread(_migrate_catchat_group_metadata)
 
     # TEMPORARY: share classroom/ workspace folder with teacher (Shared section fix)

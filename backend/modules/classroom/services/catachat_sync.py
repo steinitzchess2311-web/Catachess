@@ -58,7 +58,11 @@ def sync_create_group(
 
         db = _catchat_db()
         try:
-            group = Group(name=name, created_by=uuid.UUID(owner_user_id))
+            group = Group(
+                name=name,
+                created_by=uuid.UUID(owner_user_id),
+                meta={"source": "class_group", "classroom_id": str(classroom_id)},
+            )
             db.add(group)
             db.flush()
 

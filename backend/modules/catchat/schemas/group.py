@@ -50,7 +50,7 @@ class GroupResponse(BaseModel):
     created_at: datetime
     last_message_at: datetime
     members: list[GroupMemberInfo] = []
-    metadata: Optional[dict] = None
+    meta: Optional[dict] = None
 
     model_config = {"from_attributes": True}
 

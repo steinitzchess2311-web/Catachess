@@ -381,7 +381,7 @@ def _migrate_catchat_group_metadata() -> None:
         with engine.begin() as conn:
             conn.execute(text(
                 "ALTER TABLE catchat_groups "
-                "ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT NULL"
+                "ADD COLUMN IF NOT EXISTS meta JSONB DEFAULT NULL"
             ))
         logger.info("✅ catchat_groups.metadata column ready")
     except Exception as exc:

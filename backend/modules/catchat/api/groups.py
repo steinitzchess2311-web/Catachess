@@ -109,7 +109,7 @@ def _to_response(
             )
             for m in members
         ],
-        metadata=group.metadata,
+        meta=group.meta,
     )
 
 

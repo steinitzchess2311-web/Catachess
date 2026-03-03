@@ -33,6 +33,7 @@ class Group(Base):
     last_message_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )
-    # Optional structured metadata for categorisation (e.g. classroom source).
+    # Optional structured data for categorisation (e.g. classroom source).
     # Example: {"source": "classroom", "classroom_id": "...", "classroom_name": "..."}
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=None)
+    # Named 'meta' because 'metadata' is reserved by SQLAlchemy Declarative API.
+    meta: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True, default=None)

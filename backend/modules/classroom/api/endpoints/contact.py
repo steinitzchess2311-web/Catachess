@@ -107,7 +107,7 @@ def _open_group_chat(
 
     for gid in candidate_ids:
         group = cdb.get(Group, gid)
-        if not group or not group.metadata or group.metadata.get("source") != "classroom":
+        if not group or not group.meta or group.meta.get("source") != "classroom":
             continue
         # Verify exact member count (no extra members)
         member_count = cdb.execute(
@@ -121,7 +121,7 @@ def _open_group_chat(
     group = Group(
         name=group_name,
         created_by=student_id,
-        metadata={
+        meta={
             "source": "classroom",
             "classroom_id": classroom_id,
             "classroom_name": classroom_name,

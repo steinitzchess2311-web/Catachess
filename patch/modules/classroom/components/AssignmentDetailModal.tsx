@@ -59,6 +59,7 @@ export const AssignmentDetailModal: React.FC<Props> = ({
   const hasStudy = isMaterial && (assignment.source_type === 'study' || !!sourceInfo.study_id);
   const uploads = sourceInfo.uploads;
   const [markedDone, setMarkedDone] = useState(false);
+  const isInstructionsOnly = isMaterial && !hasStudy && uploads.length === 0;
 
   // ── Auto-mark material as done on first interaction ─────────────────
   function markMaterialDone() {
@@ -68,6 +69,12 @@ export const AssignmentDetailModal: React.FC<Props> = ({
       .then(() => onSubmitted())
       .catch(() => {}); // best-effort
   }
+
+  // Instructions-only materials: auto-submit on open (read = done)
+  useEffect(() => {
+    if (isInstructionsOnly && !markedDone) markMaterialDone();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInstructionsOnly]);
 
   // ── Study: call open-material API → share ACL → open new tab ──────────
   async function handleOpenStudy() {
@@ -326,10 +333,10 @@ export const AssignmentDetailModal: React.FC<Props> = ({
                 </div>
               )}
 
-              {/* No source at all */}
-              {!hasStudy && uploads.length === 0 && (
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--cl-text-muted)' }}>
-                  No material attached.
+              {/* Instructions-only: no study or uploads */}
+              {isInstructionsOnly && (
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--cl-ok, #16a34a)', fontWeight: 600 }}>
+                  ✓ Marked as read
                 </p>
               )}
             </div>

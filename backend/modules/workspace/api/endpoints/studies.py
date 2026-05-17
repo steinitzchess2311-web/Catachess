@@ -4,6 +4,7 @@ Study endpoints.
 
 import json
 import logging
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -65,10 +66,11 @@ from modules.workspace.domain.models.variation import (
 from modules.workspace.db.repos.event_repo import EventRepository
 from modules.workspace.db.repos.node_repo import NodeRepository
 from modules.workspace.db.repos.study_repo import StudyRepository
-from modules.workspace.db.tables.studies import Chapter as ChapterTable
 from modules.workspace.db.repos.variation_repo import VariationRepository
+from modules.workspace.db.tables.studies import Chapter as ChapterTable
 from modules.workspace.db.session import get_session
 from modules.workspace.domain.services.chapter_import_service import ChapterImportError, ChapterImportService, StudyFullError
+from modules.workspace.domain.services.default_chapter_service import ensure_default_chapter
 from modules.workspace.domain.services.node_service import NodeNotFoundError, NodeService, NodeServiceError, PermissionDeniedError
 from modules.workspace.domain.services.pgn_clip_service import PgnClipService
 from modules.workspace.domain.services.pgn_sync_service import PgnSyncService
@@ -92,7 +94,6 @@ from backend.core.real_pgn.parser import parse_pgn
 from patch.backend.study.converter import convert_nodetree_to_dto
 from modules.workspace.pgn.serializer.from_variations import build_mainline_moves
 from ulid import ULID
-from datetime import datetime, timezone
 
 # New v2 imports for /show and /fen endpoints
 from modules.workspace.pgn_v2.adapters import db_to_tree
@@ -213,75 +214,15 @@ async def create_study(
             tags=data.tags,
         )
 
-        chapter_count = 0
-        existing_chapters = await study_repo.get_chapters_for_study(node.id, order_by_order=True)
-        if not existing_chapters:
-            chapter_id = str(ULID())
-            r2_key = R2Keys.chapter_tree_json(chapter_id)
-            tree_content = {
-                "version": "v1",
-                "rootId": "root",
-                "nodes": {
-                    "root": {
-                        "id": "root",
-                        "parentId": None,
-                        "san": "",
-                        "children": [],
-                        "comment": None,
-                        "nags": [],
-                    },
-                },
-                "meta": {
-                    "result": "*",
-                },
-            }
-
-            r2_client = create_r2_client_from_env()
-            upload_result = r2_client.upload_json(
-                key=r2_key,
-                content=json.dumps(tree_content),
-                metadata={
-                    "study_id": node.id,
-                    "chapter_id": chapter_id,
-                    "order": "0",
-                },
-            )
-
-            chapter = ChapterTable(
-                id=chapter_id,
-                study_id=node.id,
-                title="Chapter 1",
-                order=0,
-                white=None,
-                black=None,
-                event="Chapter 1",
-                date=None,
-                result="*",
-                r2_key=r2_key,
-                pgn_hash=upload_result.content_hash,
-                pgn_size=upload_result.size,
-                pgn_status="ready",
-                r2_etag=upload_result.etag,
-                last_synced_at=datetime.now(timezone.utc),
-            )
-
-            await study_repo.create_chapter(chapter)
-            await study_repo.update_chapter_count(node.id)
-            chapter_count = 1
-
-            workspace_id = node.path.strip("/").split("/")[0] if node.path else None
-            await publish_chapter_created(
-                event_bus,
-                actor_id=user_id,
-                study_id=node.id,
-                chapter_id=chapter_id,
-                title=chapter.title,
-                order=0,
-                r2_key=r2_key,
-                workspace_id=workspace_id,
-            )
-        else:
-            chapter_count = len(existing_chapters)
+        workspace_id = node.path.strip("/").split("/")[0] if node.path else None
+        chapter_count = await ensure_default_chapter(
+            study_id=node.id,
+            actor_id=user_id,
+            workspace_id=workspace_id,
+            study_repo=study_repo,
+            event_bus=event_bus,
+            r2_client=create_r2_client_from_env(),
+        )
 
         return StudyResponse(
             id=node.id,

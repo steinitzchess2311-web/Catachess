@@ -9,6 +9,7 @@ from sqlalchemy import delete as sa_delete, select
 
 from modules.workspace.api.deps import (
     get_current_user_id,
+    get_event_bus,
     get_node_service,
     get_study_repository,
 )
@@ -34,9 +35,11 @@ from modules.workspace.domain.services.node_service import (
 )
 from modules.workspace.db.repos.study_repo import StudyRepository
 from modules.workspace.domain.models.types import NodeType, Visibility
+from modules.workspace.domain.services.default_chapter_service import ensure_default_chapter
 from modules.workspace.db.tables.study_versions import StudyVersionTable, VersionSnapshotTable
 from modules.workspace.storage.r2_client import create_r2_client_from_env
 from modules.workspace.domain.policies.permissions import PermissionPolicy
+from modules.workspace.events.bus import EventBus
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 logger = logging.getLogger(__name__)
@@ -112,6 +115,7 @@ async def create_node(
     user_id: str = Depends(get_current_user_id),
     node_service: NodeService = Depends(get_node_service),
     study_repo: StudyRepository = Depends(get_study_repository),
+    event_bus: EventBus = Depends(get_event_bus),
 ) -> NodeResponse:
     """Create a new node."""
     try:
@@ -132,6 +136,15 @@ async def create_node(
                 description=data.description,
                 is_public=data.visibility == Visibility.PUBLIC,
                 tags=None,
+            )
+            workspace_id = node.path.strip("/").split("/")[0] if node.path else None
+            await ensure_default_chapter(
+                study_id=node.id,
+                actor_id=user_id,
+                workspace_id=workspace_id,
+                study_repo=study_repo,
+                event_bus=event_bus,
+                r2_client=create_r2_client_from_env(),
             )
         return NodeResponse.model_validate(node)
 

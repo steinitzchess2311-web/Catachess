@@ -498,10 +498,14 @@ function Layout() {
   const [username, setUsername] = useState<string | null>(() => {
     const token = readStored(TOKEN_KEY);
     if (!isTokenValid(token)) return null;
-    return decodeUserIdFromToken(token) || readStored(USER_ID_KEY);
+    return null;
   });
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(() => {
+    const token = readStored(TOKEN_KEY);
+    if (!isTokenValid(token)) return null;
+    return readStored(USER_ID_KEY) || decodeUserIdFromToken(token);
+  });
   const [showCat, setShowCat] = useState(false);
   const authed = isAuthed();
   const catamazeStateRef = useRef({
@@ -555,18 +559,16 @@ function Layout() {
       if (authed) {
         try {
           const token = readStored(TOKEN_KEY);
-          const derivedName = decodeUserIdFromToken(token) || readStored(USER_ID_KEY);
-          if (derivedName) {
-            setUsername(derivedName);
-          }
+          const derivedUserId = readStored(USER_ID_KEY) || decodeUserIdFromToken(token);
+          setUserId(derivedUserId);
           const response = await api.request("/user/profile", {
             headers: {
               Authorization: `Bearer ${token}`,
             },
           });
-          setUsername(response.username);
+          setUsername(response.username || null);
           setUserRole(response.role || null);
-          setUserId(response.id || null);
+          setUserId(response.id || derivedUserId || null);
         } catch (error) {
           console.error("Failed to fetch user profile:", error);
         }

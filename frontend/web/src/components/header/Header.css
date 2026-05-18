@@ -466,3 +466,73 @@
     font-size: 13px;
   }
 }
+
+@media (max-width: 768px) {
+  .app-header {
+    height: auto;
+    min-height: 72px;
+    padding: 8px 12px;
+    align-items: flex-start;
+    gap: 8px;
+    flex-wrap: wrap;
+    box-sizing: border-box;
+  }
+
+  .header-left {
+    width: 100%;
+    min-width: 0;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .header-left .logo {
+    flex: 0 0 auto;
+  }
+
+  .header-left .logo-image {
+    height: 52px;
+    max-width: 128px;
+    object-fit: contain;
+  }
+
+  .header-center {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: flex-end;
+    gap: 2px;
+    flex-wrap: wrap;
+  }
+
+  .header-center .nav-link,
+  .header-right .nav-link,
+  .header-right .username {
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  .header-center .nav-link {
+    padding: 6px 7px;
+  }
+
+  .header-right {
+    width: 100%;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 420px) {
+  .app-header {
+    padding: 8px;
+  }
+
+  .header-left .logo-image {
+    height: 46px;
+    max-width: 112px;
+  }
+
+  .header-center .nav-link {
+    font-size: 12px;
+    padding: 5px 5px;
+  }
+}

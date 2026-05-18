@@ -13,6 +13,15 @@ export interface AnalysisPanelProps {
   turn?: 'w' | 'b';
 }
 
+function scoreTone(score: EngineLine['score']): 'good' | 'equal' | 'bad' {
+  if (typeof score === 'string') {
+    return score.startsWith('mate-') ? 'bad' : 'good';
+  }
+  if (score > 50) return 'good';
+  if (score < -50) return 'bad';
+  return 'equal';
+}
+
 export function AnalysisPanel({
   engineEnabled,
   lines,
@@ -23,18 +32,31 @@ export function AnalysisPanel({
   engineOrigin,
   turn = 'w',
 }: AnalysisPanelProps) {
+  const primaryLine = lines[0] || null;
+  const primaryScore = primaryLine ? formatScore(primaryLine.score) : '--';
+  const primaryTone = primaryLine ? scoreTone(primaryLine.score) : 'equal';
+
   return (
     <div className="patch-analysis-panel">
+      <div className="patch-analysis-hero">
+        <div>
+          <div className="patch-analysis-kicker">Position engine</div>
+          <h3 className="patch-analysis-title">Stockfish analysis</h3>
+        </div>
+        <div className="patch-analysis-primary-score" data-tone={primaryTone}>
+          {primaryScore}
+        </div>
+      </div>
       <div className="patch-analysis-status">
         <span className={`patch-analysis-badge is-${status}`}>{status}</span>
-        <span className="patch-analysis-health">
+        <span className={`patch-analysis-health is-${health}`}>
           {!engineEnabled
-            ? 'Engine Off'
+            ? 'Engine off'
             : health === 'ok'
-              ? 'Engine OK'
+              ? 'Engine ready'
               : health === 'down'
-                ? 'Engine Down'
-                : 'Engine Unknown'}
+                ? 'Engine down'
+                : 'Checking engine'}
         </span>
         {engineOrigin && <span className="patch-analysis-source">{engineOrigin}</span>}
         {lastUpdated && (
@@ -51,11 +73,19 @@ export function AnalysisPanel({
         {engineEnabled && lines.length === 0 && (
           <div className="patch-analysis-empty">No analysis yet.</div>
         )}
-        {lines.map((line) => (
+        {lines.map((line, index) => (
           <div key={`pv-${line.multipv}`} className="patch-analysis-line">
-            <div className="patch-analysis-score">{formatScore(line.score, turn)}</div>
-            <div className="patch-analysis-pv">
-              {line.sanText || (line.pv?.join(' ') ?? '')}
+            <div className="patch-analysis-line-rank">{line.multipv || index + 1}</div>
+            <div className="patch-analysis-line-main">
+              <div className="patch-analysis-line-head">
+                <span>{index === 0 ? 'Best line' : 'Candidate'}</span>
+                <strong className="patch-analysis-score" data-tone={scoreTone(line.score)}>
+                  {formatScore(line.score, turn)}
+                </strong>
+              </div>
+              <div className="patch-analysis-pv">
+                {line.sanText || (line.pv?.join(' ') ?? '')}
+              </div>
             </div>
           </div>
         ))}

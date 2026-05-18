@@ -334,3 +334,128 @@
 .btn-icon:hover {
     background-color: var(--bg-app);
 }
+
+@media (max-width: 980px) {
+    .study-container {
+        display: flex;
+        flex-direction: column;
+        min-height: auto;
+        margin-bottom: 0;
+    }
+
+    .panel-splitter {
+        display: none;
+    }
+
+    .study-sidebar,
+    .study-right-panel,
+    .study-center-panel {
+        width: 100%;
+        min-height: 0;
+    }
+
+    .study-sidebar {
+        order: 2;
+        max-height: none;
+    }
+
+    .study-center-panel {
+        order: 1;
+        justify-content: flex-start;
+        padding: var(--space-md);
+        gap: var(--space-md);
+    }
+
+    .study-right-panel {
+        order: 3;
+        border-left: 0;
+    }
+
+    .chapter-list {
+        max-height: 260px;
+        overflow: auto;
+    }
+
+    .board-mount {
+        flex: 0 1 auto;
+        overflow: visible;
+    }
+
+    .board-mount > .chessboard,
+    .board-mount > .chessboard-v2 {
+        width: min(92vw, 520px);
+        height: auto;
+    }
+
+    .board-controls {
+        width: min(92vw, 520px);
+        margin-top: 0;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: var(--space-xs);
+    }
+
+    .board-controls .btn-icon {
+        min-width: 0;
+        min-height: 36px;
+    }
+
+    .panel-tabs {
+        position: sticky;
+        top: 0;
+        z-index: 8;
+        background: var(--surface);
+    }
+
+    .tab-content {
+        padding: var(--space-sm);
+    }
+
+    .tab-content.active {
+        min-height: auto;
+    }
+
+    .analysis-module {
+        margin-bottom: var(--space-sm);
+    }
+}
+
+@media (max-width: 560px) {
+    .panel-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+
+    .panel-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr auto;
+    }
+
+    .panel-actions .btn-icon,
+    .btn-back {
+        min-height: 36px;
+    }
+
+    .chapter-item {
+        padding: var(--space-sm);
+    }
+
+    .panel-tabs {
+        overflow-x: auto;
+    }
+
+    .tab-btn {
+        min-width: max-content;
+        padding: var(--space-sm) var(--space-md);
+    }
+
+    .move-tree-row {
+        grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr);
+    }
+
+    .pgn-comment-tabs {
+        flex-wrap: wrap;
+    }
+}

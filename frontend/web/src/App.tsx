@@ -553,6 +553,7 @@ function Layout() {
     // Default position for all other pages (bottom left)
     return undefined; // Let CatPet use its default
   }, [location.pathname]);
+  const showCatOnRoute = !location.pathname.includes("/workspace/");
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -660,7 +661,7 @@ function Layout() {
       </main>
       <Footer />
       <TerminalLauncher customCommands={[catamazeCommand]} />
-      {ENABLE_CAT_PET && showCat && <CatPet initialPosition={catInitialPosition} />}
+      {ENABLE_CAT_PET && showCat && showCatOnRoute && <CatPet initialPosition={catInitialPosition} />}
     </UserContext.Provider>
   );
 }

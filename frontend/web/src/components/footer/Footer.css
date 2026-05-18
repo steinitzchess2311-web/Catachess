@@ -9,6 +9,7 @@ main {
 
 .app-footer {
   width: 100%;
+  box-sizing: border-box;
   background: #f8fafc;
   border-top: 1px solid var(--border);
   color: var(--text-main);
@@ -176,5 +177,10 @@ main {
   .brand-names {
     font-size: 17px;
   }
+}
 
+@media (max-width: 480px) {
+  .app-footer {
+    padding: 1.25rem 1rem 1rem;
+  }
 }

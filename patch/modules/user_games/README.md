@@ -4,10 +4,10 @@ Live-game frontend slice for creating, joining, reconnecting to, and playing gam
 
 ## Responsibilities
 
-- `/play`: create challenges/open games.
-- `/chess/:gameId/join`: join shared open games.
-- `/chess/:gameId`: connect to the live game WebSocket and play.
-- `/chess/:gameId/analyze`: view completed game analysis.
+- `/games`: create challenges/open games.
+- `/games/:gameId/join`: join shared open games.
+- `/games/:gameId`: connect to the live game WebSocket and play.
+- `/games/:gameId/analyze`: view completed game analysis.
 
 ## Important Files
 

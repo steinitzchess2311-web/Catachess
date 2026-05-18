@@ -3,7 +3,7 @@
 // ============================================================
 
 import { api } from '@ui/assets/api';
-import type { EditableProfile, PublicProfile } from './types';
+import type { EditableProfile, PublicActivity, PublicProfile } from './types';
 
 /**
  * 获取指定用户的公开资料
@@ -62,6 +62,65 @@ export async function fetchPublicProfile(username: string): Promise<PublicProfil
     chesscom_username: null,
     self_intro: null,
   };
+}
+
+function normalizeActivity(raw: Record<string, unknown>, index: number): PublicActivity {
+  const type = String(raw.event_type ?? raw.type ?? raw.kind ?? 'activity');
+  const summary =
+    typeof raw.summary === 'string' && raw.summary.trim()
+      ? raw.summary
+      : activitySummary(type, raw);
+
+  return {
+    id: String(raw.event_id ?? raw.id ?? `${type}-${index}`),
+    type,
+    summary,
+    occurred_at: String(raw.occurred_at ?? raw.created_at ?? raw.updated_at ?? new Date().toISOString()),
+    target_title: typeof raw.target_title === 'string' ? raw.target_title : typeof raw.title === 'string' ? raw.title : null,
+    target_url: typeof raw.target_url === 'string' ? raw.target_url : typeof raw.url === 'string' ? raw.url : null,
+  };
+}
+
+function activitySummary(type: string, raw: Record<string, unknown>): string {
+  const normalizedType = type.toLowerCase();
+  const title = typeof raw.title === 'string' ? raw.title : typeof raw.target_title === 'string' ? raw.target_title : '';
+  if (normalizedType.includes('discussion') || normalizedType.includes('comment')) return title ? `Started a discussion in ${title}` : 'Started a discussion';
+  if (normalizedType.includes('chapter')) return title ? `Created chapter ${title}` : 'Created a chapter';
+  if (normalizedType.includes('study')) return title ? `Created study ${title}` : 'Created a study';
+  if (normalizedType.includes('folder')) return title ? `Created folder ${title}` : 'Created a folder';
+  if (normalizedType.includes('profile')) return 'Updated profile';
+  return title || 'Activity';
+}
+
+function extractActivityItems(data: unknown): Record<string, unknown>[] {
+  if (Array.isArray(data)) return data.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object'));
+  if (data && typeof data === 'object') {
+    const value = data as Record<string, unknown>;
+    const items = value.items ?? value.activities ?? value.events ?? value.data;
+    if (Array.isArray(items)) {
+      return items.filter((item): item is Record<string, unknown> => Boolean(item && typeof item === 'object'));
+    }
+  }
+  return [];
+}
+
+export async function fetchPublicActivities(username: string): Promise<PublicActivity[]> {
+  const endpoints = [
+    `/api/user/${encodeURIComponent(username)}/activity?limit=12`,
+    `/user/${encodeURIComponent(username)}/activity?limit=12`,
+    `/user/profile/${encodeURIComponent(username)}/activity?limit=12`,
+  ];
+
+  for (const endpoint of endpoints) {
+    try {
+      const data = await api.get(endpoint);
+      return extractActivityItems(data).map(normalizeActivity).slice(0, 12);
+    } catch {
+      // Try the next known backend shape.
+    }
+  }
+
+  return [];
 }
 
 /** 获取当前登录用户自己的资料（编辑页用）*/

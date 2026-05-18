@@ -50,7 +50,7 @@ function HistoryCard({ item, delay = 0 }: HistoryCardProps) {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    navigate(`/chess/${item.game_id}`);
+    navigate(`/games/`);
   };
 
   return (

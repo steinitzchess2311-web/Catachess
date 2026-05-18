@@ -223,7 +223,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
         <nav className="header-center">
           <Link to={isAuthed ? "/workspace/private" : "/workspace/public"} className="nav-link">Workspace</Link>
           <Link to="/playerbase" className="nav-link">Playerbase</Link>
-          <Link to="/play" className="nav-link">Games</Link>
+          <Link to="/games" className="nav-link">Games</Link>
           <Link to="/blogs" className="nav-link">Blogs</Link>
           <div className="nav-dropdown">
             <span className="nav-link nav-link--dropdown">Analysis</span>
@@ -270,7 +270,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
                     <div className="challenge-actions">
                       <button
                         className="challenge-go-btn"
-                        onClick={() => { setChallengeOpen(false); navigate(`/chess/${currentGame.game_id}`); }}
+                        onClick={() => { setChallengeOpen(false); navigate(`/games/${currentGame.game_id}`); }}
                       >
                         Go to Game →
                       </button>

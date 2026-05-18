@@ -1,6 +1,6 @@
 // ============================================================
 // PlayPage — 游戏大厅
-// 路由：/play
+// Route: /games
 //
 // 只负责发起挑战（历史对局已移到 /@username 个人主页）
 // ============================================================
@@ -21,7 +21,7 @@ export function PlayPage({ username }: PlayPageProps) {
   const isGuest = !username;
 
   const handleGameCreated = (gameId: string) => {
-    navigate(`/chess/${gameId}`);
+    navigate(`/games/${gameId}`);
   };
 
   return (

@@ -108,7 +108,7 @@ const HomePage: React.FC = () => {
                   tooltip="Your online chessbase — share, organize your chess study"
                 />
                 <HpCard
-                  to="/play"
+                  to="/games"
                   icon={<TargetIcon width={28} height={28} />}
                   label="GAMES"
                   tooltip="Not just chess games — have to be out of your expectation!"

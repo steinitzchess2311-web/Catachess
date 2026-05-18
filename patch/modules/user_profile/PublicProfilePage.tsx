@@ -1,16 +1,11 @@
 // ============================================================
-// PublicProfilePage — /@username 公开资料展示页
-//
-// 所有人可见（无需登录）
-// 布局：深色 Hero + 资料卡 + 最近对局
+// PublicProfilePage — /@username public profile
 // ============================================================
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { fetchPublicProfile } from './api';
-import { useGameHistory } from '@patch/modules/user_games/hooks/useGameHistory';
-import { HistoryList } from '@patch/modules/user_games/components/HistoryList';
-import type { PublicProfile } from './types';
+import { fetchPublicActivities, fetchPublicProfile } from './api';
+import type { PublicActivity, PublicProfile } from './types';
 import './user_profile.css';
 
 // ---- 称号徽章 -----------------------------------------------
@@ -27,6 +22,91 @@ function RatingBlock({ label, value }: { label: string; value: number | null }) 
     <div className="up-rating-block">
       <span className="up-rating-block__value">{value}</span>
       <span className="up-rating-block__label">{label}</span>
+    </div>
+  );
+}
+
+function formatActivityDate(value: string): { day: string; time: string } {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return { day: '', time: '' };
+  }
+  return {
+    day: date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+    time: date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }),
+  };
+}
+
+function activityLabel(type: string): string {
+  const normalized = type.toLowerCase();
+  if (normalized.includes('study')) return 'Study';
+  if (normalized.includes('chapter')) return 'Chapter';
+  if (normalized.includes('discussion') || normalized.includes('comment')) return 'Discussion';
+  if (normalized.includes('folder')) return 'Folder';
+  if (normalized.includes('profile')) return 'Profile';
+  if (normalized.includes('game')) return 'Game';
+  return 'Activity';
+}
+
+function ActivityTimeline({
+  activities,
+  loading,
+}: {
+  activities: PublicActivity[];
+  loading: boolean;
+}) {
+  if (loading) {
+    return (
+      <div className="up-activity-list" aria-busy="true">
+        {[0, 1, 2].map((item) => (
+          <div key={item} className="up-activity up-activity--loading">
+            <span className="up-activity__date up-skeleton" />
+            <span className="up-activity__marker" />
+            <span className="up-activity__body">
+              <span className="up-skeleton up-skeleton--activity-title" />
+              <span className="up-skeleton up-skeleton--activity-line" />
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (activities.length === 0) {
+    return (
+      <div className="up-activity-empty">
+        <p>No public activity yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="up-activity-list">
+      {activities.map((activity) => {
+        const date = formatActivityDate(activity.occurred_at);
+        return (
+          <article key={activity.id} className="up-activity">
+            <time className="up-activity__date" dateTime={activity.occurred_at}>
+              <span>{date.day}</span>
+              <small>{date.time}</small>
+            </time>
+            <span className="up-activity__marker" aria-hidden />
+            <div className="up-activity__body">
+              <div className="up-activity__topline">
+                <span className="up-activity__type">{activityLabel(activity.type)}</span>
+                {activity.target_url ? (
+                  <a className="up-activity__target" href={activity.target_url}>
+                    {activity.target_title || 'Open'}
+                  </a>
+                ) : activity.target_title ? (
+                  <span className="up-activity__target">{activity.target_title}</span>
+                ) : null}
+              </div>
+              <p className="up-activity__summary">{activity.summary}</p>
+            </div>
+          </article>
+        );
+      })}
     </div>
   );
 }
@@ -99,12 +179,10 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
   const cleanUsername = (params.username ?? params.id ?? '').replace(/^@/, '');
 
   const [profile, setProfile] = useState<PublicProfile | null>(null);
+  const [activities, setActivities] = useState<PublicActivity[]>([]);
+  const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-
-  // 对局历史
-  const { games, isLoading: gamesLoading, hasMore, error: gamesError, loadMore } =
-    useGameHistory(cleanUsername);
 
   useEffect(() => {
     if (!cleanUsername) return;
@@ -119,6 +197,15 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
       .finally(() => setLoading(false));
   }, [cleanUsername]);
 
+  useEffect(() => {
+    if (!cleanUsername) return;
+    setActivitiesLoading(true);
+    fetchPublicActivities(cleanUsername)
+      .then(setActivities)
+      .catch(() => setActivities([]))
+      .finally(() => setActivitiesLoading(false));
+  }, [cleanUsername]);
+
   const isOwnProfile = currentUsername === cleanUsername;
 
   if (loading) return <ProfileSkeleton />;
@@ -127,24 +214,13 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
 
   const hasRatings = profile.fide_rating || profile.cfc_rating || profile.ecf_rating;
   const hasLinks = profile.lichess_username || profile.chesscom_username;
+  const hasSidebar = Boolean(profile.self_intro || hasLinks || hasRatings);
 
   return (
     <div className="up-page">
 
-      {/* ── Hero 区 ── */}
       <div className="up-hero">
-        {/* 棋盘格背景装饰 */}
-        <div className="up-hero__chessboard" aria-hidden>
-          {Array.from({ length: 64 }).map((_, i) => (
-            <div
-              key={i}
-              className={`up-hero__sq ${(Math.floor(i / 8) + i) % 2 === 0 ? 'up-hero__sq--light' : ''}`}
-            />
-          ))}
-        </div>
-
         <div className="up-hero__inner">
-          {/* 头像 */}
           <div
             className="up-hero__avatar"
             style={{ background: avatarGradient(cleanUsername) }}
@@ -162,7 +238,6 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
             <h1 className="up-hero__username">{cleanUsername}</h1>
           </div>
 
-          {/* 评级 */}
           {hasRatings && (
             <div className="up-hero__ratings">
               <RatingBlock label="FIDE" value={profile.fide_rating} />
@@ -171,7 +246,6 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
             </div>
           )}
 
-          {/* 编辑按钮（仅自己看到）*/}
           {isOwnProfile && (
             <button
               type="button"
@@ -184,14 +258,11 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
         </div>
       </div>
 
-      {/* ── 内容区 ── */}
       <div className="up-body">
-        <div className="up-body__inner">
+        <div className={`up-body__inner ${hasSidebar ? '' : 'up-body__inner--single'}`}>
 
-          {/* 左栏：简介 + 外部链接 */}
           <aside className="up-sidebar">
 
-            {/* 简介 */}
             {profile.self_intro && (
               <div className="up-card">
                 <h3 className="up-card__title">About</h3>
@@ -199,7 +270,6 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
               </div>
             )}
 
-            {/* 外部账号 */}
             {hasLinks && (
               <div className="up-card">
                 <h3 className="up-card__title">Platforms</h3>
@@ -222,7 +292,6 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
               </div>
             )}
 
-            {/* 评级详情卡（仅有数据时显示）*/}
             {hasRatings && (
               <div className="up-card">
                 <h3 className="up-card__title">Ratings</h3>
@@ -250,18 +319,11 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
             )}
           </aside>
 
-          {/* 右栏：对局历史 */}
           <main className="up-main">
             <div className="up-section-header">
-              <h2 className="up-section-title">Recent Games</h2>
+              <h2 className="up-section-title">Recent Activities</h2>
             </div>
-            <HistoryList
-              games={games}
-              isLoading={gamesLoading}
-              hasMore={hasMore}
-              error={gamesError}
-              onLoadMore={loadMore}
-            />
+            <ActivityTimeline activities={activities} loading={activitiesLoading} />
           </main>
 
         </div>
@@ -274,11 +336,17 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
 
 /** 根据用户名生成确定性渐变色 */
 function avatarGradient(name: string): string {
+  const palette = [
+    ['#166b5c', '#0f584b'],
+    ['#4f6f52', '#36543a'],
+    ['#6f6336', '#4f4727'],
+    ['#3f6470', '#2f4d57'],
+    ['#6b5d4f', '#4c4339'],
+  ];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  const h1 = Math.abs(hash) % 360;
-  const h2 = (h1 + 40) % 360;
-  return `linear-gradient(135deg, hsl(${h1},50%,38%) 0%, hsl(${h2},55%,28%) 100%)`;
+  const [from, to] = palette[Math.abs(hash) % palette.length];
+  return `linear-gradient(135deg, ${from} 0%, ${to} 100%)`;
 }

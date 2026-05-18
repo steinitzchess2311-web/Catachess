@@ -1,12 +1,12 @@
 // ============================================================
 // JoinGamePage — 通过分享链接加入开放对局
-// 路由：/chess/:gameId/join
+// Route: /games/:gameId/join
 //
 // 流程：
 //   1. 加载对局信息（创建者、时间控制、状态）
 //   2. 用户点击 "Join" → 调用 POST /api/game/{id}/join
 //   3. 匿名用户：持久化 anon_user_id 到 sessionStorage
-//   4. 短暂展示颜色分配 → 自动跳转至 /chess/:gameId
+//   4. Show color assignment, then redirect to /games/:gameId
 // ============================================================
 
 import React, { useEffect, useState } from 'react';
@@ -98,7 +98,7 @@ export function JoinGamePage({ username }: JoinGamePageProps) {
       setRedirectCountdown((n) => {
         if (n <= 1) {
           clearInterval(iv);
-          navigate(`/chess/${phase.gameId}`, { replace: true });
+          navigate(`/games/${phase.gameId}`, { replace: true });
           return 0;
         }
         return n - 1;
@@ -239,7 +239,7 @@ export function JoinGamePage({ username }: JoinGamePageProps) {
             <button
               type="button"
               className="ug-lobby__submit ug-join-btn"
-              onClick={() => navigate(`/chess/${phase.gameId}`, { replace: true })}
+              onClick={() => navigate(`/games/${phase.gameId}`, { replace: true })}
             >
               Go Now
             </button>
@@ -255,7 +255,7 @@ export function JoinGamePage({ username }: JoinGamePageProps) {
             <button
               type="button"
               className="ug-lobby__submit ug-join-btn"
-              onClick={() => navigate(`/chess/${phase.gameId}`)}
+              onClick={() => navigate(`/games/${phase.gameId}`)}
             >
               Watch Game
             </button>
@@ -271,7 +271,7 @@ export function JoinGamePage({ username }: JoinGamePageProps) {
             <button
               type="button"
               className="ug-lobby__submit ug-join-btn"
-              onClick={() => navigate('/play')}
+              onClick={() => navigate('/games')}
             >
               Back to Lobby
             </button>
@@ -287,7 +287,7 @@ export function JoinGamePage({ username }: JoinGamePageProps) {
             <button
               type="button"
               className="ug-lobby__submit ug-join-btn"
-              onClick={() => navigate('/play')}
+              onClick={() => navigate('/games')}
             >
               Create Your Own Game
             </button>
@@ -303,7 +303,7 @@ export function JoinGamePage({ username }: JoinGamePageProps) {
             <button
               type="button"
               className="ug-lobby__submit ug-join-btn"
-              onClick={() => navigate('/play')}
+              onClick={() => navigate('/games')}
             >
               Go to Lobby
             </button>
@@ -319,7 +319,7 @@ export function JoinGamePage({ username }: JoinGamePageProps) {
             <button
               type="button"
               className="ug-lobby__submit ug-join-btn"
-              onClick={() => navigate('/play')}
+              onClick={() => navigate('/games')}
             >
               Go to Lobby
             </button>

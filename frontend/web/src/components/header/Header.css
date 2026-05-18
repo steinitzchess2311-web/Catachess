@@ -536,3 +536,128 @@
     padding: 5px 5px;
   }
 }
+
+/* Product header refresh */
+
+.app-header {
+  height: 76px;
+  padding: 0 28px;
+  background: rgba(255, 255, 255, 0.98);
+  border-bottom-color: #dfe3e6;
+  backdrop-filter: blur(10px);
+}
+
+.header-left {
+  gap: 22px;
+}
+
+.header-left .logo-image {
+  height: 70px;
+}
+
+.header-center {
+  gap: 4px;
+}
+
+.header-center .nav-link,
+.nav-link--dropdown {
+  border-radius: 7px;
+  color: #4f5a62;
+  font-size: 14px;
+  font-weight: 650;
+  padding: 8px 10px;
+}
+
+.header-center .nav-link:hover,
+.nav-dropdown:hover .nav-link--dropdown {
+  background-color: #f1f5f4;
+  color: #166b5c;
+}
+
+.header-right {
+  gap: 8px;
+}
+
+.header-right .username {
+  border: 1px solid #dfe3e6;
+  border-radius: 7px;
+  color: #202124;
+  padding: 8px 10px;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-right .username:hover {
+  background: #f1f5f4;
+  border-color: #c9d3cf;
+}
+
+.header-right .nav-link {
+  color: #166b5c;
+}
+
+.bell-btn,
+.challenge-btn {
+  width: 34px;
+  height: 34px;
+  border-color: #dfe3e6;
+  border-radius: 7px;
+  background: #ffffff;
+  box-shadow: none;
+}
+
+.bell-btn:hover,
+.challenge-btn:hover {
+  background: #f1f5f4;
+  border-color: #c9d3cf;
+  color: #166b5c;
+  box-shadow: none;
+  transform: none;
+}
+
+.bell-btn:focus-visible,
+.challenge-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(22, 107, 92, 0.16);
+}
+
+.bell-dropdown,
+.challenge-dropdown,
+.nav-dropdown-menu {
+  border-color: #dfe3e6;
+  border-radius: 8px;
+  box-shadow: 0 16px 40px rgba(32, 33, 36, 0.12);
+}
+
+.bell-open-chat,
+.challenge-go-btn {
+  color: #166b5c;
+}
+
+.challenge-go-btn {
+  background: #166b5c;
+  color: #ffffff;
+}
+
+.challenge-go-btn:hover {
+  background: #0f584b;
+}
+
+.bell-item:hover,
+.nav-dropdown-item:hover {
+  background: #f1f5f4;
+  color: #166b5c;
+}
+
+@media (max-width: 860px) {
+  .app-header {
+    height: auto;
+    min-height: 64px;
+    padding: 8px 12px;
+  }
+
+  .header-left .logo-image {
+    height: 48px;
+  }
+}

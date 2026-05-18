@@ -15,6 +15,15 @@ export interface PublicProfile {
   self_intro: string | null;
 }
 
+export interface PublicActivity {
+  id: string;
+  type: string;
+  summary: string;
+  occurred_at: string;
+  target_title?: string | null;
+  target_url?: string | null;
+}
+
 /** 用户私人资料（编辑表单用）*/
 export interface EditableProfile extends PublicProfile {
   // 目前与 PublicProfile 字段相同，后续可扩展

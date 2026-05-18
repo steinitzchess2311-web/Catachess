@@ -508,6 +508,10 @@ function Layout() {
   });
   const [showCat, setShowCat] = useState(false);
   const authed = isAuthed();
+  const showTerminalLauncher =
+    !location.pathname.startsWith("/games") &&
+    !location.pathname.startsWith("/play") &&
+    !location.pathname.startsWith("/@");
   const catamazeStateRef = useRef({
     gameId: null as string | null,
     observation: null as any,
@@ -632,7 +636,11 @@ function Layout() {
           <Route path="/patch/workspace/:id/opening-trainer" element={<Protected><OpeningTrainerPage /></Protected>} />
 
           {/* Games — 大厅 + 实时对局 + 加入 + 赛后分析 */}
-          <Route path="/play" element={<PlayPage username={username} />} />
+          <Route path="/games" element={<PlayPage username={username} />} />
+          <Route path="/play" element={<Navigate to="/games" replace />} />
+          <Route path="/games/:gameId/join" element={<JoinGamePage username={username} />} />
+          <Route path="/games/:gameId/analyze" element={<AnalyzeGamePage />} />
+          <Route path="/games/:gameId" element={<LiveGamePage username={username} />} />
           <Route path="/chess/:gameId/join" element={<JoinGamePage username={username} />} />
           <Route path="/chess/:gameId/analyze" element={<AnalyzeGamePage />} />
           <Route path="/chess/:gameId" element={<LiveGamePage username={username} />} />
@@ -660,7 +668,7 @@ function Layout() {
         </ChunkErrorBoundary>
       </main>
       <Footer />
-      <TerminalLauncher customCommands={[catamazeCommand]} />
+      {showTerminalLauncher && <TerminalLauncher customCommands={[catamazeCommand]} />}
       {ENABLE_CAT_PET && showCat && showCatOnRoute && <CatPet initialPosition={catInitialPosition} />}
     </UserContext.Provider>
   );

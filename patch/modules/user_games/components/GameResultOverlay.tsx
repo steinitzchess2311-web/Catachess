@@ -60,7 +60,7 @@ export function GameResultOverlay({
     : 'ug-result__headline--lose';
 
   const handleAnalyze = () => {
-    window.location.href = `/chess/${gameId}/analyze`;
+    window.location.href = `/games/${gameId}/analyze`;
   };
 
   return (

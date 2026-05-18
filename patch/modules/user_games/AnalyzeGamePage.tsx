@@ -1,6 +1,6 @@
 // ============================================================
 // AnalyzeGamePage — 赛后分析跳板
-// 路由：/chess/:gameId/analyze
+// Route: /games/:gameId/analyze
 //
 // 职责：拉取 PGN + 对局元信息 → 跳转到 /analysis
 // 分析页面本身（布局、引擎、Explorer）完全由 /analysis 提供
@@ -70,7 +70,7 @@ export function AnalyzeGamePage() {
               black: game.black_player_id ?? '?',
               result: game.result,
               timeControl: game.time_control,
-              backUrl: `/chess/${gameId}`,
+              backUrl: `/games/${gameId}`,
             },
           },
         });

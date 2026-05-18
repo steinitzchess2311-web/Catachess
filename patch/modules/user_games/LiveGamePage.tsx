@@ -1,6 +1,6 @@
 // ============================================================
 // LiveGamePage — 实时对局室
-// 路由：/chess/:gameId
+// Route: /games/:gameId
 //
 // 布局：
 //   左：棋盘 + 玩家信息栏 + 时钟
@@ -154,7 +154,7 @@ export function LiveGamePage({ username }: LiveGamePageProps) {
   // 说明连接的是已结束的历史对局，直接跳分析页
   useEffect(() => {
     if (state.phase === 'over' && state.result === null && state.moves.length === 0 && gameId) {
-      navigate(`/chess/${gameId}/analyze`, { replace: true });
+      navigate(`/games/${gameId}/analyze`, { replace: true });
     }
   }, [state.phase, state.result, state.moves.length, gameId, navigate]);
 
@@ -241,7 +241,7 @@ export function LiveGamePage({ username }: LiveGamePageProps) {
                 result={state.result}
                 myColor={myColor}
                 gameId={gameId}
-                onNewGame={() => navigate('/play')}
+                onNewGame={() => navigate('/games')}
               />
             )}
           </div>

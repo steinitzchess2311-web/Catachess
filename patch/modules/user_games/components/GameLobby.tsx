@@ -230,7 +230,7 @@ export function GameLobby({ myId, onGameCreated }: GameLobbyProps) {
 
   // ---- 复制链接 -----------------------------------------------
   const shareUrl = openGameId
-    ? `${window.location.origin}/chess/${openGameId}/join`
+    ? `${window.location.origin}/games/${openGameId}/join`
     : '';
 
   const handleCopy = async () => {
@@ -322,7 +322,7 @@ export function GameLobby({ myId, onGameCreated }: GameLobbyProps) {
                 <button
                   type="button"
                   className="ug-lobby__goto-game"
-                  onClick={() => navigate(`/chess/${friendBlockedGameId}`)}
+                  onClick={() => navigate(`/games/${friendBlockedGameId}`)}
                 >
                   Go to your game →
                 </button>
@@ -362,7 +362,7 @@ export function GameLobby({ myId, onGameCreated }: GameLobbyProps) {
                     <button
                       type="button"
                       className="ug-lobby__goto-game"
-                      onClick={() => navigate(`/chess/${openBlockedGameId}`)}
+                      onClick={() => navigate(`/games/${openBlockedGameId}`)}
                     >
                       Go to your game →
                     </button>

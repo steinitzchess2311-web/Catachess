@@ -34,6 +34,10 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
             el.classList.toggle('active', el.dataset.mode === options.initialMode);
         });
     }
+    const createActions = container.querySelector<HTMLElement>('.workspace-create-actions');
+    if (createActions) {
+        createActions.hidden = state.mode !== 'private';
+    }
 
     // 4. Create roots
     const modalRoots = createModalRoots();

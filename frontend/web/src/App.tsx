@@ -329,6 +329,10 @@ function WorkspaceSelect({ mode }: { mode: WorkspaceMode }) {
           card.style.pointerEvents = "none";
           card.style.cursor = "not-allowed";
         });
+        root.querySelectorAll<HTMLButtonElement>("[data-create-type]").forEach((button) => {
+          button.disabled = true;
+          button.title = "Log in to create folders or studies.";
+        });
       };
 
       // Debounce so the callback fires once after DOM settles, not on every mutation during init

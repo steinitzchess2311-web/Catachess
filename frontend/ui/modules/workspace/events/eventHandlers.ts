@@ -26,8 +26,22 @@ export function setupEventHandlers(
             if (elements.pathInput) {
                 elements.pathInput.placeholder = `${getRootPrefix(state)}...`;
             }
+            const createActions = elements.container.querySelector<HTMLElement>('.workspace-create-actions');
+            if (createActions) {
+                createActions.hidden = mode !== 'private';
+            }
             clearCache(state);
             handlers.navigateToFolder('root', getRootLabel(state));
+        });
+    });
+
+    elements.container.querySelectorAll<HTMLElement>('[data-create-type]').forEach((button) => {
+        button.addEventListener('click', () => {
+            if (state.mode !== 'private') return;
+            const type = button.dataset.createType;
+            if (type === 'folder' || type === 'study') {
+                handlers.openCreateModal(type);
+            }
         });
     });
 

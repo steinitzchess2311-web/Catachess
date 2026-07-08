@@ -239,6 +239,7 @@ export function renderItems(
 
 function updateWorkspaceHeader(container: HTMLElement, state: WorkspaceState) {
     const title = container.querySelector<HTMLElement>('#workspace-title');
+    const createActions = container.querySelector<HTMLElement>('.workspace-create-actions');
     const modeCopy = {
         private: 'Private workspace',
         public: 'Public workspace',
@@ -247,6 +248,9 @@ function updateWorkspaceHeader(container: HTMLElement, state: WorkspaceState) {
     } as const;
     const titleText = modeCopy[state.mode] || modeCopy.private;
     if (title) title.textContent = titleText;
+    if (createActions) {
+        createActions.hidden = state.mode !== 'private';
+    }
 }
 
 

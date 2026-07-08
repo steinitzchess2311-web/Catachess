@@ -163,11 +163,12 @@
     background: #ffffff;
     border-bottom: 1px solid #dbe7f5;
     display: grid;
-    grid-template-columns: minmax(240px, 1fr) minmax(420px, 1.25fr);
-    gap: 28px;
+    grid-template-columns: minmax(260px, 1fr) auto;
+    gap: 18px;
     align-items: center;
-    min-height: 104px;
-    padding: 20px 24px 18px;
+    box-sizing: border-box;
+    min-height: 86px;
+    padding: 14px 24px;
     position: relative;
     z-index: 20;
 }
@@ -185,24 +186,85 @@
     letter-spacing: 0;
 }
 
-.workspace-toolbar {
+.workspace-header-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
     min-width: 0;
-    display: grid;
-    grid-template-columns: minmax(280px, 1fr) auto;
-    gap: 14px;
-    align-items: end;
+}
+
+.workspace-create-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.workspace-create-actions[hidden] {
+    display: none;
+}
+
+.workspace-action-btn {
+    min-height: 38px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-family: var(--font-family);
+    font-size: 14px;
+    line-height: 1;
+    font-weight: 720;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.workspace-action-btn--primary {
+    border: 1px solid #2563eb;
+    background: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.14);
+}
+
+.workspace-action-btn--primary:hover {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+.workspace-action-btn--secondary {
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    color: #1e293b;
+}
+
+.workspace-action-btn--secondary:hover {
+    border-color: #93c5fd;
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.workspace-action-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.workspace-action-icon {
+    flex-shrink: 0;
 }
 
 .breadcrumb {
-    min-height: 28px;
+    min-height: 24px;
     display: flex;
     align-items: center;
     gap: 5px;
     overflow: hidden;
     color: #475569;
-    font-size: 18px;
-    font-weight: 520;
-    margin-top: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    margin-top: 6px;
     white-space: nowrap;
 }
 
@@ -228,41 +290,6 @@
     margin: 0;
 }
 
-.path-jump {
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.path-jump label,
-.view-options-label {
-    color: #64748b;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
-
-#path-input {
-    width: 100%;
-    min-height: 38px;
-    padding: 8px 11px;
-    border: 1px solid #cbd5e1;
-    border-radius: 8px;
-    background: #ffffff;
-    color: #0f172a;
-    font-size: 14px;
-    font-family: var(--font-family);
-    box-sizing: border-box;
-}
-
-#path-input:focus {
-    outline: none;
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
-}
-
 .path-input-shake {
     animation: path-shake 0.3s ease-in-out;
 }
@@ -277,9 +304,8 @@
 
 .view-options {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: flex-end;
 }
 
 .workspace-content-shell {
@@ -678,7 +704,7 @@
 @media (prefers-reduced-motion: reduce) {
     .grid-item,
     .mode-btn,
-    #path-input,
+    .workspace-action-btn,
     #workspace-search-input {
         transition: none;
     }
@@ -727,15 +753,19 @@
 
     .main-header {
         grid-template-columns: 1fr;
-        gap: 14px;
-        min-height: 130px;
+        gap: 12px;
+        min-height: 0;
         padding: 18px 16px 16px;
     }
 
-    .workspace-toolbar {
-        grid-template-columns: 1fr;
+    .workspace-header-actions {
+        justify-content: space-between;
         gap: 12px;
-        align-items: stretch;
+        align-items: center;
+    }
+
+    .workspace-create-actions {
+        flex-wrap: wrap;
     }
 
     .breadcrumb {
@@ -747,7 +777,7 @@
     }
 
     .view-options {
-        align-items: stretch;
+        justify-content: flex-end;
     }
 
     .workspace-content-shell {
@@ -767,6 +797,24 @@
 @media (max-width: 520px) {
     .workspace-title {
         font-size: 24px;
+    }
+
+    .workspace-header-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .workspace-create-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .workspace-action-btn {
+        width: 100%;
+    }
+
+    .view-options {
+        justify-content: flex-start;
     }
 
     .workspace-mode-nav {

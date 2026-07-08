@@ -34,7 +34,7 @@ export interface WorkspaceElements {
     itemsGrid: HTMLElement;
     breadcrumb: HTMLElement;
     folderTree: HTMLElement;
-    pathInput: HTMLInputElement;
+    pathInput: HTMLInputElement | null;
     searchInput: HTMLInputElement;
     searchClearBtn: HTMLButtonElement;
 }

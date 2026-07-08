@@ -37,6 +37,7 @@ export interface WorkspaceElements {
     pathInput: HTMLInputElement | null;
     searchInput: HTMLInputElement;
     searchClearBtn: HTMLButtonElement;
+    sidebarToggleBtn: HTMLButtonElement | null;
 }
 
 export interface ModalRoots {

@@ -2,17 +2,47 @@
     <div class="workspace-container">
         <aside class="workspace-sidebar">
             <div class="sidebar-header">
-                <div class="workspace-section-label">Library</div>
-                <nav class="workspace-mode-nav">
-                    <button class="mode-btn active" data-mode="private">Private</button>
-                    <button class="mode-btn" data-mode="public">Public</button>
-                    <button class="mode-btn" data-mode="shared">Shared with me</button>
-                    <div class="mode-nav-divider"></div>
-                    <button class="mode-btn mode-btn--trash" data-mode="trash">
-                        <svg class="mode-btn-icon" viewBox="0 0 24 24" width="14" height="14" fill="currentColor">
-                            <path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z"/>
+                <div class="sidebar-title-row">
+                    <div class="workspace-section-label">Library</div>
+                    <button id="workspace-sidebar-toggle" class="workspace-sidebar-toggle" type="button" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar">
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                            <path fill="currentColor" d="M15.7 5.3 9 12l6.7 6.7-1.4 1.4L6.2 12l8.1-8.1 1.4 1.4Z"/>
                         </svg>
-                        Recycle
+                    </button>
+                </div>
+                <nav class="workspace-mode-nav">
+                    <button class="mode-btn active" data-mode="private" title="Private">
+                        <span class="mode-btn-glyph" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="16" height="16">
+                                <path fill="currentColor" d="M6 10V8a6 6 0 1 1 12 0v2h1a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h1Zm2 0h8V8a4 4 0 0 0-8 0v2Z"/>
+                            </svg>
+                        </span>
+                        <span class="mode-btn-label">Private</span>
+                    </button>
+                    <button class="mode-btn" data-mode="public" title="Public">
+                        <span class="mode-btn-glyph" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="16" height="16">
+                                <path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm6.9 9h-3.1a15.6 15.6 0 0 0-1.1-5.1A8.03 8.03 0 0 1 18.9 11ZM12 4.1c.6.9 1.5 2.9 1.8 6.9h-3.6c.3-4 1.2-6 1.8-6.9ZM4.3 13h3.9c.1 2.2.5 4 1 5.4A8.04 8.04 0 0 1 4.3 13Zm3.9-2H4.3a8.04 8.04 0 0 1 4.9-5.4A15.1 15.1 0 0 0 8.2 11ZM12 19.9c-.6-.9-1.5-2.9-1.8-6.9h3.6c-.3 4-1.2 6-1.8 6.9Zm2.8-1.5c.5-1.4.9-3.2 1-5.4h3.9a8.04 8.04 0 0 1-4.9 5.4Z"/>
+                            </svg>
+                        </span>
+                        <span class="mode-btn-label">Public</span>
+                    </button>
+                    <button class="mode-btn" data-mode="shared" title="Shared with me">
+                        <span class="mode-btn-glyph" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="16" height="16">
+                                <path fill="currentColor" d="M8 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm8.5 1a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7ZM2 20a6 6 0 0 1 12 0v1H2v-1Zm11.8 1a7.5 7.5 0 0 0-2.3-5.4A5.6 5.6 0 0 1 22 18.5V21h-8.2Z"/>
+                            </svg>
+                        </span>
+                        <span class="mode-btn-label">Shared with me</span>
+                    </button>
+                    <div class="mode-nav-divider"></div>
+                    <button class="mode-btn mode-btn--trash" data-mode="trash" title="Recycle">
+                        <span class="mode-btn-glyph" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                <path d="M9 3h6l1 2h5v2H3V5h5l1-2zm1 6h2v9h-2V9zm4 0h2v9h-2V9zM7 9h2v9H7V9z"/>
+                            </svg>
+                        </span>
+                        <span class="mode-btn-label">Recycle</span>
                     </button>
                 </nav>
             </div>

@@ -5,6 +5,39 @@ import { getPathPrefix, getRootPrefix, getRootLabel, shakePathInput, resolvePath
 import { setMode, clearCache } from './state';
 import { runSearch } from './search';
 
+const SIDEBAR_COLLAPSED_KEY = 'cata.workspace.sidebarCollapsed';
+
+export function applySidebarCollapsedState(
+    elements: WorkspaceElements,
+    collapsed: boolean,
+    persist = true
+) {
+    const shell = elements.container.querySelector<HTMLElement>('.workspace-container') ?? elements.container;
+    shell.classList.toggle('workspace-container--sidebar-collapsed', collapsed);
+    if (elements.sidebarToggleBtn) {
+        elements.sidebarToggleBtn.setAttribute('aria-expanded', String(!collapsed));
+        elements.sidebarToggleBtn.setAttribute(
+            'aria-label',
+            collapsed ? 'Expand sidebar' : 'Collapse sidebar'
+        );
+        elements.sidebarToggleBtn.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
+    }
+    if (!persist) return;
+    try {
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, collapsed ? '1' : '0');
+    } catch {
+        // Ignore storage failures; the UI state still applies for this session.
+    }
+}
+
+export function getStoredSidebarCollapsed() {
+    try {
+        return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
+    } catch {
+        return false;
+    }
+}
+
 export function setupEventHandlers(
     state: WorkspaceState,
     elements: WorkspaceElements,
@@ -16,6 +49,12 @@ export function setupEventHandlers(
         refreshNodes: (parentId: string) => Promise<void>;
     }
 ) {
+    elements.sidebarToggleBtn?.addEventListener('click', () => {
+        const shell = elements.container.querySelector<HTMLElement>('.workspace-container') ?? elements.container;
+        const collapsed = !shell.classList.contains('workspace-container--sidebar-collapsed');
+        applySidebarCollapsedState(elements, collapsed);
+    });
+
     // Mode nav buttons
     elements.container.querySelectorAll('.mode-btn').forEach(btn => {
         btn.addEventListener('click', () => {

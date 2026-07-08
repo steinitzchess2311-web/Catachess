@@ -5,6 +5,7 @@
     background: #f4f8fd;
     color: #0f172a;
     font-family: var(--font-family);
+    transition: grid-template-columns 180ms ease;
 }
 
 .workspace-sidebar {
@@ -29,12 +30,44 @@
     gap: 10px;
 }
 
+.sidebar-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
 .workspace-section-label {
     color: #64748b;
     font-size: 11px;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
+}
+
+.workspace-sidebar-toggle {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #dbe7f5;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+
+.workspace-sidebar-toggle:hover {
+    background: #eff6ff;
+    border-color: #93c5fd;
+    color: #1d4ed8;
+}
+
+.workspace-sidebar-toggle svg {
+    transition: transform 0.18s ease;
 }
 
 .workspace-mode-nav {
@@ -50,12 +83,32 @@
     border-radius: 8px;
     background: transparent;
     color: #334155;
+    display: flex;
+    align-items: center;
+    gap: 9px;
     font-size: 14px;
     font-weight: 650;
     font-family: var(--font-family);
     cursor: pointer;
     text-align: left;
     transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.mode-btn-glyph {
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.9;
+}
+
+.mode-btn-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .mode-btn:hover {
@@ -94,11 +147,6 @@
     border-color: #e11d48;
     color: #ffffff;
     box-shadow: 0 8px 18px rgba(225, 29, 72, 0.16);
-}
-
-.mode-btn-icon {
-    flex-shrink: 0;
-    opacity: 0.82;
 }
 
 .workspace-search-row {
@@ -306,6 +354,46 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
+}
+
+.workspace-container--sidebar-collapsed {
+    grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.workspace-container--sidebar-collapsed .workspace-sidebar {
+    padding: 14px 10px;
+    gap: 14px;
+    overflow-x: hidden;
+}
+
+.workspace-container--sidebar-collapsed .sidebar-title-row {
+    justify-content: center;
+}
+
+.workspace-container--sidebar-collapsed .sidebar-title-row .workspace-section-label,
+.workspace-container--sidebar-collapsed .workspace-search-block,
+.workspace-container--sidebar-collapsed .folder-tree,
+.workspace-container--sidebar-collapsed .mode-nav-divider,
+.workspace-container--sidebar-collapsed .mode-btn-label {
+    display: none;
+}
+
+.workspace-container--sidebar-collapsed .workspace-sidebar-toggle svg {
+    transform: rotate(180deg);
+}
+
+.workspace-container--sidebar-collapsed .workspace-mode-nav {
+    gap: 8px;
+}
+
+.workspace-container--sidebar-collapsed .mode-btn {
+    min-height: 42px;
+    justify-content: center;
+    padding: 0;
+}
+
+.workspace-container--sidebar-collapsed .mode-btn--trash {
+    gap: 0;
 }
 
 .workspace-content-shell {
@@ -705,7 +793,10 @@
     .grid-item,
     .mode-btn,
     .workspace-action-btn,
-    #workspace-search-input {
+    #workspace-search-input,
+    .workspace-container,
+    .workspace-sidebar-toggle,
+    .workspace-sidebar-toggle svg {
         transition: none;
     }
 
@@ -733,6 +824,44 @@
         border-right: none;
         border-bottom: 1px solid #dbe7f5;
         box-sizing: border-box;
+    }
+
+    .workspace-container--sidebar-collapsed .workspace-sidebar {
+        padding: 14px 16px;
+    }
+
+    .workspace-container--sidebar-collapsed .sidebar-title-row .workspace-section-label {
+        display: block;
+    }
+
+    .workspace-container--sidebar-collapsed .workspace-search-block {
+        display: flex;
+    }
+
+    .workspace-container--sidebar-collapsed .mode-btn-label {
+        display: inline;
+    }
+
+    .workspace-container--sidebar-collapsed .mode-nav-divider {
+        display: none;
+    }
+
+    .workspace-container--sidebar-collapsed .folder-tree {
+        display: none;
+    }
+
+    .workspace-container--sidebar-collapsed .sidebar-title-row {
+        justify-content: space-between;
+    }
+
+    .workspace-container--sidebar-collapsed .workspace-sidebar-toggle svg {
+        transform: none;
+    }
+
+    .workspace-container--sidebar-collapsed .mode-btn {
+        min-height: 38px;
+        justify-content: flex-start;
+        padding: 8px 10px;
     }
 
     .workspace-mode-nav {

@@ -71,5 +71,6 @@ export function extractElements(container: HTMLElement) {
         pathInput: container.querySelector('#path-input') as HTMLInputElement | null,
         searchInput: container.querySelector('#workspace-search-input') as HTMLInputElement,
         searchClearBtn: container.querySelector('#workspace-search-clear') as HTMLButtonElement,
+        sidebarToggleBtn: container.querySelector('#workspace-sidebar-toggle') as HTMLButtonElement | null,
     };
 }

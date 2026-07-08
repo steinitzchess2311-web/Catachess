@@ -11,6 +11,7 @@ import { extractElements, initializeToFolder } from './initialization';
 import { createReactRoots } from './reactComponents';
 import { createOrchestrator } from './orchestrator';
 import { getRootLabel } from './navigation';
+import { applySidebarCollapsedState, getStoredSidebarCollapsed } from './eventHandlers';
 
 export async function initWorkspace(container: HTMLElement, options: WorkspaceOptions = {}) {
     // 1. Load template
@@ -20,6 +21,7 @@ export async function initWorkspace(container: HTMLElement, options: WorkspaceOp
 
     // 2. Extract elements
     const elements = extractElements(container);
+    applySidebarCollapsedState(elements, getStoredSidebarCollapsed(), false);
 
     // 3. Initialize state
     const startParentId = options.initialParentId || 'root';

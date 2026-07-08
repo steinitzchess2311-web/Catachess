@@ -7,6 +7,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import LogoutButton from '../../../frontend/web/src/components/dialogBox/LogoutButton';
 import { fetchMyProfile, saveMyProfile } from './api';
 import { FIDE_TITLES } from './types';
 import type { EditableProfile } from './types';
@@ -144,6 +145,7 @@ export function EditProfilePage({ currentUsername }: EditProfilePageProps) {
           >
             {saveState === 'saving' ? 'Saving...' : 'Save Changes'}
           </button>
+          <LogoutButton />
         </div>
       </div>
 

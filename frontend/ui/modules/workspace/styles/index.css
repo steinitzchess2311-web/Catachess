@@ -149,10 +149,6 @@
     min-height: 0;
 }
 
-#logout-button-container {
-    margin-top: auto;
-}
-
 .workspace-main {
     min-width: 0;
     display: flex;
@@ -168,24 +164,16 @@
     border-bottom: 1px solid #dbe7f5;
     display: grid;
     grid-template-columns: minmax(240px, 1fr) minmax(420px, 1.25fr);
-    gap: 24px;
-    align-items: end;
-    padding: 24px;
+    gap: 32px;
+    align-items: center;
+    min-height: 150px;
+    padding: 34px 24px 30px;
     position: relative;
     z-index: 20;
 }
 
 .workspace-title-block {
     min-width: 0;
-}
-
-.workspace-context-label {
-    color: #2563eb;
-    font-size: 12px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 6px;
 }
 
 .workspace-title {
@@ -197,34 +185,29 @@
     letter-spacing: 0;
 }
 
-.workspace-summary {
-    margin-top: 7px;
-    color: #64748b;
-    font-size: 14px;
-    font-weight: 520;
-}
-
 .workspace-toolbar {
     min-width: 0;
     display: grid;
-    grid-template-columns: minmax(140px, auto) minmax(220px, 1fr) auto;
+    grid-template-columns: minmax(280px, 1fr) auto;
     gap: 14px;
     align-items: end;
 }
 
 .breadcrumb {
-    min-height: 38px;
+    min-height: 28px;
     display: flex;
     align-items: center;
     gap: 5px;
     overflow: hidden;
     color: #475569;
-    font-size: 14px;
+    font-size: 18px;
+    font-weight: 520;
+    margin-top: 18px;
     white-space: nowrap;
 }
 
 .breadcrumb-item {
-    max-width: 160px;
+    max-width: 220px;
     overflow: hidden;
     text-overflow: ellipsis;
     cursor: pointer;
@@ -392,6 +375,7 @@
 }
 
 .item-kicker {
+    display: none;
     color: #64748b;
     font-size: 11px;
     font-weight: 800;
@@ -553,6 +537,7 @@
 }
 
 .modal-eyebrow {
+    display: none;
     color: #64748b;
     font-size: 11px;
     font-weight: 800;
@@ -736,15 +721,15 @@
         grid-column: span 2;
     }
 
-    .folder-tree,
-    #logout-button-container {
+    .folder-tree {
         display: none;
     }
 
     .main-header {
         grid-template-columns: 1fr;
         gap: 18px;
-        padding: 18px 16px;
+        min-height: 168px;
+        padding: 26px 16px 22px;
     }
 
     .workspace-toolbar {
@@ -757,6 +742,8 @@
         min-height: 0;
         white-space: normal;
         flex-wrap: wrap;
+        font-size: 15px;
+        margin-top: 12px;
     }
 
     .view-options {

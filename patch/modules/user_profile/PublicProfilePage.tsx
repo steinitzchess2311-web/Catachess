@@ -4,6 +4,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import LogoutButton from '../../../frontend/web/src/components/dialogBox/LogoutButton';
 import { fetchPublicActivities, fetchPublicProfile } from './api';
 import type { PublicActivity, PublicProfile } from './types';
 import './user_profile.css';
@@ -247,13 +248,16 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
           )}
 
           {isOwnProfile && (
-            <button
-              type="button"
-              className="up-hero__edit-btn"
-              onClick={() => navigate('/settings')}
-            >
-              Edit Profile
-            </button>
+            <div className="up-hero__actions">
+              <button
+                type="button"
+                className="up-hero__edit-btn"
+                onClick={() => navigate('/settings')}
+              >
+                Edit Profile
+              </button>
+              <LogoutButton />
+            </div>
           )}
         </div>
       </div>
@@ -337,11 +341,11 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
 /** 根据用户名生成确定性渐变色 */
 function avatarGradient(name: string): string {
   const palette = [
-    ['#166b5c', '#0f584b'],
-    ['#4f6f52', '#36543a'],
-    ['#6f6336', '#4f4727'],
-    ['#3f6470', '#2f4d57'],
-    ['#6b5d4f', '#4c4339'],
+    ['#2563eb', '#1d4ed8'],
+    ['#0ea5e9', '#2563eb'],
+    ['#1d4ed8', '#1e40af'],
+    ['#38bdf8', '#2563eb'],
+    ['#60a5fa', '#1d4ed8'],
   ];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {

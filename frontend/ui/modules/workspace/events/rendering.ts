@@ -1,10 +1,6 @@
 // UI rendering functions
 // LEGACY: This workspace module is deprecated. All study functionality has been moved to /patch/
 
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import LogoutButton from '../../../../web/src/components/dialogBox/LogoutButton';
-import TestSign from '../../../../web/src/components/dialogBox/TestSign';
 import { WorkspaceState, WorkspaceElements, WorkspaceOptions } from './types';
 import { sortNodes, renameNode } from './nodeOperations';
 
@@ -25,7 +21,7 @@ export function renderItems(
     const sortedNodes = sortNodes(state, nodes);
     state.currentNodes = sortedNodes;
     elements.itemsGrid.innerHTML = '';
-    updateWorkspaceHeader(elements.container, state, sortedNodes.length);
+    updateWorkspaceHeader(elements.container, state);
 
     // Insert New Folder / New Study cards as first two grid items (private mode only)
     if (state.mode === 'private') {
@@ -35,9 +31,7 @@ export function renderItems(
             card.innerHTML = `
                 <div class="item-icon">+</div>
                 <div class="item-info">
-                    <span class="item-kicker">Create</span>
-                    <span class="item-title">New ${type === 'folder' ? 'Folder' : 'Study'}</span>
-                    <span class="item-meta">${type === 'folder' ? 'Organize studies' : 'Start analysis'}</span>
+                    <span class="item-title">Create ${type === 'folder' ? 'folder' : 'study'}</span>
                 </div>`;
             card.addEventListener('click', () => handlers.openCreateModal(type));
             elements.itemsGrid.appendChild(card);
@@ -243,24 +237,16 @@ export function renderItems(
     }
 }
 
-function updateWorkspaceHeader(container: HTMLElement, state: WorkspaceState, itemCount: number) {
+function updateWorkspaceHeader(container: HTMLElement, state: WorkspaceState) {
     const title = container.querySelector<HTMLElement>('#workspace-title');
-    const label = container.querySelector<HTMLElement>('#workspace-context-label');
-    const summary = container.querySelector<HTMLElement>('#workspace-summary');
     const modeCopy = {
-        private: ['Private workspace', 'Personal library'],
-        public: ['Public workspace', 'Explore shared studies'],
-        shared: ['Shared with me', 'Collaboration'],
-        trash: ['Recycle', 'Deleted items'],
+        private: 'Private workspace',
+        public: 'Public workspace',
+        shared: 'Shared with me',
+        trash: 'Recycle',
     } as const;
-    const [titleText, labelText] = modeCopy[state.mode] || modeCopy.private;
+    const titleText = modeCopy[state.mode] || modeCopy.private;
     if (title) title.textContent = titleText;
-    if (label) label.textContent = labelText;
-    if (summary) {
-        const folders = state.currentNodes.filter((node: any) => node.node_type === 'folder').length;
-        const studies = state.currentNodes.filter((node: any) => node.node_type === 'study').length;
-        summary.textContent = `${itemCount} ${itemCount === 1 ? 'item' : 'items'} · ${folders} folders · ${studies} studies`;
-    }
 }
 
 
@@ -351,14 +337,7 @@ export function renderReactComponents(
     container: HTMLElement,
     mode: string
 ) {
-    // LogoutButton is only relevant in private mode (logged-in users)
-    if (mode === 'private') {
-        const logoutContainer = container.querySelector('#logout-button-container') as HTMLElement;
-        if (logoutContainer) {
-            const root = ReactDOM.createRoot(logoutContainer);
-            root.render(React.createElement(LogoutButton));
-        }
-    }
-    // TestSign always returns null — skip creating a React root for it entirely.
+    void container;
+    void mode;
     // The #test-sign-container div stays empty and available for other injections.
 }

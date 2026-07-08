@@ -26,19 +26,16 @@
             <nav id="folder-tree" class="folder-tree">
                 <!-- Recursive folder tree will be injected here -->
             </nav>
-            <div id="logout-button-container"></div>
         </aside>
         <main class="workspace-main">
             <header class="main-header">
                 <div class="workspace-title-block">
-                    <div class="workspace-context-label" id="workspace-context-label">Workspace</div>
                     <h1 class="workspace-title" id="workspace-title">Private workspace</h1>
-                    <div class="workspace-summary" id="workspace-summary">0 items</div>
-                </div>
-                <div class="workspace-toolbar">
                     <div class="breadcrumb" id="breadcrumb">
                         <span class="breadcrumb-item" data-id="root">Root</span>
                     </div>
+                </div>
+                <div class="workspace-toolbar">
                     <div class="path-jump">
                         <label for="path-input">Path</label>
                         <input id="path-input" type="text" placeholder="root/..." autocomplete="off">
@@ -65,7 +62,6 @@
             <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
         </div>
         <div class="item-info">
-            <span class="item-kicker">Folder</span>
             <span class="item-title">{{title}}</span>
             <span class="item-error"></span>
             <span class="item-meta">{{updated_at}}</span>
@@ -79,7 +75,6 @@
             <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H6V5h12v14zM8 10h2v7H8v-7zm3-3h2v10h-2V7zm3 6h2v4h-2v-4z"/></svg>
         </div>
         <div class="item-info">
-            <span class="item-kicker">Study</span>
             <span class="item-title">{{title}}</span>
             <span class="item-error"></span>
             <span class="item-meta">{{updated_at}}</span>
@@ -121,7 +116,6 @@
         <div class="modal-card action-card window-draggable">
             <div class="modal-header window-focus-target">
                 <div class="modal-title-group">
-                    <span class="modal-eyebrow"></span>
                     <h3 class="modal-title"></h3>
                 </div>
                 <button class="modal-close">&times;</button>

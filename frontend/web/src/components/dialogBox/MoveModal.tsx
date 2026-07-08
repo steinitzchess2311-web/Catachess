@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Cross2Icon, MoveIcon } from '@radix-ui/react-icons';
 import FolderTree from './FolderTree';
 import { FolderNode, fetchFolders, resolvePathToId } from '../../utils/folderTree';
 import { api } from '@ui/assets/api';
+import './Dialog.css';
 import './MoveModal.css';
 
 interface MoveModalProps {
@@ -145,21 +147,30 @@ const MoveModal: React.FC<MoveModalProps> = ({ node, onClose, onSuccess }) => {
   }, [inputValue]);
 
   return (
-    <div className="move-modal-overlay">
-      <div ref={modalRef} className="move-modal-card">
-        <div className="move-modal-header">
-          <h3 className="move-modal-title">📦 Move</h3>
-          <button className="move-modal-close" onClick={onClose}>
-            ×
+    <div className="cc-dialog-overlay move-modal-overlay">
+      <div ref={modalRef} className="cc-dialog-card move-modal-card" role="dialog" aria-modal="true" aria-labelledby="move-modal-title">
+        <div className="cc-dialog-header">
+          <div className="cc-dialog-heading">
+            <span className="cc-dialog-icon">
+              <MoveIcon width="18" height="18" aria-hidden="true" />
+            </span>
+            <div className="cc-dialog-title-block">
+              <p className="cc-dialog-kicker">Workspace</p>
+              <h3 id="move-modal-title" className="cc-dialog-title">Move item</h3>
+              <p className="cc-dialog-subtitle">{node.title}</p>
+            </div>
+          </div>
+          <button type="button" className="cc-dialog-close" onClick={onClose} aria-label="Close">
+            <Cross2Icon width="16" height="16" />
           </button>
         </div>
 
-        <div className="move-modal-body">
-          <label className="move-modal-label">Destination</label>
+        <div className="cc-dialog-body move-modal-body">
+          <label className="cc-dialog-label">Destination folder</label>
           <input
             ref={inputRef}
             type="text"
-            className="move-modal-input"
+            className="cc-dialog-input move-modal-input"
             value={inputValue}
             onChange={(e) => {
               const newValue = e.target.value;
@@ -204,16 +215,16 @@ const MoveModal: React.FC<MoveModalProps> = ({ node, onClose, onSuccess }) => {
           )}
         </div>
 
-        <div className="move-modal-footer">
+        <div className="cc-dialog-footer">
           <button
-            className="move-modal-btn move-modal-btn-cancel"
+            className="cc-dialog-button"
             onClick={onClose}
             disabled={isMoving}
           >
             Cancel
           </button>
           <button
-            className="move-modal-btn move-modal-btn-move"
+            className="cc-dialog-button cc-dialog-button--primary"
             onClick={handleMove}
             disabled={isMoving}
           >

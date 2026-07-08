@@ -3,7 +3,7 @@
 ## Header
 Created at: 2026-07-08 18:02 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 18:49 EDT
+Last Modified at: 2026-07-08 20:33 EDT
 Last Modified by: Codex
 
 ## Page Job
@@ -27,3 +27,12 @@ Last Modified by: Codex
 - Product UI, blue and white, quiet density.
 - No decorative gradients, oversized hero treatment, or duplicate labels.
 - Icons are acceptable inside controls when they clarify the command.
+
+## Dialog Rules
+- Workspace dialogs use the shared `cc-dialog-*` primitives.
+- Dialog cards use compact radius, white surfaces, slate text, and blue primary actions.
+- Emoji must not be used as primary interface icons.
+- Each dialog header names the job, not the internal object type twice.
+- Node action menus show metadata plainly; do not hide important details behind hover-only tooltips.
+- Destructive actions use red only for the destructive control and supporting warning state.
+- Share settings use three visibility choices: Public, Private, Shared.

@@ -1,4 +1,13 @@
 import React, { useRef, useEffect } from 'react';
+import {
+  ArchiveIcon,
+  Cross2Icon,
+  FileTextIcon,
+  Link2Icon,
+  MoveIcon,
+  Pencil2Icon,
+} from '@radix-ui/react-icons';
+import './Dialog.css';
 import './NodeActionsModal.css';
 
 interface NodeActionsModalProps {
@@ -73,56 +82,68 @@ const NodeActionsModal: React.FC<NodeActionsModalProps> = ({
     if (action === 'share')  onShare(node);
   };
 
-  const icon = node.node_type === 'folder' ? '📁' : '📖';
   const typeLabel = node.node_type === 'folder' ? 'Folder' : 'Study';
+  const renderNodeIcon = () => {
+    if (node.node_type === 'folder') {
+      return (
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+          <path fill="currentColor" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+        </svg>
+      );
+    }
+    return <FileTextIcon width="18" height="18" aria-hidden="true" />;
+  };
 
   return (
-    <div className="node-actions-overlay">
-      <div ref={modalRef} className="node-actions-card">
-        <div className="node-actions-header">
-          <h3 className="node-actions-title">
-            {node.title}
-            <div className="info-tooltip">
-              <div className="tooltip-row">
-                <span className="tooltip-icon">{icon}</span>
-                <span className="tooltip-type">{typeLabel}</span>
-              </div>
-              <div className="tooltip-item">Created at: {formatDate(node.created_at)}</div>
-              <div className="tooltip-item">Last modified: {formatDate(node.updated_at)}</div>
+    <div className="cc-dialog-overlay node-actions-overlay">
+      <div ref={modalRef} className="cc-dialog-card cc-dialog-card--compact node-actions-card" role="dialog" aria-modal="true" aria-labelledby="node-actions-title">
+        <div className="cc-dialog-header">
+          <div className="cc-dialog-heading">
+            <span className="cc-dialog-icon cc-dialog-icon--neutral">{renderNodeIcon()}</span>
+            <div className="cc-dialog-title-block">
+              <p className="cc-dialog-kicker">{typeLabel}</p>
+              <h3 id="node-actions-title" className="cc-dialog-title">{node.title}</h3>
+              <p className="cc-dialog-subtitle">
+                Modified {formatDate(node.updated_at)}
+              </p>
             </div>
-          </h3>
-          <button className="node-actions-close" onClick={onClose}>
-            ×
+          </div>
+          <button type="button" className="cc-dialog-close" onClick={onClose} aria-label="Close">
+            <Cross2Icon width="16" height="16" />
           </button>
         </div>
 
-        <div className="node-actions-body">
+        <div className="cc-dialog-body node-actions-body">
+          <div className="node-actions-meta">
+            <span>Created {formatDate(node.created_at)}</span>
+            <span>Updated {formatDate(node.updated_at)}</span>
+          </div>
           <button
-            className="node-action-btn node-action-btn-share"
+            className="cc-dialog-action-btn"
             onClick={() => handleAction('share')}
           >
-            <span className="action-icon">🔗</span>
+            <Link2Icon width="17" height="17" aria-hidden="true" />
             <span className="action-label">Share</span>
           </button>
           <button
-            className="node-action-btn"
+            className="cc-dialog-action-btn"
             onClick={() => handleAction('move')}
           >
-            <span className="action-icon">📦</span>
+            <MoveIcon width="17" height="17" aria-hidden="true" />
             <span className="action-label">Move</span>
           </button>
           <button
-            className="node-action-btn"
+            className="cc-dialog-action-btn"
             onClick={() => handleAction('rename')}
           >
-            <span className="action-icon">✏️</span>
+            <Pencil2Icon width="17" height="17" aria-hidden="true" />
             <span className="action-label">Rename</span>
           </button>
           <button
-            className="node-action-btn node-action-btn-danger"
+            className="cc-dialog-action-btn cc-dialog-action-btn--danger"
             onClick={() => handleAction('delete')}
           >
-            <span className="action-icon">🗑️</span>
+            <ArchiveIcon width="17" height="17" aria-hidden="true" />
             <span className="action-label">Move to Recycle</span>
           </button>
         </div>

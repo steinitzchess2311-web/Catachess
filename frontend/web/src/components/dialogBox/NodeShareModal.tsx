@@ -1,5 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Cross2Icon,
+  DotFilledIcon,
+  FileTextIcon,
+  GlobeIcon,
+  LockClosedIcon,
+  MagnifyingGlassIcon,
+  PersonIcon,
+  Share2Icon,
+} from '@radix-ui/react-icons';
 import { api } from '@ui/assets/api';
+import './Dialog.css';
 import './NodeShareModal.css';
 
 type VisMode = 'public' | 'private' | 'shared';
@@ -12,10 +23,10 @@ interface NodeShareModalProps {
   onClose: () => void;
 }
 
-const VIS: { value: VisMode; icon: string; label: string; desc: string }[] = [
-  { value: 'public',  icon: '🌐', label: 'Public',     desc: 'Anyone can view' },
-  { value: 'private', icon: '🔒', label: 'Private',    desc: 'Only you'        },
-  { value: 'shared',  icon: '👥', label: 'Share with', desc: 'Specific people' },
+const VIS: { value: VisMode; icon: React.ReactNode; label: string; desc: string }[] = [
+  { value: 'public',  icon: <GlobeIcon width="18" height="18" />, label: 'Public',  desc: 'Anyone can view' },
+  { value: 'private', icon: <LockClosedIcon width="18" height="18" />, label: 'Private', desc: 'Only you' },
+  { value: 'shared',  icon: <Share2Icon width="18" height="18" />, label: 'Shared',  desc: 'Specific people' },
 ];
 
 const CASCADE_HINT: Record<VisMode, string | null> = {
@@ -123,25 +134,37 @@ const NodeShareModal: React.FC<NodeShareModalProps> = ({ node, onClose }) => {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   const isShared = visibility === 'shared';
-  const nodeIcon = node.node_type === 'folder' ? '📁' : '📖';
+  const renderNodeIcon = () => {
+    if (node.node_type === 'folder') {
+      return (
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+          <path fill="currentColor" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+        </svg>
+      );
+    }
+    return <FileTextIcon width="18" height="18" aria-hidden="true" />;
+  };
 
   return (
-    <div ref={overlayRef} className="nsm-overlay" onClick={handleOverlayClick}>
-      <div className="nsm-card" role="dialog" aria-modal="true" aria-label={`Share "${node.title}"`}>
+    <div ref={overlayRef} className="cc-dialog-overlay nsm-overlay" onClick={handleOverlayClick}>
+      <div className="cc-dialog-card cc-dialog-card--wide nsm-card" role="dialog" aria-modal="true" aria-label={`Share "${node.title}"`}>
 
         {/* Header */}
-        <div className="nsm-header">
-          <div className="nsm-header-meta">
-            <span className="nsm-node-icon">{nodeIcon}</span>
-            <div className="nsm-header-text">
-              <span className="nsm-header-eyebrow">Share</span>
-              <span className="nsm-node-title">{node.title}</span>
+        <div className="cc-dialog-header nsm-header">
+          <div className="cc-dialog-heading">
+            <span className="cc-dialog-icon">{renderNodeIcon()}</span>
+            <div className="cc-dialog-title-block">
+              <p className="cc-dialog-kicker">Share</p>
+              <h3 className="cc-dialog-title">{node.title}</h3>
+              <p className="cc-dialog-subtitle">{node.node_type === 'folder' ? 'Folder' : 'Study'} access settings</p>
             </div>
           </div>
-          <button type="button" className="nsm-close" onClick={onClose} aria-label="Close">×</button>
+          <button type="button" className="cc-dialog-close" onClick={onClose} aria-label="Close">
+            <Cross2Icon width="16" height="16" />
+          </button>
         </div>
 
-        <div className="nsm-body">
+        <div className="cc-dialog-body nsm-body">
 
           {/* Visibility section */}
           <span className="nsm-section-label">Visibility</span>
@@ -156,7 +179,7 @@ const NodeShareModal: React.FC<NodeShareModalProps> = ({ node, onClose }) => {
                   onClick={() => handleVisChange(value)}
                   disabled={visLoading}
                 >
-                  {active && <span className="nsm-vis-dot" />}
+                  {active && <DotFilledIcon className="nsm-vis-dot" width="16" height="16" aria-hidden="true" />}
                   <span className="nsm-vis-icon">{icon}</span>
                   <span className="nsm-vis-label">{label}</span>
                   <span className="nsm-vis-desc">{desc}</span>
@@ -177,7 +200,7 @@ const NodeShareModal: React.FC<NodeShareModalProps> = ({ node, onClose }) => {
               {/* User list */}
               <div className="nsm-user-list">
                 <div className="nsm-user-row nsm-user-row--owner">
-                  <div className="nsm-avatar nsm-avatar--owner">Y</div>
+                  <div className="nsm-avatar nsm-avatar--owner"><PersonIcon width="14" height="14" aria-hidden="true" /></div>
                   <span className="nsm-user-name">You</span>
                   <span className="nsm-badge nsm-badge--owner">Owner</span>
                 </div>
@@ -199,11 +222,11 @@ const NodeShareModal: React.FC<NodeShareModalProps> = ({ node, onClose }) => {
               {/* Search */}
               <div className="nsm-search-row">
                 <div className="nsm-search-input-wrap">
-                  <span className="nsm-search-icon">🔍</span>
+                  <MagnifyingGlassIcon className="nsm-search-icon" width="16" height="16" aria-hidden="true" />
                   <input
                     type="text"
-                    className="nsm-search-input"
-                    placeholder="Enter username…"
+                    className="cc-dialog-input nsm-search-input"
+                    placeholder="Search username"
                     value={searchQuery}
                     autoComplete="off"
                     onChange={e => { setSearchQuery(e.target.value); setSearched(false); }}
@@ -212,7 +235,7 @@ const NodeShareModal: React.FC<NodeShareModalProps> = ({ node, onClose }) => {
                 </div>
                 <button
                   type="button"
-                  className="nsm-search-btn"
+                  className="cc-dialog-button cc-dialog-button--primary nsm-search-btn"
                   onClick={handleSearch}
                   disabled={!searchQuery.trim() || isSearching}
                 >{isSearching ? '···' : 'Search'}</button>
@@ -230,7 +253,7 @@ const NodeShareModal: React.FC<NodeShareModalProps> = ({ node, onClose }) => {
                     >
                       <div className="nsm-avatar">{(u.username || '?')[0].toUpperCase()}</div>
                       <span className="nsm-result-name">{u.username}</span>
-                      <span className="nsm-result-add">+ Add</span>
+                      <span className="nsm-result-add">Add</span>
                     </button>
                   ))}
                 </div>

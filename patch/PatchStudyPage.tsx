@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useExplorerPlayers, loadPlayersFromStorage } from './modules/explorer/hooks/useExplorerPlayers';
-import { ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
+import { ArchiveIcon, ChevronDownIcon, ChevronUpIcon } from '@radix-ui/react-icons';
 import { StudyProvider, useStudy } from './studyContext';
 import { StudyBoard } from './board/studyBoard';
 import { MoveTree } from './sidebar/movetree';
@@ -341,7 +341,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
           gap: '10px',
           zIndex: 100,
         }}>
-          <span>🗑️</span>
+          <ArchiveIcon width="16" height="16" aria-hidden="true" />
           <span>This study is in the Recycle Bin. Please restore it before making any changes.</span>
           <a
             href="/workspace/trash"

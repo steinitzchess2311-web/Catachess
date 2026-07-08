@@ -250,62 +250,71 @@
 .picker-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1200;
+  padding: 24px;
 }
 
 .picker-modal {
-  background: #fff;
-  border-radius: 14px;
-  width: 480px;
-  max-width: 95vw;
-  max-height: 75vh;
+  background: #ffffff;
+  border: 1px solid #dbe7f5;
+  border-radius: 10px;
+  width: min(100%, 560px);
+  max-height: calc(100vh - 48px);
   display: flex;
   flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.22), 0 2px 8px rgba(15, 23, 42, 0.08);
   overflow: hidden;
 }
 
 .picker-header {
-  padding: 16px 20px 12px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 18px 20px;
+  border-bottom: 1px solid #e2e8f0;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: 16px;
   flex-shrink: 0;
 }
 
 .picker-header h3 {
   margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  color: #1a1a2e;
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 750;
+  color: #0f172a;
 }
 
 .picker-close-btn {
   background: none;
-  border: none;
+  border: 1px solid transparent;
+  width: 32px;
+  height: 32px;
   font-size: 20px;
   cursor: pointer;
-  color: #888;
+  color: #64748b;
   line-height: 1;
-  padding: 2px 6px;
-  border-radius: 4px;
-  transition: background 0.15s;
+  padding: 0;
+  border-radius: 8px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .picker-close-btn:hover {
-  background: #f0f0f0;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #0f172a;
 }
 
 .picker-breadcrumb {
-  padding: 8px 20px;
+  padding: 10px 20px;
   font-size: 13px;
-  color: #666;
-  border-bottom: 1px solid #f5f5f5;
+  color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -315,8 +324,8 @@
 
 .picker-breadcrumb-item {
   cursor: pointer;
-  color: #2e6bff;
-  font-weight: 500;
+  color: #2563eb;
+  font-weight: 700;
 }
 
 .picker-breadcrumb-item:hover {
@@ -324,13 +333,13 @@
 }
 
 .picker-breadcrumb-item.current {
-  color: #444;
+  color: #0f172a;
   cursor: default;
-  font-weight: 600;
+  font-weight: 750;
 }
 
 .picker-breadcrumb-sep {
-  color: #bbb;
+  color: #94a3b8;
 }
 
 .picker-body {
@@ -355,14 +364,15 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 20px;
+  min-height: 46px;
+  padding: 8px 20px;
   cursor: pointer;
-  transition: background 0.12s;
-  border-bottom: 1px solid #fafafa;
+  transition: background 0.12s, color 0.12s;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .picker-node-item:hover {
-  background: #f5f7ff;
+  background: #eff6ff;
 }
 
 .picker-node-icon {
@@ -372,7 +382,7 @@
   flex-shrink: 0;
   width: 26px;
   height: 26px;
-  border-radius: 8px;
+  border-radius: 7px;
   background: #f1f5f9;
   color: #475569;
   border: 1px solid #e2e8f0;
@@ -386,7 +396,8 @@
 
 .picker-node-title {
   font-size: 14px;
-  color: #1a1a2e;
+  color: #0f172a;
+  font-weight: 650;
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
@@ -394,11 +405,11 @@
 }
 
 .picker-node-item.is-study .picker-node-title {
-  color: #2e6bff;
+  color: #1d4ed8;
 }
 
 .picker-node-item.is-study:hover {
-  background: #eef2ff;
+  background: #eff6ff;
 }
 
 .picker-node-hint {
@@ -471,22 +482,32 @@
 }
 
 .picker-empty {
-  padding: 32px 20px;
+  padding: 34px 20px;
   text-align: center;
-  color: #aaa;
+  color: #64748b;
   font-size: 14px;
 }
 
+.picker-empty--error {
+  margin: 24px 20px;
+  padding: 14px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  text-align: left;
+}
+
 .picker-loading {
-  padding: 32px 20px;
+  padding: 34px 20px;
   text-align: center;
-  color: #999;
+  color: #64748b;
   font-size: 14px;
 }
 
 .picker-footer {
-  padding: 12px 20px;
-  border-top: 1px solid #f0f0f0;
+  padding: 16px 20px 20px;
+  border-top: 1px solid #e2e8f0;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -502,46 +523,51 @@
 
 .picker-new-study-input {
   flex: 1;
-  padding: 7px 12px;
-  font-size: 13px;
-  border: 1px solid #d0d0d0;
-  border-radius: 6px;
+  min-height: 38px;
+  padding: 8px 11px;
+  font-size: 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
   outline: none;
   font-family: inherit;
 }
 
 .picker-new-study-input:focus {
-  border-color: #2e6bff;
-  box-shadow: 0 0 0 2px rgba(46, 107, 255, 0.12);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .picker-btn {
-  padding: 7px 14px;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  border-radius: 6px;
+  min-height: 38px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
   white-space: nowrap;
 }
 
 .picker-btn.secondary {
-  background: #f0f0f0;
-  color: #444;
+  background: #ffffff;
+  color: #334155;
 }
 
 .picker-btn.secondary:hover {
-  background: #e4e4e4;
+  background: #f8fafc;
+  border-color: #94a3b8;
 }
 
 .picker-btn.primary {
-  background: #2e6bff;
+  background: #2563eb;
+  border-color: #2563eb;
   color: #fff;
 }
 
 .picker-btn.primary:hover {
-  background: #1a55e3;
+  background: #1d4ed8;
+  border-color: #1d4ed8;
 }
 
 .picker-btn:disabled {
@@ -550,10 +576,35 @@
 }
 
 .picker-error {
-  color: #e74c3c;
+  color: #b91c1c;
   font-size: 13px;
-  padding: 0 20px 8px;
+  padding: 9px 10px;
+  margin: 0 20px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
   flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .picker-overlay {
+    align-items: flex-end;
+    padding: 12px;
+  }
+
+  .picker-modal {
+    max-height: calc(100vh - 24px);
+  }
+
+  .picker-new-study-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .picker-btn,
+  .picker-new-study-input {
+    width: 100%;
+  }
 }
 
 /* ── Output footer ──────────────────────────────── */

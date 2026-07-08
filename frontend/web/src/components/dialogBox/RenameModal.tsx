@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Cross2Icon, FileTextIcon, Pencil2Icon } from '@radix-ui/react-icons';
 import { api } from '@ui/assets/api';
+import './Dialog.css';
 import './RenameModal.css';
 
 interface RenameModalProps {
@@ -131,51 +133,70 @@ const RenameModal: React.FC<RenameModalProps> = ({ node, onClose, onSuccess }) =
     }
   };
 
-  const icon = node.node_type === 'folder' ? '📁' : '📖';
   const typeLabel = node.node_type === 'folder' ? 'Folder' : 'Study';
+  const renderNodeIcon = () => {
+    if (node.node_type === 'folder') {
+      return (
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+          <path fill="currentColor" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
+        </svg>
+      );
+    }
+    return <FileTextIcon width="18" height="18" aria-hidden="true" />;
+  };
 
   return (
-    <div className="rename-modal-overlay">
-      <div ref={modalRef} className="rename-modal-card">
-        <div className="rename-modal-header">
-          <h3 className="rename-modal-title">
-            ✏️ Rename
-          </h3>
-          <button className="rename-modal-close" onClick={onClose}>
-            ×
+    <div className="cc-dialog-overlay rename-modal-overlay">
+      <div ref={modalRef} className="cc-dialog-card rename-modal-card" role="dialog" aria-modal="true" aria-labelledby="rename-modal-title">
+        <div className="cc-dialog-header">
+          <div className="cc-dialog-heading">
+            <span className="cc-dialog-icon">
+              <Pencil2Icon width="18" height="18" aria-hidden="true" />
+            </span>
+            <div className="cc-dialog-title-block">
+              <p className="cc-dialog-kicker">Workspace</p>
+              <h3 id="rename-modal-title" className="cc-dialog-title">Rename</h3>
+              <p className="cc-dialog-subtitle">{node.title}</p>
+            </div>
+          </div>
+          <button type="button" className="cc-dialog-close" onClick={onClose} aria-label="Close">
+            <Cross2Icon width="16" height="16" />
           </button>
         </div>
 
-        <div className="rename-modal-body">
-          <label className="rename-modal-label">
-            {icon} {typeLabel} Name
+        <div className="cc-dialog-body">
+          <label className="cc-dialog-label">
+            {typeLabel} name
           </label>
-          <input
-            ref={inputRef}
-            type="text"
-            className="rename-modal-input"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            disabled={isRenaming}
-          />
+          <div className="rename-modal-input-row">
+            <span className="rename-modal-node-icon">{renderNodeIcon()}</span>
+            <input
+              ref={inputRef}
+              type="text"
+              className="cc-dialog-input rename-modal-input"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isRenaming}
+            />
+          </div>
           {error && (
-            <div className="rename-modal-error">
+            <div className="cc-dialog-error">
               {error}
             </div>
           )}
         </div>
 
-        <div className="rename-modal-footer">
+        <div className="cc-dialog-footer">
           <button
-            className="rename-modal-btn rename-modal-btn-cancel"
+            className="cc-dialog-button"
             onClick={onClose}
             disabled={isRenaming}
           >
             Cancel
           </button>
           <button
-            className="rename-modal-btn rename-modal-btn-rename"
+            className="cc-dialog-button cc-dialog-button--primary"
             onClick={handleRename}
             disabled={isRenaming}
           >

@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Cross2Icon, FileTextIcon } from '@radix-ui/react-icons';
 import { api } from '@ui/assets/api';
+import './Dialog.css';
 import './CreateModal.css';
 
 interface CreateModalProps {
@@ -13,16 +15,12 @@ interface CreateModalProps {
 function CreateNodeIcon({ type }: { type: 'folder' | 'study' }) {
   if (type === 'folder') {
     return (
-      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="19" height="19" aria-hidden="true">
         <path fill="currentColor" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
       </svg>
     );
   }
-  return (
-    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
-      <path fill="currentColor" d="M16 6a4 4 0 1 1-8 0a4 4 0 0 1 8 0M12 11c-2.5 0-5 1.5-5 4v1h10v-1c0-2.5-2.5-4-5-4m-6 7h12v2H6z" />
-    </svg>
-  );
+  return <FileTextIcon width="19" height="19" aria-hidden="true" />;
 }
 
 const CreateModal: React.FC<CreateModalProps> = ({
@@ -130,43 +128,50 @@ const CreateModal: React.FC<CreateModalProps> = ({
 
   if (!isOpen) return null;
 
-  const modalTitle = type === 'folder' ? 'Create New Folder' : 'Create New Study';
+  const modalTitle = type === 'folder' ? 'Create folder' : 'Create study';
+  const objectLabel = type === 'folder' ? 'Folder name' : 'Study name';
+  const placeholder = type === 'folder' ? 'Opening preparation' : 'King pawn repertoire';
 
   return (
-    <div className="create-modal-overlay">
-      <div ref={modalRef} className="create-modal-card">
-        <div className="create-modal-header">
-          <div className={`create-modal-icon ${type === 'study' ? 'is-study' : 'is-folder'}`}>
-            <CreateNodeIcon type={type} />
+    <div className="cc-dialog-overlay create-modal-overlay">
+      <div ref={modalRef} className="cc-dialog-card create-modal-card" role="dialog" aria-modal="true" aria-labelledby="create-modal-title">
+        <div className="cc-dialog-header">
+          <div className="cc-dialog-heading">
+            <span className={`cc-dialog-icon ${type === 'study' ? '' : 'cc-dialog-icon--neutral'}`}>
+              <CreateNodeIcon type={type} />
+            </span>
+            <div className="cc-dialog-title-block">
+              <p className="cc-dialog-kicker">Workspace</p>
+              <h3 id="create-modal-title" className="cc-dialog-title">{modalTitle}</h3>
+            </div>
           </div>
-          <h3 className="create-modal-title">{modalTitle}</h3>
-          <button className="create-modal-close" onClick={onClose}>
-            ×
+          <button type="button" className="cc-dialog-close" onClick={onClose} aria-label="Close">
+            <Cross2Icon width="16" height="16" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="create-modal-body">
-          <div className="create-modal-form-group">
-            <label htmlFor="create-title" className="create-modal-label">
-              Title
+        <form onSubmit={handleSubmit}>
+          <div className="cc-dialog-body">
+            <label htmlFor="create-title" className="cc-dialog-label">
+              {objectLabel}
             </label>
             <input
               ref={inputRef}
               id="create-title"
               type="text"
-              className="create-modal-input"
-              placeholder={`Enter ${type} name`}
+              className="cc-dialog-input create-modal-input"
+              placeholder={placeholder}
               value={title}
               onChange={handleTitleChange}
               disabled={isCreating}
             />
-            {error && <div className="create-modal-error">{error}</div>}
+            {error && <div className="cc-dialog-error">{error}</div>}
           </div>
 
-          <div className="create-modal-footer">
+          <div className="cc-dialog-footer">
             <button
               type="button"
-              className="create-modal-btn create-modal-btn-cancel"
+              className="cc-dialog-button"
               onClick={onClose}
               disabled={isCreating}
             >
@@ -174,7 +179,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
             </button>
             <button
               type="submit"
-              className="create-modal-btn create-modal-btn-create"
+              className="cc-dialog-button cc-dialog-button--primary"
               disabled={isCreating || !title.trim()}
             >
               {isCreating ? 'Creating...' : 'Create'}

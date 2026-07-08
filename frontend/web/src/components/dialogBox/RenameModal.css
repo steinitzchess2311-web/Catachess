@@ -1,196 +1,22 @@
-/* RenameModal - Rename folder/study dialog */
-/* Styles consistent with MoveModal for unified design */
+/* Rename modal component-specific layout. */
 
-.rename-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--overlay-bg);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.rename-modal-card {
-  background-color: var(--surface);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-3);
-  width: 100%;
-  max-width: 420px;
-  animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Header */
-.rename-modal-header {
+.rename-modal-input-row {
   position: relative;
-  padding: 50px var(--space-lg) 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.rename-modal-title {
-  position: relative;
-  margin: 0;
-  font-size: 25px;
-  font-weight: 500;
-  font-family: var(--font-family);
-  color: var(--text-main);
-  line-height: 1.4;
-  text-align: center;
-}
-
-.rename-modal-close {
+.rename-modal-node-icon {
   position: absolute;
-  top: var(--space-lg);
-  right: var(--space-lg);
-  background: none;
-  border: none;
-  font-size: 28px;
-  line-height: 1;
-  cursor: pointer;
-  color: var(--text-secondary);
-  transition: color 0.2s ease;
-  padding: 0;
-  width: 28px;
-  height: 28px;
-  display: flex;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #2563eb;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-}
-
-.rename-modal-close:hover {
-  color: var(--text-main);
-}
-
-/* Body */
-.rename-modal-body {
-  padding: 15px var(--space-lg) var(--space-lg);
-}
-
-.rename-modal-label {
-  display: block;
-  font-size: 16px;
-  font-weight: 500;
-  font-family: var(--font-family);
-  color: var(--text-main);
-  margin-bottom: var(--space-xs);
+  pointer-events: none;
 }
 
 .rename-modal-input {
-  width: 100%;
-  height: 36px;
-  padding: var(--space-sm) var(--space-md);
-  font-size: var(--font-md);
-  font-family: var(--font-family);
-  border: 2px solid var(--border);
-  border-radius: var(--radius-sm);
-  transition: border-color 0.2s ease;
-  box-sizing: border-box;
-}
-
-.rename-modal-input:focus {
-  outline: none;
-  border-color: var(--primary);
-}
-
-.rename-modal-input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.rename-modal-error {
-  margin-top: var(--space-xs);
-  font-size: var(--font-sm);
-  color: var(--error);
-  animation: shake 0.3s ease-in-out;
-}
-
-@keyframes shake {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-8px);
-  }
-  75% {
-    transform: translateX(8px);
-  }
-}
-
-/* Footer */
-.rename-modal-footer {
-  padding: var(--space-md) var(--space-lg) var(--space-lg);
-  display: flex;
-  gap: var(--space-sm);
-  justify-content: flex-end;
-}
-
-.rename-modal-btn {
-  padding: var(--space-xs) var(--space-lg);
-  font-size: var(--font-md);
-  font-weight: 500;
-  font-family: var(--font-family);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 2px solid transparent;
-}
-
-.rename-modal-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.rename-modal-btn-cancel {
-  background: transparent;
-  border-color: var(--border);
-  color: var(--text-secondary);
-}
-
-.rename-modal-btn-cancel:hover:not(:disabled) {
-  border-color: var(--text-secondary);
-  color: var(--text-main);
-}
-
-.rename-modal-btn-rename {
-  background-color: var(--primary);
-  border-color: var(--primary);
-  color: white;
-  box-shadow: 0 2px 4px rgba(26, 115, 232, 0.2);
-}
-
-.rename-modal-btn-rename:hover:not(:disabled) {
-  background-color: var(--primary-hover);
-  border-color: var(--primary-hover);
-  box-shadow: 0 4px 8px rgba(26, 115, 232, 0.3);
-  transform: translateY(-1px);
-}
-
-.rename-modal-btn-rename:active:not(:disabled) {
-  transform: scale(0.98);
+  padding-left: 38px;
+  font-weight: 650;
 }

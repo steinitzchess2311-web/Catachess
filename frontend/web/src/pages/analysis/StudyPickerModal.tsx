@@ -151,6 +151,8 @@ export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPick
     if (e.target === e.currentTarget) onClose();
   }, [onClose]);
 
+  const showBodyError = Boolean(error) && !isLoading && nodes.length === 0;
+
   return (
     <div className="picker-overlay" onClick={handleOverlayClick}>
       <div className="picker-modal">
@@ -184,10 +186,13 @@ export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPick
             </div>
           ) : null}
           {!isUnauthed && isLoading && <div className="picker-loading">Loading...</div>}
-          {!isUnauthed && !isLoading && nodes.length === 0 && (
+          {!isUnauthed && !isLoading && showBodyError && (
+            <div className="picker-empty picker-empty--error">{error}</div>
+          )}
+          {!isUnauthed && !isLoading && !showBodyError && nodes.length === 0 && (
             <div className="picker-empty">No folders or studies here.</div>
           )}
-          {!isUnauthed && !isLoading && nodes.length > 0 && (
+          {!isUnauthed && !isLoading && !showBodyError && nodes.length > 0 && (
             <ul className="picker-node-list">
               {nodes.map((node) => (
                 <li
@@ -210,7 +215,7 @@ export function StudyPickerModal({ currentTree, onClose, onNavigate }: StudyPick
           )}
         </div>
 
-        {error && <div className="picker-error">{error}</div>}
+        {error && !showBodyError && <div className="picker-error">{error}</div>}
 
         {/* Footer: new study */}
         {!isUnauthed && (

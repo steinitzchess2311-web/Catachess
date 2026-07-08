@@ -1,6 +1,8 @@
 export class ApiClient {
     private static instance: ApiClient;
     private baseURL: string;
+    private static readonly TOKEN_KEY = 'catachess_token';
+    private static readonly USER_ID_KEY = 'catachess_user_id';
 
     private static resolveApiBase(): string {
         const envBase = import.meta.env.VITE_API_BASE as string | undefined;
@@ -54,10 +56,21 @@ export class ApiClient {
         return `Request failed with status ${status}`;
     }
 
+    private static clearStoredAuth() {
+        localStorage.removeItem(ApiClient.TOKEN_KEY);
+        localStorage.removeItem(ApiClient.USER_ID_KEY);
+        sessionStorage.removeItem(ApiClient.TOKEN_KEY);
+        sessionStorage.removeItem(ApiClient.USER_ID_KEY);
+    }
+
+    private static shouldClearAuthOnUnauthorized(endpoint: string): boolean {
+        return endpoint === '/user/profile';
+    }
+
     public async request(endpoint: string, options: RequestInit = {}): Promise<any> {
         const token =
-            localStorage.getItem('catachess_token') ||
-            sessionStorage.getItem('catachess_token');
+            localStorage.getItem(ApiClient.TOKEN_KEY) ||
+            sessionStorage.getItem(ApiClient.TOKEN_KEY);
 
         // Don't set Content-Type for FormData (browser will set it with boundary)
         const isFormData = options.body instanceof FormData;
@@ -77,12 +90,12 @@ export class ApiClient {
             });
 
             if (response.status === 401) {
-                // Clear stored credentials so the next Protected route check redirects to login
-                localStorage.removeItem('catachess_token');
-                localStorage.removeItem('catachess_user_id');
-                sessionStorage.removeItem('catachess_token');
-                sessionStorage.removeItem('catachess_user_id');
-                throw new Error('Unauthorized');
+                if (ApiClient.shouldClearAuthOnUnauthorized(endpoint)) {
+                    ApiClient.clearStoredAuth();
+                }
+                const error = new Error('Unauthorized') as Error & { status?: number };
+                error.status = response.status;
+                throw error;
             }
 
             if (!response.ok) {

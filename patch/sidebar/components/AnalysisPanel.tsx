@@ -49,7 +49,6 @@ export function AnalysisPanel({
             <div className="patch-analysis-line-rank">{line.multipv || index + 1}</div>
             <div className="patch-analysis-line-main">
               <div className="patch-analysis-line-head">
-                <span>{index === 0 ? 'Best line' : 'Candidate'}</span>
                 <strong className="patch-analysis-score" data-tone={scoreTone(line.score)}>
                   {formatScore(line.score, turn)}
                 </strong>

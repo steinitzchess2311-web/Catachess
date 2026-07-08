@@ -1,13 +1,14 @@
-Welcome to CataChess, {username}!
+Verify your CataChess account, {username}
 
-Thank you for signing up. To complete your registration, please use the verification code below:
+Use this code to finish creating your CataChess account:
 
-Your Verification Code: {code}
+{code}
 
 This code will expire in {expire_minutes} minutes.
 
-If you didn't create an account with CataChess, you can safely ignore this email.
+If you did not create a CataChess account, you can ignore this email. No account will be verified without this code.
 
 ---
-CataChess - Master Your Chess Game
-This is an automated message, please do not reply to this email.
+CataChess
+catachess.com
+This is an automated message. Please do not reply.

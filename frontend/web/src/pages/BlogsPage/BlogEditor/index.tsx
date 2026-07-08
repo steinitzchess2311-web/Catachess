@@ -108,7 +108,7 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
     try {
       setUploading(true);
       setError('');
-      const result = await blogApi.uploadImage(file);
+      const result = await blogApi.uploadImage(file, { imageType: 'cover' });
       set('coverImageUrl')(result.url);
     } catch (err: any) {
       setError(err.message || 'Failed to upload image');

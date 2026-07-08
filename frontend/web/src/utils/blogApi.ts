@@ -8,6 +8,25 @@ import { BlogArticle, PaginatedResponse, BlogListParams, BlogCategory } from '..
 
 const BASE_PATH = '/api/blogs';
 
+type BlogImageType = 'cover' | 'content';
+type BlogImageResizeMode = 'original' | 'adaptive_width';
+
+interface BlogImageUploadOptions {
+  imageType?: BlogImageType;
+  resizeMode?: BlogImageResizeMode;
+}
+
+interface BlogImageUploadResponse {
+  id: string;
+  url: string;
+  filename: string;
+  size_bytes: number;
+  width: number;
+  height: number;
+  resize_mode: BlogImageResizeMode;
+  image_type: BlogImageType;
+}
+
 /**
  * Blog API methods
  */
@@ -149,9 +168,14 @@ export const blogApi = {
    * @param file - Image file
    * @returns Image URL
    */
-  async uploadImage(file: File): Promise<{ url: string; filename: string }> {
+  async uploadImage(
+    file: File,
+    options: BlogImageUploadOptions = {}
+  ): Promise<BlogImageUploadResponse> {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('image_type', options.imageType || 'content');
+    formData.append('resize_mode', options.resizeMode || 'adaptive_width');
     const response = await api.post(`${BASE_PATH}/upload-image`, formData);
     return response;
   },

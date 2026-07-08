@@ -41,7 +41,9 @@ def init_blog_database():
 
     # Configure Alembic
     alembic_cfg = Config(str(alembic_ini_path))
-    alembic_cfg.set_main_option("sqlalchemy.url", blog_db_url)
+    # Alembic stores options in ConfigParser, where percent-encoded passwords
+    # must be escaped to avoid interpolation errors.
+    alembic_cfg.set_main_option("sqlalchemy.url", blog_db_url.replace("%", "%%"))
 
     try:
         print("\n📋 Running database migrations...")

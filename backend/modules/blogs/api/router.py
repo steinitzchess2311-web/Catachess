@@ -664,7 +664,8 @@ async def upload_image(
             "width": blog_image.width,
             "height": blog_image.height,
             "resize_mode": blog_image.resize_mode,
-            "image_type": blog_image.image_type
+            "image_type": blog_image.image_type,
+            "storage_path": blog_image.storage_path
         }
 
     except ValueError as e:

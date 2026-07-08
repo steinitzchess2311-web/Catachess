@@ -2,6 +2,7 @@
     <div class="workspace-container">
         <aside class="workspace-sidebar">
             <div class="sidebar-header">
+                <div class="workspace-section-label">Library</div>
                 <nav class="workspace-mode-nav">
                     <button class="mode-btn active" data-mode="private">Private</button>
                     <button class="mode-btn" data-mode="public">Public</button>
@@ -14,6 +15,9 @@
                         Recycle
                     </button>
                 </nav>
+            </div>
+            <div class="workspace-search-block">
+                <label class="workspace-section-label" for="workspace-search-input">Search</label>
                 <div class="workspace-search-row">
                     <input id="workspace-search-input" type="text" placeholder="Search folders / studies">
                     <button id="workspace-search-clear" type="button" aria-label="Clear search">×</button>
@@ -26,48 +30,61 @@
         </aside>
         <main class="workspace-main">
             <header class="main-header">
-                <div class="breadcrumb" id="breadcrumb">
-                    <span class="breadcrumb-item" data-id="root">Root</span>
+                <div class="workspace-title-block">
+                    <div class="workspace-context-label" id="workspace-context-label">Workspace</div>
+                    <h1 class="workspace-title" id="workspace-title">Private workspace</h1>
+                    <div class="workspace-summary" id="workspace-summary">0 items</div>
                 </div>
-                <div class="path-jump">
-                    <input id="path-input" type="text" placeholder="root/..." autocomplete="off">
-                </div>
-                <div class="view-options">
-                    <div id="sort-toggles-container"></div>
+                <div class="workspace-toolbar">
+                    <div class="breadcrumb" id="breadcrumb">
+                        <span class="breadcrumb-item" data-id="root">Root</span>
+                    </div>
+                    <div class="path-jump">
+                        <label for="path-input">Path</label>
+                        <input id="path-input" type="text" placeholder="root/..." autocomplete="off">
+                    </div>
+                    <div class="view-options">
+                        <span class="view-options-label">Sort</span>
+                        <div id="sort-toggles-container"></div>
+                    </div>
                 </div>
             </header>
             <div id="test-sign-container"></div>
-            <div id="items-grid" class="items-grid">
-                <!-- Items (folders/studies) will be injected here -->
-            </div>
+            <section class="workspace-content-shell">
+                <div id="items-grid" class="items-grid">
+                    <!-- Items (folders/studies) will be injected here -->
+                </div>
+            </section>
         </main>
     </div>
 </template>
 
 <template id="folder-item-template">
-    <div class="grid-item folder-item" data-id="{{id}}">
+    <article class="grid-item folder-item" data-id="{{id}}">
         <div class="item-icon">
-            <svg viewBox="0 0 24 24" width="48" height="48"><path fill="currentColor" d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
         </div>
         <div class="item-info">
+            <span class="item-kicker">Folder</span>
             <span class="item-title">{{title}}</span>
             <span class="item-error"></span>
             <span class="item-meta">{{updated_at}}</span>
         </div>
-    </div>
+    </article>
 </template>
 
 <template id="study-item-template">
-    <div class="grid-item study-item" data-id="{{id}}">
+    <article class="grid-item study-item" data-id="{{id}}">
         <div class="item-icon">
-            <svg viewBox="0 0 24 24" width="48" height="48"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z"/></svg>
+            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H6V5h12v14zM8 10h2v7H8v-7zm3-3h2v10h-2V7zm3 6h2v4h-2v-4z"/></svg>
         </div>
         <div class="item-info">
+            <span class="item-kicker">Study</span>
             <span class="item-title">{{title}}</span>
             <span class="item-error"></span>
             <span class="item-meta">{{updated_at}}</span>
         </div>
-    </div>
+    </article>
 </template>
 
 <template id="create-modal-template">

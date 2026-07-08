@@ -49,6 +49,7 @@ patch/tsconfig.json
 .env.local
 .env.*.local
 *.env
+docs/env.md
 
 # Blog module - contains sensitive database credentials
 backend/modules/blogs/docs/PLAN.md

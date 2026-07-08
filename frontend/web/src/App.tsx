@@ -511,6 +511,8 @@ function Layout() {
   const showTerminalLauncher =
     !location.pathname.startsWith("/games") &&
     !location.pathname.startsWith("/play") &&
+    !location.pathname.startsWith("/workspace") &&
+    !location.pathname.startsWith("/patch/workspace") &&
     !location.pathname.startsWith("/@");
   const catamazeStateRef = useRef({
     gameId: null as string | null,

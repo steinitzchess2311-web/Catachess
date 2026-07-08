@@ -14,8 +14,10 @@ import models.user  # Ensure User model is imported
 # access to the values within the .ini file in use.
 config = context.config
 
-# Override sqlalchemy.url with our settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# Override sqlalchemy.url with our settings.
+# Alembic stores options in ConfigParser, where percent-encoded passwords
+# must be escaped to avoid interpolation errors.
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

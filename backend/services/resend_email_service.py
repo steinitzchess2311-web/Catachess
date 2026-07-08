@@ -1,15 +1,13 @@
 """
 Resend email service for sending verification codes and other emails
 """
-import logging
 from pathlib import Path
 from typing import Optional
 
 import resend
 
 from core.config import settings
-
-logger = logging.getLogger(__name__)
+from core.log.log_api import logger
 
 # Set Resend API key
 resend.api_key = settings.RESEND_API_KEY

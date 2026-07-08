@@ -8,6 +8,7 @@ import io
 from datetime import datetime
 from typing import Tuple, Optional
 from uuid import uuid4
+from urllib.parse import quote
 from PIL import Image
 import boto3
 from botocore.exceptions import ClientError
@@ -38,6 +39,11 @@ class ImageUploadService:
         self.max_size_bytes = 5 * 1024 * 1024  # 5MB
         self.allowed_formats = {"JPEG", "PNG", "GIF", "WEBP"}
         self.max_width_adaptive = 1920  # Max width for adaptive mode
+
+    def build_cdn_url(self, storage_path: str) -> str:
+        """Build a browser-safe CDN URL for an R2 object key."""
+        encoded_path = quote(storage_path, safe="/")
+        return f"{self.cdn_base_url.rstrip('/')}/{encoded_path}"
 
     def _get_s3_client(self):
         """Get boto3 S3 client for R2"""
@@ -157,7 +163,7 @@ class ImageUploadService:
             )
 
             # Generate CDN URL
-            cdn_url = f"{self.cdn_base_url}/{storage_path}"
+            cdn_url = self.build_cdn_url(storage_path)
             return storage_path, cdn_url
 
         except ClientError as e:

@@ -25,6 +25,7 @@ export function renderItems(
     const sortedNodes = sortNodes(state, nodes);
     state.currentNodes = sortedNodes;
     elements.itemsGrid.innerHTML = '';
+    updateWorkspaceHeader(elements.container, state, sortedNodes.length);
 
     // Insert New Folder / New Study cards as first two grid items (private mode only)
     if (state.mode === 'private') {
@@ -32,9 +33,11 @@ export function renderItems(
             const card = document.createElement('div');
             card.className = 'grid-item new-item-card';
             card.innerHTML = `
-                <div class="item-icon" style="font-size:36px;color:var(--text-secondary)">+</div>
+                <div class="item-icon">+</div>
                 <div class="item-info">
+                    <span class="item-kicker">Create</span>
                     <span class="item-title">New ${type === 'folder' ? 'Folder' : 'Study'}</span>
+                    <span class="item-meta">${type === 'folder' ? 'Organize studies' : 'Start analysis'}</span>
                 </div>`;
             card.addEventListener('click', () => handlers.openCreateModal(type));
             elements.itemsGrid.appendChild(card);
@@ -205,6 +208,15 @@ export function renderItems(
         elements.itemsGrid.appendChild(item);
     });
 
+    if (sortedNodes.length === 0 && state.mode !== 'private') {
+        const empty = document.createElement('div');
+        empty.className = 'workspace-empty-state';
+        empty.textContent = state.mode === 'trash'
+            ? 'Recycle is empty.'
+            : 'No folders or studies in this view.';
+        elements.itemsGrid.appendChild(empty);
+    }
+
     // Harmonized reveal animation for workspace cards to avoid abrupt pop-in.
     const cards = Array.from(elements.itemsGrid.querySelectorAll('.grid-item')) as HTMLElement[];
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -228,6 +240,26 @@ export function renderItems(
                 });
             });
         });
+    }
+}
+
+function updateWorkspaceHeader(container: HTMLElement, state: WorkspaceState, itemCount: number) {
+    const title = container.querySelector<HTMLElement>('#workspace-title');
+    const label = container.querySelector<HTMLElement>('#workspace-context-label');
+    const summary = container.querySelector<HTMLElement>('#workspace-summary');
+    const modeCopy = {
+        private: ['Private workspace', 'Personal library'],
+        public: ['Public workspace', 'Explore shared studies'],
+        shared: ['Shared with me', 'Collaboration'],
+        trash: ['Recycle', 'Deleted items'],
+    } as const;
+    const [titleText, labelText] = modeCopy[state.mode] || modeCopy.private;
+    if (title) title.textContent = titleText;
+    if (label) label.textContent = labelText;
+    if (summary) {
+        const folders = state.currentNodes.filter((node: any) => node.node_type === 'folder').length;
+        const studies = state.currentNodes.filter((node: any) => node.node_type === 'study').length;
+        summary.textContent = `${itemCount} ${itemCount === 1 ? 'item' : 'items'} · ${folders} folders · ${studies} studies`;
     }
 }
 

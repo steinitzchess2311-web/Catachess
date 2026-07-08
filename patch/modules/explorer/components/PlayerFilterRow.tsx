@@ -10,11 +10,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { fetchPlayerSuggestions } from '../api';
 import type { PlayerSuggestion } from '../api';
+import type { PlayerColorFilter } from '../types';
 
 interface Props {
   players: string[];
+  playerColor: PlayerColorFilter;
   onAdd: (name: string) => void;
   onRemove: (name: string) => void;
+  onPlayerColorChange: (value: PlayerColorFilter) => void;
 }
 
 function formatGames(n: number): string {
@@ -76,7 +79,13 @@ function Dropdown({ suggestions, loading, query, anchor, onSelect }: DropdownPro
 
 // ---- Main component -----------------------------------------
 
-export function PlayerFilterRow({ players, onAdd, onRemove }: Props) {
+const PLAYER_COLOR_OPTIONS: { value: PlayerColorFilter; label: string }[] = [
+  { value: 'any', label: 'All' },
+  { value: 'white', label: 'White' },
+  { value: 'black', label: 'Black' },
+];
+
+export function PlayerFilterRow({ players, playerColor, onAdd, onRemove, onPlayerColorChange }: Props) {
   const [open,        setOpen]        = useState(false);
   const [query,       setQuery]       = useState('');
   const [suggestions, setSuggestions] = useState<PlayerSuggestion[]>([]);
@@ -185,6 +194,21 @@ export function PlayerFilterRow({ players, onAdd, onRemove }: Props) {
                 </svg>
               </button>
             </span>
+          ))}
+        </div>
+      )}
+
+      {players.length > 0 && (
+        <div className="explorer-pf__side-toggle" aria-label="Selected player color">
+          {PLAYER_COLOR_OPTIONS.map(option => (
+            <button
+              key={option.value}
+              type="button"
+              className={`explorer-pf__side-btn${playerColor === option.value ? ' is-active' : ''}`}
+              onClick={() => onPlayerColorChange(option.value)}
+            >
+              {option.label}
+            </button>
           ))}
         </div>
       )}

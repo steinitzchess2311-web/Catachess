@@ -4,20 +4,20 @@ import type { MastersFilters } from '../types';
 interface FilterBarProps {
   filters: MastersFilters;
   onChange: (f: MastersFilters) => void;
-  /** When true, year filters are visually paused (player filter is active) */
-  playerFilterActive?: boolean;
 }
 
-export function FilterBar({ filters, onChange, playerFilterActive }: FilterBarProps) {
+const DATABASE_MIN_YEAR = 1859;
+
+export function FilterBar({ filters, onChange }: FilterBarProps) {
   return (
-    <div className={`explorer-filters${playerFilterActive ? ' explorer-filters--paused' : ''}`}>
+    <div className="explorer-filters">
       <div className="explorer-filter-row">
         <span className="explorer-filter-label">Since</span>
         <input
           type="number"
           className="explorer-year-input"
-          placeholder="1995"
-          min={1995}
+          placeholder={String(DATABASE_MIN_YEAR)}
+          min={DATABASE_MIN_YEAR}
           max={2030}
           value={filters.since ?? ''}
           onChange={(e) =>
@@ -29,7 +29,7 @@ export function FilterBar({ filters, onChange, playerFilterActive }: FilterBarPr
           type="number"
           className="explorer-year-input"
           placeholder="2026"
-          min={1995}
+          min={DATABASE_MIN_YEAR}
           max={2030}
           value={filters.until ?? ''}
           onChange={(e) =>
@@ -37,17 +37,6 @@ export function FilterBar({ filters, onChange, playerFilterActive }: FilterBarPr
           }
         />
       </div>
-
-      {playerFilterActive && (
-        <div className="explorer-filter-paused-note">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          Year filters paused — player filter active
-        </div>
-      )}
     </div>
   );
 }

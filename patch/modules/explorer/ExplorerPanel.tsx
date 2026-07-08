@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './explorer.css';
 import { useExplorer } from './useExplorer';
 import { FilterBar } from './components/FilterBar';
@@ -6,6 +6,7 @@ import { MoveTable } from './components/MoveTable';
 import { WinBar } from './components/WinBar';
 import { PositionGameList } from './components/PositionGameList';
 import { PlayerFilterRow } from './components/PlayerFilterRow';
+import type { PlayerColorFilter } from './types';
 import { totalGames, formatGames } from './types';
 
 interface ExplorerPanelProps {
@@ -28,23 +29,27 @@ function LoadingDots() {
 }
 
 export function ExplorerPanel({ fen, onMoveSelect, players, onAddPlayer, onRemovePlayer }: ExplorerPanelProps) {
+  const [playerColor, setPlayerColor] = useState<PlayerColorFilter>('any');
 
-  const { data, loading, error, mastersFilters, setMastersFilters } = useExplorer(fen, players);
+  const { data, loading, error, mastersFilters, setMastersFilters } = useExplorer(fen, players, playerColor);
   const total = data ? totalGames(data) : 0;
 
   return (
     <div className="explorer-panel">
       <div className="explorer-body">
-        <FilterBar
-          filters={mastersFilters}
-          onChange={setMastersFilters}
-          playerFilterActive={players.length > 0}
-        />
+        {players.length === 0 && (
+          <FilterBar
+            filters={mastersFilters}
+            onChange={setMastersFilters}
+          />
+        )}
 
         <PlayerFilterRow
           players={players}
+          playerColor={playerColor}
           onAdd={onAddPlayer}
           onRemove={onRemovePlayer}
+          onPlayerColorChange={setPlayerColor}
         />
 
         {loading && <LoadingDots />}
@@ -62,7 +67,7 @@ export function ExplorerPanel({ fen, onMoveSelect, players, onAddPlayer, onRemov
           <MoveTable moves={data.moves} onMoveClick={onMoveSelect} />
         )}
 
-        <PositionGameList fen={fen} players={players} />
+        <PositionGameList fen={fen} players={players} playerColor={playerColor} />
       </div>
     </div>
   );

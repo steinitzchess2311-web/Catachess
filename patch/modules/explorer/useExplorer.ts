@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchMasters } from './api';
-import type { ExplorerResponse, MastersFilters } from './types';
+import type { ExplorerResponse, MastersFilters, PlayerColorFilter } from './types';
 
 // ---- Stored state ------------------------------------------
 
@@ -44,10 +44,13 @@ const DEFAULT_MASTERS: MastersFilters = {};
 /**
  * Fetches /masters for move stats + aggregate counts.
  * When `players` is non-empty, all stats are scoped to those players.
- * Year filters (since/until) are silently skipped when players are active
- * (the backend ignores them in that mode anyway).
+ * Year filters (since/until) are skipped when players are active.
  */
-export function useExplorer(fen: string, players: string[] = []): UseExplorerResult {
+export function useExplorer(
+  fen: string,
+  players: string[] = [],
+  playerColor: PlayerColorFilter = 'any',
+): UseExplorerResult {
   const [mastersFilters, setMastersFilters] = useStoredState<MastersFilters>(
     'explorer.masters',
     DEFAULT_MASTERS,
@@ -64,7 +67,7 @@ export function useExplorer(fen: string, players: string[] = []): UseExplorerRes
   // Cache key: fen + year filters (only relevant when no player filter) + players
   const playersKey = players.join('\0');
   const filtersKey = players.length === 0 ? JSON.stringify(mastersFilters) : '{}';
-  const cacheKey   = `masters:${fen}:${filtersKey}:${playersKey}`;
+  const cacheKey   = `masters:${fen}:${filtersKey}:${playersKey}:${playerColor}`;
 
   useEffect(() => {
     if (!fen) return;
@@ -91,7 +94,7 @@ export function useExplorer(fen: string, players: string[] = []): UseExplorerRes
       setLoading(true);
       setError(null);
 
-      fetchMasters(fen, mastersFilters, players, controller.signal)
+      fetchMasters(fen, mastersFilters, players, playerColor, controller.signal)
         .then((result) => {
           cacheRef.current.set(cacheKey, result);
           setData(result);

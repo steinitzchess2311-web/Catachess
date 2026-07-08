@@ -53,6 +53,8 @@ export interface MastersFilters {
   until?: number;
 }
 
+export type PlayerColorFilter = 'any' | 'white' | 'black';
+
 // ---- /masters/games response types ---------------------------
 
 export type SortOrder = 'elo_desc' | 'year_desc' | 'year_asc';

@@ -5,7 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchMastersGames } from '../api';
-import type { GameListItem, SortOrder } from '../types';
+import type { GameListItem, PlayerColorFilter, SortOrder } from '../types';
 
 export interface UseMastersGamesResult {
   games: GameListItem[];
@@ -19,6 +19,7 @@ export interface UseMastersGamesResult {
 export function useMastersGames(
   fen: string,
   players: string[],
+  playerColor: PlayerColorFilter,
   sort: SortOrder,
 ): UseMastersGamesResult {
   const [games, setGames] = useState<GameListItem[]>([]);
@@ -29,7 +30,7 @@ export function useMastersGames(
   const [total, setTotal] = useState(0);
 
   const keyRef = useRef('');
-  const key = `${fen}||${JSON.stringify(players)}||${sort}`;
+  const key = `${fen}||${JSON.stringify(players)}||${playerColor}||${sort}`;
 
   // FEN / players / sort 变化时重置并首次加载
   useEffect(() => {
@@ -45,7 +46,7 @@ export function useMastersGames(
 
     const controller = new AbortController();
 
-    fetchMastersGames(fen, players, sort, null, controller.signal)
+    fetchMastersGames(fen, players, playerColor, sort, null, controller.signal)
       .then(data => {
         if (keyRef.current !== key) return;
         setGames(data.games);
@@ -71,7 +72,7 @@ export function useMastersGames(
     const currentKey = key;
     setLoading(true);
 
-    fetchMastersGames(fen, players, sort, cursor)
+    fetchMastersGames(fen, players, playerColor, sort, cursor)
       .then(data => {
         if (keyRef.current !== currentKey) return;
         setGames(prev => {
@@ -90,7 +91,7 @@ export function useMastersGames(
         setLoading(false);
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fen, players, sort, cursor, loading, hasMore, key]);
+  }, [fen, players, playerColor, sort, cursor, loading, hasMore, key]);
 
   return { games, loading, error, hasMore, loadMore, total };
 }

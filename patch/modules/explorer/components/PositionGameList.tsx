@@ -5,11 +5,12 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { useMastersGames } from '../hooks/useMastersGames';
-import type { SortOrder } from '../types';
+import type { PlayerColorFilter, SortOrder } from '../types';
 
 interface Props {
   fen: string;
   players: string[];
+  playerColor: PlayerColorFilter;
 }
 
 const SORT_OPTIONS: { label: string; value: SortOrder }[] = [
@@ -28,9 +29,9 @@ function LoadingDots() {
   );
 }
 
-export function PositionGameList({ fen, players }: Props) {
+export function PositionGameList({ fen, players, playerColor }: Props) {
   const [sort, setSort] = useState<SortOrder>('elo_desc');
-  const { games, loading, error, hasMore, loadMore, total } = useMastersGames(fen, players, sort);
+  const { games, loading, error, hasMore, loadMore, total } = useMastersGames(fen, players, playerColor, sort);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
 

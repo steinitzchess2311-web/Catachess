@@ -1,4 +1,4 @@
-import type { ExplorerResponse, MastersFilters, GameDetail, GamesListResponse, SortOrder } from './types';
+import type { ExplorerResponse, MastersFilters, GameDetail, GamesListResponse, SortOrder, PlayerColorFilter } from './types';
 
 const BASE = 'https://database.catachess.com';
 
@@ -13,14 +13,16 @@ export async function fetchMasters(
   fen: string,
   filters: MastersFilters,
   players: string[] = [],
+  playerColor: PlayerColorFilter = 'any',
   signal?: AbortSignal,
   options?: FetchMastersOptions,
 ): Promise<ExplorerResponse> {
   const url = new URL(`${BASE}/masters`);
   url.searchParams.set('fen', fen);
-  // player= filter (when present, backend ignores since/until)
   players.forEach(p => url.searchParams.append('player', p));
-  // year filters — only sent when no player filter (backend ignores them otherwise)
+  if (players.length > 0 && playerColor !== 'any') {
+    url.searchParams.set('player_color', playerColor);
+  }
   if (players.length === 0) {
     if (filters.since != null) url.searchParams.set('since', String(filters.since));
     if (filters.until != null) url.searchParams.set('until', String(filters.until));
@@ -40,6 +42,7 @@ export async function fetchMasters(
 export async function fetchMastersGames(
   fen: string,
   players: string[],
+  playerColor: PlayerColorFilter,
   sort: SortOrder,
   cursor: string | null,
   signal?: AbortSignal,
@@ -48,6 +51,9 @@ export async function fetchMastersGames(
   url.searchParams.set('fen', fen);
   url.searchParams.set('sort', sort);
   players.forEach(p => url.searchParams.append('player', p));
+  if (players.length > 0 && playerColor !== 'any') {
+    url.searchParams.set('player_color', playerColor);
+  }
   if (cursor) url.searchParams.set('cursor', cursor);
 
   const res = await fetch(url.toString(), { signal });

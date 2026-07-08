@@ -59,22 +59,6 @@
   flex-wrap: wrap;
 }
 
-/* When player filter is active, year inputs are paused (backend ignores them) */
-.explorer-filters--paused .explorer-filter-row {
-  opacity: 0.4;
-  pointer-events: none;
-}
-
-.explorer-filter-paused-note {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  color: #5b7bff;
-  padding-top: 2px;
-  line-height: 1.4;
-}
-
 .explorer-filter-label {
   font-size: 11px;
   color: #999;
@@ -617,6 +601,41 @@
 .explorer-pf__badge-remove:hover {
   background: rgba(46, 74, 255, 0.24);
   color: #2e4aff;
+}
+
+.explorer-pf__side-toggle {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid #d8e2f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.explorer-pf__side-btn {
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #5d6b82;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1;
+  padding: 7px 6px;
+  transition: background 0.14s, box-shadow 0.14s, color 0.14s;
+}
+
+.explorer-pf__side-btn:hover {
+  color: #173e7a;
+  background: #edf4ff;
+}
+
+.explorer-pf__side-btn.is-active {
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+  color: #0d4ea6;
 }
 
 /* Input row */

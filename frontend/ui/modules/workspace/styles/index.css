@@ -164,10 +164,10 @@
     border-bottom: 1px solid #dbe7f5;
     display: grid;
     grid-template-columns: minmax(240px, 1fr) minmax(420px, 1.25fr);
-    gap: 32px;
+    gap: 28px;
     align-items: center;
-    min-height: 150px;
-    padding: 34px 24px 30px;
+    min-height: 104px;
+    padding: 20px 24px 18px;
     position: relative;
     z-index: 20;
 }
@@ -202,7 +202,7 @@
     color: #475569;
     font-size: 18px;
     font-weight: 520;
-    margin-top: 18px;
+    margin-top: 10px;
     white-space: nowrap;
 }
 
@@ -727,9 +727,9 @@
 
     .main-header {
         grid-template-columns: 1fr;
-        gap: 18px;
-        min-height: 168px;
-        padding: 26px 16px 22px;
+        gap: 14px;
+        min-height: 130px;
+        padding: 18px 16px 16px;
     }
 
     .workspace-toolbar {
@@ -743,7 +743,7 @@
         white-space: normal;
         flex-wrap: wrap;
         font-size: 15px;
-        margin-top: 12px;
+        margin-top: 8px;
     }
 
     .view-options {

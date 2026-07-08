@@ -144,7 +144,9 @@ def link_images_to_article(
             )
             db.add(assoc)
 
-        # Update image metadata
+        # Update image metadata. blog_article_images is canonical; article_id is
+        # kept as a legacy primary-reference field for admin/cleanup visibility.
+        image.article_id = article_id
         image.is_orphan = False
         image.last_referenced_at = datetime.utcnow()
         image.marked_for_deletion_at = None  # Clear deletion mark if any
@@ -214,10 +216,13 @@ def unlink_removed_images(
 
             if not other_uses:
                 # No other articles use this image - mark as orphan
+                image.article_id = None
                 image.is_orphan = True
                 marked_orphan_count += 1
                 if verbose:
                     print(f"🏴 Marked as orphan: {image.filename}")
+            else:
+                image.article_id = other_uses.article_id
 
     db.commit()
 

@@ -173,11 +173,7 @@ export function StudySidebar({
           <AnalysisPanel
             engineEnabled={engineEnabled}
             lines={formattedLines}
-            status={engineAnalysis.status}
-            health={engineAnalysis.health}
             error={engineAnalysis.error}
-            lastUpdated={engineAnalysis.lastUpdated}
-            engineOrigin={engineAnalysis.engineOrigin}
             turn={getTurn(state.currentFen) ?? 'w'}
           />
         </div>

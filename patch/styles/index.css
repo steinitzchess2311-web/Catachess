@@ -1483,13 +1483,20 @@ main {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
   padding: 10px;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+  transition: none;
+}
+
+.patch-analysis-settings:hover {
+  box-shadow: none;
 }
 
 .patch-analysis-field select {
   min-height: 32px;
   border: 1px solid rgba(20, 25, 34, 0.14);
   border-radius: 8px;
-  background: #f8fafc;
+  background: #ffffff;
   color: #111827;
   padding: 0 8px;
 }
@@ -1513,59 +1520,56 @@ main {
 }
 
 .patch-analysis-panel {
-  gap: 10px;
+  gap: 0;
   padding: 0;
   overflow: hidden;
-  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.08);
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
 }
 
-.patch-analysis-hero {
+.patch-analysis-panel:hover {
+  box-shadow: none;
+}
+
+.patch-analysis-summary {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  padding: 14px;
-  border-bottom: 1px solid rgba(20, 25, 34, 0.10);
-  background:
-    linear-gradient(135deg, rgba(19, 116, 91, 0.12), rgba(255, 255, 255, 0) 48%),
-    #fbfcfd;
-}
-
-.patch-analysis-kicker {
-  color: #647083;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
 }
 
 .patch-analysis-title {
-  margin: 4px 0 0;
+  margin: 0;
   color: #111827;
-  font-size: 18px;
-  line-height: 1.1;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
   letter-spacing: 0;
 }
 
 .patch-analysis-primary-score {
-  min-width: 86px;
-  padding: 9px 10px;
-  border-radius: 8px;
-  background: #111827;
-  color: #fde68a;
-  text-align: center;
-  font-size: 22px;
-  font-weight: 850;
+  min-width: 58px;
+  color: #111827;
+  text-align: right;
+  font-size: 18px;
+  font-weight: 750;
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
 .patch-analysis-primary-score[data-tone="good"] {
-  color: #bbf7d0;
+  color: #15803d;
+}
+
+.patch-analysis-primary-score[data-tone="equal"] {
+  color: #4b5563;
 }
 
 .patch-analysis-primary-score[data-tone="bad"] {
-  color: #fecaca;
+  color: #b91c1c;
 }
 
 .patch-analysis-status {
@@ -1628,15 +1632,15 @@ main {
 
 .patch-analysis-error {
   margin: 0 14px;
-  border: 1px solid rgba(220, 38, 38, 0.18);
+  border: 1px solid #fecaca;
   border-radius: 8px;
-  background: rgba(254, 242, 242, 0.88);
-  padding: 10px 12px;
+  background: #fef2f2;
+  padding: 9px 10px;
 }
 
 .patch-analysis-lines {
-  gap: 8px;
-  padding: 0 14px 14px;
+  gap: 0;
+  padding: 0;
   font-family: inherit;
   line-height: 1.45;
 }
@@ -1644,23 +1648,28 @@ main {
 .patch-analysis-line {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
-  border: 1px solid rgba(20, 25, 34, 0.10);
-  border-radius: 8px;
+  gap: 12px;
+  border: 0;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 0;
   background: #ffffff;
-  padding: 10px;
+  padding: 12px 14px;
+}
+
+.patch-analysis-line:last-child {
+  border-bottom: 0;
 }
 
 .patch-analysis-line-rank {
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   display: grid;
   place-items: center;
-  border-radius: 8px;
-  background: #eef5f2;
-  color: #13745b;
+  border-radius: 6px;
+  background: #f1f5f9;
+  color: #475569;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .patch-analysis-line-main {
@@ -1674,17 +1683,17 @@ main {
   justify-content: space-between;
   gap: 10px;
   align-items: baseline;
-  color: #647083;
-  font-size: 11px;
-  font-weight: 850;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .patch-analysis-score {
   color: #111827;
-  font-size: 18px;
-  font-weight: 850;
+  font-size: 15px;
+  font-weight: 750;
   line-height: 1;
   text-align: right;
   font-variant-numeric: tabular-nums;
@@ -1704,18 +1713,19 @@ main {
 
 .patch-analysis-pv {
   min-width: 0;
-  color: #384254;
+  color: #374151;
   overflow-wrap: anywhere;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 12px;
 }
 
 .patch-analysis-empty {
-  border: 1px dashed rgba(20, 25, 34, 0.14);
-  border-radius: 8px;
-  background: #f8fafc;
-  padding: 16px 12px;
-  color: #647083;
+  border: 0;
+  border-top: 1px solid #e2e8f0;
+  border-radius: 0;
+  background: #ffffff;
+  padding: 18px 14px;
+  color: #64748b;
   text-align: center;
 }
 
@@ -1858,7 +1868,7 @@ main {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .patch-analysis-hero {
+  .patch-analysis-summary {
     grid-template-columns: 1fr;
   }
 

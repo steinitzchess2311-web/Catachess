@@ -8,14 +8,12 @@ import { formatSanWithMoveNumbers } from '@patch/sidebar/utils/formatters';
 
 export function AnalysisSidebar() {
   const { state } = useStudy();
-  const [depth, setDepth] = useState(14);
   const [multipv, setMultipv] = useState(3);
   const [engineEnabled, setEngineEnabled] = useState(false);
 
   const engineAnalysis = useEngineAnalysis({
     enabled: engineEnabled,
     fen: state.currentFen,
-    depth,
     multipv,
   });
 
@@ -34,8 +32,8 @@ export function AnalysisSidebar() {
   return (
     <div className="analysis-sidebar-inner">
       <AnalysisSettings
-        depth={depth}
-        onDepthChange={setDepth}
+        currentDepth={engineAnalysis.currentDepth}
+        nps={engineAnalysis.nps}
         multipv={multipv}
         onMultipvChange={setMultipv}
         engineEnabled={engineEnabled}
@@ -44,11 +42,7 @@ export function AnalysisSidebar() {
       <AnalysisPanel
         engineEnabled={engineEnabled}
         lines={formattedLines}
-        status={engineAnalysis.status}
-        health={engineAnalysis.health}
         error={engineAnalysis.error}
-        lastUpdated={engineAnalysis.lastUpdated}
-        engineOrigin={engineAnalysis.engineOrigin}
       />
     </div>
   );

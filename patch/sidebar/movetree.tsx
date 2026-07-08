@@ -78,6 +78,32 @@ const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
     canPromote: boolean;
   } | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = React.useState<string | null>(null);
+  const menuRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (!menuState) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && menuRef.current?.contains(target)) {
+        return;
+      }
+      setMenuState(null);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuState(null);
+      }
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [menuState]);
 
   const handleReload = React.useCallback(() => {
     if (chapterId) {
@@ -167,9 +193,12 @@ const MoveTreeDisplay = React.memo(function MoveTreeDisplay({
         const isBase = menuNode?.is_base;
         return (
           <div
+            ref={menuRef}
             className="patch-context-menu"
             style={{ top: menuState.y, left: menuState.x }}
             onMouseLeave={() => setMenuState(null)}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
           >
             {!isBase && (
               <button

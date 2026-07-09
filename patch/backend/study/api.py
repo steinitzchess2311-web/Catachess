@@ -18,10 +18,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .models import StudyTreeDTO, TreeResponse
+from modules.workspace.api.deps import get_current_user_id, get_event_bus, get_node_service
 from modules.workspace.storage.r2_client import R2Client, create_r2_client_from_env
 from modules.workspace.storage.keys import R2Keys
 from modules.workspace.db.repos.study_repo import StudyRepository
 from modules.workspace.db.session import get_session
+from modules.workspace.domain.policies.permissions import require_node_write_access
+from modules.workspace.domain.services.node_service import NodeNotFoundError, NodeService, PermissionDeniedError
+from modules.workspace.events.bus import EventBus, publish_chapter_tree_saved
 
 router = APIRouter(prefix="/study-patch", tags=["study-patch"])
 logger = logging.getLogger(__name__)
@@ -95,19 +99,60 @@ async def get_r2_client() -> R2Client:
 async def get_study_repo(session: AsyncSession = Depends(get_session)) -> StudyRepository:
     return StudyRepository(session)
 
+async def _get_chapter_and_study_node(
+    chapter_id: str,
+    user_id: str,
+    study_repo: StudyRepository,
+    node_service: NodeService,
+):
+    """Resolve a chapter to its parent study node and enforce read access."""
+    chapter = await study_repo.get_chapter_by_id(chapter_id)
+    if not chapter:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chapter not found")
+    try:
+        study_node = await node_service.get_node(chapter.study_id, actor_id=user_id)
+    except NodeNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    except PermissionDeniedError:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chapter not found")
+    return chapter, study_node
+
+async def _require_chapter_tree_write(
+    chapter_id: str,
+    user_id: str,
+    study_repo: StudyRepository,
+    node_service: NodeService,
+):
+    """Resolve a chapter and require study editor/admin/owner access."""
+    chapter, study_node = await _get_chapter_and_study_node(
+        chapter_id,
+        user_id,
+        study_repo,
+        node_service,
+    )
+    try:
+        await require_node_write_access(node_service.acl_repo, study_node, user_id)
+    except PermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    return chapter, study_node
+
 @router.get("/chapter/{chapter_id}/tree", response_model=TreeResponse)
 async def get_chapter_tree(
     chapter_id: str,
+    user_id: str = Depends(get_current_user_id),
     r2_client: R2Client = Depends(get_r2_client),
-    study_repo: StudyRepository = Depends(get_study_repo)
+    study_repo: StudyRepository = Depends(get_study_repo),
+    node_service: NodeService = Depends(get_node_service),
 ):
     """Get the tree.json for a chapter from R2."""
     key = R2Keys.chapter_tree_json(chapter_id)
     try:
-        # Get chapter metadata (including starting_fen)
-        chapter = await study_repo.get_chapter_by_id(chapter_id)
-        if not chapter:
-            return TreeResponse(success=False, error="Chapter not found")
+        chapter, _study_node = await _get_chapter_and_study_node(
+            chapter_id,
+            user_id,
+            study_repo,
+            node_service,
+        )
 
         if not r2_client.exists(key):
             return TreeResponse(success=False, error="Tree not found")
@@ -117,20 +162,60 @@ async def get_chapter_tree(
         return TreeResponse(
             success=True,
             tree=StudyTreeDTO(**tree_data),
-            starting_fen=chapter.starting_fen  # Include starting_fen from database
+            starting_fen=chapter.starting_fen,  # Include starting_fen from database
+            tree_revision=chapter.tree_revision,
+            tree_updated_at=chapter.tree_updated_at.isoformat() if chapter.tree_updated_at else None,
         )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to get tree for chapter {chapter_id}: {e}")
         return TreeResponse(success=False, error=str(e))
+
+@router.get("/chapter/{chapter_id}/tree-meta")
+async def get_chapter_tree_meta(
+    chapter_id: str,
+    user_id: str = Depends(get_current_user_id),
+    study_repo: StudyRepository = Depends(get_study_repo),
+    node_service: NodeService = Depends(get_node_service),
+):
+    """Return lightweight chapter tree revision metadata for refresh polling."""
+    try:
+        chapter, _study_node = await _get_chapter_and_study_node(
+            chapter_id,
+            user_id,
+            study_repo,
+            node_service,
+        )
+        return {
+            "success": True,
+            "tree_revision": chapter.tree_revision,
+            "tree_updated_at": chapter.tree_updated_at.isoformat() if chapter.tree_updated_at else None,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get tree metadata for chapter {chapter_id}: {e}")
+        return {"success": False, "error": str(e)}
 
 @router.put("/chapter/{chapter_id}/tree", response_model=TreeResponse)
 async def put_chapter_tree(
     chapter_id: str,
     tree: StudyTreeDTO,
     request: Request,
-    r2_client: R2Client = Depends(get_r2_client)
+    user_id: str = Depends(get_current_user_id),
+    r2_client: R2Client = Depends(get_r2_client),
+    study_repo: StudyRepository = Depends(get_study_repo),
+    node_service: NodeService = Depends(get_node_service),
+    event_bus: EventBus = Depends(get_event_bus),
 ):
     """Save the tree.json for a chapter to R2."""
+    chapter, study_node = await _require_chapter_tree_write(
+        chapter_id,
+        user_id,
+        study_repo,
+        node_service,
+    )
     validation_errors = _validate_tree_structure(tree)
     if validation_errors:
         raise HTTPException(
@@ -178,7 +263,11 @@ async def put_chapter_tree(
                     chapter_id,
                     content_hash,
                 )
-                return TreeResponse(success=True)
+                return TreeResponse(
+                    success=True,
+                    tree_revision=chapter.tree_revision,
+                    tree_updated_at=chapter.tree_updated_at.isoformat() if chapter.tree_updated_at else None,
+                )
         except ClientError as metadata_error:
             if not _is_not_found_error(metadata_error):
                 logger.warning(
@@ -189,6 +278,21 @@ async def put_chapter_tree(
 
         upload_metadata = {"client-tree-hash": verified_client_hash} if verified_client_hash else None
         upload_result = r2_client.upload_json(key, content, metadata=upload_metadata)
+        chapter.pgn_hash = upload_result.content_hash
+        chapter.pgn_size = upload_result.size
+        chapter.r2_etag = upload_result.etag
+        chapter.pgn_status = "ready"
+        chapter = await study_repo.mark_chapter_tree_saved(chapter)
+        workspace_id = study_node.path.strip("/").split("/")[0] if study_node.path else None
+        await publish_chapter_tree_saved(
+            event_bus,
+            actor_id=user_id,
+            study_id=chapter.study_id,
+            chapter_id=chapter_id,
+            revision=chapter.tree_revision,
+            content_hash=upload_result.content_hash,
+            workspace_id=workspace_id,
+        )
         logger.info(
             "Tree saved for chapter %s (size: %s bytes, content_hash: %s)",
             chapter_id,
@@ -197,7 +301,13 @@ async def put_chapter_tree(
         )
         if verified_client_hash:
             logger.info(f"Verified client tree hash for chapter {chapter_id}: {verified_client_hash}")
-        return TreeResponse(success=True)
+        return TreeResponse(
+            success=True,
+            tree_revision=chapter.tree_revision,
+            tree_updated_at=chapter.tree_updated_at.isoformat() if chapter.tree_updated_at else None,
+        )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to save tree for chapter {chapter_id}: {e}")
         return TreeResponse(success=False, error=str(e))
@@ -205,8 +315,10 @@ async def put_chapter_tree(
 @router.get("/chapter/{chapter_id}/pgn-export")
 async def export_chapter_pgn(
     chapter_id: str,
+    user_id: str = Depends(get_current_user_id),
     r2_client: R2Client = Depends(get_r2_client),
-    study_repo: StudyRepository = Depends(get_study_repo)
+    study_repo: StudyRepository = Depends(get_study_repo),
+    node_service: NodeService = Depends(get_node_service),
 ):
     """Export the tree.json as a PGN string."""
     logger.info("=" * 60)
@@ -218,6 +330,12 @@ async def export_chapter_pgn(
     logger.info(f"[EXPORT CHAPTER PGN] R2 Key: {key}")
 
     try:
+        chapter, _study_node = await _get_chapter_and_study_node(
+            chapter_id,
+            user_id,
+            study_repo,
+            node_service,
+        )
         logger.info(f"[EXPORT CHAPTER PGN] Checking if R2 key exists...")
         exists = r2_client.exists(key)
         logger.info(f"[EXPORT CHAPTER PGN] R2 key exists: {exists}")
@@ -236,8 +354,6 @@ async def export_chapter_pgn(
         tree = StudyTreeDTO(**tree_data)
         logger.info(f"[EXPORT CHAPTER PGN] Created StudyTreeDTO")
 
-        logger.info(f"[EXPORT CHAPTER PGN] Fetching chapter metadata from DB...")
-        chapter = await study_repo.get_chapter_by_id(chapter_id)
         logger.info(f"[EXPORT CHAPTER PGN] Chapter metadata: {chapter}")
 
         # Get study info for filename
@@ -273,8 +389,10 @@ async def export_chapter_pgn(
 @router.get("/study/{study_id}/pgn-export")
 async def export_study_pgn(
     study_id: str,
+    user_id: str = Depends(get_current_user_id),
     r2_client: R2Client = Depends(get_r2_client),
-    study_repo: StudyRepository = Depends(get_study_repo)
+    study_repo: StudyRepository = Depends(get_study_repo),
+    node_service: NodeService = Depends(get_node_service),
 ):
     """Export all chapters in a study as concatenated PGN.
 
@@ -285,6 +403,7 @@ async def export_study_pgn(
     logger.info(f"[EXPORT STUDY PGN] study_id={study_id}")
 
     try:
+        await node_service.get_node(study_id, actor_id=user_id)
         study = await study_repo.get_study_by_id(study_id)
         if not study:
             raise HTTPException(status_code=404, detail=f"Study not found: {study_id}")

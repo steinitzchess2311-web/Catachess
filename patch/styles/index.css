@@ -340,7 +340,8 @@ main {
   align-items: flex-end;
 }
 
-.patch-study-save-button {
+.patch-study-save-button,
+.patch-study-reload-button {
   background: #2e6bff;
   color: #fff;
   border: none;
@@ -348,6 +349,16 @@ main {
   padding: 6px 12px;
   font-size: 14px;
   cursor: pointer;
+}
+
+.patch-study-reload-button {
+  background: #fff;
+  color: #2557d6;
+  border: 1px solid #bcd0ff;
+}
+
+.patch-study-reload-button:hover {
+  background: #eff5ff;
 }
 
 .patch-study-save-button:disabled {
@@ -1978,7 +1989,8 @@ main {
     max-width: clamp(54px, 25vw, 18ch);
   }
 
-  .patch-study-save-button {
+  .patch-study-save-button,
+  .patch-study-reload-button {
     width: 100%;
     min-height: 38px;
   }

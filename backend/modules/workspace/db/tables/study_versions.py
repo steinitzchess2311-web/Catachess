@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -59,7 +59,10 @@ class VersionSnapshotTable(Base):
     r2_key: Mapped[str] = mapped_column(String(512), nullable=False)
     size_bytes: Mapped[int | None] = mapped_column(nullable=True)
     content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    meta_data: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    meta_data: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB().with_variant(JSON(), "sqlite"),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

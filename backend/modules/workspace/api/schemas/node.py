@@ -7,7 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from modules.workspace.domain.models.types import NodeType, Visibility
+from modules.workspace.domain.models.types import NodeType, Permission, Visibility
 
 
 class NodeCreate(BaseModel):
@@ -89,6 +89,8 @@ class NodeResponse(BaseModel):
     updated_at: datetime
     deleted_at: datetime | None
     deleted_root_id: str | None = None
+    effective_permission: Permission | None = None
+    can_edit: bool = False
 
     @field_validator("visibility", mode="before")
     @classmethod

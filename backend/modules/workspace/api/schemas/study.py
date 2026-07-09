@@ -6,7 +6,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from modules.workspace.domain.models.types import Visibility
+from modules.workspace.domain.models.types import Permission, Visibility
 
 
 class StudyCreate(BaseModel):
@@ -105,6 +105,8 @@ class ChapterResponse(BaseModel):
     pgn_status: str | None
     r2_etag: str | None
     last_synced_at: datetime | None
+    tree_revision: int = 0
+    tree_updated_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -129,6 +131,8 @@ class StudyResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     deleted_at: datetime | None
+    effective_permission: Permission | None = None
+    can_edit: bool = False
 
 
 class StudyWithChaptersResponse(BaseModel):
@@ -155,3 +159,5 @@ class ChapterPgnResponse(BaseModel):
     pgn_hash: str | None
     pgn_size: int | None
     last_synced_at: datetime | None
+    tree_revision: int = 0
+    tree_updated_at: datetime | None = None

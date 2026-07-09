@@ -39,11 +39,18 @@ export interface StudyError {
 export interface StudyStateSnapshot {
   studyId: string | null;
   chapterId: string | null;
+  effectivePermission: 'owner' | 'admin' | 'editor' | 'commenter' | 'viewer' | null;
+  canEdit: boolean;
   tree: StudyTreeData;
   cursorNodeId: string;
   currentPath: string[];
   currentFen: string;
   startFen: string;
+  treeRevision: number;
+  treeUpdatedAt: string | null;
+  remoteTreeRevision: number | null;
+  remoteTreeUpdatedAt: string | null;
+  remoteUpdateAvailable: boolean;
   lastReplayResult: ReplayResult | null;
   error: StudyError | null;
   isLoading: boolean;
@@ -65,8 +72,16 @@ export interface StudyState extends StudyStateSnapshot {
 
 export type StudyAction =
   | { type: 'SET_STUDY'; studyId: string }
+  | {
+      type: 'SET_ACCESS';
+      canEdit: boolean;
+      effectivePermission?: StudyStateSnapshot['effectivePermission'];
+    }
   | { type: 'SET_CHAPTER'; chapterId: string; startFen?: string }
   | { type: 'LOAD_TREE'; tree: StudyTreeData; startFen?: string }
+  | { type: 'SET_TREE_REVISION'; treeRevision: number; treeUpdatedAt?: string | null }
+  | { type: 'SET_REMOTE_TREE_REVISION'; treeRevision: number; treeUpdatedAt?: string | null }
+  | { type: 'CLEAR_REMOTE_UPDATE' }
   | { type: 'SET_CURSOR'; nodeId: string; precomputedFen?: string }
   | { type: 'ADD_MOVE'; san: string }
   | { type: 'SET_COMMENT'; nodeId: string; comment: string }
@@ -94,11 +109,18 @@ export const initialTree = createEmptyTree();
 export const initialSnapshot: StudyStateSnapshot = {
   studyId: null,
   chapterId: null,
+  effectivePermission: null,
+  canEdit: false,
   tree: initialTree,
   cursorNodeId: initialTree.rootId,
   currentPath: [],
   currentFen: STARTING_FEN,
   startFen: STARTING_FEN,
+  treeRevision: 0,
+  treeUpdatedAt: null,
+  remoteTreeRevision: null,
+  remoteTreeUpdatedAt: null,
+  remoteUpdateAvailable: false,
   lastReplayResult: null,
   error: null,
   isLoading: false,
@@ -143,6 +165,13 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
     case 'SET_STUDY':
       return { ...initialState, studyId: action.studyId };
 
+    case 'SET_ACCESS':
+      return {
+        ...state,
+        canEdit: action.canEdit,
+        effectivePermission: action.effectivePermission ?? state.effectivePermission,
+      };
+
     case 'SET_CHAPTER': {
       const emptyTree = createEmptyTree();
       const requestedStartFen = action.startFen || STARTING_FEN;
@@ -156,6 +185,11 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
         currentPath: [],
         startFen,
         currentFen: startFen,
+        treeRevision: 0,
+        treeUpdatedAt: null,
+        remoteTreeRevision: null,
+        remoteTreeUpdatedAt: null,
+        remoteUpdateAvailable: false,
         error: startValidation.valid
           ? null
           : { type: 'INVALID_FEN', message: `Invalid starting FEN, falling back to default: ${startValidation.error}`, timestamp: Date.now() },
@@ -185,6 +219,9 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
         currentPath: [],
         startFen: safeStartFen,
         currentFen: safeStartFen,
+        remoteTreeRevision: null,
+        remoteTreeUpdatedAt: null,
+        remoteUpdateAvailable: false,
         error: startValidation.valid
           ? null
           : { type: 'INVALID_FEN', message: `Invalid starting FEN, falling back to default: ${startValidation.error}`, timestamp: Date.now() },
@@ -195,6 +232,33 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
         history: [],
       };
     }
+
+    case 'SET_TREE_REVISION':
+      return {
+        ...state,
+        treeRevision: action.treeRevision,
+        treeUpdatedAt: action.treeUpdatedAt ?? state.treeUpdatedAt,
+        remoteTreeRevision: null,
+        remoteTreeUpdatedAt: null,
+        remoteUpdateAvailable: false,
+      };
+
+    case 'SET_REMOTE_TREE_REVISION':
+      if (action.treeRevision <= state.treeRevision) return state;
+      return {
+        ...state,
+        remoteTreeRevision: action.treeRevision,
+        remoteTreeUpdatedAt: action.treeUpdatedAt ?? null,
+        remoteUpdateAvailable: true,
+      };
+
+    case 'CLEAR_REMOTE_UPDATE':
+      return {
+        ...state,
+        remoteTreeRevision: null,
+        remoteTreeUpdatedAt: null,
+        remoteUpdateAvailable: false,
+      };
 
     case 'SET_CURSOR': {
       if (!state.tree.nodes[action.nodeId]) {
@@ -226,6 +290,7 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
     }
 
     case 'ADD_MOVE': {
+      if (!state.canEdit) return state;
       const treeClone = structuredClone(state.tree);
       const treeOps = new StudyTree(treeClone);
       try {
@@ -258,6 +323,7 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
     }
 
     case 'SET_COMMENT': {
+      if (!state.canEdit) return state;
       if (!state.tree.nodes[action.nodeId]) return state;
       const updatedNode = { ...state.tree.nodes[action.nodeId], comment: action.comment || null };
       const newTree = { ...state.tree, nodes: { ...state.tree.nodes, [action.nodeId]: updatedNode } };
@@ -266,6 +332,7 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
     }
 
     case 'SET_SHAPES': {
+      if (!state.canEdit) return state;
       if (!state.tree.nodes[action.nodeId]) return state;
       const updatedNode = { ...state.tree.nodes[action.nodeId], shapes: action.shapes };
       const newTree = { ...state.tree, nodes: { ...state.tree.nodes, [action.nodeId]: updatedNode } };
@@ -273,6 +340,7 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
     }
 
     case 'DELETE_MOVE': {
+      if (!state.canEdit) return state;
       if (action.nodeId === state.tree.rootId) return state;
       const snapshot = createSnapshot(state);
       const treeClone = structuredClone(state.tree);
@@ -302,6 +370,7 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
     }
 
     case 'PROMOTE_VARIATION': {
+      if (!state.canEdit) return state;
       if (action.nodeId === state.tree.rootId || !state.tree.nodes[action.nodeId]) return state;
       const snapshot = createSnapshot(state);
       const treeClone = structuredClone(state.tree);
@@ -315,6 +384,7 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
     }
 
     case 'UNDO': {
+      if (!state.canEdit) return state;
       if (state.history.length === 0) return state;
       const previous = state.history[state.history.length - 1];
       return { ...previous, history: state.history.slice(0, -1) };
@@ -360,6 +430,7 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
       return { ...state, isTrainMode: false };
 
     case 'SUBMIT_TRAIN':
+      if (!state.canEdit) return state;
       return { ...state, isTrainMode: false, trainEngineUnlocked: true, tree: action.mergedTree, isDirty: true };
 
     default:

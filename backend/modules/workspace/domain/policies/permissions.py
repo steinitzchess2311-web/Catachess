@@ -1,3 +1,13 @@
+"""
+Created at: 2026-07-09 01:20 EDT
+Created by: Codex
+Last Modified at: 2026-07-09 01:20 EDT
+Last Modified by: Codex
+
+Permission helpers used by workspace API boundaries. These wrappers convert
+ORM records into domain models before delegating to the shared policy core.
+"""
+
 from modules.workspace.domain.models.types import Permission
 from modules.workspace.domain.policies.discussion_permissions import (
     DiscussionPermissionError,
@@ -68,6 +78,48 @@ async def can_read(acl_repo, node, user_id: str) -> bool:
     acl = await acl_repo.get_acl(node.id, user_id)
     acl_model = _acl_to_model(acl) if acl is not None else None
     return PermissionPolicy.can_read(_node_to_model(node), user_id, acl_model)
+
+
+async def get_effective_permission(acl_repo, node, user_id: str) -> Permission | None:
+    """
+    Return the effective ACL permission for a user on a node.
+
+    Owner is represented as Permission.OWNER even when no ACL row exists.
+    """
+    if node is None:
+        return None
+    acl = await acl_repo.get_acl(node.id, user_id)
+    return PermissionPolicy.get_effective_permission(
+        _node_to_model(node),
+        user_id,
+        _acl_to_model(acl) if acl is not None else None,
+    )
+
+
+async def can_write(acl_repo, node, user_id: str) -> bool:
+    """
+    Check write permission for a node.
+
+    Product "modifier" access maps to the existing Permission.EDITOR role.
+    """
+    if node is None:
+        return False
+    acl = await acl_repo.get_acl(node.id, user_id)
+    return PermissionPolicy.can_write(
+        _node_to_model(node),
+        user_id,
+        _acl_to_model(acl) if acl is not None else None,
+    )
+
+
+async def require_node_write_access(acl_repo, node, user_id: str) -> Permission:
+    """
+    Require editor/admin/owner access and return the effective permission.
+    """
+    effective = await get_effective_permission(acl_repo, node, user_id)
+    if effective is None or not Permission.can_write(effective):
+        raise PermissionError("Editor access required")
+    return effective
 
 
 async def check_discussion_permission(

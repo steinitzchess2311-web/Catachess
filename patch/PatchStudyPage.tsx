@@ -1,3 +1,13 @@
+/*
+Created at: 2026-07-08 22:15 EDT
+Created by: Codex
+Last Modified at: 2026-07-09 01:20 EDT
+Last Modified by: Codex
+
+Study page shell for board, chapter list, move tree, explorer, and training
+entry points. Access metadata from the workspace API controls all write UI.
+*/
+
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useExplorerPlayers, loadPlayersFromStorage } from './modules/explorer/hooks/useExplorerPlayers';
@@ -162,14 +172,22 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const { id, topFolder } = useParams<{ id?: string; topFolder?: string }>();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const { state, clearError, setError, loadStudy, saveTree, addMove, enterTrainMode, exitTrainMode } = useStudy();
+  const {
+    state,
+    setError,
+    loadStudy,
+    setAccess,
+    saveTree,
+    loadTreeFromServer,
+    addMove,
+    enterTrainMode,
+  } = useStudy();
 
   const {
     chapters,
     setChapters,
     pendingDeleteIds,
     hasPendingDeletes,
-    loadChapterTree,
     handleSelectChapter,
     handleCreateChapter,
     handleRenameChapter,
@@ -217,9 +235,14 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const studyNodeRef = useRef<any>(null);
 
-  const hasUnsavedChanges = state.isDirty || hasPendingDeletes;
+  const canEdit = state.canEdit && !isStudyDeleted;
+  const hasUnsavedChanges = canEdit && (state.isDirty || hasPendingDeletes);
   const savedTime = state.lastSavedAt ? new Date(state.lastSavedAt).toLocaleTimeString() : null;
-  const savedLabel = state.isSaving
+  const savedLabel = !state.canEdit
+    ? 'Read-only'
+    : state.remoteUpdateAvailable
+      ? 'Updated elsewhere'
+      : state.isSaving
     ? 'Saving...'
     : hasUnsavedChanges
       ? 'Unsaved changes'
@@ -299,7 +322,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
 
   // ── Study title editing ──────────────────────────────────────────────────
   const renameStudyNode = useCallback(async (newTitle: string) => {
-    if (!id || !studyNodeRef.current) return;
+    if (!id || !studyNodeRef.current || !canEdit) return;
     const trimmed = newTitle.trim();
     if (!trimmed) return;
     if (trimmed.includes('/')) { setTitleError('No "/" in study or folder name'); return; }
@@ -327,13 +350,14 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         throw error;
       }
     }
-  }, [id, resolveDisplayPath]);
+  }, [canEdit, id, resolveDisplayPath]);
 
   const startEditingTitle = useCallback(() => {
+    if (!canEdit) return;
     setDraftTitle(studyTitle);
     setTitleError(null);
     setIsEditingTitle(true);
-  }, [studyTitle]);
+  }, [canEdit, studyTitle]);
 
   const cancelEditingTitle = useCallback(() => {
     setIsEditingTitle(false);
@@ -342,9 +366,10 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
   }, []);
 
   const commitEditingTitle = useCallback(async () => {
+    if (!canEdit) { cancelEditingTitle(); return; }
     if (!draftTitle.trim() || draftTitle.trim() === studyTitle) { cancelEditingTitle(); return; }
     try { await renameStudyNode(draftTitle); cancelEditingTitle(); } catch {}
-  }, [cancelEditingTitle, draftTitle, renameStudyNode, studyTitle]);
+  }, [canEdit, cancelEditingTitle, draftTitle, renameStudyNode, studyTitle]);
 
   useEffect(() => {
     if (isEditingTitle && titleInputRef.current) {
@@ -375,7 +400,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
 
   // ── Save ─────────────────────────────────────────────────────────────────
   const saveAll = useCallback(async () => {
-    if (state.isSaving || !hasUnsavedChanges) return;
+    if (!canEdit || state.isSaving || !hasUnsavedChanges) return;
     try {
       const processImmediately = !state.isDirty;
       await saveTree();
@@ -385,13 +410,13 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     } catch (e) {
       setError('SAVE_ERROR', e instanceof Error ? e.message : 'Failed to save changes');
     }
-  }, [hasUnsavedChanges, pendingDeleteIds, processPendingDeletes, saveTree, setError, state.isDirty, state.isSaving]);
+  }, [canEdit, hasUnsavedChanges, pendingDeleteIds, processPendingDeletes, saveTree, setError, state.isDirty, state.isSaving]);
 
   useEffect(() => {
-    if (!hasPendingDeletes || state.isSaving) return;
+    if (!canEdit || !hasPendingDeletes || state.isSaving) return;
     const t = window.setTimeout(saveAll, 30000);
     return () => window.clearTimeout(t);
-  }, [hasPendingDeletes, saveAll, state.isSaving]);
+  }, [canEdit, hasPendingDeletes, saveAll, state.isSaving]);
 
   useEffect(() => {
     if (!hasPendingDeletes) { lastSavedAtRef.current = state.lastSavedAt; return; }
@@ -410,6 +435,10 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
     const load = async () => {
       try {
         const studyResponse = await api.get(`/api/v1/workspace/studies/${id}`);
+        const studyPayload = studyResponse?.study || studyResponse;
+        const effectivePermission = studyPayload?.effective_permission ?? null;
+        const canEditStudy = Boolean(studyPayload?.can_edit);
+        setAccess(canEditStudy, effectivePermission);
         const resolvedTitle = studyResponse?.study?.title || studyResponse?.title || 'Study';
         setStudyTitle(resolvedTitle);
 
@@ -432,6 +461,9 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
 
         let chapter = sorted[0];
         if (!chapter) {
+          if (!canEditStudy) {
+            throw new Error('No chapters available');
+          }
           try {
             chapter = await api.post(`/api/v1/workspace/studies/${id}/chapters`, { title: 'Chapter 1' });
           } catch {
@@ -450,7 +482,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         }
 
         if (cancelled) return;
-        await handleSelectChapter(chapter.id);
+        await handleSelectChapter(chapter.id, canEditStudy);
       } catch (e) {
         if (cancelled) return;
         setError('LOAD_ERROR', e instanceof Error ? e.message : 'Failed to enter study');
@@ -459,7 +491,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
 
     load();
     return () => { cancelled = true; };
-  }, [extractChapters, id, loadChapterTree, loadStudy, resolveDisplayPath, setChapters, setError, sortChapters]);
+  }, [extractChapters, id, loadStudy, resolveDisplayPath, setAccess, setChapters, setError, sortChapters]);
 
   // ── Render ───────────────────────────────────────────────────────────────
   return (
@@ -505,19 +537,32 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
               {titleError && <span className="patch-study-title-error">{titleError}</span>}
             </div>
           ) : (
-            <h2 className="patch-study-title" onDoubleClick={startEditingTitle} title="Double-click to rename">
+            <h2
+              className="patch-study-title"
+              onDoubleClick={canEdit ? startEditingTitle : undefined}
+              title={canEdit ? 'Double-click to rename' : undefined}
+            >
               {studyTitle || 'Study'}
             </h2>
           )}
           <StudyBreadcrumb breadcrumbs={breadcrumbs} onCrumbClick={handleBreadcrumbClick} />
           <div className="patch-study-actions">
+            {state.remoteUpdateAvailable && (
+              <button
+                type="button"
+                className="patch-study-reload-button"
+                onClick={() => { void loadTreeFromServer(); }}
+              >
+                Reload latest
+              </button>
+            )}
             <button
               type="button"
               className="patch-study-save-button"
               onClick={saveAll}
-              disabled={state.isSaving || !hasUnsavedChanges}
+              disabled={!canEdit || state.isSaving || !hasUnsavedChanges}
             >
-              {state.isSaving ? 'Saving...' : hasUnsavedChanges ? 'Save' : 'Saved'}
+              {!state.canEdit ? 'Read-only' : state.isSaving ? 'Saving...' : hasUnsavedChanges ? 'Save' : 'Saved'}
             </button>
           </div>
           <div className="patch-study-save-status">{savedLabel}</div>
@@ -541,8 +586,9 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
             <StudySidebar
               chapters={chapters}
               currentChapterId={state.chapterId}
+              canEdit={canEdit}
               onSelectChapter={handleSelectChapter}
-              onCreateChapter={() => setIsCreateModalOpen(true)}
+              onCreateChapter={() => { if (canEdit) setIsCreateModalOpen(true); }}
               onRenameChapter={handleRenameChapter}
               onDeleteChapter={handleDeleteChapter}
               onReorderChapters={handleReorderChapters}
@@ -593,7 +639,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
                 ) : (
                   <ExplorerPanel
                     fen={state.currentFen}
-                    onMoveSelect={addMove}
+                    onMoveSelect={canEdit ? addMove : () => {}}
                     players={explorerPlayers}
                     onAddPlayer={addPlayer}
                     onRemovePlayer={removePlayer}
@@ -616,7 +662,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
         </div>
       )}
 
-      {isCreateModalOpen && id && (
+      {isCreateModalOpen && id && canEdit && (
         <NewChapterModal
           studyId={id}
           nextChapterIndex={getNextChapterIndex()}

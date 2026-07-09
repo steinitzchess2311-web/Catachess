@@ -3,6 +3,7 @@ import { api } from '@ui/assets/api';
 
 interface UserResult  { id: string; username: string; }
 interface SharedUser  { user_id: string; username: string; permission: string; }
+type SharePermission = 'viewer' | 'editor';
 
 interface ShareWithProps {
   studyId: string;
@@ -15,6 +16,7 @@ export function ShareWith({ studyId }: ShareWithProps) {
   const [searchResults, setSearchResults] = useState<UserResult[]>([]);
   const [isSearching, setIsSearching]     = useState(false);
   const [searched, setSearched]           = useState(false);
+  const [newPermission, setNewPermission] = useState<SharePermission>('viewer');
 
   // ── Load shared users ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -43,17 +45,32 @@ export function ShareWith({ studyId }: ShareWithProps) {
     setSharedUsers(prev =>
       prev.some(u => u.user_id === user.id)
         ? prev
-        : [...prev, { user_id: user.id, username: user.username, permission: 'viewer' }]
+        : [...prev, { user_id: user.id, username: user.username, permission: newPermission }]
     );
     try {
       await api.post(`/api/v1/workspace/share/${studyId}/users`, {
-        user_id: user.id, permission: 'viewer', inherit_to_children: true,
+        user_id: user.id, permission: newPermission, inherit_to_children: true,
       });
     } catch {
       setSharedUsers(prev => prev.filter(u => u.user_id !== user.id));
       setShareError('Failed to add user');
     }
-  }, [studyId]);
+  }, [studyId, newPermission]);
+
+  const handleRoleChange = useCallback(async (userId: string, next: SharePermission) => {
+    const prev = sharedUsers;
+    setShareError(null);
+    setSharedUsers(p => p.map(u => u.user_id === userId ? { ...u, permission: next } : u));
+    try {
+      await api.put(`/api/v1/workspace/share/${studyId}/users/role`, {
+        user_id: userId,
+        new_permission: next,
+      });
+    } catch {
+      setSharedUsers(prev);
+      setShareError('Failed to update access');
+    }
+  }, [studyId, sharedUsers]);
 
   const handleRemoveUser = useCallback(async (userId: string) => {
     const prev = sharedUsers;
@@ -86,7 +103,15 @@ export function ShareWith({ studyId }: ShareWithProps) {
               {(u.username || '?')[0].toUpperCase()}
             </div>
             <span style={sName}>{u.username}</span>
-            <span style={sBadge(false)}>{cap(u.permission || 'viewer')}</span>
+            <select
+              value={normalizePermission(u.permission)}
+              onChange={e => handleRoleChange(u.user_id, e.target.value as SharePermission)}
+              aria-label={`Access for ${u.username}`}
+              style={sSelect}
+            >
+              <option value="viewer">Can view</option>
+              <option value="editor">Can edit</option>
+            </select>
             <button
               type="button"
               onClick={() => handleRemoveUser(u.user_id)}
@@ -99,6 +124,20 @@ export function ShareWith({ studyId }: ShareWithProps) {
               }}
             >×</button>
           </div>
+        ))}
+      </div>
+
+      {/* Inline search */}
+      <div style={{ display: 'flex', gap: '4px' }}>
+        {(['viewer', 'editor'] as SharePermission[]).map(permission => (
+          <button
+            key={permission}
+            type="button"
+            onClick={() => setNewPermission(permission)}
+            style={sRoleButton(newPermission === permission)}
+          >
+            {permission === 'editor' ? 'Can edit' : 'Can view'}
+          </button>
         ))}
       </div>
 
@@ -205,4 +244,28 @@ const sBadge = (owner: boolean): React.CSSProperties => ({
   color: owner ? 'var(--accent, #4e7fff)' : 'var(--text-muted, #888)',
   fontWeight: 700,
 });
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const sSelect: React.CSSProperties = {
+  border: '1px solid rgba(15, 23, 42, 0.12)',
+  borderRadius: '6px',
+  background: '#fff',
+  color: '#1f2937',
+  fontSize: '10px',
+  fontWeight: 700,
+  height: '24px',
+  padding: '0 5px',
+  flexShrink: 0,
+};
+const sRoleButton = (active: boolean): React.CSSProperties => ({
+  flex: 1,
+  border: `1px solid ${active ? '#2563eb' : 'rgba(15, 23, 42, 0.12)'}`,
+  borderRadius: '6px',
+  background: active ? 'rgba(37, 99, 235, 0.08)' : '#fff',
+  color: active ? '#2563eb' : '#475569',
+  fontSize: '10px',
+  fontWeight: 800,
+  height: '26px',
+  cursor: 'pointer',
+});
+const normalizePermission = (permission: string): SharePermission => (
+  permission === 'editor' || permission === 'admin' || permission === 'owner' ? 'editor' : 'viewer'
+);

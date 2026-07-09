@@ -1,5 +1,12 @@
 """
-Study endpoints.
+Created at: 2026-07-09 01:20 EDT
+Created by: Codex
+Last Modified at: 2026-07-09 01:20 EDT
+Last Modified by: Codex
+
+Study endpoints for workspace study metadata, chapters, PGN export, and legacy
+variation APIs. Mutations require editor/admin/owner access; shared viewers get
+read-only study and chapter data.
 """
 
 import json
@@ -58,6 +65,7 @@ from modules.workspace.domain.models.move_annotation import (
 from modules.workspace.domain.models.node import CreateNodeCommand
 from modules.workspace.domain.models.study import CreateStudyCommand, ImportPGNCommand, UpdateStudyCommand
 from modules.workspace.domain.models.types import NodeType, Visibility
+from modules.workspace.domain.policies.permissions import get_effective_permission, require_node_write_access
 from modules.workspace.domain.models.variation import (
     AddMoveCommand,
     DeleteMoveCommand,
@@ -114,6 +122,87 @@ logger.info(f"[STUDIES ROUTER] Study patch router routes: {[route.path for route
 logger.info("=" * 80)
 
 router.include_router(study_patch_router)
+
+
+async def _require_study_write_access(
+    study_id: str,
+    user_id: str,
+    node_service: NodeService,
+):
+    """Load a study node and require editor/admin/owner access."""
+    node = await node_service.get_node(study_id, actor_id=user_id)
+    if node.node_type != NodeType.STUDY:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Node is not a study",
+        )
+    try:
+        await require_node_write_access(node_service.acl_repo, node, user_id)
+    except PermissionError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc))
+    return node
+
+
+async def _require_study_read_access(
+    study_id: str,
+    user_id: str,
+    node_service: NodeService,
+):
+    """Load a study node and require read access."""
+    node = await node_service.get_node(study_id, actor_id=user_id)
+    if node.node_type != NodeType.STUDY:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Node is not a study",
+        )
+    return node
+
+
+async def _require_readable_chapter(
+    study_id: str,
+    chapter_id: str,
+    user_id: str,
+    node_service: NodeService,
+    study_repo: StudyRepository,
+) -> ChapterTable:
+    """Require study read access and verify the chapter belongs to the study."""
+    await _require_study_read_access(study_id, user_id, node_service)
+    chapter = await study_repo.get_chapter_by_id(chapter_id)
+    if not chapter or chapter.study_id != study_id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Chapter {chapter_id} not found in study {study_id}",
+        )
+    return chapter
+
+
+async def _build_study_response(
+    node,
+    study,
+    node_service: NodeService,
+    user_id: str,
+) -> StudyResponse:
+    """Build a study response with current-user capability fields."""
+    effective = await get_effective_permission(node_service.acl_repo, node, user_id)
+    return StudyResponse(
+        id=study.id,
+        title=node.title,
+        description=study.description,
+        owner_id=node.owner_id,
+        visibility=node.visibility,
+        chapter_count=study.chapter_count,
+        is_public=study.is_public,
+        tags=study.tags,
+        parent_id=node.parent_id,
+        path=node.path,
+        depth=node.depth,
+        version=node.version,
+        created_at=node.created_at,
+        updated_at=node.updated_at,
+        deleted_at=node.deleted_at,
+        effective_permission=effective,
+        can_edit=effective is not None and effective.can_write(effective),
+    )
 
 
 @router.put("/{study_id}", status_code=status.HTTP_501_NOT_IMPLEMENTED)
@@ -207,7 +296,7 @@ async def create_study(
 
         node = await node_service.create_node(command, actor_id=user_id)
 
-        await study_repo.ensure_study(
+        study = await study_repo.ensure_study(
             node.id,
             description=data.description,
             is_public=data.visibility == Visibility.PUBLIC,
@@ -224,23 +313,8 @@ async def create_study(
             r2_client=create_r2_client_from_env(),
         )
 
-        return StudyResponse(
-            id=node.id,
-            title=node.title,
-            description=data.description,
-            owner_id=node.owner_id,
-            visibility=node.visibility,
-            chapter_count=chapter_count,
-            is_public=False,
-            tags=data.tags,
-            parent_id=node.parent_id,
-            path=node.path,
-            depth=node.depth,
-            version=node.version,
-            created_at=node.created_at,
-            updated_at=node.updated_at,
-            deleted_at=node.deleted_at,
-        )
+        study.chapter_count = chapter_count
+        return await _build_study_response(node, study, node_service, user_id)
 
     except NodeNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -307,12 +381,7 @@ async def import_pgn_into_study(
 ) -> ImportResultResponse:
     """Import PGN content into an existing study as new chapters."""
     try:
-        node = await node_service.get_node(study_id, actor_id=user_id)
-        if node.node_type != NodeType.STUDY:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Node is not a study",
-            )
+        node = await _require_study_write_access(study_id, user_id, node_service)
 
         await study_repo.ensure_study(
             study_id,
@@ -371,24 +440,7 @@ async def get_study(
         # Get chapters for study
         chapters = await study_repo.get_chapters_for_study(study_id, order_by_order=True)
 
-        # Build response
-        study_response = StudyResponse(
-            id=study.id,
-            title=node.title,
-            description=study.description,
-            owner_id=node.owner_id,
-            visibility=node.visibility,
-            chapter_count=study.chapter_count,
-            is_public=study.is_public,
-            tags=study.tags,
-            parent_id=node.parent_id,
-            path=node.path,
-            depth=node.depth,
-            version=node.version,
-            created_at=node.created_at,
-            updated_at=node.updated_at,
-            deleted_at=node.deleted_at,
-        )
+        study_response = await _build_study_response(node, study, node_service, user_id)
 
         chapter_responses = [_build_chapter_response(chapter) for chapter in chapters]
 
@@ -416,12 +468,7 @@ async def get_study_chapters(
 ) -> list[ChapterResponse]:
     """Get chapter list for a study."""
     try:
-        node = await node_service.get_node(study_id, actor_id=user_id)
-        if node.node_type != NodeType.STUDY:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Node is not a study",
-            )
+        await _require_study_read_access(study_id, user_id, node_service)
 
         chapters = await study_repo.get_chapters_for_study(study_id, order_by_order=True)
         return [_build_chapter_response(chapter) for chapter in chapters]
@@ -445,12 +492,7 @@ async def reorder_study_chapters(
 ) -> list[ChapterResponse]:
     """Reorder chapters within a study."""
     try:
-        node = await node_service.get_node(study_id, actor_id=user_id)
-        if node.node_type != NodeType.STUDY:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Node is not a study",
-            )
+        node = await _require_study_write_access(study_id, user_id, node_service)
 
         existing = await study_repo.get_chapters_for_study(study_id, order_by_order=False)
         existing_ids = {chapter.id for chapter in existing}
@@ -486,12 +528,7 @@ async def create_chapter(
 ) -> ChapterResponse:
     """Create a new chapter with an empty PGN."""
     try:
-        node = await node_service.get_node(study_id, actor_id=user_id)
-        if node.node_type != NodeType.STUDY:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Node is not a study",
-            )
+        node = await _require_study_write_access(study_id, user_id, node_service)
 
         study = await study_repo.get_study_by_id(study_id)
         if not study:
@@ -556,6 +593,8 @@ async def create_chapter(
             pgn_status="ready",
             r2_etag=upload_result.etag,
             last_synced_at=datetime.now(timezone.utc),
+            tree_revision=1,
+            tree_updated_at=datetime.now(timezone.utc),
         )
 
         await study_repo.create_chapter(chapter)
@@ -605,13 +644,7 @@ async def update_chapter(
     )
 
     try:
-        # Check permissions on study node (but don't modify it)
-        node = await node_service.get_node(study_id, actor_id=user_id)
-        if node.node_type != NodeType.STUDY:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Node is not a study",
-            )
+        node = await _require_study_write_access(study_id, user_id, node_service)
 
         # Get and validate chapter
         chapter = await study_repo.get_chapter_by_id(chapter_id)
@@ -686,6 +719,8 @@ async def clip_pgn(
     study_id: str,
     data: PgnClipRequest,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
+    study_repo: StudyRepository = Depends(get_study_repository),
     clip_service: PgnClipService = Depends(get_pgn_clip_service),
 ) -> PgnClipResponse:
     """
@@ -694,6 +729,9 @@ async def clip_pgn(
     Supports clip, no-comment, raw, and clean mainline exports.
     """
     try:
+        await _require_readable_chapter(
+            study_id, data.chapter_id, user_id, node_service, study_repo
+        )
         if data.mode == "clip":
             if not data.move_path:
                 raise HTTPException(
@@ -769,6 +807,8 @@ async def preview_clip_pgn(
     chapter_id: str,
     move_path: str,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
+    study_repo: StudyRepository = Depends(get_study_repository),
     clip_service: PgnClipService = Depends(get_pgn_clip_service),
 ) -> PgnClipPreviewResponse:
     """
@@ -778,6 +818,9 @@ async def preview_clip_pgn(
         GET /studies/{study_id}/pgn/clip/preview?chapter_id=ch1&move_path=main.12
     """
     try:
+        await _require_readable_chapter(
+            study_id, chapter_id, user_id, node_service, study_repo
+        )
         preview = await clip_service.get_clip_preview(chapter_id, move_path)
         return PgnClipPreviewResponse(**preview)
     except ValueError as e:
@@ -793,6 +836,8 @@ async def export_no_comment_pgn_endpoint(
     study_id: str,
     data: PgnExportRequest,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
+    study_repo: StudyRepository = Depends(get_study_repository),
     clip_service: PgnClipService = Depends(get_pgn_clip_service),
 ) -> PgnClipResponse:
     """
@@ -802,6 +847,9 @@ async def export_no_comment_pgn_endpoint(
         POST /studies/{study_id}/pgn/export/no-comment
     """
     try:
+        await _require_readable_chapter(
+            study_id, data.chapter_id, user_id, node_service, study_repo
+        )
         result = await clip_service.export_no_comments(
             chapter_id=data.chapter_id,
             actor_id=user_id,
@@ -825,6 +873,8 @@ async def export_raw_pgn_endpoint(
     study_id: str,
     data: PgnExportRequest,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
+    study_repo: StudyRepository = Depends(get_study_repository),
     clip_service: PgnClipService = Depends(get_pgn_clip_service),
 ) -> PgnClipResponse:
     """
@@ -834,6 +884,9 @@ async def export_raw_pgn_endpoint(
         POST /studies/{study_id}/pgn/export/raw
     """
     try:
+        await _require_readable_chapter(
+            study_id, data.chapter_id, user_id, node_service, study_repo
+        )
         result = await clip_service.export_raw(
             chapter_id=data.chapter_id,
             actor_id=user_id,
@@ -857,6 +910,8 @@ async def export_clean_pgn_endpoint(
     study_id: str,
     data: PgnExportRequest,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
+    study_repo: StudyRepository = Depends(get_study_repository),
     clip_service: PgnClipService = Depends(get_pgn_clip_service),
 ) -> PgnClipResponse:
     """
@@ -866,6 +921,9 @@ async def export_clean_pgn_endpoint(
         POST /studies/{study_id}/pgn/export/clean
     """
     try:
+        await _require_readable_chapter(
+            study_id, data.chapter_id, user_id, node_service, study_repo
+        )
         result = await clip_service.export_clean(
             chapter_id=data.chapter_id,
             actor_id=user_id,
@@ -964,6 +1022,8 @@ async def get_chapter_pgn(
             pgn_hash=chapter.pgn_hash,
             pgn_size=chapter.pgn_size,
             last_synced_at=chapter.last_synced_at,
+            tree_revision=chapter.tree_revision,
+            tree_updated_at=chapter.tree_updated_at,
         )
     except NodeNotFoundError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
@@ -984,12 +1044,7 @@ async def delete_chapter(
 ) -> Response:
     """Delete a chapter and its stored tree."""
     try:
-        node = await node_service.get_node(study_id, actor_id=user_id)
-        if node.node_type != NodeType.STUDY:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Node is not a study",
-            )
+        await _require_study_write_access(study_id, user_id, node_service)
 
         chapter = await study_repo.get_chapter_by_id(chapter_id)
         if not chapter or chapter.study_id != study_id:
@@ -1029,6 +1084,8 @@ async def get_mainline_moves(
     study_id: str,
     chapter_id: str,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
+    study_repo: StudyRepository = Depends(get_study_repository),
     variation_repo: VariationRepository = Depends(get_variation_repo),
 ) -> MainlineMovesResponse:
     """
@@ -1037,6 +1094,9 @@ async def get_mainline_moves(
     This provides move IDs, SAN, FEN, and annotation text/version so the
     frontend can render two moves per line and edit comments reliably.
     """
+    await _require_readable_chapter(
+        study_id, chapter_id, user_id, node_service, study_repo
+    )
     variations = await variation_repo.get_variations_for_chapter(chapter_id)
     annotations = await variation_repo.get_annotations_for_chapter(chapter_id)
     moves = build_mainline_moves(variations, annotations)
@@ -1054,6 +1114,7 @@ async def add_move(
     chapter_id: str,
     data: MoveCreate,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
     study_service: StudyService = Depends(get_study_service),
 ) -> MoveResponse:
     """
@@ -1077,6 +1138,7 @@ async def add_move(
         400: Invalid move data or illegal move
     """
     try:
+        await _require_study_write_access(study_id, user_id, node_service)
         command = AddMoveCommand(
             chapter_id=chapter_id,
             parent_id=data.parent_id,
@@ -1115,6 +1177,7 @@ async def delete_move(
     chapter_id: str,
     move_id: str,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
     study_service: StudyService = Depends(get_study_service),
 ) -> None:
     """
@@ -1131,6 +1194,7 @@ async def delete_move(
         404: Move not found
     """
     try:
+        await _require_study_write_access(study_id, user_id, node_service)
         command = DeleteMoveCommand(
             variation_id=move_id,
             actor_id=user_id,
@@ -1153,6 +1217,7 @@ async def add_variation(
     chapter_id: str,
     data: MoveCreate,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
     study_service: StudyService = Depends(get_study_service),
 ) -> MoveResponse:
     """
@@ -1177,6 +1242,7 @@ async def add_variation(
         400: Invalid rank (must be > 0 for variations) or illegal move
     """
     try:
+        await _require_study_write_access(study_id, user_id, node_service)
         if data.rank == 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -1224,6 +1290,7 @@ async def add_annotation(
     move_id: str,
     data: AnnotationCreate,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
     study_service: StudyService = Depends(get_study_service),
 ) -> AnnotationResponse:
     """
@@ -1246,6 +1313,7 @@ async def add_annotation(
         409: Annotation already exists for this move
     """
     try:
+        await _require_study_write_access(study_id, user_id, node_service)
         command = AddMoveAnnotationCommand(
             move_id=move_id,
             author_id=user_id,
@@ -1280,6 +1348,7 @@ async def update_annotation(
     annotation_id: str,
     data: AnnotationUpdate,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
     study_service: StudyService = Depends(get_study_service),
 ) -> AnnotationResponse:
     """
@@ -1288,6 +1357,7 @@ async def update_annotation(
     The UI sends the current version to prevent silent overwrites.
     """
     try:
+        await _require_study_write_access(study_id, user_id, node_service)
         command = UpdateMoveAnnotationCommand(
             annotation_id=annotation_id,
             nag=data.nag,
@@ -1316,6 +1386,7 @@ async def promote_variation(
     variation_id: str,
     data: PromoteVariationRequest,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
     variation_service: VariationService = Depends(get_variation_service),
     if_match: str | None = Header(None, alias="If-Match"),
 ) -> None:
@@ -1339,6 +1410,7 @@ async def promote_variation(
         400: Already main line
     """
     try:
+        await _require_study_write_access(study_id, user_id, node_service)
         # Use If-Match header if provided and body doesn't have expected_version
         expected_version = data.expected_version
         if if_match and expected_version is None:
@@ -1374,6 +1446,7 @@ async def get_chapter_show(
     study_id: str,
     chapter_id: str,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
     variation_repo: VariationRepository = Depends(get_variation_repo),
     study_repo: StudyRepository = Depends(get_study_repository),
 ):
@@ -1397,15 +1470,11 @@ async def get_chapter_show(
 
     This is the new v2 endpoint for frontend rendering.
     """
-    # Always allow ShowDTO for rendering; frontend relies on it for variations.
     r2_key = None
     try:
-        chapter = await study_repo.get_chapter_by_id(chapter_id)
-        if not chapter:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Chapter {chapter_id} not found"
-            )
+        chapter = await _require_readable_chapter(
+            study_id, chapter_id, user_id, node_service, study_repo
+        )
         r2_key = chapter.r2_key
 
         variations = await variation_repo.get_variations_for_chapter(chapter_id)
@@ -1425,6 +1494,8 @@ async def get_chapter_show(
 
         return show_dto
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(
             "ShowDTO failed",
@@ -1448,6 +1519,7 @@ async def get_node_fen(
     chapter_id: str,
     node_id: str,
     user_id: str = Depends(get_current_user_id),
+    node_service: NodeService = Depends(get_node_service),
     variation_repo: VariationRepository = Depends(get_variation_repo),
     study_repo: StudyRepository = Depends(get_study_repository),
 ):
@@ -1460,9 +1532,11 @@ async def get_node_fen(
     This endpoint allows the frontend to retrieve FEN for any node
     without loading the entire tree.
     """
-    # Always allow FEN lookup for node navigation.
     r2_key = None
     try:
+        chapter = await _require_readable_chapter(
+            study_id, chapter_id, user_id, node_service, study_repo
+        )
         variation = await variation_repo.get_variation_by_id(node_id)
         if not variation:
             raise HTTPException(
@@ -1475,10 +1549,7 @@ async def get_node_fen(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Node {node_id} does not belong to chapter {chapter_id}"
             )
-
-        chapter = await study_repo.get_chapter_by_id(chapter_id)
-        if chapter:
-            r2_key = chapter.r2_key
+        r2_key = chapter.r2_key
 
         return {
             "fen": variation.fen,

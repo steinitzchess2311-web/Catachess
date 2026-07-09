@@ -18,6 +18,7 @@ import {
   studyReducer,
   initialState,
 } from './tree/studyReducer';
+import type { StudyState } from './tree/studyReducer';
 
 export type {
   StudyErrorType,
@@ -32,14 +33,16 @@ export type {
 // =============================================================================
 
 export interface StudyContextValue {
-  state: ReturnType<typeof studyReducer>;
+  state: StudyState;
   replayPath: (moves: string[], startFen?: string) => ReplayResult;
   setError: (type: import('./tree/studyReducer').StudyErrorType, message: string, context?: Record<string, unknown>) => void;
   clearError: () => void;
   hasReplayError: () => boolean;
   loadStudy: (studyId: string) => Promise<void>;
+  setAccess: (canEdit: boolean, effectivePermission?: import('./tree/studyReducer').StudyStateSnapshot['effectivePermission']) => void;
   selectChapter: (chapterId: string, startFen?: string) => Promise<void>;
   loadTree: (tree: StudyTreeData, startFen?: string) => void;
+  setTreeRevision: (treeRevision: number, treeUpdatedAt?: string | null) => void;
   selectNode: (nodeId: string) => void;
   addMove: (san: string) => void;
   setComment: (nodeId: string, comment: string) => void;
@@ -61,8 +64,10 @@ const defaultContextValue: StudyContextValue = {
   clearError: () => {},
   hasReplayError: () => false,
   loadStudy: async () => {},
+  setAccess: () => {},
   selectChapter: async () => {},
   loadTree: () => {},
+  setTreeRevision: () => {},
   selectNode: () => {},
   addMove: () => {},
   setComment: () => {},
@@ -81,6 +86,7 @@ const StudyContext = createContext<StudyContextValue>(defaultContextValue);
 
 const PATCH_STUDY_API_BASE = '/api/v1/workspace/studies/study-patch';
 const AUTOSAVE_DELAY_MS = 2000;
+const REMOTE_REVISION_POLL_MS = 10000;
 
 async function createTreeSavePayload(tree: StudyTreeData): Promise<{ payload: string; hash: string }> {
   const payload = JSON.stringify(tree);
@@ -144,6 +150,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'SET_STUDY', studyId });
   }, []);
 
+  const setAccess = useCallback(
+    (canEdit: boolean, effectivePermission?: import('./tree/studyReducer').StudyStateSnapshot['effectivePermission']) => {
+      dispatch({ type: 'SET_ACCESS', canEdit, effectivePermission });
+    },
+    []
+  );
+
   const selectChapter = useCallback(async (chapterId: string, startFen?: string) => {
     fenCacheRef.current = {};
     dispatch({ type: 'SET_CHAPTER', chapterId, startFen });
@@ -151,6 +164,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   const loadTree = useCallback((tree: StudyTreeData, startFen?: string) => {
     dispatch({ type: 'LOAD_TREE', tree, startFen });
+  }, []);
+
+  const setTreeRevision = useCallback((treeRevision: number, treeUpdatedAt?: string | null) => {
+    dispatch({ type: 'SET_TREE_REVISION', treeRevision, treeUpdatedAt });
   }, []);
 
   const selectNode = useCallback((nodeId: string) => {
@@ -182,7 +199,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   const saveTree = useCallback(async () => {
     const initialSnapshot = latestStateRef.current;
-    if (!initialSnapshot.chapterId) return;
+    if (!initialSnapshot.chapterId || !initialSnapshot.canEdit) return;
 
     if (saveInFlightRef.current) {
       saveQueuedRef.current = true;
@@ -194,7 +211,7 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
     try {
       const snapshot = latestStateRef.current;
-      if (!snapshot.chapterId) return;
+      if (!snapshot.chapterId || !snapshot.canEdit) return;
 
       const { payload: treePayload, hash: currentHash } = await createTreeSavePayload(snapshot.tree);
       const latestBeforeRequest = latestStateRef.current;
@@ -239,6 +256,13 @@ export function StudyProvider({ children }: { children: ReactNode }) {
       }
 
       dispatch({ type: 'MARK_SAVED', timestamp: Date.now(), hash: currentHash, keepDirty });
+      if (typeof response?.tree_revision === 'number') {
+        dispatch({
+          type: 'SET_TREE_REVISION',
+          treeRevision: response.tree_revision,
+          treeUpdatedAt: response.tree_updated_at ?? null,
+        });
+      }
       if (keepDirty) {
         saveQueuedRef.current = true;
       }
@@ -259,12 +283,71 @@ export function StudyProvider({ children }: { children: ReactNode }) {
 
   // Auto-save after the tree becomes dirty; saveTree coalesces in-flight writes.
   useEffect(() => {
-    if (!state.isDirty || !state.chapterId || state.isSaving) return;
+    if (!state.canEdit || !state.isDirty || !state.chapterId || state.isSaving) return;
     const id = window.setTimeout(saveTree, AUTOSAVE_DELAY_MS);
     return () => window.clearTimeout(id);
-  }, [state.isDirty, state.chapterId, state.tree, state.isSaving, saveTree]);
+  }, [state.canEdit, state.isDirty, state.chapterId, state.tree, state.isSaving, saveTree]);
 
-  const loadTreeFromServer = useCallback(async () => {}, []);
+  const loadTreeFromServer = useCallback(async () => {
+    const snapshot = latestStateRef.current;
+    if (!snapshot.chapterId) return;
+    dispatch({ type: 'SET_LOADING', isLoading: true });
+    try {
+      const response = await api.get(`${PATCH_STUDY_API_BASE}/chapter/${snapshot.chapterId}/tree`);
+      if (!response?.success || !response.tree) {
+        throw new Error(response?.error || 'Failed to load tree');
+      }
+      const latest = latestStateRef.current;
+      if (latest.chapterId !== snapshot.chapterId) return;
+      fenCacheRef.current = {};
+      dispatch({ type: 'LOAD_TREE', tree: response.tree, startFen: response.starting_fen || undefined });
+      if (typeof response.tree_revision === 'number') {
+        dispatch({
+          type: 'SET_TREE_REVISION',
+          treeRevision: response.tree_revision,
+          treeUpdatedAt: response.tree_updated_at ?? null,
+        });
+      } else {
+        dispatch({ type: 'CLEAR_REMOTE_UPDATE' });
+      }
+    } catch (e) {
+      setError('LOAD_ERROR', e instanceof Error ? e.message : 'Failed to load latest tree');
+    } finally {
+      dispatch({ type: 'SET_LOADING', isLoading: false });
+    }
+  }, [setError]);
+
+  useEffect(() => {
+    if (!state.chapterId) return;
+    let cancelled = false;
+    const poll = async () => {
+      const snapshot = latestStateRef.current;
+      if (!snapshot.chapterId || snapshot.isSaving) return;
+      try {
+        const response = await api.get(`${PATCH_STUDY_API_BASE}/chapter/${snapshot.chapterId}/tree-meta`);
+        if (cancelled || !response?.success || typeof response.tree_revision !== 'number') return;
+        const latest = latestStateRef.current;
+        if (latest.chapterId !== snapshot.chapterId || response.tree_revision <= latest.treeRevision) return;
+        if (!latest.isDirty && !latest.isSaving) {
+          await loadTreeFromServer();
+          return;
+        }
+        dispatch({
+          type: 'SET_REMOTE_TREE_REVISION',
+          treeRevision: response.tree_revision,
+          treeUpdatedAt: response.tree_updated_at ?? null,
+        });
+      } catch {
+        // Polling is advisory; foreground load/save errors remain user-visible.
+      }
+    };
+    const id = window.setInterval(() => { void poll(); }, REMOTE_REVISION_POLL_MS);
+    void poll();
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [state.chapterId, loadTreeFromServer]);
 
   const enterTrainMode = useCallback(() => dispatch({ type: 'ENTER_TRAIN_MODE' }), []);
   const exitTrainMode = useCallback(() => dispatch({ type: 'EXIT_TRAIN_MODE' }), []);
@@ -279,8 +362,10 @@ export function StudyProvider({ children }: { children: ReactNode }) {
     clearError,
     hasReplayError,
     loadStudy,
+    setAccess,
     selectChapter,
     loadTree,
+    setTreeRevision,
     selectNode,
     addMove,
     setComment,

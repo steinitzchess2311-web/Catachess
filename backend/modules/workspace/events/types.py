@@ -64,6 +64,7 @@ class EventType(str, Enum):
     STUDY_CHAPTER_RENAMED = "study.chapter.renamed"
     STUDY_CHAPTER_DELETED = "study.chapter.deleted"
     STUDY_CHAPTER_REORDERED = "study.chapter.reordered"
+    STUDY_CHAPTER_TREE_SAVED = "study.chapter.tree_saved"
 
     # Move & variation operations
     STUDY_MOVE_ADDED = "study.move.added"

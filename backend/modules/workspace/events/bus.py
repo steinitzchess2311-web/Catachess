@@ -432,3 +432,30 @@ async def publish_chapter_created(
     )
 
     return await bus.publish(command)
+
+
+async def publish_chapter_tree_saved(
+    bus: EventBus,
+    actor_id: str,
+    study_id: str,
+    chapter_id: str,
+    revision: int,
+    content_hash: str,
+    workspace_id: str | None,
+) -> EventTable:
+    """Publish chapter tree saved event for collaborative refresh."""
+    command = CreateEventCommand(
+        type=EventType.STUDY_CHAPTER_TREE_SAVED,
+        actor_id=actor_id,
+        target_id=chapter_id,
+        target_type="chapter",
+        version=revision,
+        payload={
+            "study_id": study_id,
+            "tree_revision": revision,
+            "content_hash": content_hash,
+        },
+        workspace_id=workspace_id,
+    )
+
+    return await bus.publish(command)

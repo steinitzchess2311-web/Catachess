@@ -1,6 +1,12 @@
-"""Database session management."""
+"""
+Created at: 2026-07-09 01:16 EDT
+Created by: Codex
+Last Modified at: 2026-07-09 01:16 EDT
+Last Modified by: Codex
 
-import asyncio
+Database session management.
+"""
+
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -16,7 +22,7 @@ class SchemaAwareSession(AsyncSession):
 
     async def __aenter__(self) -> "SchemaAwareSession":
         config = getattr(self, "_db_config", None)
-        if config and config._auto_create_schema and (config._memory_db or not config._schema_ready):
+        if config and config._auto_create_schema and not config._schema_ready:
             import modules.workspace.db.tables  # noqa: F401
             await _create_schema(config)
         return await super().__aenter__()
@@ -89,7 +95,7 @@ def get_db_config() -> DatabaseConfig:
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """Dependency injection helper for FastAPI."""
     config = get_db_config()
-    if config._auto_create_schema and (config._memory_db or not config._schema_ready):
+    if config._auto_create_schema and not config._schema_ready:
         import modules.workspace.db.tables  # noqa: F401
         await _create_schema(config)
     async with config.async_session_maker() as session:
@@ -104,6 +110,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def _create_schema(config: DatabaseConfig) -> None:
-    """Create schema using a sync engine to avoid async DDL stalls."""
-    await asyncio.to_thread(Base.metadata.create_all, config.engine.sync_engine)
+    """Create schema using the async engine used by workspace tests."""
+    async with config.engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     config._schema_ready = True

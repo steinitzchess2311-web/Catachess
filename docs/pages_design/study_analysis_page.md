@@ -15,6 +15,8 @@ Last Modified by: Codex
 - Study page header owns breadcrumb, title, save state, chapter actions, and train/share affordances.
 - Study page breadcrumbs compress long paths: first item, `...` overflow menu, and last two items remain visible.
 - Study breadcrumb hidden ancestors remain navigable through the `...` menu and must respect unsaved-change warnings.
+- Shared viewers see the same study reading surface, but mutating controls are disabled or hidden and save state reads as read-only rather than dirty/saving.
+- Shared editors use the normal editing surface; if another editor updates the active chapter, the page exposes a clear refresh path instead of silently overwriting the remote version.
 - Right panels should prioritize move tree and explorer workflows with compact tabs and predictable scrolling.
 - Analysis sidebars expose compact controls for Depth, Lines, Engine on/off, and Engine choice.
 - Predictor sidebars expose provider, top-k, Elo, enable control, and probability rows for human-like move prediction.

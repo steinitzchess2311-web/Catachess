@@ -69,7 +69,7 @@ class Node(Base, TimestampMixin, SoftDeleteMixin):
     # Set on the root and all its descendants when soft-deleted as a group.
     # NULL means the node is not in the trash.
     # Only nodes where deleted_root_id == id are shown in the trash UI.
-    deleted_root_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    deleted_root_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # Relationships
     parent: Mapped["Node | None"] = relationship(

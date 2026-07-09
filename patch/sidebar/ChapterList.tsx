@@ -1,8 +1,19 @@
+/*
+Created at: 2026-07-09 01:20 EDT
+Created by: Codex
+Last Modified at: 2026-07-09 01:20 EDT
+Last Modified by: Codex
+
+Editable chapter list for study pages. View-only study access can still select
+chapters, but cannot create, rename, delete, or reorder them.
+*/
+
 import React, { useEffect, useRef, useState } from 'react';
 
 export interface ChapterListProps {
   chapters: Array<{ id: string; title?: string; order?: number }>;
   currentChapterId: string | null;
+  canEdit?: boolean;
   onSelectChapter: (chapterId: string) => void;
   onCreateChapter: () => void;
   onRenameChapter: (chapterId: string, title: string) => Promise<void> | void;
@@ -16,6 +27,7 @@ export interface ChapterListProps {
 export function ChapterList({
   chapters,
   currentChapterId,
+  canEdit = true,
   onSelectChapter,
   onCreateChapter,
   onRenameChapter,
@@ -45,6 +57,7 @@ export function ChapterList({
   }, [editingId]);
 
   const startEditing = (chapterId: string, label: string) => {
+    if (!canEdit) return;
     setEditingId(chapterId);
     setDraftTitle(label);
   };
@@ -56,6 +69,10 @@ export function ChapterList({
   };
 
   const commitEditing = async (chapterId: string, label: string) => {
+    if (!canEdit) {
+      cancelEditing();
+      return;
+    }
     const nextTitle = draftTitle.trim();
     if (nextTitle.includes('/')) {
       setErrorId(chapterId);
@@ -75,7 +92,7 @@ export function ChapterList({
   };
 
   const handleDelete = (chapterId: string, label: string) => {
-    if (chapters.length <= 1) return;
+    if (!canEdit || chapters.length <= 1) return;
     setConfirmDelete({ id: chapterId, label });
   };
 
@@ -105,7 +122,7 @@ export function ChapterList({
   };
 
   const handleDragStart = (event: React.DragEvent<HTMLSpanElement>, chapterId: string) => {
-    if (editingId === chapterId || savingId === chapterId) {
+    if (!canEdit || editingId === chapterId || savingId === chapterId) {
       event.preventDefault();
       return;
     }
@@ -123,7 +140,7 @@ export function ChapterList({
     event: React.DragEvent<HTMLButtonElement>,
     chapterId: string
   ) => {
-    if (!draggingId || draggingId === chapterId) return;
+    if (!canEdit || !draggingId || draggingId === chapterId) return;
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
     const rect = event.currentTarget.getBoundingClientRect();
@@ -135,7 +152,7 @@ export function ChapterList({
   const handleDropOnList = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    if (!draggingId || !dropTarget || draggingId === dropTarget.id) {
+    if (!canEdit || !draggingId || !dropTarget || draggingId === dropTarget.id) {
       setDropTarget(null);
       setDraggingId(null);
       return;
@@ -164,6 +181,8 @@ export function ChapterList({
           type="button"
           className="patch-chapter-list__new"
           onClick={onCreateChapter}
+          disabled={!canEdit}
+          title={canEdit ? 'Create chapter' : 'Read-only study'}
         >
           New Chapter
         </button>
@@ -171,7 +190,7 @@ export function ChapterList({
       <div
         className="patch-chapter-list__scroll"
         onDragOver={(event) => {
-          if (!draggingId) return;
+          if (!canEdit || !draggingId) return;
           event.preventDefault();
           event.dataTransfer.dropEffect = 'move';
         }}
@@ -181,7 +200,7 @@ export function ChapterList({
           <div className="patch-chapter-list__empty">No chapters yet.</div>
         )}
         {chapters.map((chapter, index) => {
-          const canDelete = chapters.length > 1;
+          const canDelete = canEdit && chapters.length > 1;
           const isActive = chapter.id === currentChapterId;
           const label = resolveLabel(chapter, index);
           const order = index + 1;
@@ -207,13 +226,14 @@ export function ChapterList({
             >
               <span
                 className="patch-chapter-list__order"
-                draggable={!isEditing && !isSaving}
+                draggable={canEdit && !isEditing && !isSaving}
                 onDragStart={(event) => handleDragStart(event, chapter.id)}
                 onDragEnd={handleDragEnd}
                 onClick={(event) => event.stopPropagation()}
                 role="button"
                 tabIndex={0}
                 aria-label={`Reorder ${label}`}
+                aria-disabled={!canEdit}
               >
                 {order}
               </span>
@@ -254,6 +274,7 @@ export function ChapterList({
                     event.stopPropagation();
                     startEditing(chapter.id, label);
                   }}
+                  title={canEdit ? 'Double-click to rename' : undefined}
                 >
                   {label}
                 </span>

@@ -84,6 +84,8 @@ async def ensure_default_chapter(
         pgn_status="ready",
         r2_etag=upload_result.etag,
         last_synced_at=datetime.now(timezone.utc),
+        tree_revision=1,
+        tree_updated_at=datetime.now(timezone.utc),
     )
 
     await study_repo.create_chapter(chapter)

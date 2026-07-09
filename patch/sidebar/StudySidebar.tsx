@@ -25,6 +25,7 @@ import { formatSanWithMoveNumbers } from './utils/formatters';
 export interface StudySidebarProps {
   chapters: Array<{ id: string; title?: string; order?: number }>;
   currentChapterId: string | null;
+  canEdit?: boolean;
   onSelectChapter: (chapterId: string) => void;
   onCreateChapter: () => void;
   onRenameChapter: (chapterId: string, title: string) => Promise<void> | void;
@@ -38,6 +39,7 @@ export interface StudySidebarProps {
 export function StudySidebar({
   chapters,
   currentChapterId,
+  canEdit = true,
   onSelectChapter,
   onCreateChapter,
   onRenameChapter,
@@ -131,6 +133,7 @@ export function StudySidebar({
         <ChapterList
           chapters={chapters}
           currentChapterId={currentChapterId}
+          canEdit={canEdit}
           onSelectChapter={onSelectChapter}
           onCreateChapter={onCreateChapter}
           onRenameChapter={onRenameChapter}

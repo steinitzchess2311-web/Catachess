@@ -29,8 +29,10 @@ classroom 功能
 
 study 权限
 
-- 接下来要做一个大改：1 、数据库区分 study 的 viewer 和 modifier
-- 实现可以多人同时修改，实时更新。暂时不做所有人同步在一个页面的。
+-[✅] 接下来要做一个大改：1 、数据库区分 study 的 viewer 和 modifier
+  - 2026-07-09 01:20 EDT：复用既有 ACL 层级，产品语义上 `viewer` 为只读，`modifier` 映射到既有 `editor`；后端 study/chapter/tree/legacy PGN API 均强制 read/write 边界，viewer 可读但不能保存树、创建/重命名/删除/排序 chapter 或修改 variation。
+-[✅] 实现可以多人同时修改，实时更新。暂时不做所有人同步在一个页面的。
+  - 2026-07-09 01:20 EDT：chapter tree 增加 `tree_revision/tree_updated_at`，保存成功推进 revision 并发布 tree-saved event；前端每 10 秒轻量轮询 `tree-meta`，无本地改动时自动刷新，有本地未保存改动时显示 `Reload latest`，避免覆盖正在编辑的内容。`pytest backend/modules/workspace/tests/test_study_permissions_collaboration.py` 与 `npm run build` 通过。
 
 
 其他

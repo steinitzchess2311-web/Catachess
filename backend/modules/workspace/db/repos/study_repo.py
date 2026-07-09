@@ -4,6 +4,8 @@ Study and Chapter repository for database operations.
 
 from typing import Sequence
 
+from datetime import datetime, timezone
+
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -147,6 +149,15 @@ class StudyRepository:
         await self.session.flush()
         await self.session.refresh(merged)
         return merged
+
+    async def mark_chapter_tree_saved(self, chapter: Chapter) -> Chapter:
+        """Increment the chapter tree revision after a successful content save."""
+        chapter.tree_revision = (chapter.tree_revision or 0) + 1
+        chapter.tree_updated_at = datetime.now(timezone.utc)
+        chapter.last_synced_at = chapter.tree_updated_at
+        await self.session.flush()
+        await self.session.refresh(chapter)
+        return chapter
 
     async def delete_chapter(self, chapter: Chapter) -> None:
         """Delete a chapter."""

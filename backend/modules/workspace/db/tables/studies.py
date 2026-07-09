@@ -98,6 +98,12 @@ class Chapter(Base, TimestampMixin):
         DateTime(timezone=True), nullable=True
     )
 
+    # Collaboration metadata for whole-tree JSON saves.
+    tree_revision: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    tree_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     # FEN Import support (Phase 1 - FEN Import feature)
     starting_fen: Mapped[str | None] = mapped_column(
         String(100),
@@ -111,6 +117,7 @@ class Chapter(Base, TimestampMixin):
         Index("ix_chapters_study_order", "study_id", "order"),
         Index("ix_chapters_r2_key", "r2_key"),
         Index("ix_chapters_starting_fen", "starting_fen"),
+        Index("ix_chapters_tree_revision", "tree_revision"),
     )
 
     def __repr__(self) -> str:

@@ -1,15 +1,29 @@
 """
-Database engine configuration
+Created at: 2026-07-09 01:10 EDT
+Created by: Codex
+Last Modified at: 2026-07-09 01:10 EDT
+Last Modified by: Codex
+
+Database engine configuration.
 """
 from sqlalchemy import create_engine
+from sqlalchemy.engine.url import make_url
 from core.config import settings
 
-db_engine = create_engine(
-    settings.DATABASE_URL,
-    pool_pre_ping=True,                          # Check connection health before using
-    pool_size=settings.DB_POOL_SIZE,             # Base connection pool size (default: 20)
-    max_overflow=settings.DB_MAX_OVERFLOW,       # Additional connections when pool is exhausted (default: 40)
-    pool_recycle=settings.DB_POOL_RECYCLE,       # Recycle connections after seconds (default: 3600 = 1 hour)
-    pool_timeout=settings.DB_POOL_TIMEOUT,       # Wait seconds for a connection before timing out (default: 30)
-    echo_pool=False,                             # Disable pool logging for performance
-)
+engine_url = make_url(settings.DATABASE_URL)
+engine_kwargs = {
+    "pool_pre_ping": True,  # Check connection health before using.
+    "echo_pool": False,    # Disable pool logging for performance.
+}
+
+if engine_url.get_backend_name() != "sqlite":
+    engine_kwargs.update(
+        {
+            "pool_size": settings.DB_POOL_SIZE,
+            "max_overflow": settings.DB_MAX_OVERFLOW,
+            "pool_recycle": settings.DB_POOL_RECYCLE,
+            "pool_timeout": settings.DB_POOL_TIMEOUT,
+        }
+    )
+
+db_engine = create_engine(settings.DATABASE_URL, **engine_kwargs)

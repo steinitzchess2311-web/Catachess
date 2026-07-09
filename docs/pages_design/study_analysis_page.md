@@ -13,6 +13,8 @@ Last Modified by: Codex
 - Analysis page header owns the page title and the "Send to Study" action.
 - Analysis board remains the central object; sidebars should read as utilitarian work panels.
 - Study page header owns breadcrumb, title, save state, chapter actions, and train/share affordances.
+- Study page breadcrumbs compress long paths: first item, `...` overflow menu, and last two items remain visible.
+- Study breadcrumb hidden ancestors remain navigable through the `...` menu and must respect unsaved-change warnings.
 - Right panels should prioritize move tree and explorer workflows with compact tabs and predictable scrolling.
 
 ## Modal Rules

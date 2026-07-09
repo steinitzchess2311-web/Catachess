@@ -27,6 +27,137 @@ interface Breadcrumb {
   nodeType: 'root' | 'folder' | 'study';
 }
 
+const STUDY_MAX_VISIBLE_BREADCRUMB_ITEMS = 4;
+const STUDY_TRAILING_BREADCRUMB_ITEMS = 2;
+const STUDY_MAX_BREADCRUMB_LABEL_CHARS = 28;
+
+function truncateBreadcrumbTitle(title: string): string {
+  const chars = Array.from(title || '');
+  if (chars.length <= STUDY_MAX_BREADCRUMB_LABEL_CHARS) return title;
+  return `${chars.slice(0, STUDY_MAX_BREADCRUMB_LABEL_CHARS - 3).join('')}...`;
+}
+
+function StudyBreadcrumb({
+  breadcrumbs,
+  onCrumbClick,
+}: {
+  breadcrumbs: Breadcrumb[];
+  onCrumbClick: (crumb: Breadcrumb, index: number) => void;
+}) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const overflowRef = useRef<HTMLSpanElement | null>(null);
+  const shouldCompress = breadcrumbs.length > STUDY_MAX_VISIBLE_BREADCRUMB_ITEMS;
+  const hiddenCrumbs = shouldCompress ? breadcrumbs.slice(1, -STUDY_TRAILING_BREADCRUMB_ITEMS) : [];
+  const visibleTail = shouldCompress ? breadcrumbs.slice(-STUDY_TRAILING_BREADCRUMB_ITEMS) : breadcrumbs.slice(1);
+  const visibleCrumbs = breadcrumbs.length > 0 ? [breadcrumbs[0], ...visibleTail] : [];
+  const hiddenPath = hiddenCrumbs.map((crumb) => crumb.title).join(' / ');
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      if (!overflowRef.current?.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', closeOnOutsideClick);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutsideClick);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [menuOpen]);
+
+  const renderCrumb = (crumb: Breadcrumb, index: number) => {
+    const isCurrent = index === breadcrumbs.length - 1;
+    const label = truncateBreadcrumbTitle(crumb.title);
+    if (isCurrent) {
+      return (
+        <span className="breadcrumb-item current" title={crumb.title}>
+          {label}
+        </span>
+      );
+    }
+    return (
+      <button
+        type="button"
+        className="breadcrumb-item clickable"
+        onClick={() => onCrumbClick(crumb, index)}
+        title={crumb.title}
+      >
+        {label}
+      </button>
+    );
+  };
+
+  if (breadcrumbs.length === 0) return null;
+
+  return (
+    <div className={`patch-study-breadcrumb${shouldCompress ? ' is-compressed' : ''}`}>
+      {visibleCrumbs.map((crumb, visibleIndex) => {
+        const realIndex = shouldCompress && visibleIndex > 0
+          ? breadcrumbs.length - visibleTail.length + visibleIndex - 1
+          : visibleIndex;
+        const shouldInsertOverflow = shouldCompress && visibleIndex === 1;
+        return (
+          <React.Fragment key={crumb.id}>
+            {visibleIndex > 0 && <span className="breadcrumb-separator" aria-hidden="true">/</span>}
+            {shouldInsertOverflow && (
+              <>
+                <span className="study-breadcrumb-overflow" ref={overflowRef}>
+                  <button
+                    type="button"
+                    className="breadcrumb-overflow-btn"
+                    aria-haspopup="menu"
+                    aria-expanded={menuOpen}
+                    aria-label={`Show ${hiddenCrumbs.length} hidden breadcrumb item${hiddenCrumbs.length === 1 ? '' : 's'}`}
+                    title={hiddenPath ? `Show hidden folders: ${hiddenPath}` : 'Show full path'}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setMenuOpen((open) => !open);
+                    }}
+                  >
+                    ...
+                  </button>
+                  <div className="breadcrumb-overflow-menu" role="menu" hidden={!menuOpen}>
+                    {hiddenCrumbs.map((hiddenCrumb) => {
+                      const hiddenIndex = breadcrumbs.findIndex((item) => item.id === hiddenCrumb.id);
+                      return (
+                        <button
+                          key={hiddenCrumb.id}
+                          type="button"
+                          className="breadcrumb-overflow-menu-item"
+                          role="menuitem"
+                          title={hiddenCrumb.title}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setMenuOpen(false);
+                            onCrumbClick(hiddenCrumb, hiddenIndex);
+                          }}
+                        >
+                          {truncateBreadcrumbTitle(hiddenCrumb.title)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </span>
+                <span className="breadcrumb-separator" aria-hidden="true">/</span>
+              </>
+            )}
+            {renderCrumb(crumb, realIndex)}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
+
 function StudyPageContent({ className }: PatchStudyPageProps) {
   const { id, topFolder } = useParams<{ id?: string; topFolder?: string }>();
   const navigate = useNavigate();
@@ -137,9 +268,13 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
       }
       const crumbs: Breadcrumb[] = [];
       let currentId: string | null = studyId;
-      let safety = 0;
-      while (currentId && safety < 20) {
-        safety += 1;
+      const visitedIds = new Set<string>();
+      while (currentId) {
+        if (visitedIds.has(currentId)) {
+          console.warn(`[STUDY PAGE] Stopped breadcrumb build after detecting a parent cycle at ${currentId}`);
+          break;
+        }
+        visitedIds.add(currentId);
         const node = await api.get(`/api/v1/workspace/nodes/${currentId}`).catch(() => null);
         if (!node) break;
         if (typeof node.title === 'string' && node.title.length > 0) {
@@ -374,25 +509,7 @@ function StudyPageContent({ className }: PatchStudyPageProps) {
               {studyTitle || 'Study'}
             </h2>
           )}
-          <div className="patch-study-breadcrumb">
-            {breadcrumbs.map((crumb, index) => (
-              <React.Fragment key={crumb.id}>
-                {index > 0 && <span className="breadcrumb-separator">/</span>}
-                {index === breadcrumbs.length - 1 ? (
-                  <span className="breadcrumb-item current" title="Current study">{crumb.title}</span>
-                ) : (
-                  <button
-                    type="button"
-                    className="breadcrumb-item clickable"
-                    onClick={() => handleBreadcrumbClick(crumb, index)}
-                    title="Click to navigate"
-                  >
-                    {crumb.title}
-                  </button>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
+          <StudyBreadcrumb breadcrumbs={breadcrumbs} onCrumbClick={handleBreadcrumbClick} />
           <div className="patch-study-actions">
             <button
               type="button"

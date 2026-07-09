@@ -45,6 +45,21 @@ def test_parse_stockfish_info_lines_keeps_deepest_multipv() -> None:
     assert lines[1].score == "mate3"
 
 
+def test_parse_lc0_info_without_multipv_defaults_to_first_line() -> None:
+    lines = parse_stockfish_info_lines(
+        [
+            "info depth 1 seldepth 2 time 151 nodes 6 score cp 16 nps 42 pv g1f3 d7d5",
+            "info depth 3 seldepth 6 time 903 nodes 64 score cp 15 nps 71 pv d2d4 d7d5 g1f3",
+        ],
+        turn="w",
+    )
+
+    assert len(lines) == 1
+    assert lines[0].multipv == 1
+    assert lines[0].score == 15
+    assert lines[0].pv == ["d2d4", "d7d5", "g1f3"]
+
+
 def test_stockfish_capability_reports_missing_binary() -> None:
     worker = LocalStockfishWorker(binary_path="/definitely/missing/stockfish", max_workers=10)
 

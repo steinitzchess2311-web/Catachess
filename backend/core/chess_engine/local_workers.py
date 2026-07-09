@@ -419,10 +419,8 @@ class Lc0Worker:
         bounded_multipv = max(1, min(int(multipv), settings.LC0_MAX_MULTIPV))
         command = [
             self.binary_path,
-            "--backend",
-            settings.LC0_BACKEND,
-            "--weights",
-            self.weights_path,
+            f"--backend={settings.LC0_BACKEND}",
+            f"--weights={self.weights_path}",
         ]
 
         proc = subprocess.Popen(
@@ -490,7 +488,6 @@ def parse_stockfish_info_lines(info_lines: list[str], turn: str = "w") -> list[E
         tokens = line.strip().split()
         try:
             depth_idx = tokens.index("depth")
-            multipv_idx = tokens.index("multipv")
             score_idx = tokens.index("score")
             pv_idx = tokens.index("pv")
         except ValueError:
@@ -498,9 +495,16 @@ def parse_stockfish_info_lines(info_lines: list[str], turn: str = "w") -> list[E
 
         try:
             depth = int(tokens[depth_idx + 1])
-            multipv = int(tokens[multipv_idx + 1])
         except (ValueError, IndexError):
             continue
+
+        multipv = 1
+        if "multipv" in tokens:
+            try:
+                multipv_idx = tokens.index("multipv")
+                multipv = int(tokens[multipv_idx + 1])
+            except (ValueError, IndexError):
+                multipv = 1
 
         score_type = tokens[score_idx + 1] if score_idx + 1 < len(tokens) else None
         score_val = tokens[score_idx + 2] if score_idx + 2 < len(tokens) else None

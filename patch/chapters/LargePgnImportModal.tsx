@@ -1,4 +1,9 @@
 /**
+ * Created at: 2026-07-09 02:06 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 02:06 EDT
+ * Last Modified by: Codex
+ *
  * LargePgnImportModal
  *
  * Handles PGN files that exceed the single-study size threshold (500 KB).
@@ -374,14 +379,16 @@ export function LargePgnImportModal({ content, filename, studyId, onClose }: Lar
       case 'confirm':
         return (
           <>
-            <p style={{ marginBottom: 6 }}>
-              This file is large and will be split across multiple studies.
-            </p>
-            <p style={{ color: '#6b7280', fontSize: 13, marginBottom: 16 }}>
-              A new folder will be created with one study per ~300 KB of content.
-              The current study will not be affected.
-            </p>
-            <div className="patch-modal-actions">
+            <div className="large-pgn-modal-body">
+              <p className="large-pgn-modal-copy">
+                This file is large and will be split across multiple studies.
+              </p>
+              <p className="large-pgn-modal-hint">
+                A new folder will be created with one study per ~300 KB of content.
+                The current study will not be affected.
+              </p>
+            </div>
+            <div className="patch-modal-actions large-pgn-modal-footer">
               <button className="patch-modal-button" onClick={handleClose}>Cancel</button>
               <button className="patch-modal-button primary" onClick={startParsing}>
                 Analyze file
@@ -395,20 +402,25 @@ export function LargePgnImportModal({ content, filename, studyId, onClose }: Lar
         const pct = total > 0 ? Math.round((parsed / total) * 100) : 0;
         return (
           <>
-            <div className="patch-modal-progress">
-              <div className="patch-modal-progress__label">
-                {total > 0
-                  ? `Parsing games… ${parsed} / ${total}`
-                  : 'Parsing…'}
-              </div>
-              <div className="patch-modal-progress__bar">
-                <div
-                  className={`patch-modal-progress__fill${total === 0 ? ' is-indeterminate' : ''}`}
-                  style={total > 0 ? { width: `${pct}%` } : undefined}
-                />
+            <div className="large-pgn-modal-body large-pgn-modal-body--status">
+              <div className="patch-modal-progress patch-modal-progress--large-pgn">
+                <div className="patch-modal-progress__meta">
+                  <div className="patch-modal-progress__label">
+                    {total > 0 ? 'Parsing games' : 'Parsing'}
+                  </div>
+                  {total > 0 && (
+                    <div className="patch-modal-progress__count">{parsed} / {total}</div>
+                  )}
+                </div>
+                <div className="patch-modal-progress__bar">
+                  <div
+                    className={`patch-modal-progress__fill${total === 0 ? ' is-indeterminate' : ''}`}
+                    style={total > 0 ? { width: `${pct}%` } : undefined}
+                  />
+                </div>
               </div>
             </div>
-            <div className="patch-modal-actions" style={{ marginTop: 16 }}>
+            <div className="patch-modal-actions large-pgn-modal-footer">
               <button className="patch-modal-button" onClick={handleClose}>Cancel</button>
             </div>
           </>
@@ -419,26 +431,28 @@ export function LargePgnImportModal({ content, filename, studyId, onClose }: Lar
         const { batches, totalGames, skipped, folderName } = phase;
         return (
           <>
-            <div className="large-pgn-preview">
-              <div className="large-pgn-preview__row">
-                <span>Games found</span>
-                <strong>{totalGames}</strong>
-              </div>
-              <div className="large-pgn-preview__row">
-                <span>Studies to create</span>
-                <strong>{batches.length}</strong>
-              </div>
-              <div className="large-pgn-preview__row">
-                <span>Folder name</span>
-                <strong className="large-pgn-preview__folder">{folderName}</strong>
-              </div>
-              {skipped > 0 && (
-                <div className="large-pgn-preview__warn">
-                  {skipped} game{skipped > 1 ? 's' : ''} could not be parsed and will be skipped.
+            <div className="large-pgn-modal-body">
+              <div className="large-pgn-preview">
+                <div className="large-pgn-preview__row">
+                  <span>Games found</span>
+                  <strong>{totalGames}</strong>
                 </div>
-              )}
+                <div className="large-pgn-preview__row">
+                  <span>Studies to create</span>
+                  <strong>{batches.length}</strong>
+                </div>
+                <div className="large-pgn-preview__row">
+                  <span>Folder name</span>
+                  <strong className="large-pgn-preview__folder">{folderName}</strong>
+                </div>
+                {skipped > 0 && (
+                  <div className="large-pgn-preview__warn">
+                    {skipped} game{skipped > 1 ? 's' : ''} could not be parsed and will be skipped.
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="patch-modal-actions">
+            <div className="patch-modal-actions large-pgn-modal-footer">
               <button className="patch-modal-button" onClick={handleClose}>Cancel</button>
               <button
                 className="patch-modal-button primary"
@@ -466,7 +480,7 @@ export function LargePgnImportModal({ content, filename, studyId, onClose }: Lar
         const showBar = subPhase === 'creating' || subPhase === 'uploading';
 
         return (
-          <>
+          <div className="large-pgn-modal-body large-pgn-modal-body--status">
             <div className="large-pgn-studies-progress">
               {Array.from({ length: studyTotal }, (_, i) => (
                 <div
@@ -479,7 +493,7 @@ export function LargePgnImportModal({ content, filename, studyId, onClose }: Lar
                 />
               ))}
             </div>
-            <div className="patch-modal-progress" style={{ marginTop: 8 }}>
+            <div className="patch-modal-progress patch-modal-progress--large-pgn">
               <div className="patch-modal-progress__label">{subLabel[subPhase]}</div>
               {showBar && (
                 <div className="patch-modal-progress__bar">
@@ -490,7 +504,7 @@ export function LargePgnImportModal({ content, filename, studyId, onClose }: Lar
                 </div>
               )}
             </div>
-          </>
+          </div>
         );
       }
 
@@ -499,29 +513,31 @@ export function LargePgnImportModal({ content, filename, studyId, onClose }: Lar
         const hasErrors = errors.length > 0;
         return (
           <>
-            <div className="large-pgn-done">
-              <div className="large-pgn-done__icon">{hasErrors ? '⚠' : '✓'}</div>
-              <div className="large-pgn-done__summary">
-                <strong>{chaptersImported} chapter{chaptersImported !== 1 ? 's' : ''}</strong> imported
-                into <strong>{studiesCreated} stud{studiesCreated !== 1 ? 'ies' : 'y'}</strong>
-                {' '}in folder <em>"{folderName}"</em>.
-              </div>
-              {chaptersSkipped > 0 && (
-                <div className="large-pgn-done__skipped">
-                  {chaptersSkipped} chapter{chaptersSkipped !== 1 ? 's' : ''} skipped.
+            <div className="large-pgn-modal-body">
+              <div className="large-pgn-done">
+                <div className="large-pgn-done__icon">{hasErrors ? '!' : '✓'}</div>
+                <div className="large-pgn-done__summary">
+                  <strong>{chaptersImported} chapter{chaptersImported !== 1 ? 's' : ''}</strong> imported
+                  into <strong>{studiesCreated} stud{studiesCreated !== 1 ? 'ies' : 'y'}</strong>
+                  {' '}in folder <em>"{folderName}"</em>.
                 </div>
-              )}
-              {hasErrors && (
-                <details className="large-pgn-done__errors">
-                  <summary>{errors.length} error{errors.length > 1 ? 's' : ''} — click to expand</summary>
-                  <ul>
-                    {errors.slice(0, 20).map((e, i) => <li key={i}>{e}</li>)}
-                    {errors.length > 20 && <li>…and {errors.length - 20} more</li>}
-                  </ul>
-                </details>
-              )}
+                {chaptersSkipped > 0 && (
+                  <div className="large-pgn-done__skipped">
+                    {chaptersSkipped} chapter{chaptersSkipped !== 1 ? 's' : ''} skipped.
+                  </div>
+                )}
+                {hasErrors && (
+                  <details className="large-pgn-done__errors">
+                    <summary>{errors.length} error{errors.length > 1 ? 's' : ''} - click to expand</summary>
+                    <ul>
+                      {errors.slice(0, 20).map((e, i) => <li key={i}>{e}</li>)}
+                      {errors.length > 20 && <li>...and {errors.length - 20} more</li>}
+                    </ul>
+                  </details>
+                )}
+              </div>
             </div>
-            <div className="patch-modal-actions">
+            <div className="patch-modal-actions large-pgn-modal-footer">
               <button className="patch-modal-button primary" onClick={onClose}>Done</button>
             </div>
           </>
@@ -531,8 +547,10 @@ export function LargePgnImportModal({ content, filename, studyId, onClose }: Lar
       case 'error':
         return (
           <>
-            <div className="patch-modal-error">{phase.message}</div>
-            <div className="patch-modal-actions">
+            <div className="large-pgn-modal-body">
+              <div className="patch-modal-error">{phase.message}</div>
+            </div>
+            <div className="patch-modal-actions large-pgn-modal-footer">
               <button className="patch-modal-button" onClick={handleClose}>Close</button>
               <button className="patch-modal-button primary" onClick={startParsing}>
                 Retry
@@ -555,7 +573,7 @@ export function LargePgnImportModal({ content, filename, studyId, onClose }: Lar
   return (
     <div className="patch-modal-overlay" role="dialog" aria-modal="true">
       <div className="patch-modal patch-modal--large-pgn">
-        <h3>{titles[phase.name]}</h3>
+        <h3 className="large-pgn-modal-title">{titles[phase.name]}</h3>
         {renderBody()}
       </div>
     </div>

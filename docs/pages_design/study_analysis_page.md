@@ -3,7 +3,7 @@
 ## header
 Created at: 2026-07-08 20:33 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 23:31 EDT
+Last Modified at: 2026-07-09 02:06 EDT
 Last Modified by: Codex
 
 ## Page Job
@@ -27,7 +27,7 @@ Last Modified by: Codex
 - Modal cards use white surface, slate text, 8-10px radius, restrained shadow, and blue primary buttons.
 - Do not use decorative emoji in modal titles or action labels.
 - Chapter creation keeps only the necessary modes: Empty, From FEN, From PGN.
-- Large PGN import must explain the split/import outcome with progress and final counts, not decorative copy.
+- Large PGN import must explain the split/import outcome with progress and final counts, not decorative copy; parsing/importing states use a padded body, progress card, and separated footer so the progress bar never touches the modal edges.
 - "Send to Study" picker should look like a product picker: header, breadcrumb row, scrollable node list, and explicit footer action.
 
 ## Visual Direction

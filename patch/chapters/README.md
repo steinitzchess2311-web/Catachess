@@ -1,8 +1,8 @@
 ## header
 Created at: 2026-07-09 01:20 EDT
 Created by: Codex
-Last Modified at: 2026-07-09 01:20 EDT
-Lst Modified by: Codex
+Last Modified at: 2026-07-09 02:06 EDT
+Last Modified by: Codex
 
 ## brief intro
 - goal for this folder.
@@ -12,6 +12,7 @@ Lst Modified by: Codex
 
 ## folder structure
 |-NewChapterModal.tsx modal for creating one or more chapters
+|-LargePgnImportModal.tsx worker-backed import modal for splitting large PGN files into studies
 |-useChapters.ts hook for chapter CRUD, ordering, and tree loading
 
 ## 代办

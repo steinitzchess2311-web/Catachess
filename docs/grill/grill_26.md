@@ -27,6 +27,6 @@ Last Modified by: Codex
 
 ## 结果
 
-- 采用 LC0/ROCm 作为 AlphaZero 阻塞项的替代实现方向。
+- 采用 LC0 `onnx-rocm` 作为 AlphaZero 阻塞项的替代实现方向。
 - 先让产品和 API 明确支持 `engine=lc0`，并把 `alphazero` 映射到 LC0 优先、AlphaZero command fallback。
 - 部署时如果缺少 LC0 二进制或权重，health 必须明确 unavailable。

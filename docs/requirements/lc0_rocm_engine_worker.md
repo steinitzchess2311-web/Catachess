@@ -11,7 +11,7 @@ Lst Modified by: Codex
 ## requirements
 - AlphaZero runtime/model absence must not block the overall July 8 todo goal.
 - Add LC0/Leela as a backend engine capability because the server has ROCm-visible AMD GPU hardware.
-- LC0 must have its own binary path, weights path, backend argument, timeout, max depth, max multipv, and server-wide concurrency limit settings.
+- LC0 must have its own binary path, weights path, `onnx-rocm` backend argument, timeout, max nodes, max multipv, and server-wide concurrency limit settings.
 - LC0 concurrency must default to 1 process across all gunicorn workers to avoid GPU memory contention.
 - `/api/engine/health` must report LC0 availability, binary path, weights path, ROCm probe result, active workers, and concurrency limit.
 - Explicit `engine=lc0` must route to LC0.

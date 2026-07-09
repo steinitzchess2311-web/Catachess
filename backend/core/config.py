@@ -59,7 +59,7 @@ class Settings(BaseSettings):
     ALPHAZERO_CUDA_VISIBLE_DEVICES: str = "0"
     LC0_BINARY_PATH: str = "/usr/games/lc0"
     LC0_WEIGHTS_PATH: str = ""
-    LC0_BACKEND: str = "rocm"
+    LC0_BACKEND: str = "onnx-rocm"
     LC0_MAX_WORKERS: int = 1
     LC0_TIMEOUT: int = 60
     LC0_NODES_PER_DEPTH: int = 64

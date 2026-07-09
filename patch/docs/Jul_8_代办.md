@@ -7,10 +7,11 @@
 
 引擎功能：
 - 服务器上，部署 stockfish worker 和 alphazero worker 。产品级别根据极大网站的工程级别部署。 alphazero 可以放在 gpu 上。但是加上限制（stockfish 最多 10cpu 同时跑，alphazero 最多占一部分 gpu，不要挤爆服务器。）产品级别的设置排队机制等等。
+  - 2026-07-08 23:10 EDT：Stockfish 本机 worker 已部署到服务器，跨 gunicorn 进程全局最多 10 个 Stockfish 进程；AlphaZero worker 入口、健康检查、队列/限流和受控不可用错误已部署，但服务器当前 `nvidia-smi` 无法连接驱动，且未配置 `ALPHAZERO_COMMAND`/`ALPHAZERO_MODEL_PATH`，真实 AlphaZero 推理仍等待 GPU/模型。
 
-- 前端展示和前端的连接用最产品级别的方式，websocket 啥的都可以。前端格式和 stockfishwasm 一样。
+-[✅] 前端展示和前端的连接用最产品级别的方式，websocket 啥的都可以。前端格式和 stockfishwasm 一样。
 
-- 修改当前的study 或者 analysis page 当中 engine 前端展示。 1 、顺便修的更加产品级别、简洁清楚。 2 、让用户可以选择引擎。
+-[✅] 修改当前的study 或者 analysis page 当中 engine 前端展示。 1 、顺便修的更加产品级别、简洁清楚。 2 、让用户可以选择引擎。
 
 
 predictor 功能：

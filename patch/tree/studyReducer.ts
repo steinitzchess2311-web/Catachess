@@ -1,6 +1,11 @@
 /**
- * studyReducer — pure reducer + types for study state.
- * No React imports. Safe to test independently.
+ * Created at: 2026-07-08 22:15 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-08 22:15 EDT
+ * Last Modified by: Codex
+ *
+ * studyReducer — pure reducer + types for study state. No React imports.
+ * Safe to test independently.
  */
 
 import { replaySanPath, STARTING_FEN } from '../chessJS/replay';
@@ -73,7 +78,7 @@ export type StudyAction =
   | { type: 'SET_ERROR'; error: StudyError }
   | { type: 'CLEAR_ERROR' }
   | { type: 'SET_LOADING'; isLoading: boolean }
-  | { type: 'MARK_SAVED'; timestamp: number; hash: string }
+  | { type: 'MARK_SAVED'; timestamp: number; hash: string; keepDirty?: boolean }
   | { type: 'SET_SAVING'; isSaving: boolean }
   | { type: 'RESET' }
   | { type: 'ENTER_TRAIN_MODE' }
@@ -335,7 +340,12 @@ export function studyReducer(state: StudyState, action: StudyAction): StudyState
       return { ...state, isLoading: action.isLoading };
 
     case 'MARK_SAVED':
-      return { ...state, isDirty: false, lastSavedAt: action.timestamp, lastSavedHash: action.hash };
+      return {
+        ...state,
+        isDirty: action.keepDirty ? state.isDirty : false,
+        lastSavedAt: action.timestamp,
+        lastSavedHash: action.hash,
+      };
 
     case 'SET_SAVING':
       return { ...state, isSaving: action.isSaving };

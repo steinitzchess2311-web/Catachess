@@ -1,6 +1,19 @@
+"""
+Created at: 2026-07-08 22:15 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 22:15 EDT
+Last Modified by: Codex
+
+Patch study tree API helpers for reading, saving, and exporting chapter tree
+JSON. Save requests use canonical and verified client content hashes to reduce
+duplicate R2 writes without changing the persisted tree schema.
+"""
+
+import hashlib
 import json
 import logging
 from typing import Optional
+from botocore.exceptions import ClientError
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,6 +30,20 @@ logger.info("=" * 80)
 logger.info("[STUDY PATCH API] Router initialized with prefix: /study-patch")
 logger.info("[STUDY PATCH API] This module provides PGN export endpoints")
 logger.info("=" * 80)
+
+def _normalize_sha256(value: Optional[str]) -> Optional[str]:
+    if not value:
+        return None
+    normalized = value.strip().lower()
+    if len(normalized) != 64:
+        return None
+    if any(ch not in "0123456789abcdef" for ch in normalized):
+        return None
+    return normalized
+
+def _is_not_found_error(error: ClientError) -> bool:
+    code = error.response.get("Error", {}).get("Code", "")
+    return code in {"404", "NoSuchKey", "NotFound"}
 
 def _validate_tree_structure(tree: StudyTreeDTO) -> list[str]:
     errors: list[str] = []
@@ -116,12 +143,60 @@ async def put_chapter_tree(
 
     key = R2Keys.chapter_tree_json(chapter_id)
     try:
-        client_hash = request.headers.get("X-Tree-Hash")
-        content = tree.model_dump_json()
-        r2_client.upload_json(key, content)
-        logger.info(f"Tree saved for chapter {chapter_id} (size: {len(content)} bytes)")
+        client_hash = _normalize_sha256(request.headers.get("X-Tree-Hash"))
+        raw_body_hash: Optional[str] = None
         if client_hash:
-            logger.info(f"Tree hash received for chapter {chapter_id}: {client_hash}")
+            try:
+                raw_body_hash = hashlib.sha256(await request.body()).hexdigest()
+            except Exception as hash_error:
+                logger.warning(f"Failed to hash raw tree request body for chapter {chapter_id}: {hash_error}")
+
+        content = tree.model_dump_json()
+        content_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
+        verified_client_hash = client_hash if client_hash and client_hash == raw_body_hash else None
+
+        if client_hash and not verified_client_hash:
+            logger.warning(
+                "Ignoring mismatched tree hash for chapter %s (header=%s raw_body=%s)",
+                chapter_id,
+                client_hash,
+                raw_body_hash,
+            )
+
+        try:
+            metadata = r2_client.get_metadata(key)
+            stored_content_hash = metadata.get("content-hash")
+            stored_client_hash = metadata.get("client-tree-hash")
+            # `content-hash` is generated from the canonical Pydantic JSON that
+            # is uploaded to R2. `client-tree-hash` is the verified raw request
+            # body hash from X-Tree-Hash and handles exact repeat client saves.
+            if stored_content_hash == content_hash or (
+                verified_client_hash and stored_client_hash == verified_client_hash
+            ):
+                logger.info(
+                    "Tree save skipped for chapter %s; content hash unchanged (%s)",
+                    chapter_id,
+                    content_hash,
+                )
+                return TreeResponse(success=True)
+        except ClientError as metadata_error:
+            if not _is_not_found_error(metadata_error):
+                logger.warning(
+                    "Could not inspect existing tree metadata for chapter %s: %s",
+                    chapter_id,
+                    metadata_error,
+                )
+
+        upload_metadata = {"client-tree-hash": verified_client_hash} if verified_client_hash else None
+        upload_result = r2_client.upload_json(key, content, metadata=upload_metadata)
+        logger.info(
+            "Tree saved for chapter %s (size: %s bytes, content_hash: %s)",
+            chapter_id,
+            upload_result.size,
+            upload_result.content_hash,
+        )
+        if verified_client_hash:
+            logger.info(f"Verified client tree hash for chapter {chapter_id}: {verified_client_hash}")
         return TreeResponse(success=True)
     except Exception as e:
         logger.error(f"Failed to save tree for chapter {chapter_id}: {e}")

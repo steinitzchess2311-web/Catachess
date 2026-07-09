@@ -1,4 +1,14 @@
+"""
+Created at: 2026-07-08 22:15 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 22:15 EDT
+Last Modified by: Codex
+
+Patch study integration tests for import/edit/writeback flows.
+"""
+
 import json
+from types import SimpleNamespace
 
 import pytest
 
@@ -9,18 +19,31 @@ from patch.backend.study.converter import convert_nodetree_to_dto
 from patch.backend.study.models import StudyNodeDTO
 
 
+class FakeRequest:
+    def __init__(self, body: bytes = b"", headers: dict[str, str] | None = None) -> None:
+        self._body = body
+        self.headers = headers or {}
+
+    async def body(self) -> bytes:
+        return self._body
+
+
 class MockR2Client:
     def __init__(self) -> None:
         self.storage: dict[str, str] = {}
 
-    def upload_json(self, key: str, content: str, metadata: dict | None = None) -> None:
+    def upload_json(self, key: str, content: str, metadata: dict | None = None) -> SimpleNamespace:
         self.storage[key] = content
+        return SimpleNamespace(size=len(content.encode("utf-8")), content_hash="mock-content-hash", etag="mock-etag")
 
     def download_json(self, key: str) -> str:
         return self.storage[key]
 
     def exists(self, key: str) -> bool:
         return key in self.storage
+
+    def get_metadata(self, key: str) -> dict[str, str]:
+        return {}
 
 
 @pytest.mark.asyncio
@@ -59,7 +82,7 @@ async def test_stage12_import_edit_writeback():
     tree_dto.nodes[leaf_id].children.append(new_id)
 
     r2_client = MockR2Client()
-    response = await put_chapter_tree("chapter-1", tree_dto, r2_client=r2_client)
+    response = await put_chapter_tree("chapter-1", tree_dto, request=FakeRequest(), r2_client=r2_client)
 
     assert response.success is True
 

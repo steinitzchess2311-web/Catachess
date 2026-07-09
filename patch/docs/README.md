@@ -1,7 +1,7 @@
 # Patch Docs
 Created at: 2026-07-08 21:41 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 21:41 EDT
+Last Modified at: 2026-07-08 22:15 EDT
 Last Modified by: Codex
 
 ## brief intro
@@ -11,6 +11,7 @@ Last Modified by: Codex
 ## folder structure
 |-README.md intro to this folder
 |-Jul_8_代办.md production todo checklist for July 8 work
+|-storage/ patch study tree persistence design, implementation checklists, and completion summaries
 
 ## 代办
 - Move durable requirements and plans from ad hoc todo files into `docs/requirements` and `docs/plan`.

@@ -1,4 +1,14 @@
-import React, { createContext, useContext, useReducer, useCallback, useEffect, useRef, ReactNode } from 'react';
+/**
+ * Created at: 2026-07-08 22:15 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-08 22:15 EDT
+ * Last Modified by: Codex
+ *
+ * Patch study React context. Owns study tree state, replay helpers, and the
+ * coalesced autosave pipeline for persisted chapter tree JSON.
+ */
+
+import { createContext, useContext, useReducer, useCallback, useEffect, useRef, ReactNode } from 'react';
 import { api } from '@ui/assets/api';
 import { replaySanPath, STARTING_FEN } from './chessJS/replay';
 import type { ReplayResult } from './chessJS/replay';
@@ -7,7 +17,6 @@ import type { StudyTree as StudyTreeData, Shape } from './tree/type';
 import {
   studyReducer,
   initialState,
-  createSnapshot,
 } from './tree/studyReducer';
 
 export type {
@@ -70,6 +79,24 @@ const defaultContextValue: StudyContextValue = {
 
 const StudyContext = createContext<StudyContextValue>(defaultContextValue);
 
+const PATCH_STUDY_API_BASE = '/api/v1/workspace/studies/study-patch';
+const AUTOSAVE_DELAY_MS = 2000;
+
+async function createTreeSavePayload(tree: StudyTreeData): Promise<{ payload: string; hash: string }> {
+  const payload = JSON.stringify(tree);
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) return { payload, hash: '' };
+
+  try {
+    const data = new TextEncoder().encode(payload);
+    const buf = await subtle.digest('SHA-256', data);
+    const hash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
+    return { payload, hash };
+  } catch {
+    return { payload, hash: '' };
+  }
+}
+
 // =============================================================================
 // Provider
 // =============================================================================
@@ -77,7 +104,13 @@ const StudyContext = createContext<StudyContextValue>(defaultContextValue);
 export function StudyProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(studyReducer, initialState);
   const fenCacheRef = useRef<Record<string, string>>({});
-  const patchBase = '/api/v1/workspace/studies/study-patch';
+  const latestStateRef = useRef(state);
+  const saveInFlightRef = useRef(false);
+  const saveQueuedRef = useRef(false);
+
+  useEffect(() => {
+    latestStateRef.current = state;
+  }, [state]);
 
   // Keep FEN cache in sync
   useEffect(() => {
@@ -148,36 +181,88 @@ export function StudyProvider({ children }: { children: ReactNode }) {
   const undo = useCallback(() => dispatch({ type: 'UNDO' }), []);
 
   const saveTree = useCallback(async () => {
-    if (!state.chapterId || state.isSaving) return;
+    const initialSnapshot = latestStateRef.current;
+    if (!initialSnapshot.chapterId) return;
 
-    const treePayload = JSON.stringify(state.tree);
-    let currentHash = '';
-    try {
-      const data = new TextEncoder().encode(treePayload);
-      const buf = await crypto.subtle.digest('SHA-256', data);
-      currentHash = Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-    } catch { /* ignore hash errors */ }
+    if (saveInFlightRef.current) {
+      saveQueuedRef.current = true;
+      return;
+    }
 
-    if (currentHash === state.lastSavedHash && !state.isDirty) return;
-
+    saveInFlightRef.current = true;
     dispatch({ type: 'SET_SAVING', isSaving: true });
+
     try {
-      await api.put(`${patchBase}/chapter/${state.chapterId}/tree`, state.tree);
-      dispatch({ type: 'MARK_SAVED', timestamp: Date.now(), hash: currentHash });
+      const snapshot = latestStateRef.current;
+      if (!snapshot.chapterId) return;
+
+      const { payload: treePayload, hash: currentHash } = await createTreeSavePayload(snapshot.tree);
+      const latestBeforeRequest = latestStateRef.current;
+      if (latestBeforeRequest.chapterId !== snapshot.chapterId) {
+        saveQueuedRef.current = latestBeforeRequest.isDirty;
+        return;
+      }
+
+      const changedWhileHashing = latestBeforeRequest.tree !== snapshot.tree;
+      if (changedWhileHashing && latestBeforeRequest.isDirty) {
+        saveQueuedRef.current = true;
+      }
+
+      if (currentHash && currentHash === latestBeforeRequest.lastSavedHash) {
+        if (!changedWhileHashing) {
+          dispatch({ type: 'MARK_SAVED', timestamp: Date.now(), hash: currentHash });
+        }
+        return;
+      }
+
+      if (!latestBeforeRequest.isDirty && !currentHash) return;
+
+      const response = await api.request(`${PATCH_STUDY_API_BASE}/chapter/${snapshot.chapterId}/tree`, {
+        method: 'PUT',
+        headers: currentHash ? { 'X-Tree-Hash': currentHash } : {},
+        body: treePayload,
+      });
+
+      if (response?.success === false) {
+        throw new Error(response.error || 'Failed to save tree');
+      }
+
+      const latestAfterRequest = latestStateRef.current;
+      if (latestAfterRequest.chapterId !== snapshot.chapterId) return;
+
+      let keepDirty = latestAfterRequest.tree !== snapshot.tree;
+      if (currentHash) {
+        const latestPayload = latestAfterRequest.tree === snapshot.tree
+          ? { hash: currentHash }
+          : await createTreeSavePayload(latestAfterRequest.tree);
+        keepDirty = latestPayload.hash !== currentHash;
+      }
+
+      dispatch({ type: 'MARK_SAVED', timestamp: Date.now(), hash: currentHash, keepDirty });
+      if (keepDirty) {
+        saveQueuedRef.current = true;
+      }
     } catch (e) {
+      saveQueuedRef.current = false;
       console.error('[saveTree] Save failed:', e);
       setError('SAVE_ERROR', e instanceof Error ? e.message : 'Failed to save tree');
     } finally {
+      const shouldFlushQueuedSave = saveQueuedRef.current && latestStateRef.current.isDirty;
+      saveQueuedRef.current = false;
+      saveInFlightRef.current = false;
       dispatch({ type: 'SET_SAVING', isSaving: false });
+      if (shouldFlushQueuedSave) {
+        window.setTimeout(() => { void saveTree(); }, 0);
+      }
     }
-  }, [patchBase, state.chapterId, state.isSaving, state.isDirty, state.lastSavedHash, state.tree, setError]);
+  }, [setError]);
 
-  // Auto-save 5 s after the tree becomes dirty
+  // Auto-save after the tree becomes dirty; saveTree coalesces in-flight writes.
   useEffect(() => {
-    if (!state.isDirty || !state.chapterId) return;
-    const id = window.setTimeout(saveTree, 5000);
+    if (!state.isDirty || !state.chapterId || state.isSaving) return;
+    const id = window.setTimeout(saveTree, AUTOSAVE_DELAY_MS);
     return () => window.clearTimeout(id);
-  }, [state.isDirty, state.chapterId, state.tree, saveTree]);
+  }, [state.isDirty, state.chapterId, state.tree, state.isSaving, saveTree]);
 
   const loadTreeFromServer = useCallback(async () => {}, []);
 

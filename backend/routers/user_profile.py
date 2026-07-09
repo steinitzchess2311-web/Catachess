@@ -22,6 +22,34 @@ from core.log.log_api import logger
 
 router = APIRouter(prefix="/user", tags=["user"])
 
+CHINESE_CHESS_ASSOCIATION_TITLE_VALUES = ("三运", "二运", "一运", "候补", "棋协")
+CHINESE_TITLE_ALIASES = {
+    "三运": "三运",
+    "三级运动员": "三运",
+    "国家三级运动员": "三运",
+    "二运": "二运",
+    "二级运动员": "二运",
+    "国家二级运动员": "二运",
+    "一运": "一运",
+    "一级运动员": "一运",
+    "国家一级运动员": "一运",
+    "候补": "候补",
+    "候补棋协大师": "候补",
+    "棋协": "棋协",
+    "棋协大师": "棋协",
+    "中国棋协大师": "棋协",
+}
+
+
+def normalize_chinese_chess_association_title(value: str | None) -> str | None:
+    """Return the approved short Chinese Chess Association title, or None."""
+    if value is None:
+        return None
+    stripped = value.strip()
+    if not stripped:
+        return None
+    return CHINESE_TITLE_ALIASES.get(stripped)
+
 
 # Request/Response Schemas
 class UserProfileResponse(BaseModel):
@@ -62,7 +90,7 @@ class UpdateProfileRequest(BaseModel):
     ecf_rating: int | None = Field(None, ge=0, le=3500, description="ECF rating (0-3500)")
 
     # Chess titles
-    chinese_athlete_title: str | None = Field(None, max_length=100, description="Chinese athlete title")
+    chinese_athlete_title: str | None = Field(None, max_length=20, description="Chinese Chess Association title")
     fide_title: str | None = Field(
         None,
         max_length=10,
@@ -148,7 +176,7 @@ def get_public_profile(
         fide_rating=user.fide_rating,
         cfc_rating=user.cfc_rating,
         ecf_rating=user.ecf_rating,
-        chinese_athlete_title=user.chinese_athlete_title,
+        chinese_athlete_title=normalize_chinese_chess_association_title(user.chinese_athlete_title),
         lichess_username=user.lichess_username,
         chesscom_username=user.chesscom_username,
         self_intro=user.self_intro,
@@ -199,7 +227,7 @@ def get_profile(
         fide_rating=user.fide_rating,
         cfc_rating=user.cfc_rating,
         ecf_rating=user.ecf_rating,
-        chinese_athlete_title=user.chinese_athlete_title,
+        chinese_athlete_title=normalize_chinese_chess_association_title(user.chinese_athlete_title),
         fide_title=user.fide_title,
         self_intro=user.self_intro,
     )
@@ -234,6 +262,17 @@ def update_profile(
 
     # Prepare update data (only include fields that were provided)
     update_data = request.model_dump(exclude_unset=True)
+    if "chinese_athlete_title" in update_data:
+        raw_chinese_title = update_data["chinese_athlete_title"]
+        normalized_title = normalize_chinese_chess_association_title(
+            raw_chinese_title
+        )
+        if raw_chinese_title and raw_chinese_title.strip() and normalized_title is None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Chinese Chess Association title must be one of: {', '.join(CHINESE_CHESS_ASSOCIATION_TITLE_VALUES)}",
+            )
+        update_data["chinese_athlete_title"] = normalized_title
 
     if not update_data:
         logger.info(f"No fields to update for user {current_user.id}")
@@ -266,7 +305,7 @@ def update_profile(
         fide_rating=updated_user.fide_rating,
         cfc_rating=updated_user.cfc_rating,
         ecf_rating=updated_user.ecf_rating,
-        chinese_athlete_title=updated_user.chinese_athlete_title,
+        chinese_athlete_title=normalize_chinese_chess_association_title(updated_user.chinese_athlete_title),
         fide_title=updated_user.fide_title,
         self_intro=updated_user.self_intro,
     )

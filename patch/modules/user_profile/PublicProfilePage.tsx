@@ -6,26 +6,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import LogoutButton from '../../../frontend/web/src/components/dialogBox/LogoutButton';
 import { fetchPublicActivities, fetchPublicProfile } from './api';
+import { profileTitlePrefix } from './types';
 import type { PublicActivity, PublicProfile } from './types';
 import './user_profile.css';
-
-// ---- 称号徽章 -----------------------------------------------
-
-function TitleBadge({ title }: { title: string }) {
-  return <span className="up-title-badge">{title}</span>;
-}
-
-// ---- 评级块 -------------------------------------------------
-
-function RatingBlock({ label, value }: { label: string; value: number | null }) {
-  if (!value) return null;
-  return (
-    <div className="up-rating-block">
-      <span className="up-rating-block__value">{value}</span>
-      <span className="up-rating-block__label">{label}</span>
-    </div>
-  );
-}
 
 function formatActivityDate(value: string): { day: string; time: string } {
   const date = new Date(value);
@@ -216,6 +199,9 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
   const hasRatings = profile.fide_rating || profile.cfc_rating || profile.ecf_rating;
   const hasLinks = profile.lichess_username || profile.chesscom_username;
   const hasSidebar = Boolean(profile.self_intro || hasLinks || hasRatings);
+  const displayTitle = profileTitlePrefix(profile);
+  const displayUsername = profile.username || cleanUsername;
+  const displayName = displayTitle ? `${displayTitle} ${displayUsername}` : displayUsername;
 
   return (
     <div className="up-page">
@@ -232,20 +218,8 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
 
           {/* 称号 + 用户名 */}
           <div className="up-hero__identity">
-            {profile.fide_title && <TitleBadge title={profile.fide_title} />}
-            {profile.chinese_athlete_title && (
-              <TitleBadge title={profile.chinese_athlete_title} />
-            )}
-            <h1 className="up-hero__username">{cleanUsername}</h1>
+            <h1 className="up-hero__username">{displayName}</h1>
           </div>
-
-          {hasRatings && (
-            <div className="up-hero__ratings">
-              <RatingBlock label="FIDE" value={profile.fide_rating} />
-              <RatingBlock label="CFC"  value={profile.cfc_rating}  />
-              <RatingBlock label="ECF"  value={profile.ecf_rating}  />
-            </div>
-          )}
 
           {isOwnProfile && (
             <div className="up-hero__actions">

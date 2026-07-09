@@ -3,6 +3,7 @@
 // ============================================================
 
 import { api } from '@ui/assets/api';
+import { normalizeChineseChessAssociationTitle } from './types';
 import type { EditableProfile, PublicActivity, PublicProfile } from './types';
 
 /**
@@ -25,7 +26,7 @@ export async function fetchPublicProfile(username: string): Promise<PublicProfil
     fide_rating: data.fide_rating ? Number(data.fide_rating) : null,
     cfc_rating: data.cfc_rating ? Number(data.cfc_rating) : null,
     ecf_rating: data.ecf_rating ? Number(data.ecf_rating) : null,
-    chinese_athlete_title: (data.chinese_athlete_title as string) ?? null,
+    chinese_athlete_title: normalizeChineseChessAssociationTitle(data.chinese_athlete_title as string | null | undefined),
     lichess_username: (data.lichess_username as string) ?? null,
     chesscom_username: (data.chesscom_username as string) ?? null,
     self_intro: (data.self_intro as string) ?? null,
@@ -132,7 +133,7 @@ export async function fetchMyProfile(): Promise<EditableProfile> {
     fide_rating: data.fide_rating ? Number(data.fide_rating) : null,
     cfc_rating: data.cfc_rating ? Number(data.cfc_rating) : null,
     ecf_rating: data.ecf_rating ? Number(data.ecf_rating) : null,
-    chinese_athlete_title: data.chinese_athlete_title ?? null,
+    chinese_athlete_title: normalizeChineseChessAssociationTitle(data.chinese_athlete_title),
     lichess_username: data.lichess_username ?? null,
     chesscom_username: data.chesscom_username ?? null,
     self_intro: data.self_intro ?? null,

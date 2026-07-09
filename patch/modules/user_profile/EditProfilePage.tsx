@@ -7,9 +7,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LogoutButton from '../../../frontend/web/src/components/dialogBox/LogoutButton';
 import { fetchMyProfile, saveMyProfile } from './api';
-import { FIDE_TITLES } from './types';
+import { CHINESE_CHESS_ASSOCIATION_TITLES, FIDE_TITLES } from './types';
 import type { EditableProfile } from './types';
 import './user_profile.css';
 
@@ -133,9 +132,6 @@ export function EditProfilePage({ currentUsername }: EditProfilePageProps) {
           </button>
           <div>
             <h1 className="up-edit-title">Edit Profile</h1>
-            <p className="up-edit-subtitle">
-              Your public profile is visible to everyone on Catachess.
-            </p>
           </div>
           <button
             type="button"
@@ -145,7 +141,6 @@ export function EditProfilePage({ currentUsername }: EditProfilePageProps) {
           >
             {saveState === 'saving' ? 'Saving...' : 'Save Changes'}
           </button>
-          <LogoutButton />
         </div>
       </div>
 
@@ -180,14 +175,26 @@ export function EditProfilePage({ currentUsername }: EditProfilePageProps) {
               </div>
             </Field>
 
-            <Field label="Chinese Athlete Title" hint="e.g. 国际级运动健将">
-              <input
-                className="up-edit-input"
-                type="text"
-                value={profile.chinese_athlete_title ?? ''}
-                onChange={(e) => set('chinese_athlete_title', e.target.value)}
-                placeholder="e.g. 国际级运动健将"
-              />
+            <Field label="中国棋协 称号 (Chinese Chess Association Title)">
+              <div className="up-edit-title-grid" role="group" aria-label="Chinese Chess Association Title">
+                <button
+                  type="button"
+                  className={`up-edit-title-btn ${!profile.chinese_athlete_title ? 'up-edit-title-btn--active' : ''}`}
+                  onClick={() => set('chinese_athlete_title', null)}
+                >
+                  None
+                </button>
+                {CHINESE_CHESS_ASSOCIATION_TITLES.map((title) => (
+                  <button
+                    key={title}
+                    type="button"
+                    className={`up-edit-title-btn ${profile.chinese_athlete_title === title ? 'up-edit-title-btn--active' : ''}`}
+                    onClick={() => set('chinese_athlete_title', title)}
+                  >
+                    {title}
+                  </button>
+                ))}
+              </div>
             </Field>
 
             <div className="up-edit-ratings-grid">
@@ -257,7 +264,7 @@ export function EditProfilePage({ currentUsername }: EditProfilePageProps) {
               </div>
             </Field>
 
-            <Field label="About You" hint="A short introduction shown on your public profile">
+            <Field label="About You">
               <textarea
                 className="up-edit-textarea"
                 rows={5}

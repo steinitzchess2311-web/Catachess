@@ -86,19 +86,6 @@
   gap: 8px;
 }
 
-.up-title-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #1a1a2e;
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(251, 191, 36, 0.35);
-}
-
 .up-hero__username {
   font-size: clamp(28px, 5vw, 42px);
   font-weight: 900;
@@ -106,36 +93,6 @@
   letter-spacing: -0.03em;
   margin: 0;
   line-height: 1.1;
-}
-
-/* 评级概览（Hero 内）*/
-.up-hero__ratings {
-  display: flex;
-  gap: 24px;
-  margin-top: 4px;
-}
-
-.up-rating-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.up-rating-block__value {
-  font-size: 22px;
-  font-weight: 800;
-  color: #0f172a;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.up-rating-block__label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.45);
 }
 
 /* Edit Profile 按钮（自己的页面）*/
@@ -692,7 +649,6 @@
 
   .up-edit-ratings-grid { grid-template-columns: 1fr 1fr; }
 
-  .up-hero__ratings { gap: 20px; }
 }
 
 @media (max-width: 520px) {
@@ -760,41 +716,6 @@
   font-weight: 760;
   letter-spacing: 0;
   overflow-wrap: anywhere;
-}
-
-.up-title-badge {
-  border-radius: 4px;
-  border: 1px solid #d9b95b;
-  background: #fff6d8;
-  box-shadow: none;
-  color: #6b4f10;
-  letter-spacing: 0.06em;
-}
-
-.up-hero__ratings {
-  grid-column: 2 / span 2;
-  justify-content: flex-start;
-  gap: 10px;
-  margin: 2px 0 0;
-}
-
-.up-rating-block {
-  min-width: 86px;
-  align-items: flex-start;
-  gap: 3px;
-  padding: 9px 12px;
-  background: #f8faf9;
-  border: 1px solid var(--up-border);
-  border-radius: 8px;
-}
-
-.up-rating-block__value {
-  color: var(--up-ink);
-  font-size: 19px;
-}
-
-.up-rating-block__label {
-  color: var(--up-muted);
 }
 
 .up-hero__edit-btn {
@@ -1062,12 +983,6 @@ a.up-activity__target:hover {
     justify-self: start;
   }
 
-  .up-hero__ratings {
-    grid-column: 1 / -1;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
   .up-body {
     padding: 18px 16px 48px;
   }
@@ -1170,41 +1085,6 @@ a.up-activity__target:hover {
   overflow-wrap: anywhere;
 }
 
-.up-title-badge {
-  border-radius: 6px;
-  border: 1px solid #bfdbfe;
-  background: #eff6ff;
-  box-shadow: none;
-  color: var(--up-blue);
-  letter-spacing: 0.06em;
-}
-
-.up-hero__ratings {
-  grid-column: 2 / span 2;
-  justify-content: flex-start;
-  gap: 10px;
-  margin: 4px 0 0;
-}
-
-.up-rating-block {
-  min-width: 86px;
-  align-items: flex-start;
-  gap: 3px;
-  padding: 10px 12px;
-  background: #f8fbff;
-  border: 1px solid var(--up-border);
-  border-radius: 8px;
-}
-
-.up-rating-block__value {
-  color: var(--up-ink);
-  font-size: 19px;
-}
-
-.up-rating-block__label {
-  color: var(--up-muted);
-}
-
 .up-hero__actions {
   grid-column: 3;
   grid-row: 1;
@@ -1241,15 +1121,13 @@ a.up-activity__target:hover {
   border-color: var(--up-blue-strong);
 }
 
-.up-hero__actions .logout-button-wrapper,
-.up-edit-header__inner .logout-button-wrapper {
+.up-hero__actions .logout-button-wrapper {
   width: auto;
   margin: 0;
   padding: 0;
 }
 
-.up-hero__actions .logout-button,
-.up-edit-header__inner .logout-button {
+.up-hero__actions .logout-button {
   width: auto;
   min-height: 38px;
   padding: 8px 16px;
@@ -1261,15 +1139,13 @@ a.up-activity__target:hover {
   font-weight: 650;
 }
 
-.up-hero__actions .logout-button:hover,
-.up-edit-header__inner .logout-button:hover {
+.up-hero__actions .logout-button:hover {
   border-color: #fecaca;
   background: #fef2f2;
   color: #dc2626;
 }
 
-.up-hero__actions .logout-dialog,
-.up-edit-header__inner .logout-dialog {
+.up-hero__actions .logout-dialog {
   right: 0;
   left: auto;
   bottom: auto;
@@ -1606,12 +1482,6 @@ a.up-activity__target:hover {
     flex-wrap: wrap;
   }
 
-  .up-hero__ratings {
-    grid-column: 1 / -1;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
   .up-body {
     padding: 18px 16px 48px;
   }
@@ -1664,8 +1534,7 @@ a.up-activity__target:hover {
   .up-hero__edit-btn,
   .up-hero__actions .logout-button,
   .up-edit-back-btn,
-  .up-edit-save-btn,
-  .up-edit-header__inner .logout-button {
+  .up-edit-save-btn {
     width: 100%;
   }
 

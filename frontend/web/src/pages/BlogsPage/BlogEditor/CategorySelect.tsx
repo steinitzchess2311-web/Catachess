@@ -1,6 +1,10 @@
 /**
- * CategorySelect - Category + Author Type selectors for BlogEditor
- * Admin: full category choice; non-admin: fixed to User Content
+ * Created at: 2026-07-09 01:31 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:31 EDT
+ * Last Modified by: Codex
+ *
+ * CategorySelect - category and author type selectors for BlogEditor.
  */
 
 import React from 'react';
@@ -24,32 +28,30 @@ const CategorySelect: React.FC<CategorySelectProps> = ({
   onAuthorTypeChange,
 }) => {
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+    <div className="blog-editor-grid">
       {/* Category */}
-      <div>
-        <Label.Root
-          style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', marginBottom: '8px', display: 'block' }}
-        >
+      <div className="blog-editor-field">
+        <Label.Root className="blog-editor-label">
           Category *
         </Label.Root>
         {isAdmin ? (
           <Select.Root value={category} onValueChange={onCategoryChange}>
-            <Select.Trigger style={triggerStyle}>
+            <Select.Trigger className="blog-editor-select-trigger">
               <Select.Value />
               <Select.Icon><ChevronDownIcon /></Select.Icon>
             </Select.Trigger>
             <Select.Portal>
-              <Select.Content style={contentStyle}>
+              <Select.Content className="blog-editor-select-content">
                 <Select.Viewport>
                   <Select.Group>
-                    <Select.Label style={groupLabelStyle}>📖 ChessorTag Official</Select.Label>
+                    <Select.Label className="blog-editor-select-label">ChessorTag Official</Select.Label>
                     <SelectItem value="about">Our Stories</SelectItem>
                     <SelectItem value="function">Function Intro</SelectItem>
                     <SelectItem value="devlog">Developer Logs</SelectItem>
                   </Select.Group>
-                  <Select.Separator style={{ height: '1px', backgroundColor: '#e2e8f0', margin: '8px 0' }} />
+                  <Select.Separator className="blog-editor-select-separator" />
                   <Select.Group>
-                    <Select.Label style={groupLabelStyle}>✍️ Community</Select.Label>
+                    <Select.Label className="blog-editor-select-label">Community</Select.Label>
                     <SelectItem value="user">User Content</SelectItem>
                   </Select.Group>
                 </Select.Viewport>
@@ -57,27 +59,25 @@ const CategorySelect: React.FC<CategorySelectProps> = ({
             </Select.Portal>
           </Select.Root>
         ) : (
-          <div style={fixedFieldStyle}>✍️ Community (User Content)</div>
+          <div className="blog-editor-fixed-field">Community</div>
         )}
       </div>
 
       {/* Author Type */}
-      <div>
-        <Label.Root
-          style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', marginBottom: '8px', display: 'block' }}
-        >
+      <div className="blog-editor-field">
+        <Label.Root className="blog-editor-label">
           Author Type
         </Label.Root>
         <Select.Root value={authorType} onValueChange={(v) => onAuthorTypeChange(v as 'official' | 'user')}>
-          <Select.Trigger style={triggerStyle}>
+          <Select.Trigger className="blog-editor-select-trigger">
             <Select.Value />
             <Select.Icon><ChevronDownIcon /></Select.Icon>
           </Select.Trigger>
           <Select.Portal>
-            <Select.Content style={contentStyle}>
+            <Select.Content className="blog-editor-select-content">
               <Select.Viewport>
-                <SelectItem value="official">📖 Official (ChessorTag)</SelectItem>
-                <SelectItem value="user">✍️ User Contribution</SelectItem>
+                <SelectItem value="official">Official</SelectItem>
+                <SelectItem value="user">User</SelectItem>
               </Select.Viewport>
             </Select.Content>
           </Select.Portal>
@@ -87,66 +87,12 @@ const CategorySelect: React.FC<CategorySelectProps> = ({
   );
 };
 
-// ─── shared styles ────────────────────────────────────────────────────────────
-
-const triggerStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '12px',
-  fontSize: '1rem',
-  border: '1px solid #e2e8f0',
-  borderRadius: '8px',
-  backgroundColor: 'white',
-  display: 'flex',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  cursor: 'pointer',
-};
-
-const contentStyle: React.CSSProperties = {
-  backgroundColor: 'white',
-  borderRadius: '8px',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-  padding: '8px',
-  zIndex: 10000,
-};
-
-const groupLabelStyle: React.CSSProperties = {
-  padding: '8px 12px',
-  fontSize: '0.8rem',
-  color: '#2563eb',
-  fontWeight: 700,
-};
-
-const fixedFieldStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '12px',
-  fontSize: '1rem',
-  border: '1px solid #e2e8f0',
-  borderRadius: '8px',
-  backgroundColor: '#f5f5f5',
-  color: '#475569',
-};
-
-// ─── SelectItem helper ────────────────────────────────────────────────────────
-
 const SelectItem = React.forwardRef<HTMLDivElement, { value: string; children: React.ReactNode }>(
   ({ value, children }, ref) => (
     <Select.Item
       value={value}
       ref={ref}
-      style={{
-        padding: '10px 12px',
-        fontSize: '0.95rem',
-        borderRadius: '6px',
-        cursor: 'pointer',
-        outline: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        userSelect: 'none',
-      }}
-      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f5f5f5')}
-      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+      className="blog-editor-select-item"
     >
       <Select.ItemText>{children}</Select.ItemText>
       <Select.ItemIndicator><CheckIcon /></Select.ItemIndicator>

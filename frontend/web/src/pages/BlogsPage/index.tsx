@@ -1,6 +1,10 @@
 /**
- * BlogsPage - Main blog listing page
- * Manages URL-based state for category filtering, search, and pagination
+ * Created at: 2026-07-09 01:27 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:27 EDT
+ * Last Modified by: Codex
+ *
+ * BlogsPage - main blog listing/detail page with URL-backed filters.
  */
 
 import { useSearchParams, useParams, useNavigate } from "react-router-dom";
@@ -9,7 +13,6 @@ import PageTransition from "../../components/animation/PageTransition";
 import CategorySidebar from "./CategorySidebar";
 import ContentArea from "./ContentArea";
 import BlogHeader from "../../components/BlogHeader";
-import ArticleDetailPage from "./ArticleDetailPage";
 import { useBlogArticle } from "../../hooks/useBlogArticle";
 import { getCategoryLastArticle, clearCategoryLastArticle } from "../../utils/articleHistory";
 import { useUser } from "../../contexts/UserContext";

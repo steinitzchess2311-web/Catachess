@@ -1,6 +1,10 @@
 /**
- * Loading state component for blog content
- * Shows loading indicator while fetching data
+ * Created at: 2026-07-09 01:27 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:27 EDT
+ * Last Modified by: Codex
+ *
+ * Loading state component for blog content.
  */
 
 import React from 'react';
@@ -10,17 +14,9 @@ import React from 'react';
  */
 const LoadingState: React.FC = () => {
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '400px',
-        fontSize: '1.1rem',
-        color: '#475569'
-      }}
-    >
-      Loading articles...
+    <div className="blog-state">
+      <div className="blog-state__spinner" />
+      <p className="blog-state__title">Loading articles...</p>
     </div>
   );
 };

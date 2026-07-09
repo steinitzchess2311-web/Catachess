@@ -1,9 +1,14 @@
 /**
- * Empty state component for blog content
- * Shows when no articles match the current filters
+ * Created at: 2026-07-09 01:27 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:27 EDT
+ * Last Modified by: Codex
+ *
+ * Empty state component for blog content.
  */
 
 import React from 'react';
+import { FileTextIcon } from '@radix-ui/react-icons';
 
 interface EmptyStateProps {
   message?: string;
@@ -14,42 +19,14 @@ interface EmptyStateProps {
  */
 const EmptyState: React.FC<EmptyStateProps> = ({ message = 'No articles found' }) => {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '400px',
-        padding: '40px',
-        textAlign: 'center'
-      }}
-    >
-      <div
-        style={{
-          fontSize: '3rem',
-          marginBottom: '16px',
-          opacity: 0.3
-        }}
-      >
-        📝
+    <div className="blog-state">
+      <div className="blog-state__icon">
+        <FileTextIcon width={22} height={22} />
       </div>
-      <p
-        style={{
-          fontSize: '1.1rem',
-          color: '#475569',
-          margin: 0
-        }}
-      >
+      <p className="blog-state__title">
         {message}
       </p>
-      <p
-        style={{
-          fontSize: '0.95rem',
-          color: '#8a8a8a',
-          marginTop: '8px'
-        }}
-      >
+      <p className="blog-state__text">
         Try adjusting your search or filters
       </p>
     </div>

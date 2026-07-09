@@ -1,8 +1,14 @@
 /**
- * CollapsedView component - Minimal icon view when sidebar is collapsed
+ * Created at: 2026-07-09 01:34 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:34 EDT
+ * Last Modified by: Codex
+ *
+ * CollapsedView component - minimal icon view when sidebar is collapsed.
  */
 
 import React from "react";
+import { DrawingPinFilledIcon, PlusIcon, ReaderIcon } from "@radix-ui/react-icons";
 import pureLogo from "../../../assets/chessortag_pure_logo.png";
 import { CollapsedViewProps } from "./types";
 
@@ -15,77 +21,26 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
   setEditorOpen,
 }) => {
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: "12px",
-        paddingTop: "56px",
-        paddingBottom: "10px",
-      }}
-    >
+    <div className="blog-sidebar-rail">
       {/* Pinned Icon */}
       <button
         onClick={() => {
           onCategoryChange('pinned');
           onViewModeChange('articles');
         }}
-        style={{
-          width: "44px",
-          height: "44px",
-          border: "none",
-          background: activeCategory === "pinned" ? "rgba(37, 99, 235, 0.16)" : "transparent",
-          borderRadius: "10px",
-          cursor: "pointer",
-          fontSize: "1.2rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "all 0.2s ease",
-          outline: activeCategory === "pinned" ? "1px solid rgba(37, 99, 235, 0.3)" : "none",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(37, 99, 235, 0.15)";
-        }}
-        onMouseLeave={(e) => {
-          if (activeCategory !== "pinned") {
-            e.currentTarget.style.background = "transparent";
-          }
-        }}
+        className={`blog-sidebar-rail__button${activeCategory === "pinned" ? " is-active" : ""}`}
         title="Pinned Articles"
       >
-        📌
+        <DrawingPinFilledIcon width={18} height={18} />
       </button>
 
       {/* Community Icon */}
       <button
         onClick={onUserBlogsClick}
-        style={{
-          width: "44px",
-          height: "44px",
-          border: "none",
-          background: activeCategory === "user" ? "rgba(37, 99, 235, 0.16)" : "transparent",
-          borderRadius: "10px",
-          cursor: "pointer",
-          fontSize: "1.2rem",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "all 0.2s ease",
-          outline: activeCategory === "user" ? "1px solid rgba(37, 99, 235, 0.3)" : "none",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(37, 99, 235, 0.15)";
-        }}
-        onMouseLeave={(e) => {
-          if (activeCategory !== "user") {
-            e.currentTarget.style.background = "transparent";
-          }
-        }}
+        className={`blog-sidebar-rail__button${activeCategory === "user" ? " is-active" : ""}`}
         title="Community"
       >
-        ✍️
+        <ReaderIcon width={18} height={18} />
       </button>
 
       {/* Official Logo Icon - Navigate to all official blogs */}
@@ -94,38 +49,13 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
           onCategoryChange('allblogs');
           onViewModeChange('articles');
         }}
-        style={{
-          width: "44px",
-          height: "44px",
-          border: "none",
-          background: (activeCategory === undefined || activeCategory === 'allblogs') ? "rgba(37, 99, 235, 0.16)" : "transparent",
-          borderRadius: "10px",
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "all 0.2s ease",
-          padding: "8px",
-          outline: (activeCategory === undefined || activeCategory === 'allblogs') ? "1px solid rgba(37, 99, 235, 0.3)" : "none",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(37, 99, 235, 0.15)";
-        }}
-        onMouseLeave={(e) => {
-          if (activeCategory !== undefined && activeCategory !== 'allblogs') {
-            e.currentTarget.style.background = "transparent";
-          }
-        }}
+        className={`blog-sidebar-rail__button${(activeCategory === undefined || activeCategory === 'allblogs') ? " is-active" : ""}`}
         title="Chessortag Official"
       >
         <img
           src={pureLogo}
           alt="Chessortag"
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-          }}
+          className="blog-sidebar-rail__logo"
         />
       </button>
 
@@ -133,30 +63,10 @@ const CollapsedView: React.FC<CollapsedViewProps> = ({
       {(userRole === 'editor' || userRole === 'admin') && (
         <button
           onClick={() => setEditorOpen(true)}
-          style={{
-            width: "44px",
-            height: "44px",
-            border: "2px solid #2563eb",
-            background: "transparent",
-            borderRadius: "10px",
-            cursor: "pointer",
-            fontSize: "1.2rem",
-            color: "#2563eb",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "all 0.2s ease",
-            marginTop: "16px",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.08)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "transparent";
-          }}
+          className="blog-sidebar-rail__button blog-sidebar-rail__button--create"
           title="Create Article"
         >
-          +
+          <PlusIcon width={18} height={18} />
         </button>
       )}
     </div>

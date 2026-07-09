@@ -1,6 +1,10 @@
 /**
- * ArticleCard component - Main integration file
- * Displays blog article preview card with navigation, actions, and metadata
+ * Created at: 2026-07-09 01:05 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:05 EDT
+ * Last Modified by: Codex
+ *
+ * ArticleCard component - article preview card with management actions.
  *
  * This is the main component that orchestrates all sub-components:
  * - ArticleImage: Cover image with badges
@@ -159,33 +163,9 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
     <>
       <Link
         to={`/blogs/${article.id}`}
-        style={{ textDecoration: 'none', display: 'block', height: '100%' }}
+        className="blog-article-card-link"
       >
-        <article
-          style={{
-            background: "rgba(255, 255, 255, 0.9)",
-            borderRadius: "12px",
-            overflow: "hidden",
-            border: "1px solid rgba(15, 23, 42, 0.06)",
-            boxShadow: "0 2px 10px rgba(15, 23, 42, 0.06)",
-            transition: "transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease",
-            cursor: "pointer",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            position: "relative",  // For action buttons positioning
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = "translateY(-3px)";
-            e.currentTarget.style.boxShadow = "0 10px 24px rgba(15, 23, 42, 0.1)";
-            e.currentTarget.style.borderColor = "rgba(37, 99, 235, 0.2)";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "0 2px 10px rgba(15, 23, 42, 0.06)";
-            e.currentTarget.style.borderColor = "rgba(15, 23, 42, 0.06)";
-          }}
-        >
+        <article className="blog-article-card">
           {/* Delete Confirmation Dialog */}
           <DeleteConfirmDialog
             show={showDeleteConfirm && canDelete}
@@ -203,46 +183,18 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
 
           {/* Action Buttons - Below Image */}
           {(canDelete || canPin) && (
-            <div
-              style={{
-                position: "absolute",
-                top: "0.75rem",
-                right: "0.75rem",
-                display: "flex",
-                gap: "0.5rem",
-                zIndex: 10,
-              }}
-            >
+            <div className="blog-article-card__actions">
               {/* Delete Button */}
               {canDelete && (
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     handleDeleteClick(e);
                   }}
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "50%",
-                    border: "none",
-                    backgroundColor: "rgba(150, 150, 150, 0.8)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    color: "white",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "rgba(220, 53, 69, 0.95)";
-                    e.currentTarget.style.transform = "scale(1.1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "rgba(150, 150, 150, 0.8)";
-                    e.currentTarget.style.transform = "scale(1)";
-                  }}
+                  className="blog-article-card__action-button is-danger"
+                  aria-label="Delete article"
                 >
                   <TrashIcon width={18} height={18} />
                 </button>
@@ -251,39 +203,14 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
               {/* Pin Button */}
               {canPin && (
                 <button
+                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     handlePinToggle(e);
                   }}
-                  style={{
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "50%",
-                    border: "none",
-                    backgroundColor: article.is_pinned
-                      ? "rgba(255, 193, 7, 0.95)"
-                      : "rgba(150, 150, 150, 0.8)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    transition: "all 0.2s ease",
-                    color: "white",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!article.is_pinned) {
-                      e.currentTarget.style.backgroundColor = "rgba(255, 193, 7, 0.95)";
-                    }
-                    e.currentTarget.style.transform = "scale(1.1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!article.is_pinned) {
-                      e.currentTarget.style.backgroundColor = "rgba(150, 150, 150, 0.8)";
-                    }
-                    e.currentTarget.style.transform = "scale(1)";
-                  }}
+                  className={`blog-article-card__action-button is-pin${article.is_pinned ? ' is-active' : ''}`}
+                  aria-label={article.is_pinned ? "Unpin article" : "Pin article"}
                 >
                   <DrawingPinFilledIcon width={18} height={18} />
                 </button>
@@ -293,12 +220,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
 
           {/* Content Section */}
           <div
-            style={{
-              padding: "20px",
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-            }}
+            className="blog-article-card__body"
           >
             <ArticleContent
               title={article.title}
@@ -307,8 +229,9 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
 
             {/* Category Tag — clickable for editors in my-published view */}
             {canChangeCategory && (
-              <div style={{ position: "relative", marginBottom: "10px" }}>
+              <div className="blog-article-card__category-wrap">
                 <button
+                  type="button"
                   ref={categoryChipRef}
                   onClick={(e) => {
                     e.preventDefault();
@@ -320,31 +243,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                     }
                     setShowCategoryDropdown(prev => !prev);
                   }}
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "5px",
-                    padding: "4px 10px",
-                    borderRadius: "20px",
-                    border: "1px solid rgba(37, 99, 235, 0.3)",
-                    background: showCategoryDropdown
-                      ? "rgba(37, 99, 235, 0.12)"
-                      : "rgba(37, 99, 235, 0.06)",
-                    color: "#2563eb",
-                    fontSize: "0.78rem",
-                    fontWeight: 500,
-                    cursor: isChangingCategory ? "wait" : "pointer",
-                    transition: "all 0.15s ease",
-                    letterSpacing: "0.01em",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!showCategoryDropdown)
-                      e.currentTarget.style.background = "rgba(37, 99, 235, 0.12)";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!showCategoryDropdown)
-                      e.currentTarget.style.background = "rgba(37, 99, 235, 0.06)";
-                  }}
+                  className={`blog-article-card__category${showCategoryDropdown ? ' is-open' : ''}`}
                 >
                   <span>
                     {isChangingCategory
@@ -354,59 +253,24 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                   <ChevronDownIcon
                     width={12}
                     height={12}
-                    style={{
-                      transform: showCategoryDropdown ? "rotate(180deg)" : "rotate(0deg)",
-                      transition: "transform 0.15s ease",
-                    }}
+                    className="blog-article-card__category-icon"
                   />
                 </button>
 
                 {showCategoryDropdown && createPortal(
                   <div
                     ref={categoryDropdownRef}
-                    style={{
-                      position: "fixed",
-                      top: dropdownPos.top,
-                      left: dropdownPos.left,
-                      background: "#fff",
-                      borderRadius: "10px",
-                      boxShadow: "0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06)",
-                      border: "1px solid rgba(37, 99, 235, 0.15)",
-                      overflow: "hidden",
-                      zIndex: 9999,
-                      minWidth: "160px",
-                    }}
+                    className="blog-category-menu"
+                    style={{ top: dropdownPos.top, left: dropdownPos.left }}
                   >
                     {SELECTABLE_CATEGORIES.map((cat) => {
                       const isActive = cat.id === currentCategory;
                       return (
                         <button
                           key={cat.id}
+                          type="button"
                           onClick={(e) => handleCategorySelect(e, cat.id)}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            width: "100%",
-                            padding: "9px 14px",
-                            border: "none",
-                            background: isActive ? "rgba(37, 99, 235, 0.08)" : "transparent",
-                            color: isActive ? "#2563eb" : "#444",
-                            fontSize: "0.83rem",
-                            fontWeight: isActive ? 600 : 400,
-                            cursor: isActive ? "default" : "pointer",
-                            textAlign: "left",
-                            transition: "background 0.12s ease",
-                            gap: "8px",
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isActive)
-                              e.currentTarget.style.background = "rgba(37, 99, 235, 0.06)";
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isActive)
-                              e.currentTarget.style.background = "transparent";
-                          }}
+                          className={`blog-category-menu__item${isActive ? ' is-active' : ''}`}
                         >
                           <span>{cat.label}</span>
                           {isActive && <CheckIcon width={14} height={14} />}

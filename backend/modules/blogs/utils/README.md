@@ -1,7 +1,7 @@
 ## header
 Created at: 2026-07-08 19:12:00 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 19:12:00 EDT
+Last Modified at: 2026-07-09 01:18 EDT
 Last Modified by: Codex
 
 ## brief intro
@@ -13,4 +13,4 @@ Last Modified by: Codex
 |-image_linker.py extracts article image URLs and syncs image/article database relationships
 
 ## 代办
-- Add focused tests for image URL extraction and article-image relation sync.
+- Monitor production image-link drift after article edits and add a repair script if legacy orphan rows still exist.

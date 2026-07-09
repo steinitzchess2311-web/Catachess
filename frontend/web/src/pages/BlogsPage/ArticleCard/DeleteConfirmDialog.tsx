@@ -1,6 +1,10 @@
 /**
- * DeleteConfirmDialog - Modern minimalist confirmation dialog
- * Appears near the delete button with clean design
+ * Created at: 2026-07-09 01:34 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:34 EDT
+ * Last Modified by: Codex
+ *
+ * DeleteConfirmDialog - confirmation dialog for article delete actions.
  */
 
 import React from "react";
@@ -22,115 +26,40 @@ const DeleteConfirmDialog: React.FC<DeleteConfirmDialogProps> = ({
   if (!show) return null;
 
   return (
-    <>
-      <div
-        ref={dialogRef}
-        style={{
-          position: 'absolute',
-          top: '50px',
-          right: '12px',
-          width: '220px',
-          backgroundColor: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
-          padding: '20px',
-          zIndex: 1001,
-          animation: 'dialogFadeIn 0.2s ease-out',
-        }}
-      >
-        <p
-          style={{
-            margin: '0 0 16px 0',
-            fontSize: '0.95rem',
-            color: '#0f172a',
-            textAlign: 'center',
-            lineHeight: '1.5',
-            fontWeight: 500,
+    <div
+      ref={dialogRef}
+      className="blog-delete-popover"
+    >
+      <p className="blog-delete-popover__title">
+        Delete this article?
+      </p>
+      <div className="blog-delete-popover__actions">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onCancel();
           }}
+          className="blog-delete-popover__button"
+          aria-label="Cancel delete"
         >
-          Delete this article?
-        </p>
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onCancel();
-            }}
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '50%',
-              border: 'none',
-              backgroundColor: '#f0f0f0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              color: '#666',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#2563eb';
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.transform = 'scale(1.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f0f0f0';
-              e.currentTarget.style.color = '#666';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            <Cross2Icon width={20} height={20} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onConfirm();
-            }}
-            style={{
-              width: '44px',
-              height: '44px',
-              borderRadius: '50%',
-              border: 'none',
-              backgroundColor: '#f0f0f0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              color: '#666',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = '#dc3545';
-              e.currentTarget.style.color = 'white';
-              e.currentTarget.style.transform = 'scale(1.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = '#f0f0f0';
-              e.currentTarget.style.color = '#666';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            <CheckIcon width={20} height={20} />
-          </button>
-        </div>
+          <Cross2Icon width={18} height={18} />
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onConfirm();
+          }}
+          className="blog-delete-popover__button is-danger"
+          aria-label="Confirm delete"
+        >
+          <CheckIcon width={18} height={18} />
+        </button>
       </div>
-
-      <style>{`
-        @keyframes dialogFadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(-8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
-    </>
+    </div>
   );
 };
 

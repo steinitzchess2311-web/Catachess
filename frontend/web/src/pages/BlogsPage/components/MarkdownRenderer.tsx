@@ -1,6 +1,10 @@
 /**
- * Markdown content renderer component
- * Uses react-markdown with GitHub-flavored markdown support
+ * Created at: 2026-07-09 01:42 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:42 EDT
+ * Last Modified by: Codex
+ *
+ * MarkdownRenderer - renders article Markdown with GitHub-flavored syntax.
  */
 
 import React from 'react';
@@ -17,15 +21,7 @@ interface MarkdownRendererProps {
  */
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
   return (
-    <div
-      style={{
-        fontSize: '1.05rem',
-        lineHeight: '1.8',
-        color: '#0f172a',
-        marginTop: '32px'
-      }}
-      className="markdown-content"
-    >
+    <div className="markdown-content">
       <ReactMarkdown remarkPlugins={[remarkGfm]} children={content} />
     </div>
   );

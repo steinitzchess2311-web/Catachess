@@ -1,8 +1,14 @@
 /**
- * UserActionsSection component - Editor/Admin actions (Create, Drafts, My Published)
+ * Created at: 2026-07-09 01:05 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:05 EDT
+ * Last Modified by: Codex
+ *
+ * UserActionsSection component - editor/admin blog actions.
  */
 
 import React from "react";
+import { FilePlusIcon, ReaderIcon, ArchiveIcon } from "@radix-ui/react-icons";
 import { UserActionsSectionProps } from "./types";
 
 const UserActionsSection: React.FC<UserActionsSectionProps> = ({
@@ -16,115 +22,32 @@ const UserActionsSection: React.FC<UserActionsSectionProps> = ({
   }
 
   return (
-    <div
-      style={{
-        marginTop: "20px",
-        paddingTop: "20px",
-        borderTop: "1px solid rgba(37, 99, 235, 0.15)",
-        paddingLeft: "25px",
-        paddingRight: "25px",
-      }}
-    >
-      {/* Create Button */}
+    <div className="blog-sidebar-actions">
       <button
+        type="button"
         onClick={() => setEditorOpen(true)}
-        style={{
-          width: "100%",
-          padding: "12px 16px",
-          fontSize: "0.95rem",
-          fontWeight: 500,
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif",
-          color: "#2563eb",
-          backgroundColor: "transparent",
-          border: "2px solid #2563eb",
-          borderRadius: "8px",
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-          marginBottom: "12px",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.08)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "transparent";
-        }}
-        onMouseDown={(e) => {
-          e.currentTarget.style.transform = "scale(0.97)";
-        }}
-        onMouseUp={(e) => {
-          e.currentTarget.style.transform = "scale(1)";
-        }}
+        className="blog-sidebar-action-primary"
       >
-        + Create Article
+        <FilePlusIcon width={16} height={16} />
+        <span>Create article</span>
       </button>
 
-      {/* Draft Box Button */}
       <button
+        type="button"
         onClick={() => onViewModeChange('drafts')}
-        style={{
-          width: "100%",
-          padding: "10px 16px",
-          fontSize: "0.9rem",
-          fontWeight: 500,
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif",
-          color: viewMode === 'drafts' ? "#2563eb" : "#475569",
-          backgroundColor: viewMode === 'drafts' ? "rgba(37, 99, 235, 0.08)" : "transparent",
-          border: "1px solid rgba(37, 99, 235, 0.3)",
-          borderRadius: "6px",
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-          marginBottom: "8px",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-        onMouseEnter={(e) => {
-          if (viewMode !== 'drafts') {
-            e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.05)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (viewMode !== 'drafts') {
-            e.currentTarget.style.backgroundColor = "transparent";
-          }
-        }}
+        className={`blog-sidebar-action${viewMode === 'drafts' ? ' is-active' : ''}`}
       >
-        <span>📝</span>
-        <span>Draft Box</span>
+        <ArchiveIcon width={15} height={15} />
+        <span>Draft box</span>
       </button>
 
-      {/* My Published Blogs Button */}
       <button
+        type="button"
         onClick={() => onViewModeChange('my-published')}
-        style={{
-          width: "100%",
-          padding: "10px 16px",
-          fontSize: "0.9rem",
-          fontWeight: 500,
-          fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, sans-serif",
-          color: viewMode === 'my-published' ? "#2563eb" : "#475569",
-          backgroundColor: viewMode === 'my-published' ? "rgba(37, 99, 235, 0.08)" : "transparent",
-          border: "1px solid rgba(37, 99, 235, 0.3)",
-          borderRadius: "6px",
-          cursor: "pointer",
-          transition: "all 0.2s ease",
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-        }}
-        onMouseEnter={(e) => {
-          if (viewMode !== 'my-published') {
-            e.currentTarget.style.backgroundColor = "rgba(37, 99, 235, 0.05)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (viewMode !== 'my-published') {
-            e.currentTarget.style.backgroundColor = "transparent";
-          }
-        }}
+        className={`blog-sidebar-action${viewMode === 'my-published' ? ' is-active' : ''}`}
       >
-        <span>📚</span>
-        <span>My Published Blogs</span>
+        <ReaderIcon width={15} height={15} />
+        <span>My published</span>
       </button>
     </div>
   );

@@ -1,14 +1,19 @@
 """
-Image Linking Utilities
+Created at: 2026-07-09 01:05 EDT
+Created by: Codex
+Last Modified at: 2026-07-09 01:58 EDT
+Last Modified by: Codex
 
-Functions to extract image URLs from Markdown content and link them to articles.
+Image linking utilities for extracting article image URLs and keeping
+`blog_images` plus `blog_article_images` synchronized.
 """
 import re
 from datetime import datetime
 from typing import List, Set
 from uuid import UUID, uuid4
+from urllib.parse import quote, unquote, urlsplit, urlunsplit
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import or_, select
 
 from modules.blogs.db.image_models import BlogImage
 from modules.blogs.db.models import BlogArticleImage
@@ -42,6 +47,55 @@ def extract_image_urls(markdown_content: str) -> List[str]:
             unique_urls.append(url)
 
     return unique_urls
+
+
+def normalize_image_url(url: str) -> str:
+    """Normalize URL variants so encoded and unencoded image URLs match."""
+    if not url:
+        return ""
+    stripped = url.strip()
+    try:
+        parts = urlsplit(stripped)
+        normalized_path = unquote(parts.path)
+        return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), normalized_path, parts.query, parts.fragment))
+    except Exception:
+        return unquote(stripped)
+
+
+def image_url_variants(url: str) -> Set[str]:
+    """Return URL forms that may exist in legacy rows."""
+    normalized = normalize_image_url(url)
+    encoded = ""
+    if normalized:
+        parts = urlsplit(normalized)
+        encoded = urlunsplit((parts.scheme, parts.netloc, quote(parts.path, safe="/"), parts.query, parts.fragment))
+    return {candidate for candidate in {url.strip(), normalized, encoded, unquote(url.strip())} if candidate}
+
+
+def find_image_by_url(db: Session, url: str) -> BlogImage | None:
+    """Find a BlogImage by exact or normalized URL forms."""
+    variants = image_url_variants(url)
+    if not variants:
+        return None
+    image = db.execute(
+        select(BlogImage)
+        .where(BlogImage.url.in_(variants))
+        .order_by(BlogImage.created_at.desc())
+    ).scalars().first()
+    if image:
+        return image
+    normalized = normalize_image_url(url)
+    if not normalized:
+        return None
+    candidates = db.execute(
+        select(BlogImage).where(
+            or_(BlogImage.url.ilike("%" + normalized.rsplit("/", 1)[-1]), BlogImage.storage_path.ilike("%" + normalized.rsplit("/", 1)[-1]))
+        )
+    ).scalars().all()
+    for candidate in candidates:
+        if normalize_image_url(candidate.url) == normalized:
+            return candidate
+    return None
 
 
 def get_current_linked_images(article_id: UUID, db: Session) -> Set[UUID]:
@@ -111,8 +165,7 @@ def link_images_to_article(
         usage_context = "cover" if is_cover else "content"
 
         # Find image in database
-        stmt = select(BlogImage).where(BlogImage.url == url)
-        image = db.execute(stmt).scalar_one_or_none()
+        image = find_image_by_url(db, url)
 
         if not image:
             not_found_count += 1
@@ -155,8 +208,6 @@ def link_images_to_article(
         if verbose:
             print(f"✅ Linked image: {image.filename} ({usage_context})")
 
-    db.commit()
-
     return {
         "linked": linked_count,
         "not_found": not_found_count,
@@ -197,7 +248,7 @@ def unlink_removed_images(
     marked_orphan_count = 0
 
     for assoc, image in associations:
-        if image.url not in current_urls:
+        if not any(normalize_image_url(image.url) == normalize_image_url(url) for url in current_urls):
             # This image is no longer in the article
             if verbose:
                 print(f"🗑️  Unlinking removed image: {image.filename}")
@@ -212,7 +263,7 @@ def unlink_removed_images(
                     BlogArticleImage.image_id == image.id,
                     BlogArticleImage.article_id != article_id
                 )
-            ).scalar_one_or_none()
+            ).scalars().first()
 
             if not other_uses:
                 # No other articles use this image - mark as orphan
@@ -223,8 +274,6 @@ def unlink_removed_images(
                     print(f"🏴 Marked as orphan: {image.filename}")
             else:
                 image.article_id = other_uses.article_id
-
-    db.commit()
 
     return {
         "unlinked": unlinked_count,

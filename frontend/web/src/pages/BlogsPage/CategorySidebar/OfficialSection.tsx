@@ -1,5 +1,10 @@
 /**
- * OfficialSection component - Chessortag Official always expanded section
+ * Created at: 2026-07-09 01:05 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:05 EDT
+ * Last Modified by: Codex
+ *
+ * OfficialSection component - official blog category group.
  */
 
 import React from "react";
@@ -22,102 +27,37 @@ const OfficialSection: React.FC<OfficialSectionProps> = ({
   const isOfficialRootActive = activeCategory === undefined || activeCategory === 'allblogs' || activeCategory === 'official';
 
   return (
-    <div>
-      {/* Chessortag Official Header Button */}
+    <div className="blog-sidebar-section">
       <button
+        type="button"
         onClick={() => {
           onCategoryClick('allblogs');
           setIsOfficialOpen((prev) => !prev);
         }}
-        style={{
-          background: isOfficialRootActive ? "rgba(37, 99, 235, 0.1)" : "transparent",
-          border: "none",
-          borderLeft: isOfficialRootActive ? "4px solid #2563eb" : "4px solid transparent",
-          padding: "14px 25px",
-          textAlign: "left",
-          cursor: "pointer",
-          fontSize: "0.95rem",
-          fontWeight: isOfficialRootActive ? 600 : 500,
-          color: isOfficialRootActive ? "#0f172a" : "#475569",
-          transition: "all 0.2s ease",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          width: "100%",
-        }}
-        onMouseEnter={(e) => {
-          if (!isOfficialRootActive) {
-            e.currentTarget.style.background = "rgba(37, 99, 235, 0.05)";
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!isOfficialRootActive) {
-            e.currentTarget.style.background = "transparent";
-          }
-        }}
+        className={`blog-sidebar-item blog-sidebar-item--official${isOfficialRootActive ? ' is-active' : ''}`}
       >
         <img
           src={pureLogo}
           alt="Chessortag"
-          style={{
-            width: "24px",
-            height: "24px",
-            objectFit: "contain",
-          }}
+          className="blog-sidebar-item__logo"
         />
-        <span style={{ flex: 1 }}>Chessortag Official</span>
+        <span className="blog-sidebar-item__label">Chessortag Official</span>
         <ChevronDownIcon
           width={18}
           height={18}
-          style={{
-            transform: isOfficialOpen ? "rotate(0deg)" : "rotate(-90deg)",
-            transition: "transform 0.18s ease",
-            opacity: 0.75,
-          }}
+          className={`blog-sidebar-item__chevron${isOfficialOpen ? ' is-open' : ''}`}
         />
       </button>
 
-      {/* Sub-items */}
       <div
-        style={{
-          paddingLeft: "54px",
-          paddingTop: isOfficialOpen ? "4px" : "0px",
-          paddingBottom: isOfficialOpen ? "4px" : "0px",
-          maxHeight: isOfficialOpen ? "220px" : "0px",
-          opacity: isOfficialOpen ? 1 : 0,
-          overflow: "hidden",
-          transition: "max-height 0.22s ease, opacity 0.22s ease, padding 0.22s ease",
-        }}
+        className={`blog-sidebar-sublist${isOfficialOpen ? ' is-open' : ''}`}
       >
         {officialSubItems.map((item) => (
           <button
             key={item.id}
+            type="button"
             onClick={() => onCategoryClick(item.id)}
-            style={{
-              background: activeCategory === item.id ? "rgba(37, 99, 235, 0.08)" : "transparent",
-              border: "none",
-              padding: "10px 25px 10px 20px",
-              textAlign: "left",
-              cursor: "pointer",
-              fontSize: "0.9rem",
-              fontWeight: activeCategory === item.id ? 600 : 400,
-              color: activeCategory === item.id ? "#2563eb" : "#64748b",
-              transition: "all 0.15s ease",
-              display: "block",
-              width: "100%",
-              borderRadius: "6px",
-              marginBottom: "2px",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(37, 99, 235, 0.08)";
-              e.currentTarget.style.color = "#2563eb";
-            }}
-            onMouseLeave={(e) => {
-              if (activeCategory !== item.id) {
-                e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = "#64748b";
-              }
-            }}
+            className={`blog-sidebar-subitem${activeCategory === item.id ? ' is-active' : ''}`}
           >
             {item.label}
           </button>

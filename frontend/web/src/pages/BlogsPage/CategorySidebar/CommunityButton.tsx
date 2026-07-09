@@ -1,8 +1,14 @@
 /**
- * CommunityButton component - User community navigation
+ * Created at: 2026-07-09 01:34 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:34 EDT
+ * Last Modified by: Codex
+ *
+ * CommunityButton component - user community navigation.
  */
 
 import React from "react";
+import { ReaderIcon } from "@radix-ui/react-icons";
 import { CommunityButtonProps } from "./types";
 
 const CommunityButton: React.FC<CommunityButtonProps> = ({
@@ -12,35 +18,10 @@ const CommunityButton: React.FC<CommunityButtonProps> = ({
   return (
     <button
       onClick={onUserBlogsClick}
-      style={{
-        background: activeCategory === "user" ? "rgba(37, 99, 235, 0.1)" : "transparent",
-        border: "none",
-        borderLeft: activeCategory === "user" ? "4px solid #2563eb" : "4px solid transparent",
-        padding: "14px 25px",
-        textAlign: "left",
-        cursor: "pointer",
-        fontSize: "0.95rem",
-        fontWeight: activeCategory === "user" ? 600 : 500,
-        color: activeCategory === "user" ? "#0f172a" : "#475569",
-        transition: "all 0.2s ease",
-        display: "flex",
-        alignItems: "center",
-        gap: "10px",
-        width: "100%",
-      }}
-      onMouseEnter={(e) => {
-        if (activeCategory !== "user") {
-          e.currentTarget.style.background = "rgba(37, 99, 235, 0.05)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (activeCategory !== "user") {
-          e.currentTarget.style.background = "transparent";
-        }
-      }}
+      className={`blog-sidebar-item${activeCategory === "user" ? " is-active" : ""}`}
     >
-      <span style={{ fontSize: "1.2rem" }}>✍️</span>
-      <span style={{ flex: 1 }}>Community</span>
+      <ReaderIcon width={18} height={18} />
+      <span className="blog-sidebar-item__label">Community</span>
     </button>
   );
 };

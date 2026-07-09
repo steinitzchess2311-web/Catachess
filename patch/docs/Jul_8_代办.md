@@ -37,7 +37,8 @@ study 权限
 
 其他
 
-- blog 太丑了，像个玩具，不是产品级别的。无论是这个 blog 展示页面还是编辑页面。请你参考 workspace 的设计和 study 内部的这种设计，产品级别的重构一下
+-[✅] blog 太丑了，像个玩具，不是产品级别的。无论是这个 blog 展示页面还是编辑页面。请你参考 workspace 的设计和 study 内部的这种设计，产品级别的重构一下
+  - 2026-07-09 01:58 EDT：已重构 blog 列表/详情/侧栏/卡片/编辑器/状态/分页/删除确认为蓝白产品风格，去除主流程 inline/emoji 玩具化样式；修复移动端 blog header 搜索框溢出。blog 图片库同步改为文章和图片关系同事务保存，兼容编码/未编码 URL 变体、重复 legacy URL、多文章共享图片引用；`pytest backend/modules/blogs/tests/test_image_linker.py` 5 项通过，`npm run build` 通过，Chrome headless 截图检查覆盖桌面和移动 `/blogs`。
 - catachat 不要单独弄，麻烦的要死，就直接打通账号就好。
 - header 铃铛那个消息通知显示有 bug，请修复。同时，如果别人邀请你加入study 也在那里显示，某某某邀请你加入研讨。
 -[✅] profile 的那个 title，三运 GM 这种什么的（出现在用户名前的显示）改成橙色的。

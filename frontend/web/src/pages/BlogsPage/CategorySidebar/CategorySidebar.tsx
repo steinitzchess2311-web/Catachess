@@ -1,6 +1,10 @@
 /**
- * CategorySidebar component - Blog navigation and search (Main integration file)
- * Provides category filtering and search functionality
+ * Created at: 2026-07-09 01:05 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:34 EDT
+ * Last Modified by: Codex
+ *
+ * CategorySidebar component - blog navigation and author actions.
  */
 
 import React, { useState, useEffect } from "react";
@@ -29,7 +33,6 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
   onOpenChange,
 }) => {
   const [isOfficialOpen, setIsOfficialOpen] = useState<boolean>(true);
-  const [showComingSoon, setShowComingSoon] = useState<boolean>(false);
   const [editorOpen, setEditorOpen] = useState<boolean>(false);
 
   useEffect(() => {
@@ -60,51 +63,15 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
 
   return (
     <>
-      {/* Coming Soon Modal */}
-      {showComingSoon && (
-        <div
-          style={{
-            position: "fixed",
-            top: "80px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            background: "rgba(15, 23, 42, 0.95)",
-            color: "white",
-            padding: "10px 22px",
-            borderRadius: "8px",
-            boxShadow: "var(--shadow-2)",
-            zIndex: 9999,
-            fontSize: "1rem",
-            fontWeight: 600,
-            animation: "slideDown 0.3s ease",
-          }}
-        >
-          Coming Soon ✨
-        </div>
-      )}
-
       <div
-        style={{
-          width: isOpen ? "288px" : "84px",
-          flexShrink: 0,
-          background: "#ffffff",
-          border: "1px solid var(--border)",
-          borderRadius: "14px",
-          padding: isOpen ? "24px 0" : "14px 0",
-          boxShadow: "var(--shadow-1)",
-          position: "sticky",
-          top: "16px",
-          alignSelf: "flex-start",
-          transition: "width 0.28s ease, padding 0.28s ease, border-radius 0.28s ease",
-          overflow: isOpen ? "visible" : "hidden",
-        }}
+        className={`blog-sidebar${isOpen ? ' is-open' : ' is-collapsed'}`}
       >
         {/* Toggle Button */}
         <ToggleButton isOpen={isOpen} onOpenChange={onOpenChange} />
 
         {isOpen && (
           <>
-            <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "48px" }}>
+            <div className="blog-sidebar__nav">
               {/* When in drafts/my-published mode, no category should appear highlighted */}
               {(() => {
                 const displayCategory = viewMode === 'articles' ? activeCategory : '__none__';
@@ -172,32 +139,6 @@ const CategorySidebar: React.FC<CategorySidebarProps> = ({
         userName={userName}
       />
 
-      <style>
-        {`
-          @keyframes slideDown {
-            from {
-              opacity: 0;
-              transform: translateX(-50%) translateY(-10px);
-            }
-            to {
-              opacity: 1;
-              transform: translateX(-50%) translateY(0);
-            }
-          }
-
-          @keyframes shake {
-            0%, 100% {
-              transform: translateX(0);
-            }
-            10%, 30%, 50%, 70%, 90% {
-              transform: translateX(-4px);
-            }
-            20%, 40%, 60%, 80% {
-              transform: translateX(4px);
-            }
-          }
-        `}
-      </style>
     </>
   );
 };

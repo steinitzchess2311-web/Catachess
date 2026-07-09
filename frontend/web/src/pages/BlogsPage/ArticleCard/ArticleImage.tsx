@@ -1,9 +1,14 @@
 /**
- * ArticleImage component - Cover image with category and pinned badges
+ * Created at: 2026-07-09 01:05 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:05 EDT
+ * Last Modified by: Codex
+ *
+ * ArticleImage component - cover image for article preview cards.
  */
 
 import React from "react";
-import { ArticleImageProps, CATEGORY_LABELS } from "./types";
+import { ArticleImageProps } from "./types";
 import logoImage from "../../../assets/logo.jpg";
 
 const ArticleImage: React.FC<ArticleImageProps> = ({
@@ -15,30 +20,11 @@ const ArticleImage: React.FC<ArticleImageProps> = ({
   const displayImage = imageUrl || logoImage;
 
   return (
-    <div
-      style={{
-        width: "100%",
-        aspectRatio: "16 / 10",
-        overflow: "hidden",
-        position: "relative",
-        backgroundColor: "#f5f5f5",
-      }}
-    >
+    <div className="blog-article-card__media">
       <img
         src={displayImage}
         alt={title}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: "cover",
-          transition: "transform 0.3s ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = "scale(1.05)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = "scale(1)";
-        }}
+        className="blog-article-card__image"
       />
     </div>
   );

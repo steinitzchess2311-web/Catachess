@@ -1,9 +1,10 @@
 /**
- * RichTextEditor - TipTap WYSIWYG editor with Markdown serialization
+ * Created at: 2026-07-09 01:31 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:31 EDT
+ * Last Modified by: Codex
  *
- * Displays: formatted rich text (bold, italic, headings, lists, etc.)
- * Stores:   Markdown string (via tiptap-markdown extension)
- * Usage:    pass `value` (Markdown string) and `onChange` (receives Markdown string)
+ * RichTextEditor - TipTap WYSIWYG editor with Markdown serialization.
  */
 
 import React, { useEffect } from 'react';
@@ -15,8 +16,6 @@ interface RichTextEditorProps {
   value: string;        // Markdown string
   onChange: (md: string) => void;
 }
-
-// ─── Toolbar button ────────────────────────────────────────────────────────────
 
 interface ToolbarButtonProps {
   onClick: () => void;
@@ -32,31 +31,11 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({ onClick, active, disabled
     onClick={onClick}
     disabled={disabled}
     title={title}
-    style={{
-      padding: '5px 9px',
-      fontSize: '0.85rem',
-      fontWeight: 600,
-      border: '1px solid #e2e8f0',
-      borderRadius: '5px',
-      cursor: disabled ? 'not-allowed' : 'pointer',
-      backgroundColor: active ? '#2563eb' : 'white',
-      color: active ? 'white' : '#374151',
-      transition: 'all 0.15s ease',
-      lineHeight: 1.4,
-      minWidth: '30px',
-    }}
-    onMouseEnter={(e) => {
-      if (!active && !disabled) e.currentTarget.style.backgroundColor = '#f0f4ff';
-    }}
-    onMouseLeave={(e) => {
-      if (!active) e.currentTarget.style.backgroundColor = active ? '#2563eb' : 'white';
-    }}
+    className={`blog-rich-toolbar__button${active ? ' is-active' : ''}`}
   >
     {children}
   </button>
 );
-
-// ─── Main component ────────────────────────────────────────────────────────────
 
 const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
   const editor = useEditor({
@@ -91,18 +70,9 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
   if (!editor) return null;
 
   return (
-    <div style={{ border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
+    <div className="blog-rich-editor">
       {/* Toolbar */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '4px',
-          padding: '8px 10px',
-          borderBottom: '1px solid #e2e8f0',
-          backgroundColor: '#f8fafc',
-        }}
-      >
+      <div className="blog-rich-toolbar">
         {/* Headings */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
@@ -166,7 +136,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
           active={editor.isActive('bulletList')}
           title="Bullet list"
         >
-          • List
+          List
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
@@ -197,7 +167,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
           onClick={() => editor.chain().focus().setHorizontalRule().run()}
           title="Horizontal rule"
         >
-          ─
+          HR
         </ToolbarButton>
 
         <Divider />
@@ -208,65 +178,28 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({ value, onChange }) => {
           disabled={!editor.can().undo()}
           title="Undo"
         >
-          ↩
+          Undo
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
           title="Redo"
         >
-          ↪
+          Redo
         </ToolbarButton>
       </div>
 
       {/* Editor area */}
       <EditorContent
         editor={editor}
-        style={{ padding: '14px 16px', minHeight: '320px', fontSize: '1rem', lineHeight: 1.7 }}
+        className="blog-rich-editor__content"
       />
-
-      {/* Editor content styles */}
-      <style>{`
-        .tiptap { outline: none; }
-        .tiptap h1 { font-size: 1.7rem; font-weight: 700; margin: 0.6em 0 0.3em; }
-        .tiptap h2 { font-size: 1.35rem; font-weight: 600; margin: 0.6em 0 0.3em; }
-        .tiptap h3 { font-size: 1.1rem; font-weight: 600; margin: 0.5em 0 0.2em; }
-        .tiptap p  { margin: 0.4em 0; }
-        .tiptap ul, .tiptap ol { padding-left: 1.4em; margin: 0.4em 0; }
-        .tiptap li { margin: 0.15em 0; }
-        .tiptap blockquote {
-          border-left: 3px solid #2563eb;
-          padding-left: 12px;
-          margin: 0.5em 0;
-          color: #475569;
-        }
-        .tiptap code {
-          background: #f1f5f9;
-          border-radius: 4px;
-          padding: 2px 5px;
-          font-family: monospace;
-          font-size: 0.9em;
-        }
-        .tiptap pre {
-          background: #1e293b;
-          color: #e2e8f0;
-          border-radius: 6px;
-          padding: 12px 16px;
-          overflow-x: auto;
-          margin: 0.6em 0;
-        }
-        .tiptap pre code { background: none; color: inherit; padding: 0; }
-        .tiptap hr { border: none; border-top: 1px solid #e2e8f0; margin: 1em 0; }
-        .tiptap strong { font-weight: 700; }
-        .tiptap em { font-style: italic; }
-        .tiptap s { text-decoration: line-through; }
-      `}</style>
     </div>
   );
 };
 
 const Divider = () => (
-  <div style={{ width: '1px', backgroundColor: '#e2e8f0', margin: '2px 2px', alignSelf: 'stretch' }} />
+  <div className="blog-rich-toolbar__divider" />
 );
 
 export default RichTextEditor;

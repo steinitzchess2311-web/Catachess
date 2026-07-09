@@ -1,7 +1,10 @@
 /**
- * ArticleDetailContent - Pure content component for article details
- * Displays article cover, title, metadata, content, and stats
- * Designed to be rendered within ContentArea container
+ * Created at: 2026-07-09 01:27 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:27 EDT
+ * Last Modified by: Codex
+ *
+ * ArticleDetailContent - reading view for blog articles.
  */
 
 import React, { useState } from "react";
@@ -101,128 +104,73 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
   // Not found state
   if (!article) {
     return (
-      <div style={{ textAlign: "center", padding: "60px 20px" }}>
-        <h1 style={{ fontSize: "3rem", marginBottom: "20px" }}>404</h1>
-        <p style={{ fontSize: "1.2rem", color: "#475569" }}>Article not found</p>
+      <div className="blog-state">
+        <p className="blog-state__title">Article not found</p>
       </div>
     );
   }
 
   // Format date
-  const formattedDate = new Date(article.published_at).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  const formattedDate = article.published_at
+    ? new Date(article.published_at).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    : null;
 
   return (
-    <div style={{ maxWidth: "860px", margin: "0 auto" }}>
+    <article className="blog-detail">
       {/* Cover Image */}
-      <div
-        style={{
-          width: "100%",
-          height: "clamp(220px, 38vw, 400px)",
-          overflow: "hidden",
-          backgroundColor: "#f5f5f5",
-          borderRadius: "8px",
-          marginBottom: "32px",
-        }}
-      >
-        <img
-          src={article.cover_image_url}
-          alt={article.title}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: "cover",
-          }}
-        />
+      <div className="blog-detail__cover">
+        {article.cover_image_url ? (
+          <img
+            src={article.cover_image_url}
+            alt={article.title}
+            className="blog-detail__cover-image"
+          />
+        ) : (
+          <div className="blog-detail__cover-placeholder">No cover</div>
+        )}
       </div>
 
       {/* Title */}
-      <h1
-        style={{
-          fontSize: "clamp(1.85rem, 3.4vw, 2.35rem)",
-          fontWeight: 700,
-          color: "#0f172a",
-          marginBottom: "12px",
-          lineHeight: "1.3",
-        }}
-      >
+      <h1 className="blog-detail__title">
         {article.title}
       </h1>
 
       {/* Subtitle */}
-      <h2
-        style={{
-          fontSize: "clamp(1rem, 2.2vw, 1.2rem)",
-          fontWeight: 400,
-          color: "#475569",
-          marginBottom: "24px",
-          lineHeight: "1.5",
-        }}
-      >
-        {article.subtitle}
-      </h2>
+      {article.subtitle && (
+        <p className="blog-detail__subtitle">
+          {article.subtitle}
+        </p>
+      )}
 
       {/* Metadata */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "16px",
-          paddingBottom: "24px",
-          marginBottom: "32px",
-          borderBottom: "2px solid rgba(37, 99, 235, 0.15)",
-          fontSize: "0.95rem",
-          color: "#2563eb",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontWeight: 600 }}>{article.author_name}</span>
-          <span
-            style={{
-              padding: "4px 8px",
-              backgroundColor: article.author_type === 'official'
-                ? "rgba(76, 175, 80, 0.1)"
-                : "rgba(37, 99, 235, 0.1)",
-              borderRadius: "4px",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              textTransform: "uppercase",
-            }}
-          >
+      <div className="blog-detail__meta">
+        <div className="blog-detail__author">
+          <span>{article.author_name}</span>
+          <span className="blog-detail__badge">
             {article.author_type === 'official' ? 'Official' : 'User'}
           </span>
         </div>
-        <span style={{ color: "#cbd5e1" }}>•</span>
-        <span>{formattedDate}</span>
-        <span style={{ color: "#cbd5e1" }}>•</span>
+        {formattedDate && (
+          <>
+            <span className="blog-detail__dot" />
+            <span>{formattedDate}</span>
+          </>
+        )}
+        <span className="blog-detail__dot" />
         <span>{article.view_count} views</span>
       </div>
 
       {/* Tags */}
       {article.tags && article.tags.length > 0 && (
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "8px",
-            marginBottom: "32px",
-          }}
-        >
+        <div className="blog-detail__tags">
           {article.tags.map((tag, index) => (
             <span
               key={index}
-              style={{
-                padding: "6px 14px",
-                backgroundColor: "rgba(37, 99, 235, 0.1)",
-                color: "#2563eb",
-                borderRadius: "20px",
-                fontSize: "0.85rem",
-                fontWeight: 500,
-              }}
+              className="blog-detail__tag"
             >
               #{tag}
             </span>
@@ -236,26 +184,9 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
       )}
 
       {/* Footer Stats */}
-      <div
-        style={{
-          marginTop: "40px",
-          paddingTop: "24px",
-          borderTop: "1px solid rgba(37, 99, 235, 0.15)",
-          display: "flex",
-          gap: "32px",
-          fontSize: "0.95rem",
-          alignItems: "center",
-        }}
-      >
+      <div className="blog-detail__stats">
         {/* Views */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            color: "#64748b",
-          }}
-        >
+        <div className="blog-detail__stat">
           <EyeOpenIcon width={18} height={18} />
           <span>{article.view_count || 0}</span>
         </div>
@@ -264,49 +195,17 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
         <button
           onClick={handleLikeToggle}
           disabled={liking}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            color: isLiked ? "#e11d48" : "#64748b",
-            border: "none",
-            background: "transparent",
-            cursor: liking ? "wait" : "pointer",
-            fontSize: "0.95rem",
-            padding: "4px 8px",
-            borderRadius: "6px",
-            transition: "all 0.2s ease",
-            opacity: liking ? 0.6 : 1,
-          }}
-          onMouseEnter={(e) => {
-            if (!isLiked) {
-              e.currentTarget.style.color = "#e11d48";
-              e.currentTarget.style.backgroundColor = "rgba(225, 29, 72, 0.08)";
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isLiked) {
-              e.currentTarget.style.color = "#64748b";
-              e.currentTarget.style.backgroundColor = "transparent";
-            }
-          }}
+          className={`blog-detail__stat blog-detail__like${isLiked ? ' is-liked' : ''}`}
         >
           {isLiked
-            ? <HeartFilledIcon width={18} height={18} style={{ color: "#e11d48" }} />
+            ? <HeartFilledIcon width={18} height={18} />
             : <HeartIcon width={18} height={18} />
           }
           <span>{likeCount}</span>
         </button>
 
         {/* Comments */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            color: "#64748b",
-          }}
-        >
+        <div className="blog-detail__stat">
           <ChatBubbleIcon width={18} height={18} />
           <span>{article.comment_count || 0}</span>
         </div>
@@ -319,7 +218,7 @@ const ArticleDetailContent: React.FC<ArticleDetailContentProps> = ({
         currentUserName={username ?? undefined}
         isAdmin={userRole === 'admin'}
       />
-    </div>
+    </article>
   );
 };
 

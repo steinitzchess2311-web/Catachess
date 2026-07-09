@@ -1,9 +1,14 @@
 /**
- * Error state component for blog content
- * Shows when API requests fail
+ * Created at: 2026-07-09 01:27 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:27 EDT
+ * Last Modified by: Codex
+ *
+ * Error state component for blog content.
  */
 
 import React from 'react';
+import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 
 interface ErrorStateProps {
   message?: string;
@@ -14,42 +19,14 @@ interface ErrorStateProps {
  */
 const ErrorState: React.FC<ErrorStateProps> = ({ message = 'Failed to load articles' }) => {
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '400px',
-        padding: '40px',
-        textAlign: 'center'
-      }}
-    >
-      <div
-        style={{
-          fontSize: '3rem',
-          marginBottom: '16px',
-          opacity: 0.3
-        }}
-      >
-        ⚠️
+    <div className="blog-state blog-state--error">
+      <div className="blog-state__icon">
+        <ExclamationTriangleIcon width={22} height={22} />
       </div>
-      <p
-        style={{
-          fontSize: '1.1rem',
-          color: '#d32f2f',
-          margin: 0
-        }}
-      >
+      <p className="blog-state__title">
         {message}
       </p>
-      <p
-        style={{
-          fontSize: '0.95rem',
-          color: '#8a8a8a',
-          marginTop: '8px'
-        }}
-      >
+      <p className="blog-state__text">
         Please try again later
       </p>
     </div>

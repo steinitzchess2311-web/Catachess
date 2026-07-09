@@ -1,5 +1,8 @@
 """
-Blog API Router
+Created at: 2026-07-09 01:05 EDT
+Created by: Codex
+Last Modified at: 2026-07-09 01:05 EDT
+Last Modified by: Codex
 
 Public Endpoints:
 - GET /api/blogs/categories - Get all categories
@@ -706,36 +709,34 @@ async def create_article(
 
     **Requires:** editor or admin role
     """
-    # Create article
-    new_article = BlogArticle(
-        id=uuid4(),
-        title=article.title,
-        subtitle=article.subtitle,
-        content=article.content,
-        cover_image_url=article.cover_image_url,
-        author_id=current_user.id if current_user else None,
-        author_name=article.author_name,
-        author_type=article.author_type,
-        category=article.category,
-        sub_category=article.sub_category,
-        tags=article.tags,
-        status=article.status,
-        is_pinned=article.is_pinned,
-        pin_order=article.pin_order,
-        view_count=0,
-        like_count=0,
-        comment_count=0,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
-        published_at=datetime.utcnow() if article.status == "published" else None
-    )
-
-    db.add(new_article)
-    db.commit()
-    db.refresh(new_article)
-
-    # Link images to article
     try:
+        # Create article and image relations in one transaction. If image sync
+        # fails, the article mutation is rolled back rather than leaving orphan
+        # metadata that looks saved to the author.
+        new_article = BlogArticle(
+            id=uuid4(),
+            title=article.title,
+            subtitle=article.subtitle,
+            content=article.content,
+            cover_image_url=article.cover_image_url,
+            author_id=current_user.id if current_user else None,
+            author_name=article.author_name,
+            author_type=article.author_type,
+            category=article.category,
+            sub_category=article.sub_category,
+            tags=article.tags,
+            status=article.status,
+            is_pinned=article.is_pinned,
+            pin_order=article.pin_order,
+            view_count=0,
+            like_count=0,
+            comment_count=0,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+            published_at=datetime.utcnow() if article.status == "published" else None
+        )
+        db.add(new_article)
+        db.flush()
         sync_result = sync_article_images(
             article_id=new_article.id,
             content=article.content,
@@ -743,9 +744,13 @@ async def create_article(
             db=db,
             verbose=False
         )
+        db.commit()
+        db.refresh(new_article)
         print(f"✅ Linked {sync_result['linked']} images to new article")
     except Exception as e:
-        print(f"⚠️  Failed to link images: {e}")
+        db.rollback()
+        print(f"❌ Failed to create article with image links: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save article images") from e
 
     # Invalidate caches
     await cache.invalidate_article_list(article.category)
@@ -789,26 +794,20 @@ async def update_article(
             detail="You can only edit your own articles"
         )
 
-    # Track if category or pin status changed
     old_category = article.category
     old_is_pinned = article.is_pinned
 
-    # Update fields
-    update_data = updates.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(article, field, value)
+    try:
+        # Update article fields and image links in one transaction.
+        update_data = updates.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(article, field, value)
 
-    # Update timestamps
-    article.updated_at = datetime.utcnow()
-    if updates.status == "published" and not article.published_at:
-        article.published_at = datetime.utcnow()
+        article.updated_at = datetime.utcnow()
+        if updates.status == "published" and not article.published_at:
+            article.published_at = datetime.utcnow()
 
-    db.commit()
-    db.refresh(article)
-
-    # Re-sync images if content or cover changed
-    if updates.content is not None or updates.cover_image_url is not None:
-        try:
+        if updates.content is not None or updates.cover_image_url is not None:
             sync_result = sync_article_images(
                 article_id=article.id,
                 content=article.content,
@@ -817,8 +816,12 @@ async def update_article(
                 verbose=False
             )
             print(f"✅ Synced images: linked={sync_result['linked']}, unlinked={sync_result['unlinked']}")
-        except Exception as e:
-            print(f"⚠️  Failed to sync images: {e}")
+        db.commit()
+        db.refresh(article)
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Failed to update article with image links: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save article images") from e
 
     # Invalidate caches
     await cache.invalidate_article(str(article_id))

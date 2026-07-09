@@ -1,5 +1,10 @@
 /**
- * ArticleMeta component - Author, date, and view count metadata
+ * Created at: 2026-07-09 01:05 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:05 EDT
+ * Last Modified by: Codex
+ *
+ * ArticleMeta component - author, date, and view count metadata.
  */
 
 import React from "react";
@@ -18,23 +23,13 @@ const ArticleMeta: React.FC<ArticleMetaProps> = ({
   });
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        paddingTop: "12px",
-        borderTop: "1px solid rgba(37, 99, 235, 0.1)",
-        fontSize: "0.85rem",
-        color: "#2563eb",
-      }}
-    >
-      <span style={{ fontWeight: 600 }}>{authorName}</span>
-      <span style={{ color: "#d0d0d0" }}>•</span>
+    <div className="blog-article-card__meta">
+      <span className="blog-article-card__author">{authorName}</span>
+      <span className="blog-article-card__dot" />
       <span>{formattedDate}</span>
       {viewCount > 0 && (
         <>
-          <span style={{ color: "#d0d0d0" }}>•</span>
+          <span className="blog-article-card__dot" />
           <span>{viewCount} views</span>
         </>
       )}

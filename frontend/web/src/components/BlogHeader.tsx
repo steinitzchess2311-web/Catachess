@@ -1,10 +1,14 @@
 /**
- * BlogHeader component - Category display and search bar
- * Non-floating header for blog content area
+ * Created at: 2026-07-09 01:05 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:05 EDT
+ * Last Modified by: Codex
+ *
+ * BlogHeader component - Category display, article title, history, and search.
  */
 
 import React from "react";
-import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import { ArrowLeftIcon, Cross2Icon } from "@radix-ui/react-icons";
 import RecentArticlesHistory from "./RecentArticlesHistory";
 
 type ViewMode = 'articles' | 'drafts' | 'my-published';
@@ -89,139 +93,43 @@ const BlogHeader: React.FC<BlogHeaderProps> = ({
   const categoryLabel = getLabel();
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "16px 22px",
-        background: "#ffffff",
-        border: "1px solid var(--border)",
-        borderRadius: "12px",
-        marginBottom: "16px",
-        boxShadow: "var(--shadow-1)",
-      }}
-    >
-      {/* Left: Category Label or Article Title */}
-      <div
-        style={{
-          fontSize: "1.35rem",
-          fontWeight: 700,
-          color: "var(--text-main)",
-          display: "flex",
-          alignItems: "center",
-          gap: "12px",
-          maxWidth: "70%",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        <span style={{
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}>
+    <div className="blog-header">
+      <div className="blog-header__title-wrap">
+        <span className="blog-header__eyebrow">CataChess Journal</span>
+        <h1 className="blog-header__title">
           {categoryLabel}
-        </span>
+        </h1>
       </div>
 
-      {/* Right: History Icon + Search Bar or Back Button */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        {/* Recent Articles History Icon */}
+      <div className="blog-header__actions">
         <RecentArticlesHistory />
 
         {isDetailView ? (
           <button
+            type="button"
             onClick={onBackClick}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "10px 20px",
-              border: "1px solid #bfdbfe",
-              borderRadius: "8px",
-              fontSize: "0.9rem",
-              color: "var(--text-main)",
-              backgroundColor: "#f8fbff",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = "#2563eb";
-              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(37, 99, 235, 0.12)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.borderColor = "#bfdbfe";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            className="blog-header__back"
           >
             <ArrowLeftIcon width={16} height={16} />
-            <span>Back to Blogs</span>
+            <span>Back to blogs</span>
           </button>
         ) : (
-        <div
-          style={{
-            position: "relative",
-            width: "320px",
-          }}
-        >
+        <div className="blog-header__search">
           <input
             type="text"
             placeholder="Search articles..."
             value={localSearchQuery}
             onChange={(e) => setLocalSearchQuery(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px 40px 10px 16px",
-              border: "1px solid #bfdbfe",
-              borderRadius: "8px",
-              fontSize: "0.9rem",
-              color: "var(--text-main)",
-              backgroundColor: "#f8fbff",
-              boxSizing: "border-box",
-              transition: "all 0.2s ease",
-              outline: "none",
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = "#2563eb";
-              e.currentTarget.style.boxShadow = "0 0 0 3px rgba(37, 99, 235, 0.12)";
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = "#bfdbfe";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            className="blog-header__search-input"
           />
           {localSearchQuery && (
             <button
+              type="button"
               onClick={handleSearchClear}
-              style={{
-                position: "absolute",
-                top: "50%",
-                right: "12px",
-                transform: "translateY(-50%)",
-                width: "24px",
-                height: "24px",
-                border: "none",
-                background: "rgba(37, 99, 235, 0.12)",
-                borderRadius: "50%",
-                fontSize: "16px",
-                lineHeight: "1",
-                color: "#475569",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "background 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(37, 99, 235, 0.2)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(37, 99, 235, 0.12)";
-              }}
+              className="blog-header__search-clear"
+              aria-label="Clear search"
             >
-              ×
+              <Cross2Icon width={13} height={13} />
             </button>
           )}
         </div>

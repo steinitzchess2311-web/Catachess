@@ -1,7 +1,10 @@
 /**
- * ContentArea component - Main blog article list display
- * Fetches and displays paginated blog articles with loading/error/empty states
- * Supports three view modes: articles, drafts, my-published
+ * Created at: 2026-07-09 01:05 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:05 EDT
+ * Last Modified by: Codex
+ *
+ * ContentArea component - blog article list/detail display.
  */
 
 import React, { useState, useEffect } from "react";
@@ -141,14 +144,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({
 
   return (
     <div
-      style={{
-        flex: 1,
-        background: "#ffffff",
-        border: "1px solid var(--border)",
-        borderRadius: "12px",
-        padding: "24px",
-        boxShadow: "var(--shadow-1)",
-      }}
+      className={`blogs-content-surface${isDetailView ? ' is-detail' : ''}`}
     >
       {/* Article Detail View */}
       {isDetailView ? (

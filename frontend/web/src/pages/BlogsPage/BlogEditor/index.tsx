@@ -1,12 +1,10 @@
 /**
- * BlogEditor - Create / Edit blog articles
- * Dialog shell + form state + save logic
+ * Created at: 2026-07-09 01:05 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:44 EDT
+ * Last Modified by: Codex
  *
- * Sub-components:
- *   RichTextEditor   — TipTap WYSIWYG editor (Markdown in/out)
- *   CategorySelect   — Category + Author Type dropdowns
- *   ImageUpload      — Cover image upload
- *   ExitConfirmDialog — Unsaved-changes confirmation popover
+ * BlogEditor - create/edit blog articles with metadata, cover, and content.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -29,8 +27,6 @@ interface BlogEditorProps {
   userName?: string | null;
 }
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
-
 interface FormState {
   title: string;
   subtitle: string;
@@ -51,8 +47,6 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
 }) => {
   const isEditMode = Boolean(article);
   const isAdmin = userRole === 'admin';
-
-  // ─── Form state ──────────────────────────────────────────────────────────────
 
   const defaultForm = (): FormState => ({
     title: '',
@@ -76,8 +70,6 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
   const set = <K extends keyof FormState>(key: K) =>
     (value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
 
-  // ─── Initialise form from article or reset on open ───────────────────────────
-
   useEffect(() => {
     if (!open) return;
     const initial: FormState = article
@@ -100,8 +92,6 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, article]);
 
-  // ─── Image upload ─────────────────────────────────────────────────────────────
-
   const handleImageUpload = async (file: File) => {
     if (!file.type.startsWith('image/')) { setError('Please select an image file'); return; }
     if (file.size > 5 * 1024 * 1024)    { setError('Image must be less than 5MB');  return; }
@@ -116,8 +106,6 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
       setUploading(false);
     }
   };
-
-  // ─── Save ─────────────────────────────────────────────────────────────────────
 
   const handleSave = async (saveStatus: 'draft' | 'published') => {
     if (!form.title.trim())   { setError('Title is required');   return; }
@@ -152,8 +140,6 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
     }
   };
 
-  // ─── Unsaved-changes guard ────────────────────────────────────────────────────
-
   const hasChanges = () =>
     (Object.keys(initialForm) as (keyof FormState)[]).some(
       (k) => form[k] !== initialForm[k]
@@ -164,27 +150,24 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
     else onOpenChange(false);
   };
 
-  // ─── Render ───────────────────────────────────────────────────────────────────
-
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay style={overlayStyle} />
+        <Dialog.Overlay className="blog-editor-overlay" />
         <Dialog.Content
-          style={contentStyle}
+          className="blog-editor-dialog"
           onOpenAutoFocus={(e) => e.preventDefault()}
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
 
-          {/* Header */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', position: 'relative' }}>
-            <Dialog.Title style={{ fontSize: '1.8rem', fontWeight: 700, color: '#0f172a' }}>
+          <div className="blog-editor-header">
+            <div>
+              <span className="blog-editor-eyebrow">Article editor</span>
+              <Dialog.Title className="blog-editor-title">
               {isEditMode ? 'Edit Article' : 'Create New Article'}
-            </Dialog.Title>
-            <button onClick={handleCloseClick} style={closeButtonStyle}
-              onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0f0f0')}
-              onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-            >
+              </Dialog.Title>
+            </div>
+            <button type="button" onClick={handleCloseClick} className="blog-editor-close" aria-label="Close editor">
               <Cross2Icon width={20} height={20} />
             </button>
 
@@ -198,43 +181,35 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
             )}
           </div>
 
-          {/* Error */}
           {error && (
-            <div style={{ padding: '12px 16px', backgroundColor: '#ffebee', color: '#d32f2f', borderRadius: '8px', marginBottom: '16px', fontSize: '0.95rem' }}>
+            <div className="blog-editor-error">
               {error}
             </div>
           )}
 
-          {/* Form */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="blog-editor-body">
 
-            {/* Title */}
-            <div>
-              <Label.Root htmlFor="title" style={labelStyle}>Title *</Label.Root>
+            <div className="blog-editor-field">
+              <Label.Root htmlFor="title" className="blog-editor-label">Title *</Label.Root>
               <input
                 id="title"
                 type="text"
                 value={form.title}
                 onChange={(e) => set('title')(e.target.value)}
                 placeholder="Enter article title..."
-                style={inputStyle}
-                onFocus={(e) => (e.currentTarget.style.borderColor = '#2563eb')}
-                onBlur={(e)  => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                className="blog-editor-input"
               />
             </div>
 
-            {/* Subtitle */}
-            <div>
-              <Label.Root htmlFor="subtitle" style={labelStyle}>Subtitle</Label.Root>
+            <div className="blog-editor-field">
+              <Label.Root htmlFor="subtitle" className="blog-editor-label">Subtitle</Label.Root>
               <input
                 id="subtitle"
                 type="text"
                 value={form.subtitle}
                 onChange={(e) => set('subtitle')(e.target.value)}
                 placeholder="Enter subtitle (optional)..."
-                style={inputStyle}
-                onFocus={(e) => (e.currentTarget.style.borderColor = '#2563eb')}
-                onBlur={(e)  => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                className="blog-editor-input"
               />
             </div>
 
@@ -254,123 +229,52 @@ const BlogEditor: React.FC<BlogEditorProps> = ({
               onUpload={handleImageUpload}
             />
 
-            {/* Tags */}
-            <div>
-              <Label.Root htmlFor="tags" style={labelStyle}>Tags</Label.Root>
+            <div className="blog-editor-field">
+              <Label.Root htmlFor="tags" className="blog-editor-label">Tags</Label.Root>
               <input
                 id="tags"
                 type="text"
                 value={form.tags}
                 onChange={(e) => set('tags')(e.target.value)}
                 placeholder="Enter tags separated by commas (e.g., tutorial, chess, beginner)"
-                style={inputStyle}
-                onFocus={(e) => (e.currentTarget.style.borderColor = '#2563eb')}
-                onBlur={(e)  => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                className="blog-editor-input"
               />
             </div>
 
-            {/* Content — Rich Text Editor */}
-            <div>
-              <Label.Root style={labelStyle}>Content *</Label.Root>
+            <div className="blog-editor-field">
+              <Label.Root className="blog-editor-label">Content *</Label.Root>
               <RichTextEditor value={form.content} onChange={set('content')} />
             </div>
 
-            {/* Actions */}
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '16px' }}>
-              <ActionButton onClick={() => handleSave('draft')} disabled={saving || uploading}>
+            <div className="blog-editor-footer">
+              <ActionButton variant="secondary" onClick={() => handleSave('draft')} disabled={saving || uploading}>
                 {saving ? 'Saving...' : 'Save Draft'}
               </ActionButton>
-              <ActionButton onClick={() => handleSave('published')} disabled={saving || uploading}>
+              <ActionButton variant="primary" onClick={() => handleSave('published')} disabled={saving || uploading}>
                 {saving ? 'Publishing...' : 'Publish'}
               </ActionButton>
             </div>
           </div>
         </Dialog.Content>
       </Dialog.Portal>
-
-      <style>{`
-        @keyframes fadeIn  { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes slideUp {
-          from { opacity: 0; transform: translate(-50%, -45%); }
-          to   { opacity: 1; transform: translate(-50%, -50%); }
-        }
-      `}</style>
     </Dialog.Root>
   );
 };
 
-// ─── Shared micro-components ──────────────────────────────────────────────────
-
 const ActionButton: React.FC<{
   onClick: () => void;
   disabled: boolean;
+  variant: 'primary' | 'secondary';
   children: React.ReactNode;
-}> = ({ onClick, disabled, children }) => (
+}> = ({ onClick, disabled, variant, children }) => (
   <button
+    type="button"
     onClick={onClick}
     disabled={disabled}
-    style={{
-      flex: 1,
-      padding: '10px 16px',
-      fontSize: '0.95rem',
-      fontWeight: 500,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, sans-serif',
-      color: '#2563eb',
-      backgroundColor: 'transparent',
-      border: '2px solid #2563eb',
-      borderRadius: '8px',
-      cursor: disabled ? 'not-allowed' : 'pointer',
-      opacity: disabled ? 0.5 : 1,
-      transition: 'all 0.2s ease',
-    }}
-    onMouseEnter={(e) => { if (!disabled) e.currentTarget.style.backgroundColor = 'rgba(37,99,235,0.08)'; }}
-    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
-    onMouseDown={(e)  => { if (!disabled) e.currentTarget.style.transform = 'scale(0.97)'; }}
-    onMouseUp={(e)    => { e.currentTarget.style.transform = 'scale(1)'; }}
+    className={`blog-editor-action is-${variant}`}
   >
     {children}
   </button>
 );
-
-// ─── Shared styles ────────────────────────────────────────────────────────────
-
-const overlayStyle: React.CSSProperties = {
-  position: 'fixed', inset: 0,
-  backgroundColor: 'rgba(0,0,0,0.5)',
-  animation: 'fadeIn 0.2s ease',
-  zIndex: 9998,
-};
-
-const contentStyle: React.CSSProperties = {
-  position: 'fixed',
-  top: '50%', left: '50%',
-  transform: 'translate(-50%, -50%)',
-  width: '90vw', maxWidth: '900px', maxHeight: '85vh',
-  backgroundColor: 'white',
-  borderRadius: '8px',
-  padding: '24px',
-  boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-  animation: 'slideUp 0.3s ease',
-  zIndex: 9999,
-  overflow: 'auto',
-  fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", sans-serif',
-};
-
-const closeButtonStyle: React.CSSProperties = {
-  border: 'none', background: 'transparent', cursor: 'pointer',
-  padding: '8px', borderRadius: '4px',
-  display: 'flex', alignItems: 'center', justifyContent: 'center',
-};
-
-const labelStyle: React.CSSProperties = {
-  fontSize: '0.95rem', fontWeight: 600, color: '#0f172a',
-  marginBottom: '8px', display: 'block',
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%', padding: '12px', fontSize: '1rem',
-  border: '1px solid #e2e8f0', borderRadius: '8px',
-  outline: 'none', transition: 'border-color 0.2s',
-};
 
 export default BlogEditor;

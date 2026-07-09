@@ -1,6 +1,10 @@
 /**
- * Pagination component for blog article lists
- * Provides Previous/Next navigation with page info
+ * Created at: 2026-07-09 01:27 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 01:27 EDT
+ * Last Modified by: Codex
+ *
+ * Pagination component for blog article lists.
  */
 
 import React from 'react';
@@ -19,81 +23,24 @@ interface PaginationProps {
  * Pagination controls with disabled states
  */
 const Pagination: React.FC<PaginationProps> = ({ pagination, onPageChange }) => {
-  const buttonStyle = {
-    padding: '10px 20px',
-    fontSize: '0.95rem',
-    fontWeight: 500,
-    color: '#0f172a',
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    border: '1px solid #e2e8f0',
-    borderRadius: '8px',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease'
-  };
-
-  const disabledStyle = {
-    ...buttonStyle,
-    opacity: 0.5,
-    cursor: 'not-allowed'
-  };
-
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '16px',
-        marginTop: '40px',
-        padding: '20px'
-      }}
-    >
+    <div className="blog-pagination">
       <button
-        style={pagination.has_prev ? buttonStyle : disabledStyle}
+        className="blog-pagination__button"
         disabled={!pagination.has_prev}
         onClick={() => onPageChange(pagination.page - 1)}
-        onMouseEnter={(e) => {
-          if (pagination.has_prev) {
-            e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.1)';
-            e.currentTarget.style.borderColor = '#2563eb';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (pagination.has_prev) {
-            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-            e.currentTarget.style.borderColor = '#e2e8f0';
-          }
-        }}
       >
         Previous
       </button>
 
-      <span
-        style={{
-          fontSize: '0.95rem',
-          color: '#475569',
-          fontWeight: 500
-        }}
-      >
+      <span className="blog-pagination__label">
         Page {pagination.page} of {pagination.total_pages}
       </span>
 
       <button
-        style={pagination.has_next ? buttonStyle : disabledStyle}
+        className="blog-pagination__button"
         disabled={!pagination.has_next}
         onClick={() => onPageChange(pagination.page + 1)}
-        onMouseEnter={(e) => {
-          if (pagination.has_next) {
-            e.currentTarget.style.backgroundColor = 'rgba(37, 99, 235, 0.1)';
-            e.currentTarget.style.borderColor = '#2563eb';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (pagination.has_next) {
-            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-            e.currentTarget.style.borderColor = '#e2e8f0';
-          }
-        }}
       >
         Next
       </button>

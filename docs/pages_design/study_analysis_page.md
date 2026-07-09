@@ -3,7 +3,7 @@
 ## header
 Created at: 2026-07-08 20:33 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 23:15 EDT
+Last Modified at: 2026-07-08 23:20 EDT
 Last Modified by: Codex
 
 ## Page Job
@@ -17,6 +17,7 @@ Last Modified by: Codex
 - Study breadcrumb hidden ancestors remain navigable through the `...` menu and must respect unsaved-change warnings.
 - Right panels should prioritize move tree and explorer workflows with compact tabs and predictable scrolling.
 - Analysis sidebars expose compact controls for Depth, Lines, Engine on/off, and Engine choice.
+- Predictor sidebars expose provider, top-k, Elo, enable control, and probability rows for human-like move prediction.
 - Engine choice options are Auto, Stockfish, and AlphaZero; unavailable engines must report plain errors instead of silently showing another engine's result.
 
 ## Modal Rules
@@ -32,6 +33,7 @@ Last Modified by: Codex
 - Compact information density.
 - No oversized hero treatment, colorful decorative blocks, or hidden hover-only explanations.
 - Engine analysis panels use white surfaces, thin borders, small rank markers, and restrained score colors.
+- Predictor panels use the same white/blue product language as engine panels, but labels must say Predictor/Probability rather than Engine/Eval.
 
 ## 代办
 - Continue aligning train launcher and opening trainer modals in a later pass.

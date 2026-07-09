@@ -1,7 +1,7 @@
 """
 Created at: 2026-07-08 23:15 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 23:15 EDT
+Last Modified at: 2026-07-08 23:25 EDT
 Last Modified by: Codex
 
 Application settings loaded from environment variables.
@@ -57,6 +57,20 @@ class Settings(BaseSettings):
     ALPHAZERO_MAX_WORKERS: int = 1
     ALPHAZERO_TIMEOUT: int = 60
     ALPHAZERO_CUDA_VISIBLE_DEVICES: str = "0"
+
+    # ===== human move predictors =====
+    PREDICTOR_RATE_LIMIT_PER_MINUTE: int = 20
+    MAIA_PYTHON: str = "/home/catadragon/.venv/bin/python"
+    MAIA_SCRIPT_PATH: str = "/home/catadragon/Code/transformer_chess/other_model/use/maia2_position_infer.py"
+    MAIA_MODEL_TYPE: str = "rapid"
+    MAIA_DEVICE: str = "cpu"
+    MAIA_MAX_WORKERS: int = 2
+    MAIA_TIMEOUT: int = 30
+    CATIE_MODEL_BASE_URL: str = "http://127.0.0.1:8000"
+    CATIE_MODEL_ID: str = "carlsen.best"
+    CATIE_DEFAULT_ELO: int = 1500
+    CATIE_POLL_TIMEOUT: int = 20
+    CATIE_POLL_INTERVAL_SECONDS: float = 0.5
 
     # ===== multi-spot engine =====
     ENABLE_MULTI_SPOT: bool = False

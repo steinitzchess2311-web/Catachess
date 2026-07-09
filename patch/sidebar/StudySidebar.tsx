@@ -18,7 +18,7 @@ import { AnalysisPanel } from './components/AnalysisPanel';
 import { ImitatorSettings } from './components/ImitatorSettings';
 import { ImitatorPanel } from './components/ImitatorPanel';
 import { useEngineAnalysis } from './hooks/useEngineAnalysis';
-import { useImitator } from './hooks/useImitator';
+import { usePredictor, type PredictorProvider } from './hooks/useImitator';
 import type { EngineMode } from '../engine/types';
 import { formatSanWithMoveNumbers } from './utils/formatters';
 
@@ -50,6 +50,10 @@ export function StudySidebar({
   const [multipv, setMultipv] = useState(3);
   const [engineEnabled, setEngineEnabled] = useState(false);
   const [engineMode, setEngineMode] = useState<EngineMode>('auto');
+  const [predictorProvider, setPredictorProvider] = useState<PredictorProvider>('maia');
+  const [predictorTopK, setPredictorTopK] = useState(5);
+  const [predictorElo, setPredictorElo] = useState(1500);
+  const [predictorEnabled, setPredictorEnabled] = useState(false);
 
   // Get the global cache manager instance
   const cacheManager = getCacheManager();
@@ -62,11 +66,12 @@ export function StudySidebar({
     engineMode,
   });
 
-  const imitator = useImitator({
-    enabled: activeTab === 'imitator',
+  const predictor = usePredictor({
+    enabled: activeTab === 'imitator' && predictorEnabled,
     fen: state.currentFen,
-    depth: 14,
-    multipv,
+    provider: predictorProvider,
+    topK: predictorTopK,
+    elo: predictorElo,
   });
 
   // Expose cache stats to window for debugging
@@ -96,42 +101,6 @@ export function StudySidebar({
     });
   }, [engineAnalysis.lines, engineAnalysis.analysisFen]);
 
-  // Imitator handlers
-  const handleAddCoach = () => {
-    const name = imitator.selectedCoach;
-    if (!name) return;
-    imitator.addTarget({
-      id: `coach:${name}`,
-      label: name,
-      source: 'library',
-      player: name,
-      kind: 'coach',
-    });
-  };
-
-  const handleAddPlayer = () => {
-    const player = imitator.playerOptions.find((item) => item.id === imitator.selectedPlayer);
-    if (!player) return;
-    imitator.addTarget({
-      id: `player:${player.id}`,
-      label: player.name,
-      source: 'user',
-      playerId: player.id,
-      kind: 'player',
-    });
-  };
-
-  const handleAddEngine = () => {
-    const engine = imitator.selectedEngine;
-    const label = 'Engine (Auto)';
-    imitator.addTarget({
-      id: `engine:${engine}`,
-      label,
-      engine,
-      kind: 'engine',
-    });
-  };
-
   return (
     <div className="patch-sidebar-content">
       <div className="patch-sidebar-tabs">
@@ -149,15 +118,13 @@ export function StudySidebar({
         >
           Analysis
         </button>
-        {/* Imitator tab temporarily hidden
         <button
           type="button"
           className={`patch-sidebar-tab${activeTab === 'imitator' ? ' is-active' : ''}`}
           onClick={() => setActiveTab('imitator')}
         >
-          Imitator
+          Predictor
         </button>
-        */}
       </div>
 
       {activeTab === 'chapters' && (
@@ -194,34 +161,23 @@ export function StudySidebar({
         </div>
       )}
 
-      {/* Imitator panel temporarily hidden
       {activeTab === 'imitator' && (
         <div className="patch-analysis-scroll">
           <ImitatorSettings
-            coachOptions={imitator.coachOptions}
-            selectedCoach={imitator.selectedCoach}
-            onCoachChange={imitator.setSelectedCoach}
-            coachStatus={imitator.coachStatus}
-            onAddCoach={handleAddCoach}
-            playerOptions={imitator.playerOptions}
-            selectedPlayer={imitator.selectedPlayer}
-            onPlayerChange={imitator.setSelectedPlayer}
-            playerStatus={imitator.playerStatus}
-            onAddPlayer={handleAddPlayer}
-            selectedEngine={imitator.selectedEngine}
-            onEngineChange={imitator.setSelectedEngine}
-            onAddEngine={handleAddEngine}
-            coachError={imitator.coachError}
-            playerError={imitator.playerError}
+            provider={predictorProvider}
+            onProviderChange={setPredictorProvider}
+            topK={predictorTopK}
+            onTopKChange={setPredictorTopK}
+            elo={predictorElo}
+            onEloChange={setPredictorElo}
+            enabled={predictorEnabled}
+            onEnabledChange={setPredictorEnabled}
           />
           <ImitatorPanel
-            targets={imitator.targets}
-            results={imitator.results}
-            onRemoveTarget={imitator.removeTarget}
+            result={predictor.result}
           />
         </div>
       )}
-      */}
     </div>
   );
 }

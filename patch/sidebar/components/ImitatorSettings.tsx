@@ -1,114 +1,81 @@
+/*
+Created at: 2026-07-08 23:23 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:23 EDT
+Last Modified by: Codex
+
+Compact predictor controls for provider, output size, rating and run state.
+*/
+
 import React from 'react';
-import type { ImitatorTarget } from '../hooks/useImitator';
+import type { PredictorProvider } from '../hooks/useImitator';
 
 export interface ImitatorSettingsProps {
-  // Coach
-  coachOptions: string[];
-  selectedCoach: string;
-  onCoachChange: (coach: string) => void;
-  coachStatus: 'idle' | 'loading' | 'ready' | 'error';
-  onAddCoach: () => void;
-
-  // Player
-  playerOptions: Array<{ id: string; name: string }>;
-  selectedPlayer: string;
-  onPlayerChange: (playerId: string) => void;
-  playerStatus: 'idle' | 'loading' | 'ready' | 'error';
-  onAddPlayer: () => void;
-
-  // Engine
-  selectedEngine: 'auto';
-  onEngineChange: (engine: 'auto') => void;
-  onAddEngine: () => void;
-
-  // Errors
-  coachError: string | null;
-  playerError: string | null;
+  provider: PredictorProvider;
+  onProviderChange: (provider: PredictorProvider) => void;
+  topK: number;
+  onTopKChange: (topK: number) => void;
+  elo: number;
+  onEloChange: (elo: number) => void;
+  enabled: boolean;
+  onEnabledChange: (enabled: boolean) => void;
 }
 
 export function ImitatorSettings({
-  coachOptions,
-  selectedCoach,
-  onCoachChange,
-  coachStatus,
-  onAddCoach,
-  playerOptions,
-  selectedPlayer,
-  onPlayerChange,
-  playerStatus,
-  onAddPlayer,
-  selectedEngine,
-  onEngineChange,
-  onAddEngine,
-  coachError,
-  playerError,
+  provider,
+  onProviderChange,
+  topK,
+  onTopKChange,
+  elo,
+  onEloChange,
+  enabled,
+  onEnabledChange,
 }: ImitatorSettingsProps) {
   return (
-    <>
-      <div className="patch-imitator-settings">
-        <div className="patch-imitator-field">
-          <span className="patch-analysis-label">Add Coach</span>
-          <select
-            value={selectedCoach}
-            onChange={(e) => onCoachChange(e.target.value)}
-            disabled={coachStatus !== 'ready'}
-          >
-            {coachStatus === 'loading' && <option>Loading...</option>}
-            {coachStatus === 'error' && <option>Unavailable</option>}
-            {coachStatus === 'ready' &&
-              coachOptions.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-          </select>
-        </div>
-        <button
-          type="button"
-          className="patch-imitator-add"
-          disabled={!selectedCoach || coachStatus !== 'ready'}
-          onClick={onAddCoach}
+    <div className="patch-imitator-settings">
+      <div className="patch-imitator-field">
+        <span className="patch-analysis-label">Predictor</span>
+        <select
+          value={provider}
+          onChange={(e) => onProviderChange(e.target.value as PredictorProvider)}
         >
-          Add
-        </button>
-        <div className="patch-imitator-field">
-          <span className="patch-analysis-label">Add Players</span>
-          <select
-            value={selectedPlayer}
-            onChange={(e) => onPlayerChange(e.target.value)}
-            disabled={playerStatus !== 'ready'}
-          >
-            {playerStatus === 'loading' && <option>Loading...</option>}
-            {playerStatus === 'error' && <option>Unavailable</option>}
-            {playerStatus === 'ready' &&
-              playerOptions.map((player) => (
-                <option key={player.id} value={player.id}>
-                  {player.name}
-                </option>
-              ))}
-          </select>
-        </div>
-        <button
-          type="button"
-          className="patch-imitator-add"
-          disabled={!selectedPlayer || playerStatus !== 'ready'}
-          onClick={onAddPlayer}
-        >
-          Add
-        </button>
-        <div className="patch-imitator-field">
-          <span className="patch-analysis-label">Add Engine</span>
-          <select value={selectedEngine} onChange={(e) => onEngineChange(e.target.value as 'auto')}>
-            <option value="auto">Auto</option>
-          </select>
-        </div>
-        <button type="button" className="patch-imitator-add" onClick={onAddEngine}>
-          Add
-        </button>
+          <option value="maia">Maia</option>
+          <option value="catie">Catie</option>
+        </select>
       </div>
-      {(coachError || playerError) && (
-        <div className="patch-analysis-error">{coachError || playerError}</div>
-      )}
-    </>
+      <div className="patch-imitator-field">
+        <span className="patch-analysis-label">Moves</span>
+        <select value={topK} onChange={(e) => onTopKChange(Number(e.target.value))}>
+          {[3, 5, 8, 10].map((value) => (
+            <option key={value} value={value}>
+              {value}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="patch-imitator-field">
+        <span className="patch-analysis-label">Elo</span>
+        <input
+          type="number"
+          min={100}
+          max={4000}
+          step={100}
+          value={elo}
+          onChange={(e) => onEloChange(Number(e.target.value))}
+        />
+      </div>
+      <div className="patch-imitator-field patch-imitator-toggle">
+        <span className="patch-analysis-label">Run</span>
+        <label className="patch-toggle">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => onEnabledChange(e.target.checked)}
+            aria-label="Predictor"
+          />
+          <span className="patch-toggle-track" />
+        </label>
+      </div>
+    </div>
   );
 }

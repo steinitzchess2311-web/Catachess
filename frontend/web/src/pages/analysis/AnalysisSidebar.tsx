@@ -12,6 +12,9 @@ import { useStudy } from '@patch/studyContext';
 import { useEngineAnalysis } from '@patch/sidebar/hooks/useEngineAnalysis';
 import { AnalysisSettings } from '@patch/sidebar/components/AnalysisSettings';
 import { AnalysisPanel } from '@patch/sidebar/components/AnalysisPanel';
+import { ImitatorSettings } from '@patch/sidebar/components/ImitatorSettings';
+import { ImitatorPanel } from '@patch/sidebar/components/ImitatorPanel';
+import { usePredictor, type PredictorProvider } from '@patch/sidebar/hooks/useImitator';
 import { uciLineToSan } from '@patch/chessJS/uci';
 import type { EngineMode } from '@patch/engine/types';
 import { formatSanWithMoveNumbers } from '@patch/sidebar/utils/formatters';
@@ -21,12 +24,25 @@ export function AnalysisSidebar() {
   const [multipv, setMultipv] = useState(3);
   const [engineEnabled, setEngineEnabled] = useState(false);
   const [engineMode, setEngineMode] = useState<EngineMode>('auto');
+  const [activeTab, setActiveTab] = useState<'analysis' | 'predictor'>('analysis');
+  const [predictorProvider, setPredictorProvider] = useState<PredictorProvider>('maia');
+  const [predictorTopK, setPredictorTopK] = useState(5);
+  const [predictorElo, setPredictorElo] = useState(1500);
+  const [predictorEnabled, setPredictorEnabled] = useState(false);
 
   const engineAnalysis = useEngineAnalysis({
-    enabled: engineEnabled,
+    enabled: activeTab === 'analysis' && engineEnabled,
     fen: state.currentFen,
     multipv,
     engineMode,
+  });
+
+  const predictor = usePredictor({
+    enabled: activeTab === 'predictor' && predictorEnabled,
+    fen: state.currentFen,
+    provider: predictorProvider,
+    topK: predictorTopK,
+    elo: predictorElo,
   });
 
   const formattedLines = useMemo(() => {
@@ -44,22 +60,57 @@ export function AnalysisSidebar() {
 
   return (
     <div className="analysis-sidebar-inner">
-      <AnalysisSettings
-        currentDepth={engineAnalysis.currentDepth}
-        nps={engineAnalysis.nps}
-        multipv={multipv}
-        onMultipvChange={setMultipv}
-        engineMode={engineMode}
-        onEngineModeChange={setEngineMode}
-        engineEnabled={engineEnabled}
-        onEngineEnabledChange={setEngineEnabled}
-      />
-      <AnalysisPanel
-        engineEnabled={engineEnabled}
-        lines={formattedLines}
-        error={engineAnalysis.error}
-        engineLabel={engineMode === 'auto' ? 'Auto engine' : engineMode === 'stockfish' ? 'Stockfish' : 'AlphaZero'}
-      />
+      <div className="patch-sidebar-tabs">
+        <button
+          type="button"
+          className={`patch-sidebar-tab${activeTab === 'analysis' ? ' is-active' : ''}`}
+          onClick={() => setActiveTab('analysis')}
+        >
+          Analysis
+        </button>
+        <button
+          type="button"
+          className={`patch-sidebar-tab${activeTab === 'predictor' ? ' is-active' : ''}`}
+          onClick={() => setActiveTab('predictor')}
+        >
+          Predictor
+        </button>
+      </div>
+      {activeTab === 'analysis' && (
+        <>
+          <AnalysisSettings
+            currentDepth={engineAnalysis.currentDepth}
+            nps={engineAnalysis.nps}
+            multipv={multipv}
+            onMultipvChange={setMultipv}
+            engineMode={engineMode}
+            onEngineModeChange={setEngineMode}
+            engineEnabled={engineEnabled}
+            onEngineEnabledChange={setEngineEnabled}
+          />
+          <AnalysisPanel
+            engineEnabled={engineEnabled}
+            lines={formattedLines}
+            error={engineAnalysis.error}
+            engineLabel={engineMode === 'auto' ? 'Auto engine' : engineMode === 'stockfish' ? 'Stockfish' : 'AlphaZero'}
+          />
+        </>
+      )}
+      {activeTab === 'predictor' && (
+        <>
+          <ImitatorSettings
+            provider={predictorProvider}
+            onProviderChange={setPredictorProvider}
+            topK={predictorTopK}
+            onTopKChange={setPredictorTopK}
+            elo={predictorElo}
+            onEloChange={setPredictorElo}
+            enabled={predictorEnabled}
+            onEnabledChange={setPredictorEnabled}
+          />
+          <ImitatorPanel result={predictor.result} />
+        </>
+      )}
     </div>
   );
 }

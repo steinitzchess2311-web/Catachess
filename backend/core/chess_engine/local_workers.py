@@ -4,7 +4,7 @@ Created by: Codex
 Last Modified at: 2026-07-08 23:30 EDT
 Last Modified by: Codex
 
-Local server-side chess engine workers with cross-process slot limits.
+Local server-side chess engine workers and shared cross-process slot limits.
 """
 
 from __future__ import annotations
@@ -81,7 +81,7 @@ class CrossProcessSlotLimiter:
 
 
 class LocalStockfishWorker:
-    """Short-lived UCI Stockfish process runner protected by a semaphore."""
+    """Short-lived UCI Stockfish process runner protected by a slot limiter."""
 
     def __init__(
         self,

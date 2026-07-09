@@ -1,81 +1,83 @@
+/*
+Created at: 2026-07-08 23:23 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:23 EDT
+Last Modified by: Codex
+
+Predictor result panel for Maia and Catie human move forecasts.
+*/
+
 import React from 'react';
-import type { ImitatorTarget, ImitatorResult } from '../hooks/useImitator';
-import { formatProbability, formatTags } from '../utils/formatters';
+import type { PredictorResult } from '../hooks/useImitator';
+import { formatProbability } from '../utils/formatters';
 
 export interface ImitatorPanelProps {
-  targets: ImitatorTarget[];
-  results: Record<string, ImitatorResult>;
-  onRemoveTarget: (targetId: string) => void;
+  result: PredictorResult;
 }
 
-export function ImitatorPanel({ targets, results, onRemoveTarget }: ImitatorPanelProps) {
-  if (targets.length === 0) {
+export function ImitatorPanel({ result }: ImitatorPanelProps) {
+  if (result.status === 'idle') {
     return (
       <div className="patch-analysis-panel patch-imitator-panel">
         <div className="patch-analysis-empty">
-          Add a coach, player, or engine to generate style-guided moves.
+          Turn on predictor to estimate the next human move.
         </div>
       </div>
     );
   }
 
+  const moves = Array.isArray(result.moves) ? result.moves : [];
   return (
     <div className="patch-analysis-panel patch-imitator-panel">
-      {targets.map((target) => {
-        const result = results[target.id] || { status: 'idle', moves: [] };
-        const moves = Array.isArray(result.moves) ? result.moves : [];
-        return (
-          <div key={target.id} className="patch-imitator-card">
-            <div className="patch-imitator-header">
-              <div>
-                <div className="patch-imitator-title">{target.label}</div>
-                <div className="patch-imitator-meta">
-                  {target.kind === 'engine' ? 'Engine' : target.kind === 'coach' ? 'Coach' : 'Player'}
-                  {result.updated && (
-                    <span className="patch-imitator-updated">
-                      {new Date(result.updated).toLocaleTimeString()}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <button
-                type="button"
-                className="patch-imitator-remove"
-                onClick={() => onRemoveTarget(target.id)}
-              >
-                Remove
-              </button>
+      <div className="patch-imitator-card">
+        <div className="patch-imitator-header">
+          <div>
+            <div className="patch-imitator-title">
+              {result.provider === 'maia' ? 'Maia predictor' : 'Catie predictor'}
             </div>
-            <div className="patch-imitator-status">
-              <span className={`patch-analysis-badge is-${result.status}`}>{result.status}</span>
-              {result.error && <span className="patch-analysis-error">{result.error}</span>}
-            </div>
-            <div className="patch-imitator-moves">
-              {result.status === 'running' && <div className="patch-analysis-empty">Analyzing...</div>}
-              {result.status !== 'running' && moves.length === 0 && (
-                <div className="patch-analysis-empty">No moves yet.</div>
+            <div className="patch-imitator-meta">
+              {result.model || result.provider}
+              {result.updated && (
+                <span className="patch-imitator-updated">
+                  {new Date(result.updated).toLocaleTimeString()}
+                </span>
               )}
-              {moves.map((move, idx) => (
-                <div key={`${target.id}-${idx}`} className="patch-imitator-row">
-                  <div className="patch-imitator-prob">{formatProbability(move.probability)}</div>
-                  <div
-                    className={`patch-imitator-move${
-                      Array.isArray(move.flags) && move.flags.includes('inaccuracy')
-                        ? ' is-inaccuracy'
-                        : ''
-                    }`}
-                  >
-                    {move.move || move.uci}
-                    {move.tags && move.tags.length > 0 && (
-                      <span className="patch-imitator-tags">{formatTags(move.tags)}</span>
-                    )}
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
-        );
-      })}
+        </div>
+        {result.error && (
+          <div className="patch-analysis-error">
+            {normalizePredictorError(result.error)}
+          </div>
+        )}
+        <div className="patch-imitator-moves">
+          {result.status === 'running' && <div className="patch-analysis-empty">Predicting...</div>}
+          {result.status !== 'running' && moves.length === 0 && (
+            <div className="patch-analysis-empty">No moves yet.</div>
+          )}
+          {moves.map((move, idx) => (
+            <div key={`${move.uci || move.move}-${idx}`} className="patch-imitator-row">
+              <div className="patch-imitator-prob">{formatProbability(move.probability)}</div>
+              <div className="patch-imitator-move">
+                <span>{move.san || move.move || move.uci}</span>
+                {move.uci && move.san && move.uci !== move.san && (
+                  <span className="patch-imitator-tags">{move.uci}</span>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
+}
+
+function normalizePredictorError(error: string): string {
+  try {
+    const parsed = JSON.parse(error);
+    if (typeof parsed?.detail === 'string') return parsed.detail;
+  } catch {
+    // Keep plain transport errors readable without exposing parser details.
+  }
+  return error;
 }

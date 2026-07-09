@@ -1,7 +1,7 @@
 # Backend Routers
 Created at: 2026-07-08 21:41 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 23:05 EDT
+Last Modified at: 2026-07-08 23:25 EDT
 Last Modified by: Codex
 
 ## brief intro
@@ -12,6 +12,7 @@ Last Modified by: Codex
 |-README.md intro to this folder
 |-user_profile.py user profile and public profile endpoints
 |-chess_engine.py engine analyze/cache/health/queue endpoints
+|-predictor.py Maia/Catie human move predictor endpoints
 
 ## 代办
 - Expand this README with the remaining live router files after the router inventory is documented.

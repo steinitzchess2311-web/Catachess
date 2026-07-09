@@ -1,4 +1,11 @@
-/* Patch Study Page Styles */
+/*
+Created at: 2026-07-08 23:23 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:23 EDT
+Last Modified by: Codex
+
+Patch study, workspace, engine and predictor product styling.
+*/
 @import "../modules/user_games/user_games.css";
 @import "../modules/user_profile/user_profile.css";
 
@@ -952,18 +959,18 @@ main {
 
 .patch-imitator-settings {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 10px 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
   align-items: end;
-  border-radius: 10px;
-  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px;
   background: #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: all 0.3s ease;
+  box-shadow: none;
 }
 
 .patch-imitator-settings:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), 0 2px 5px rgba(0, 0, 0, 0.06);
+  box-shadow: none;
 }
 
 .patch-imitator-field {
@@ -976,44 +983,43 @@ main {
 .patch-imitator-field select {
   font-size: 12px;
   width: 100%;
+  min-height: 32px;
+  border: 1px solid rgba(20, 25, 34, 0.14);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  padding: 0 8px;
 }
 
-.patch-imitator-add {
-  background: #242424;
-  color: #fff;
-  border-radius: 6px;
-  padding: 6px 10px;
+.patch-imitator-field input {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid rgba(20, 25, 34, 0.14);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111827;
+  padding: 0 8px;
+  box-sizing: border-box;
   font-size: 12px;
-  cursor: pointer;
-  height: 28px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
-  transition: box-shadow 0.2s, transform 0.2s;
 }
 
-.patch-imitator-add:hover:not(:disabled) {
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18), 0 2px 4px rgba(0, 0, 0, 0.12);
-  transform: translateY(-1px);
-}
-
-.patch-imitator-add:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.patch-imitator-toggle {
+  justify-content: flex-start;
 }
 
 .patch-imitator-card {
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 0;
+  padding: 12px 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: all 0.3s ease;
+  background: #ffffff;
+  box-shadow: none;
 }
 
 .patch-imitator-card:hover {
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1), 0 2px 5px rgba(0, 0, 0, 0.06);
-  transform: translateY(-1px);
+  box-shadow: none;
+  transform: none;
 }
 
 .patch-imitator-header {
@@ -1079,23 +1085,23 @@ main {
 
 .patch-imitator-prob {
   text-align: right;
-  color: #111;
+  color: #2563eb;
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
 }
 
 .patch-imitator-move {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  color: #333;
-}
-
-.patch-imitator-move.is-inaccuracy {
-  color: #ff6a3d;
+  color: #111827;
+  font-weight: 650;
 }
 
 .patch-imitator-tags {
-  color: #777;
+  color: #64748b;
   font-size: 11px;
+  font-weight: 500;
 }
 
 .patch-analysis-status {

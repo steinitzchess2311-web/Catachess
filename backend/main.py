@@ -1,4 +1,9 @@
 """
+Created at: 2026-07-08 23:23 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:23 EDT
+Last Modified by: Codex
+
 Catachess Backend - Main FastAPI Application
 
 This is the entry point for the Catachess backend API.
@@ -21,7 +26,7 @@ if str(project_root) not in sys.path:
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import auth, assignments, user_profile, game_storage, chess_engine, chess_rules, imitator, tagger_router, blog_admin, user_statistics
+from routers import auth, assignments, user_profile, game_storage, chess_engine, chess_rules, imitator, predictor, tagger_router, blog_admin, user_statistics
 from modules.workspace.api.router import api_router as workspace_router
 from modules.blogs.api.router import router as blog_router
 from modules.pgn_fen_import_export.api import router as import_export_router
@@ -761,6 +766,7 @@ app.include_router(game_storage.router)
 app.include_router(chess_engine.router)
 app.include_router(chess_rules.router)
 app.include_router(imitator.router)
+app.include_router(predictor.router)
 app.include_router(tagger_router)
 app.include_router(blog_admin.router)
 app.include_router(blog_router)

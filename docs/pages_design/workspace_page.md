@@ -3,7 +3,7 @@
 ## Header
 Created at: 2026-07-08 18:02 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 20:33 EDT
+Last Modified at: 2026-07-08 20:58 EDT
 Last Modified by: Codex
 
 ## Page Job
@@ -40,3 +40,4 @@ Last Modified by: Codex
 - Node action headers show type and title only; created/updated dates belong in the body metadata block.
 - Destructive actions use red only for the destructive control and supporting warning state.
 - Share settings use three visibility choices: Public, Private, Shared.
+- Share visibility cards show only icon and label; explanatory subcopy is omitted.

@@ -3,7 +3,7 @@
 ## header
 Created at: 2026-07-08 20:12 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 20:12 EDT
+Last Modified at: 2026-07-08 20:58 EDT
 Last Modified by: Codex
 
 ## brief intro
@@ -26,7 +26,7 @@ Last Modified by: Codex
 |-MoveModal.css move modal folder picker styles
 |-NodeActionsModal.tsx action sheet for workspace nodes with title-only header and body metadata
 |-NodeActionsModal.css action sheet compatibility styles
-|-NodeShareModal.tsx visibility and user sharing dialog
+|-NodeShareModal.tsx icon-label visibility choices and user sharing dialog
 |-NodeShareModal.css share dialog custom styles
 |-RenameModal.tsx renames workspace nodes
 |-RenameModal.css rename modal compatibility styles

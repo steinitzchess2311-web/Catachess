@@ -23,10 +23,10 @@ interface NodeShareModalProps {
   onClose: () => void;
 }
 
-const VIS: { value: VisMode; icon: React.ReactNode; label: string; desc: string }[] = [
-  { value: 'public',  icon: <GlobeIcon width="18" height="18" />, label: 'Public',  desc: 'Anyone can view' },
-  { value: 'private', icon: <LockClosedIcon width="18" height="18" />, label: 'Private', desc: 'Only you' },
-  { value: 'shared',  icon: <Share2Icon width="18" height="18" />, label: 'Shared',  desc: 'Specific people' },
+const VIS: { value: VisMode; icon: React.ReactNode; label: string }[] = [
+  { value: 'public',  icon: <GlobeIcon width="18" height="18" />, label: 'Public' },
+  { value: 'private', icon: <LockClosedIcon width="18" height="18" />, label: 'Private' },
+  { value: 'shared',  icon: <Share2Icon width="18" height="18" />, label: 'Shared' },
 ];
 
 const CASCADE_HINT: Record<VisMode, string | null> = {
@@ -169,7 +169,7 @@ const NodeShareModal: React.FC<NodeShareModalProps> = ({ node, onClose }) => {
           {/* Visibility section */}
           <span className="nsm-section-label">Visibility</span>
           <div className="nsm-vis-grid">
-            {VIS.map(({ value, icon, label, desc }) => {
+            {VIS.map(({ value, icon, label }) => {
               const active = visibility === value;
               return (
                 <button
@@ -182,7 +182,6 @@ const NodeShareModal: React.FC<NodeShareModalProps> = ({ node, onClose }) => {
                   {active && <DotFilledIcon className="nsm-vis-dot" width="16" height="16" aria-hidden="true" />}
                   <span className="nsm-vis-icon">{icon}</span>
                   <span className="nsm-vis-label">{label}</span>
-                  <span className="nsm-vis-desc">{desc}</span>
                 </button>
               );
             })}

@@ -1,4 +1,9 @@
-// ─── /classroom/:id ── Classroom detail ──────────────────────────────────────
+/*
+Created at: 2026-07-08 23:58:19 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:58:19 EDT
+Last Modified by: Codex
+*/
 
 import React, { useEffect, useState } from 'react';
 import { Link, useParams, useNavigate, useLocation } from 'react-router-dom';
@@ -13,6 +18,14 @@ import { WorkspaceShareModal } from './components/WorkspaceShareModal';
 import './classroom.css';
 
 type Tab = 'overview' | 'assignments' | 'members';
+
+interface ConfirmAction {
+  title: string;
+  message: string;
+  confirmLabel: string;
+  tone?: 'danger' | 'primary';
+  run: () => Promise<void>;
+}
 
 export const ClassroomDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -34,6 +47,7 @@ export const ClassroomDetailPage: React.FC = () => {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareSuccessMsg, setShareSuccessMsg] = useState<string | null>(null);
   const [contactLoading, setContactLoading] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -67,7 +81,7 @@ export const ClassroomDetailPage: React.FC = () => {
   const memberCount = classroom?.member_count ?? 0;
 
   async function handleArchive() {
-    if (!classroom || !confirm(`Archive "${classroom.name}"? Members can still view it, but no new tasks can be posted.`)) return;
+    if (!classroom) return;
     try {
       if (classroom.archived_at) {
         await unarchiveClassroom(classroom.id);
@@ -76,28 +90,67 @@ export const ClassroomDetailPage: React.FC = () => {
       }
       setClassroom(prev => prev ? ({ ...prev, archived_at: prev.archived_at ? null : new Date().toISOString() }) : prev);
     } catch (err: any) {
-      alert(err?.message || 'Failed to update archive status.');
+      setError(err?.message || 'Failed to update archive status.');
     }
   }
 
   async function handleDelete() {
-    if (!classroom || !confirm(`Permanently dissolve "${classroom.name}"? This cannot be undone.`)) return;
+    if (!classroom) return;
     try {
       await deleteClassroom(classroom.id);
       navigate('/classroom');
     } catch (err: any) {
-      alert(err?.message || 'Failed to delete classroom.');
+      setError(err?.message || 'Failed to delete classroom.');
     }
   }
 
   async function handleLeave() {
-    if (!classroom || !confirm(`Leave "${classroom.name}"?`)) return;
+    if (!classroom) return;
     try {
       await leaveClassroom(classroom.id);
       navigate('/classroom');
     } catch (err: any) {
-      alert(err?.message || 'Failed to leave classroom.');
+      setError(err?.message || 'Failed to leave classroom.');
     }
+  }
+
+  function requestArchive() {
+    if (!classroom) return;
+    const restoring = Boolean(classroom.archived_at);
+    setShowMore(false);
+    setConfirmAction({
+      title: restoring ? 'Unarchive classroom' : 'Archive classroom',
+      message: restoring
+        ? `"${classroom.name}" will return to the active classroom list.`
+        : `"${classroom.name}" will stay visible, but new tasks should not be posted while it is archived.`,
+      confirmLabel: restoring ? 'Unarchive' : 'Archive',
+      tone: 'primary',
+      run: handleArchive,
+    });
+  }
+
+  function requestDelete() {
+    if (!classroom) return;
+    setShowMore(false);
+    setConfirmAction({
+      title: 'Dissolve classroom',
+      message: `"${classroom.name}" will be permanently deleted. This cannot be undone.`,
+      confirmLabel: 'Dissolve class',
+      tone: 'danger',
+      run: handleDelete,
+    });
+  }
+
+  function requestLeave() {
+    if (!classroom) return;
+    setShowMore(false);
+    setConfirmAction({
+      title: 'Leave classroom',
+      message: `You will lose access to "${classroom.name}".`,
+      confirmLabel: 'Leave class',
+      tone: 'danger',
+      run: handleLeave,
+    });
   }
 
   if (loading) {
@@ -127,7 +180,7 @@ export const ClassroomDetailPage: React.FC = () => {
           <div className="cl-empty" style={{ marginTop: '3rem' }}>
             <p className="cl-empty__title">{error || 'Classroom not found'}</p>
             <Link to="/classroom" className="cl-btn cl-btn-secondary" style={{ marginTop: '0.5rem', textDecoration: 'none' }}>
-              ← Back to Classrooms
+              Back to classrooms
             </Link>
           </div>
         </div>
@@ -170,7 +223,7 @@ export const ClassroomDetailPage: React.FC = () => {
                   setCreateRequestToken(t => t + 1);
                 }}
               >
-                + Create Assignment
+                Create assignment
               </button>
             ) : (
               <div className="cl-more-wrap">
@@ -185,7 +238,6 @@ export const ClassroomDetailPage: React.FC = () => {
                 </button>
                 {showContactMenu && (
                   <ContactTeacherMenu
-                    classroomId={classroom.id}
                     loading={contactLoading}
                     onMessage={async () => {
                       if (contactLoading) return;
@@ -199,7 +251,7 @@ export const ClassroomDetailPage: React.FC = () => {
                           'noopener,noreferrer',
                         );
                       } catch (err: any) {
-                        alert(err?.message || 'Failed to open chat');
+                        setError(err?.message || 'Failed to open chat.');
                       } finally {
                         setContactLoading(false);
                         setShowContactMenu(false);
@@ -225,7 +277,7 @@ export const ClassroomDetailPage: React.FC = () => {
             )}
 
             <button className="cl-btn cl-btn-secondary cl-btn-sm" onClick={() => openClassChat(classroom.id)}>
-              Open Class Chat →
+              Class chat
             </button>
 
             <div className="cl-more-wrap">
@@ -240,9 +292,9 @@ export const ClassroomDetailPage: React.FC = () => {
                   classroom={classroom}
                   isTeacher={isTeacher}
                   isOwner={isOwner}
-                  onArchive={handleArchive}
-                  onDelete={handleDelete}
-                  onLeave={handleLeave}
+                  onArchive={requestArchive}
+                  onDelete={requestDelete}
+                  onLeave={requestLeave}
                   onRename={async (name) => {
                     const updated = await renameClassroom(classroom.id, name);
                     setClassroom(prev => ({
@@ -316,18 +368,22 @@ export const ClassroomDetailPage: React.FC = () => {
       )}
 
       {shareSuccessMsg && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'var(--cl-bg-success, #d4edda)', color: 'var(--cl-text-success, #155724)', padding: '8px 18px', borderRadius: 8, fontSize: '0.85rem', zIndex: 1000 }}>
+        <div className="cl-toast">
           {shareSuccessMsg}
         </div>
+      )}
+
+      {confirmAction && (
+        <ConfirmDialog
+          action={confirmAction}
+          onClose={() => setConfirmAction(null)}
+        />
       )}
     </div>
   );
 };
 
-// ── Contact Teacher dropdown ──────────────────────────────────────────────────
-
 interface ContactTeacherMenuProps {
-  classroomId: string;
   loading: boolean;
   onMessage: () => void;
   onShare: () => void;
@@ -347,7 +403,7 @@ const ContactTeacherMenu: React.FC<ContactTeacherMenuProps> = ({ loading, onMess
   return (
     <div className="cl-settings-dropdown">
       <button className="cl-menu-item" onClick={onMessage} disabled={loading}>
-        {loading ? 'Opening…' : 'Message via CataChat'}
+        {loading ? 'Opening...' : 'Message via CataChat'}
       </button>
       <button className="cl-menu-item" onClick={onShare}>
         Share Workspace
@@ -355,8 +411,6 @@ const ContactTeacherMenu: React.FC<ContactTeacherMenuProps> = ({ loading, onMess
     </div>
   );
 };
-
-// ── More menu ─────────────────────────────────────────────────────────────────
 
 interface ClassroomMoreMenuProps {
   classroom: Classroom;
@@ -428,7 +482,7 @@ const ClassroomMoreMenu: React.FC<ClassroomMoreMenuProps> = ({
                 }
               }}
             >
-              {renameLoading ? 'Saving…' : 'Save'}
+              {renameLoading ? 'Saving...' : 'Save'}
             </button>
           </div>
         </div>
@@ -452,14 +506,14 @@ const ClassroomMoreMenu: React.FC<ClassroomMoreMenuProps> = ({
       {isOwner && (
         <>
           <button className="cl-menu-item" onClick={() => setRenaming(true)}>Rename Classroom</button>
-          <button className="cl-menu-item" onClick={() => { onArchive(); onClose(); }}>
+          <button className="cl-menu-item" onClick={onArchive}>
             {classroom.archived_at ? 'Unarchive' : 'Archive'}
           </button>
         </>
       )}
 
       {!isOwner && (
-        <button className="cl-menu-item cl-menu-item--danger" onClick={() => { onLeave(); onClose(); }}>
+        <button className="cl-menu-item cl-menu-item--danger" onClick={onLeave}>
           Leave Class
         </button>
       )}
@@ -467,11 +521,54 @@ const ClassroomMoreMenu: React.FC<ClassroomMoreMenuProps> = ({
       {isOwner && (
         <>
           <hr className="cl-menu-divider" />
-          <button className="cl-menu-item cl-menu-item--danger" onClick={() => { onDelete(); onClose(); }}>
+          <button className="cl-menu-item cl-menu-item--danger" onClick={onDelete}>
             Dissolve Class
           </button>
         </>
       )}
+    </div>
+  );
+};
+
+const ConfirmDialog: React.FC<{ action: ConfirmAction; onClose: () => void }> = ({ action, onClose }) => {
+  const [running, setRunning] = useState(false);
+
+  async function handleConfirm() {
+    setRunning(true);
+    try {
+      await action.run();
+      onClose();
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <div className="cl-overlay" onClick={e => e.target === e.currentTarget && !running && onClose()}>
+      <div className="cl-modal cl-modal--confirm" role="dialog" aria-modal="true" aria-labelledby="cl-confirm-title">
+        <div className="cl-modal__header">
+          <h2 className="cl-modal__title" id="cl-confirm-title">{action.title}</h2>
+          <button className="cl-btn-icon" onClick={onClose} aria-label="Close" disabled={running}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div className="cl-modal__body">
+          <p className="cl-confirm-copy">{action.message}</p>
+        </div>
+        <div className="cl-modal__footer">
+          <button type="button" className="cl-btn cl-btn-secondary" onClick={onClose} disabled={running}>Cancel</button>
+          <button
+            type="button"
+            className={`cl-btn ${action.tone === 'danger' ? 'cl-btn-danger' : 'cl-btn-primary'}`}
+            onClick={handleConfirm}
+            disabled={running}
+          >
+            {running ? 'Working...' : action.confirmLabel}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

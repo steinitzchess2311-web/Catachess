@@ -1,4 +1,9 @@
-// ─── BroadcastPanel — teacher view: manage sent announcements ─────────────────
+/*
+Created at: 2026-07-08 23:58:19 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:58:19 EDT
+Last Modified by: Codex
+*/
 
 import React, { useEffect, useState } from 'react';
 import { listBroadcasts, deleteBroadcast } from '../api';
@@ -23,6 +28,9 @@ function timeAgo(iso: string): string {
 export const BroadcastPanel: React.FC<Props> = ({ classroomId, refreshKey }) => {
   const [items, setItems] = useState<BroadcastItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<BroadcastItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -32,17 +40,26 @@ export const BroadcastPanel: React.FC<Props> = ({ classroomId, refreshKey }) => 
       .finally(() => setLoading(false));
   }, [classroomId, refreshKey]);
 
-  async function handleDelete(id?: string) {
-    if (!id) {
-      alert('Announcement id is missing. Refresh and try again.');
+  async function handleDelete(item: BroadcastItem) {
+    if (!item.id) {
+      setError('Announcement id is missing. Refresh and try again.');
       return;
     }
-    if (!confirm('Delete this announcement?')) return;
+    setDeleteTarget(item);
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget?.id) return;
+    setDeleting(true);
+    setError('');
     try {
-      await deleteBroadcast(classroomId, id);
-      setItems(prev => prev.filter(i => i.id !== id));
+      await deleteBroadcast(classroomId, deleteTarget.id);
+      setItems(prev => prev.filter(i => i.id !== deleteTarget.id));
+      setDeleteTarget(null);
     } catch {
-      alert('Failed to delete announcement.');
+      setError('Failed to delete announcement.');
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -51,9 +68,10 @@ export const BroadcastPanel: React.FC<Props> = ({ classroomId, refreshKey }) => 
       <div className="cl-section-header" style={{ marginBottom: '0.75rem' }}>
         <h3 className="cl-section-title">Announcements</h3>
       </div>
+      {error && <div className="cl-error-banner" style={{ marginBottom: '0.75rem' }}>{error}</div>}
 
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div className="cl-stack-loading">
           {[...Array(2)].map((_, i) => (
             <div key={i} className="cl-skeleton" style={{ height: 52, borderRadius: 8 }} />
           ))}
@@ -63,42 +81,24 @@ export const BroadcastPanel: React.FC<Props> = ({ classroomId, refreshKey }) => 
           No announcements sent yet.
         </p>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div className="cl-broadcast-list">
           {items.map(item => (
             <div
               key={item.id}
-              style={{
-                background: 'var(--cl-surface)',
-                border: '1.5px solid var(--cl-border)',
-                borderRadius: 8,
-                padding: '0.65rem 0.9rem',
-                display: 'flex',
-                gap: '0.75rem',
-                alignItems: 'flex-start',
-              }}
+              className="cl-broadcast-item"
             >
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{
-                  margin: '0 0 4px',
-                  fontSize: '0.87rem',
-                  color: 'var(--cl-text)',
-                  lineHeight: 1.45,
-                  whiteSpace: 'pre-wrap',
-                  overflow: 'hidden',
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                } as React.CSSProperties}>
+                <p className="cl-broadcast-copy">
                   {item.content}
                 </p>
-                <span style={{ fontSize: '0.73rem', color: 'var(--cl-text-muted)' }}>
+                <span className="cl-broadcast-time">
                   {timeAgo(item.created_at)}
                 </span>
               </div>
               <button
                 className="cl-btn-icon"
                 title="Delete announcement"
-                onClick={() => handleDelete(item.id)}
+                onClick={() => handleDelete(item)}
                 style={{ color: 'var(--cl-text-muted)', flexShrink: 0, marginTop: 2 }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -109,6 +109,30 @@ export const BroadcastPanel: React.FC<Props> = ({ classroomId, refreshKey }) => 
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="cl-overlay" onClick={e => e.target === e.currentTarget && !deleting && setDeleteTarget(null)}>
+          <div className="cl-modal cl-modal--confirm" role="dialog" aria-modal="true" aria-labelledby="delete-announcement-title">
+            <div className="cl-modal__header">
+              <h2 className="cl-modal__title" id="delete-announcement-title">Delete announcement</h2>
+              <button className="cl-btn-icon" onClick={() => setDeleteTarget(null)} aria-label="Close" disabled={deleting}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div className="cl-modal__body">
+              <p className="cl-confirm-copy">This announcement will be removed from the classroom.</p>
+            </div>
+            <div className="cl-modal__footer">
+              <button className="cl-btn cl-btn-secondary" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancel</button>
+              <button className="cl-btn cl-btn-danger" onClick={confirmDelete} disabled={deleting}>
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

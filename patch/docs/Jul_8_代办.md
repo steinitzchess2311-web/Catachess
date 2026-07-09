@@ -24,7 +24,8 @@ predictor 功能：
 
 classroom 功能
 
-- 全部页面前端参考 workspace/ 和 study 内部产品级别的重构。包括弹窗
+-[✅] 全部页面前端参考 workspace/ 和 study 内部产品级别的重构。包括弹窗
+  - 2026-07-09 00:20 EDT：已完成 classroom list/detail、核心 tabs/cards、create/join/add member/broadcast/assignment/stats/detail/confirm 弹窗的蓝白产品化重构；主 classroom 操作不再使用浏览器原生 confirm/alert。`npm run build` 通过，Playwright + mock API 截图自检覆盖 list/detail/create modal/confirm modal。
 
 study 权限
 

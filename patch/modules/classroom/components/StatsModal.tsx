@@ -1,3 +1,10 @@
+/*
+Created at: 2026-07-08 23:58:19 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:58:19 EDT
+Last Modified by: Codex
+*/
+
 import React, { useEffect, useState } from 'react';
 import { getAssignmentStats, listForks, downloadMaterialUrl } from '../api';
 import type { AssignmentStats, Assignment, MaterialFork } from '../types';
@@ -66,7 +73,7 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
            style={{ maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
         <div className="cl-modal__header">
           <div>
-            <h2 className="cl-modal__title" id="stats-modal-title">Submission Stats</h2>
+            <h2 className="cl-modal__title" id="stats-modal-title">Submission stats</h2>
             <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'var(--cl-text-secondary)' }}>{assignment.title}</p>
           </div>
           <button className="cl-btn-icon" onClick={onClose} aria-label="Close">
@@ -85,13 +92,11 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
 
           {error && <div className="cl-error-banner">{error}</div>}
 
-          {/* Material source info — always visible for material assignments */}
           {isMaterial && (
             <div style={{ marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {/* Study section */}
               {hasStudy && (
                 <div>
-                  <p className="cl-section-label" style={{ marginBottom: '0.4rem' }}>Workspace Study</p>
+                  <p className="cl-section-label" style={{ marginBottom: '0.4rem' }}>Workspace study</p>
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: '0.6rem',
                     background: 'var(--cl-bg)',
@@ -99,16 +104,14 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
                     borderRadius: 8,
                     padding: '0.6rem 0.8rem',
                   }}>
-                    <span style={{ fontSize: '1.1rem' }}>📖</span>
                     <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 500 }}>Workspace study</p>
                   </div>
                 </div>
               )}
 
-              {/* Uploaded materials section */}
               {uploads.length > 0 && (
                 <div>
-                  <p className="cl-section-label" style={{ marginBottom: '0.4rem' }}>Uploaded Materials</p>
+                  <p className="cl-section-label" style={{ marginBottom: '0.4rem' }}>Uploaded materials</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {uploads.map((u, i) => (
                       <div key={u.key || i} style={{
@@ -118,7 +121,6 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
                         borderRadius: 8,
                         padding: '0.6rem 0.8rem',
                       }}>
-                        <span style={{ fontSize: '1.1rem' }}>📎</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {u.name || 'Uploaded file'}
@@ -175,7 +177,6 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
 
           {stats && (
             <>
-              {/* Overview chips */}
               <div className="cl-stats-overview">
                 {isMaterial ? (
                   <>
@@ -196,11 +197,11 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
                     </div>
                     <div className="cl-stat-chip cl-stat-chip--accent">
                       <span className="cl-stat-chip__value">{stats.in_progress}</span>
-                      <span className="cl-stat-chip__label">In Progress</span>
+                      <span className="cl-stat-chip__label">In progress</span>
                     </div>
                     <div className="cl-stat-chip">
                       <span className="cl-stat-chip__value">{stats.not_started}</span>
-                      <span className="cl-stat-chip__label">Not Started</span>
+                      <span className="cl-stat-chip__label">Not started</span>
                     </div>
                     <div className="cl-stat-chip cl-stat-chip--overdue">
                       <span className="cl-stat-chip__value">{stats.overdue}</span>
@@ -209,17 +210,16 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
                     {stats.avg_score != null && (
                       <div className="cl-stat-chip cl-stat-chip--accent">
                         <span className="cl-stat-chip__value">{Math.round(stats.avg_score * 100)}%</span>
-                        <span className="cl-stat-chip__label">Avg Score</span>
+                        <span className="cl-stat-chip__label">Avg score</span>
                       </div>
                     )}
                   </>
                 )}
               </div>
 
-              {/* Per-student table */}
               {stats.per_student.length > 0 && (
                 <div>
-                  <p className="cl-section-label" style={{ marginBottom: '0.6rem' }}>Per Student</p>
+                  <p className="cl-section-label" style={{ marginBottom: '0.6rem' }}>Per student</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                     {stats.per_student.map(s => (
                       <div key={s.username} style={{
@@ -253,10 +253,9 @@ export const StatsModal: React.FC<Props> = ({ classroomId, assignment, onClose }
             </>
           )}
 
-          {/* Material forks section (study materials only) */}
           {isStudyMaterial && (
             <div style={{ marginTop: '1.25rem' }}>
-              <p className="cl-section-label" style={{ marginBottom: '0.6rem' }}>Student Forks</p>
+              <p className="cl-section-label" style={{ marginBottom: '0.6rem' }}>Student forks</p>
               {forksLoading ? (
                 <div className="cl-skeleton" style={{ height: 32, borderRadius: 6 }} />
               ) : forks.length === 0 ? (

@@ -1,3 +1,10 @@
+/*
+Created at: 2026-07-08 23:58:19 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:58:19 EDT
+Last Modified by: Codex
+*/
+
 import React, { useState } from 'react';
 import { createClassroom } from '../api';
 import type { Classroom } from '../types';
@@ -32,7 +39,7 @@ export const CreateClassroomModal: React.FC<Props> = ({ onClose, onCreated }) =>
     <div className="cl-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="cl-modal" role="dialog" aria-modal="true" aria-labelledby="create-modal-title">
         <div className="cl-modal__header">
-          <h2 className="cl-modal__title" id="create-modal-title">New Classroom</h2>
+          <h2 className="cl-modal__title" id="create-modal-title">New classroom</h2>
           <button className="cl-btn-icon" onClick={onClose} aria-label="Close">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
@@ -44,21 +51,20 @@ export const CreateClassroomModal: React.FC<Props> = ({ onClose, onCreated }) =>
               <input
                 id="cl-new-name"
                 className="cl-input"
-                placeholder="e.g. Beginner Group A"
+                placeholder="Beginner Group A"
                 value={name}
                 onChange={e => setName(e.target.value)}
                 maxLength={80}
                 autoFocus
                 required
               />
-              <span className="cl-input-hint">A catachat group will be created automatically.</span>
             </div>
             {error && <div className="cl-error-banner">{error}</div>}
           </div>
           <div className="cl-modal__footer">
             <button type="button" className="cl-btn cl-btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="cl-btn cl-btn-primary" disabled={loading || !name.trim()}>
-              {loading ? 'Creating…' : 'Create'}
+              {loading ? 'Creating...' : 'Create'}
             </button>
           </div>
         </form>

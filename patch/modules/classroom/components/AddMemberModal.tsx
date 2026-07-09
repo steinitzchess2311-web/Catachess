@@ -1,4 +1,9 @@
-// ─── AddMemberModal — search user then add to classroom ──────────────────────
+/*
+Created at: 2026-07-08 23:58:19 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:58:19 EDT
+Last Modified by: Codex
+*/
 
 import React, { useState, useRef } from 'react';
 import { api } from '@ui/assets/api';
@@ -73,11 +78,10 @@ export const AddMemberModal: React.FC<Props> = ({ classroomId, onClose, onAdded 
 
         <div className="cl-modal__body">
 
-          {/* Step 1 — Search */}
           <form onSubmit={handleSearch}>
             <div className="cl-field">
               <label className="cl-label" htmlFor="add-member-search">Search by username</label>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <div className="cl-inline-row">
                 <input
                   id="add-member-search"
                   ref={inputRef}
@@ -95,42 +99,28 @@ export const AddMemberModal: React.FC<Props> = ({ classroomId, onClose, onAdded 
                   disabled={searching || !query.trim()}
                   style={{ flexShrink: 0 }}
                 >
-                  {searching ? 'Searching…' : 'Search'}
+                  {searching ? 'Searching...' : 'Search'}
                 </button>
               </div>
               {searchError && (
-                <span style={{ fontSize: '0.78rem', color: 'var(--cl-overdue)', marginTop: 4, display: 'block' }}>
+                <span className="cl-inline-error">
                   {searchError}
                 </span>
               )}
             </div>
           </form>
 
-          {/* Step 2 — Result + role + confirm */}
           {found && (
-            <div style={{
-              marginTop: '0.75rem',
-              background: 'var(--cl-bg)',
-              border: '1.5px solid var(--cl-border)',
-              borderRadius: 10,
-              padding: '0.85rem 1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-            }}>
-              {/* Avatar */}
-              <div style={{
-                width: 36, height: 36, borderRadius: '50%',
-                background: found.username ? avatarColor(found.username) : 'var(--cl-accent)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontWeight: 700, fontSize: '0.9rem', flexShrink: 0,
-              }}>
+            <div className="cl-user-result">
+              <div
+                className="cl-user-result__avatar"
+                style={{ background: found.username ? avatarColor(found.username) : 'var(--cl-accent)' }}
+              >
                 {found.username?.[0]?.toUpperCase()}
               </div>
 
-              <span style={{ fontSize: '0.9rem', fontWeight: 600, flex: 1 }}>{found.username}</span>
+              <span className="cl-user-result__name">{found.username}</span>
 
-              {/* Role selector */}
               <select
                 className="cl-select"
                 value={role}
@@ -141,14 +131,13 @@ export const AddMemberModal: React.FC<Props> = ({ classroomId, onClose, onAdded 
                 <option value="teacher">Teacher</option>
               </select>
 
-              {/* Add button */}
               <button
                 className="cl-btn cl-btn-primary cl-btn-sm"
                 onClick={handleAdd}
                 disabled={adding}
                 style={{ flexShrink: 0 }}
               >
-                {adding ? 'Adding…' : 'Add'}
+                {adding ? 'Adding...' : 'Add'}
               </button>
             </div>
           )}

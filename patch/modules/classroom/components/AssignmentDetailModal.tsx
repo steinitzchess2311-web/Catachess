@@ -1,4 +1,9 @@
-// ─── AssignmentDetailModal — student view: full details + submission flow ─────
+/*
+Created at: 2026-07-08 23:58:19 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:58:19 EDT
+Last Modified by: Codex
+*/
 
 import React, { useEffect, useState } from 'react';
 import { upsertSubmission, getMySubmission, openMaterial, downloadMaterialUrl } from '../api';
@@ -26,16 +31,11 @@ function parseSourceRef(ref: string | null | undefined): { study_id?: string; up
   if (!ref) return { uploads: [] };
   try {
     const parsed = JSON.parse(ref);
-    // New multi-upload format: { study_id?, uploads: [...] }
     if (parsed.uploads) return { study_id: parsed.study_id, uploads: parsed.uploads };
-    // Legacy single-upload format: { key, name, size, content_type }
     if (parsed.key) return { uploads: [parsed as UploadEntry] };
-    // Study-only format: { study_id }
     if (parsed.study_id) return { study_id: parsed.study_id, uploads: [] };
-    // Plain string study_id (oldest format)
     return { uploads: [] };
   } catch {
-    // source_ref is a plain study ID string
     return { study_id: ref, uploads: [] };
   }
 }
@@ -52,7 +52,7 @@ export const AssignmentDetailModal: React.FC<Props> = ({
   const [error, setError] = useState('');
   const [confirmed, setConfirmed] = useState(false);
   const [openingStudy, setOpeningStudy] = useState(false);
-  const [busyKey, setBusyKey] = useState<string | null>(null); // key of file being previewed/downloaded
+  const [busyKey, setBusyKey] = useState<string | null>(null);
 
   const isMaterial = assignment.category === 'material';
   const sourceInfo = isMaterial ? parseSourceRef(assignment.source_ref) : { uploads: [] };
@@ -61,22 +61,19 @@ export const AssignmentDetailModal: React.FC<Props> = ({
   const [markedDone, setMarkedDone] = useState(false);
   const isInstructionsOnly = isMaterial && !hasStudy && uploads.length === 0;
 
-  // ── Auto-mark material as done on first interaction ─────────────────
   function markMaterialDone() {
     if (!isMaterial || markedDone) return;
     setMarkedDone(true);
     upsertSubmission(classroomId, assignment.id, { status: 'submitted' })
       .then(() => onSubmitted())
-      .catch(() => {}); // best-effort
+      .catch(() => {});
   }
 
-  // Instructions-only materials: auto-submit on open (read = done)
   useEffect(() => {
     if (isInstructionsOnly && !markedDone) markMaterialDone();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isInstructionsOnly]);
 
-  // ── Study: call open-material API → share ACL → open new tab ──────────
   async function handleOpenStudy() {
     if (openingStudy) return;
     setOpeningStudy(true);
@@ -84,7 +81,6 @@ export const AssignmentDetailModal: React.FC<Props> = ({
     try {
       const res = await openMaterial(classroomId, assignment.id);
       const studyId = res.study_id || res.fork_study_id;
-      // Open in new browser window — precise navigation to study page
       window.open(`/workspace/shared/classroom/${studyId}`, '_blank');
       markMaterialDone();
     } catch (err: any) {
@@ -94,7 +90,6 @@ export const AssignmentDetailModal: React.FC<Props> = ({
     }
   }
 
-  // ── Upload: preview in new window (fetch with auth → blob URL) ───────
   async function handlePreview(upload: UploadEntry) {
     if (busyKey) return;
     setBusyKey(upload.key);
@@ -113,7 +108,6 @@ export const AssignmentDetailModal: React.FC<Props> = ({
     }
   }
 
-  // ── Upload: download file ──────────────────────────────────────────────
   async function handleDownload(upload: UploadEntry) {
     if (busyKey) return;
     setBusyKey(upload.key);
@@ -196,7 +190,6 @@ export const AssignmentDetailModal: React.FC<Props> = ({
         aria-labelledby="asgn-detail-title"
         style={{ maxHeight: '88vh', display: 'flex', flexDirection: 'column' }}
       >
-        {/* Header */}
         <div className="cl-modal__header">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -218,10 +211,8 @@ export const AssignmentDetailModal: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
-          {/* Meta row */}
           <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
             {assignment.due_date && (
               <div>
@@ -245,7 +236,6 @@ export const AssignmentDetailModal: React.FC<Props> = ({
             )}
           </div>
 
-          {/* Description */}
           {assignment.description && (
             <div>
               <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 6px' }}>Instructions</p>
@@ -255,13 +245,11 @@ export const AssignmentDetailModal: React.FC<Props> = ({
             </div>
           )}
 
-          {/* ── Material section ─────────────────────────────────────────── */}
           {isMaterial && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {/* Study material (top) */}
               {hasStudy && (
                 <div>
-                  <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Workspace Study</p>
+                  <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Workspace study</p>
                   <div
                     onClick={handleOpenStudy}
                     style={{
@@ -276,22 +264,19 @@ export const AssignmentDetailModal: React.FC<Props> = ({
                     onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--cl-accent, #3b82f6)')}
                     onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--cl-border, #e2e8f0)')}
                   >
-                    <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>📖</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>Workspace Study</p>
-                      <p style={{ margin: '2px 0 0', fontSize: '0.76rem', color: 'var(--cl-text-muted)' }}>Click to open in new tab</p>
+                      <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>Workspace study</p>
                     </div>
                     <span style={{ fontSize: '0.85rem', color: 'var(--cl-accent, #3b82f6)', fontWeight: 600, flexShrink: 0 }}>
-                      {openingStudy ? 'Opening…' : 'Open →'}
+                      {openingStudy ? 'Opening...' : 'Open'}
                     </span>
                   </div>
                 </div>
               )}
 
-              {/* Uploaded materials (bottom) — only shown when uploads exist */}
               {uploads.length > 0 && (
                 <div>
-                  <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Uploaded Materials</p>
+                  <p style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Uploaded materials</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                     {uploads.map((u, i) => (
                       <div
@@ -309,7 +294,6 @@ export const AssignmentDetailModal: React.FC<Props> = ({
                         onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--cl-accent, #3b82f6)')}
                         onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--cl-border, #e2e8f0)')}
                       >
-                        <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>📎</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {u.name || 'Attached file'}
@@ -333,16 +317,14 @@ export const AssignmentDetailModal: React.FC<Props> = ({
                 </div>
               )}
 
-              {/* Instructions-only: no study or uploads */}
               {isInstructionsOnly && (
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--cl-ok, #16a34a)', fontWeight: 600 }}>
-                  ✓ Marked as read
+                  Marked as read
                 </p>
               )}
             </div>
           )}
 
-          {/* ── Submission section (non-material only) ───────────────────── */}
           {!isMaterial && (
             <>
               <hr className="cl-divider" style={{ margin: 0 }} />
@@ -388,14 +370,12 @@ export const AssignmentDetailModal: React.FC<Props> = ({
                 )}
               </div>
 
-              {/* Overdue warning */}
               {isOverdue && !alreadySubmitted && (
                 <div className="cl-error-banner">
                   This assignment is past due. Submitting now will be marked as late.
                 </div>
               )}
 
-              {/* Confirm submit */}
               {confirmed && canRetry && !alreadySubmitted && (
                 <div style={{
                   background: 'var(--cl-accent-light)',
@@ -414,7 +394,7 @@ export const AssignmentDetailModal: React.FC<Props> = ({
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button className="cl-btn cl-btn-secondary cl-btn-sm" onClick={() => setConfirmed(false)}>Cancel</button>
                     <button className="cl-btn cl-btn-primary cl-btn-sm" onClick={handleSubmit} disabled={submitting}>
-                      {submitting ? 'Submitting…' : 'Confirm Submit'}
+                      {submitting ? 'Submitting...' : 'Confirm submit'}
                     </button>
                   </div>
                 </div>
@@ -425,7 +405,6 @@ export const AssignmentDetailModal: React.FC<Props> = ({
           {error && !confirmed && <div className="cl-error-banner">{error}</div>}
         </div>
 
-        {/* Footer */}
         <div className="cl-modal__footer">
           <button className="cl-btn cl-btn-secondary" onClick={onClose}>Close</button>
 
@@ -434,7 +413,7 @@ export const AssignmentDetailModal: React.FC<Props> = ({
             <>
               {alreadySubmitted && !canRetry && (
                 <span style={{ fontSize: '0.82rem', color: 'var(--cl-ok)', fontWeight: 600, alignSelf: 'center' }}>
-                  ✓ Submitted
+                  Submitted
                 </span>
               )}
               {(!alreadySubmitted || canRetry) && !confirmed && (
@@ -446,7 +425,7 @@ export const AssignmentDetailModal: React.FC<Props> = ({
                   }}
                   disabled={loadingSubs}
                 >
-                  {alreadySubmitted ? 'Retry Submission' : latestSub?.status === 'in_progress' ? 'Submit' : 'Start & Submit'}
+                  {alreadySubmitted ? 'Retry submission' : latestSub?.status === 'in_progress' ? 'Submit' : 'Start and submit'}
                 </button>
               )}
             </>

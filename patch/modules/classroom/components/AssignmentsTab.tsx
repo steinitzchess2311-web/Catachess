@@ -1,4 +1,9 @@
-// ─── AssignmentsTab ───────────────────────────────────────────────────────────
+/*
+Created at: 2026-07-08 23:58:19 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:58:19 EDT
+Last Modified by: Codex
+*/
 
 import React, { useEffect, useState } from 'react';
 
@@ -34,6 +39,9 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
   const [statsTarget, setStatsTarget]         = useState<Assignment | null>(null);
   const [editTarget, setEditTarget]           = useState<Assignment | null>(null);
   const [detailTarget, setDetailTarget]       = useState<Assignment | null>(null);
+  const [deleteTarget, setDeleteTarget]       = useState<Assignment | null>(null);
+  const [deleteLoading, setDeleteLoading]     = useState(false);
+  const [error, setError]                     = useState('');
 
   const isTeacher = classroom.my_role === 'owner' || classroom.my_role === 'teacher';
 
@@ -51,13 +59,18 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
     setShowCreate(true);
   }, [createRequestToken]);
 
-  async function handleDelete(id: string, title: string) {
-    if (!confirm(`Retract "${title}"? This cannot be undone.`)) return;
+  async function confirmDelete() {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    setError('');
     try {
-      await deleteAssignment(classroom.id, id);
-      setAssignments(prev => prev.filter(a => a.id !== id));
+      await deleteAssignment(classroom.id, deleteTarget.id);
+      setAssignments(prev => prev.filter(a => a.id !== deleteTarget.id));
+      setDeleteTarget(null);
     } catch (err: any) {
-      alert(err?.message || 'Failed to retract assignment.');
+      setError(err?.message || 'Failed to retract assignment.');
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -89,10 +102,12 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
         </div>
         {isTeacher && (
           <button className="cl-btn cl-btn-primary cl-btn-sm" onClick={() => setShowCreate(true)}>
-            + New Assignment
+            New assignment
           </button>
         )}
       </div>
+
+      {error && <div className="cl-error-banner" style={{ marginBottom: '0.75rem' }}>{error}</div>}
 
       {/* List */}
       {loading ? (
@@ -107,9 +122,6 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
             <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
           </svg>
           <p className="cl-empty__title">No assignments yet</p>
-          {isTeacher && (
-            <p className="cl-empty__sub">Click "+ New Assignment" to publish a task for your students.</p>
-          )}
         </div>
       ) : (
         <div className="cl-asgn-list">
@@ -120,7 +132,7 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
               isTeacher={isTeacher}
               onOpen={() => isTeacher ? setStatsTarget(a) : setDetailTarget(a)}
               onEdit={() => setEditTarget(a)}
-              onDelete={() => handleDelete(a.id, a.title)}
+              onDelete={() => setDeleteTarget(a)}
               onViewDetail={() => setDetailTarget(a)}
             />
           ))}
@@ -170,6 +182,30 @@ export const AssignmentsTab: React.FC<Props> = ({ classroom, createRequestToken 
             setDetailTarget(null);
           }}
         />
+      )}
+
+      {deleteTarget && (
+        <div className="cl-overlay" onClick={e => e.target === e.currentTarget && !deleteLoading && setDeleteTarget(null)}>
+          <div className="cl-modal cl-modal--confirm" role="dialog" aria-modal="true" aria-labelledby="delete-assignment-title">
+            <div className="cl-modal__header">
+              <h2 className="cl-modal__title" id="delete-assignment-title">Retract assignment</h2>
+              <button className="cl-btn-icon" onClick={() => setDeleteTarget(null)} aria-label="Close" disabled={deleteLoading}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div className="cl-modal__body">
+              <p className="cl-confirm-copy">Retract "{deleteTarget.title}"? This cannot be undone.</p>
+            </div>
+            <div className="cl-modal__footer">
+              <button className="cl-btn cl-btn-secondary" onClick={() => setDeleteTarget(null)} disabled={deleteLoading}>Cancel</button>
+              <button className="cl-btn cl-btn-danger" onClick={confirmDelete} disabled={deleteLoading}>
+                {deleteLoading ? 'Retracting...' : 'Retract'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -224,7 +260,7 @@ const AssignmentRow: React.FC<RowProps> = ({ assignment: a, isTeacher, onOpen, o
           )}
           {sourceLabel && (
             <span style={{ fontSize: '0.72rem', color: 'var(--cl-text-secondary)', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-              {a.source_type === 'upload' ? '📎' : '📖'} {sourceLabel}
+              {a.source_type === 'upload' ? 'File' : 'Study'}: {sourceLabel}
             </span>
           )}
           {a.due_date ? (

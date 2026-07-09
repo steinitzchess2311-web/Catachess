@@ -1,3 +1,10 @@
+/*
+Created at: 2026-07-08 23:58:19 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:58:19 EDT
+Last Modified by: Codex
+*/
+
 import React, { useEffect, useState } from 'react';
 import { getInvite, resetInvite, setInviteActive } from '../api';
 import type { InviteInfo } from '../types';
@@ -48,22 +55,20 @@ export const InvitePanel: React.FC<Props> = ({ classroomId, canManage }) => {
 
   return (
     <div className="cl-invite-box">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
-        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--cl-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-          Invite Code
-        </span>
+      <div className="cl-invite-body">
+        <span className="cl-eyebrow">Invite code</span>
         <span className="cl-invite-code" style={{ opacity: invite.invite_active ? 1 : 0.4 }}>
           {invite.invite_code}
         </span>
         {!invite.invite_active && (
-          <span style={{ fontSize: '0.76rem', color: 'var(--cl-overdue)', fontWeight: 500 }}>
+          <span className="cl-invite-disabled">
             Invite link is disabled
           </span>
         )}
       </div>
       <div className="cl-invite-actions">
         <button className="cl-btn cl-btn-secondary cl-btn-sm" onClick={handleCopy}>
-          {copied ? '✓ Copied' : 'Copy'}
+          {copied ? 'Copied' : 'Copy'}
         </button>
         {canManage && (
           <>

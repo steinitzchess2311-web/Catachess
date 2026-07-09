@@ -1,4 +1,9 @@
-// ─── EditAssignmentModal — teacher edits an existing assignment ───────────────
+/*
+Created at: 2026-07-08 23:58:19 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:58:19 EDT
+Last Modified by: Codex
+*/
 
 import React, { useState } from 'react';
 import { updateAssignment } from '../api';
@@ -11,7 +16,6 @@ interface Props {
   onUpdated: (updated: Assignment) => void;
 }
 
-// Local helper: ISO datetime string → datetime-local input value
 function toLocalInput(iso: string | null | undefined): string {
   if (!iso) return '';
   const d = new Date(iso);
@@ -57,7 +61,7 @@ export const EditAssignmentModal: React.FC<Props> = ({ classroomId, assignment, 
     <div className="cl-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="cl-modal cl-modal--wide" role="dialog" aria-modal="true" aria-labelledby="edit-asgn-title">
         <div className="cl-modal__header">
-          <h2 className="cl-modal__title" id="edit-asgn-title">Edit Assignment</h2>
+          <h2 className="cl-modal__title" id="edit-asgn-title">Edit assignment</h2>
           <button className="cl-btn-icon" onClick={onClose} aria-label="Close">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -86,7 +90,7 @@ export const EditAssignmentModal: React.FC<Props> = ({ classroomId, assignment, 
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 rows={3}
-                placeholder="Instructions for students…"
+                placeholder="Instructions"
               />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem' }}>
@@ -130,7 +134,7 @@ export const EditAssignmentModal: React.FC<Props> = ({ classroomId, assignment, 
           <div className="cl-modal__footer">
             <button type="button" className="cl-btn cl-btn-secondary" onClick={onClose}>Cancel</button>
             <button type="submit" className="cl-btn cl-btn-primary" disabled={loading || !title.trim()}>
-              {loading ? 'Saving…' : 'Save Changes'}
+              {loading ? 'Saving...' : 'Save changes'}
             </button>
           </div>
         </form>

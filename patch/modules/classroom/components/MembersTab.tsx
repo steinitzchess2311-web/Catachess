@@ -1,3 +1,10 @@
+/*
+Created at: 2026-07-08 23:58:19 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:58:19 EDT
+Last Modified by: Codex
+*/
+
 import React, { useEffect, useState } from 'react';
 import { listMembers, removeMember, updateMemberRole } from '../api';
 import type { Classroom, ClassroomMember, ClassroomRole } from '../types';
@@ -15,6 +22,9 @@ export const MembersTab: React.FC<Props> = ({ classroom, onCountChange }) => {
   const [members, setMembers] = useState<ClassroomMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<ClassroomMember | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const [error, setError] = useState('');
 
   const canManage = classroom.my_role === 'owner' || classroom.my_role === 'teacher';
   const isOwner = classroom.my_role === 'owner';
@@ -29,26 +39,36 @@ export const MembersTab: React.FC<Props> = ({ classroom, onCountChange }) => {
       .finally(() => setLoading(false));
   }, [classroom.id, onCountChange]);
 
-  async function handleRemove(username: string) {
-    if (!confirm(`Remove ${username} from this classroom?`)) return;
+  async function handleRemove(member: ClassroomMember) {
+    setRemoveTarget(member);
+  }
+
+  async function confirmRemove() {
+    if (!removeTarget) return;
+    setRemoving(true);
+    setError('');
     try {
-      await removeMember(classroom.id, username);
+      await removeMember(classroom.id, removeTarget.username);
       setMembers(prev => {
-        const next = prev.filter(m => m.username !== username);
+        const next = prev.filter(m => m.username !== removeTarget.username);
         onCountChange?.(next.length);
         return next;
       });
+      setRemoveTarget(null);
     } catch (err: any) {
-      alert(err?.message || 'Failed to remove member.');
+      setError(err?.message || 'Failed to remove member.');
+    } finally {
+      setRemoving(false);
     }
   }
 
   async function handleRoleChange(username: string, newRole: ClassroomRole) {
+    setError('');
     try {
       await updateMemberRole(classroom.id, username, newRole);
       setMembers(prev => prev.map(m => m.username === username ? { ...m, role: newRole } : m));
     } catch (err: any) {
-      alert(err?.message || 'Failed to update role.');
+      setError(err?.message || 'Failed to update role.');
     }
   }
 
@@ -72,13 +92,15 @@ export const MembersTab: React.FC<Props> = ({ classroom, onCountChange }) => {
         <h3 className="cl-section-title">Members ({members.length})</h3>
         {canManage && (
           <button className="cl-btn cl-btn-primary cl-btn-sm" onClick={() => setShowAddModal(true)}>
-            + Add Member
+            Add member
           </button>
         )}
       </div>
 
+      {error && <div className="cl-error-banner" style={{ marginBottom: '0.75rem' }}>{error}</div>}
+
       {loading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div className="cl-stack-loading">
           {[...Array(4)].map((_, i) => (
             <div key={i} className="cl-skeleton" style={{ height: 44, borderRadius: 6 }} />
           ))}
@@ -132,7 +154,7 @@ export const MembersTab: React.FC<Props> = ({ classroom, onCountChange }) => {
       )}
 
       {showAddModal && (
-        <AddMemberModal
+          <AddMemberModal
           classroomId={classroom.id}
           onClose={() => setShowAddModal(false)}
           onAdded={member => {
@@ -145,6 +167,30 @@ export const MembersTab: React.FC<Props> = ({ classroom, onCountChange }) => {
           }}
         />
       )}
+
+      {removeTarget && (
+        <div className="cl-overlay" onClick={e => e.target === e.currentTarget && !removing && setRemoveTarget(null)}>
+          <div className="cl-modal cl-modal--confirm" role="dialog" aria-modal="true" aria-labelledby="remove-member-title">
+            <div className="cl-modal__header">
+              <h2 className="cl-modal__title" id="remove-member-title">Remove member</h2>
+              <button className="cl-btn-icon" onClick={() => setRemoveTarget(null)} aria-label="Close" disabled={removing}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div className="cl-modal__body">
+              <p className="cl-confirm-copy">Remove {removeTarget.username} from this classroom?</p>
+            </div>
+            <div className="cl-modal__footer">
+              <button className="cl-btn cl-btn-secondary" onClick={() => setRemoveTarget(null)} disabled={removing}>Cancel</button>
+              <button className="cl-btn cl-btn-danger" onClick={confirmRemove} disabled={removing}>
+                {removing ? 'Removing...' : 'Remove'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -154,7 +200,7 @@ interface MemberRowProps {
   isOwner: boolean;
   currentUserIsOwner: boolean;
   canManage: boolean;
-  onRemove: (username: string) => void;
+  onRemove: (member: ClassroomMember) => void;
   onRoleChange: (username: string, role: ClassroomRole) => void;
 }
 
@@ -200,7 +246,7 @@ const MemberRow: React.FC<MemberRowProps> = ({ member, canManage, currentUserIsO
           <button
             className="cl-btn-icon"
             title="Remove member"
-            onClick={() => onRemove(member.username)}
+            onClick={() => onRemove(member)}
             style={{ color: 'var(--cl-overdue)' }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

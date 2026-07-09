@@ -1,8 +1,12 @@
-// ─── /classroom ── My classrooms list ────────────────────────────────────────
+/*
+Created at: 2026-07-08 23:58:19 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:58:19 EDT
+Last Modified by: Codex
+*/
 
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import catLogo from '../../../frontend/web/src/assets/chessortag_pure_logo.png';
 import { listClassrooms } from './api';
 import type { Classroom } from './types';
 import { RoleBadge } from './components/RoleBadge';
@@ -10,12 +14,10 @@ import { CreateClassroomModal } from './components/CreateClassroomModal';
 import { JoinClassroomModal } from './components/JoinClassroomModal';
 import './classroom.css';
 
-// ─── Classroom card ───────────────────────────────────────────────────────────
-
 const ClassroomCard: React.FC<{ classroom: Classroom }> = ({ classroom }) => (
   <Link to={`/classroom/${classroom.id}`} state={{ classroom }} className="cl-card">
     <div className="cl-card__accent" />
-    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginTop: 4 }}>
+    <div className="cl-card__top">
       <span className="cl-card__name">{classroom.name}</span>
       {classroom.archived_at && <span className="cl-card__archived">Archived</span>}
     </div>
@@ -29,13 +31,11 @@ const ClassroomCard: React.FC<{ classroom: Classroom }> = ({ classroom }) => (
       </span>
       <RoleBadge role={classroom.my_role} />
     </div>
-    <div style={{ fontSize: '0.76rem', color: 'var(--cl-text-muted)', marginTop: 2 }}>
+    <div className="cl-card__date">
       Since {new Date(classroom.created_at).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
     </div>
   </Link>
 );
-
-// ─── Skeleton card ────────────────────────────────────────────────────────────
 
 const SkeletonCard = () => (
   <div className="cl-card" style={{ cursor: 'default', pointerEvents: 'none' }}>
@@ -43,8 +43,6 @@ const SkeletonCard = () => (
     <div className="cl-skeleton" style={{ height: 14, width: '40%', borderRadius: 6, marginTop: 4 }} />
   </div>
 );
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export const ClassroomPage: React.FC = () => {
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
@@ -68,39 +66,22 @@ export const ClassroomPage: React.FC = () => {
     <div className="cl-root cl-page">
       <div className="cl-page-inner">
 
-        {/* Page header */}
         <div className="cl-page-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <img
-              src={catLogo}
-              alt="Catachess logo"
-              style={{ width: 48, height: 48, objectFit: 'contain', flexShrink: 0 }}
-            />
-            <h1 style={{
-              margin: 0,
-              fontSize: 32,
-              fontWeight: 700,
-              lineHeight: 1.2,
-              letterSpacing: '-0.5px',
-              fontFamily: 'inherit',
-            }}>
-              Catachess Classroom
-            </h1>
+          <div>
+            <h1 className="cl-page-title">Classroom</h1>
           </div>
           <div className="cl-header-actions">
             <button className="cl-btn cl-btn-secondary" onClick={() => setShowJoin(true)}>
-              Join Class
+              Join class
             </button>
             <button className="cl-btn cl-btn-primary" onClick={() => setShowCreate(true)}>
-              + New Class
+              New class
             </button>
           </div>
         </div>
 
-        {/* Error */}
         {error && <div className="cl-error-banner" style={{ marginBottom: '1rem' }}>{error}</div>}
 
-        {/* Loading state */}
         {loading ? (
           <div>
             <p className="cl-section-label">Teaching</p>
@@ -110,19 +91,17 @@ export const ClassroomPage: React.FC = () => {
           </div>
         ) : classrooms.length === 0 ? (
           <div className="cl-empty" style={{ marginTop: '3rem' }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
               <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/>
             </svg>
             <p className="cl-empty__title">No classrooms yet</p>
-            <p className="cl-empty__sub">Create your first classroom or join one with an invite code.</p>
             <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem' }}>
-              <button className="cl-btn cl-btn-primary" onClick={() => setShowCreate(true)}>+ New Class</button>
-              <button className="cl-btn cl-btn-secondary" onClick={() => setShowJoin(true)}>Join Class</button>
+              <button className="cl-btn cl-btn-primary" onClick={() => setShowCreate(true)}>New class</button>
+              <button className="cl-btn cl-btn-secondary" onClick={() => setShowJoin(true)}>Join class</button>
             </div>
           </div>
         ) : (
           <>
-            {/* Teaching */}
             {teaching.length > 0 && (
               <section style={{ marginBottom: '2rem' }}>
                 <p className="cl-section-label">Teaching ({teaching.length})</p>
@@ -132,7 +111,6 @@ export const ClassroomPage: React.FC = () => {
               </section>
             )}
 
-            {/* Enrolled */}
             {enrolled.length > 0 && (
               <section style={{ marginBottom: '2rem' }}>
                 <p className="cl-section-label">Enrolled ({enrolled.length})</p>
@@ -144,7 +122,6 @@ export const ClassroomPage: React.FC = () => {
           </>
         )}
 
-        {/* Join banner */}
         {!loading && classrooms.length > 0 && (
           <div className="cl-join-banner">
             <span className="cl-join-banner__label">Have an invite code?</span>
@@ -172,8 +149,6 @@ export const ClassroomPage: React.FC = () => {
     </div>
   );
 };
-
-// ─── Inline join input (in the banner) ───────────────────────────────────────
 
 const InlineJoin: React.FC<{ onJoined: (id: string) => void }> = ({ onJoined }) => {
   const [code, setCode] = useState('');
@@ -213,10 +188,9 @@ const InlineJoin: React.FC<{ onJoined: (id: string) => void }> = ({ onJoined }) 
         disabled={loading || !code.trim()}
         style={{ flexShrink: 0 }}
       >
-        {loading ? 'Joining…' : 'Join'}
+        {loading ? 'Joining...' : 'Join'}
       </button>
-      {error && <span style={{ fontSize: '0.78rem', color: 'var(--cl-overdue)', alignSelf: 'center' }}>{error}</span>}
+      {error && <span className="cl-inline-error">{error}</span>}
     </>
   );
 };
-

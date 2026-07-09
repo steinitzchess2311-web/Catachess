@@ -21,4 +21,4 @@ Lst Modified by: Codex
 - Tests must cover LC0 capability missing state and basic UCI parsing through a fake process.
 
 ## 代办
-- Install or build LC0 with ROCm backend on the production server and configure a weights file path.
+- ROCm provider currently fails on the server `gfx1151` GPU with `hipErrorNoBinaryForGpu`; production is using LC0 `onnx-cpu` with concurrency 1 until ONNX Runtime/ROCm supports this GPU target.

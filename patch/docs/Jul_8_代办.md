@@ -6,9 +6,10 @@
 
 
 引擎功能：
-- 服务器上，部署 stockfish worker 和 alphazero worker 。产品级别根据极大网站的工程级别部署。 alphazero 可以放在 gpu 上。但是加上限制（stockfish 最多 10cpu 同时跑，alphazero 最多占一部分 gpu，不要挤爆服务器。）产品级别的设置排队机制等等。
+-[✅] 服务器上，部署 stockfish worker 和 alphazero worker 。产品级别根据极大网站的工程级别部署。 alphazero 可以放在 gpu 上。但是加上限制（stockfish 最多 10cpu 同时跑，alphazero 最多占一部分 gpu，不要挤爆服务器。）产品级别的设置排队机制等等。
   - 2026-07-08 23:10 EDT：Stockfish 本机 worker 已部署到服务器，跨 gunicorn 进程全局最多 10 个 Stockfish 进程；AlphaZero worker 入口、健康检查、队列/限流和受控不可用错误已部署，但服务器当前 `nvidia-smi` 无法连接驱动，且未配置 `ALPHAZERO_COMMAND`/`ALPHAZERO_MODEL_PATH`，真实 AlphaZero 推理仍等待 GPU/模型。
   - 2026-07-08 23:34 EDT：AlphaZero 不作为总 goal 阻塞点；如原 AlphaZero 环境不可用，后续改走 LC0/Leela 路线并优先适配 ROCm GPU，同样保留并发/显存保护和受控不可用。
+  - 2026-07-08 23:55 EDT：LC0/Leela 已在服务器用户目录构建并部署，权重为 `T1-256x10-distilled`，`engine=lc0` 生产 smoke 返回 `source: LC0`；当前 ONNX Runtime ROCm provider 对 `gfx1151` 搜索阶段报 `hipErrorNoBinaryForGpu`/segfault，因此生产临时使用 `onnx-cpu` backend、全局并发上限 1，不阻塞总 goal。
 
 -[✅] 前端展示和前端的连接用最产品级别的方式，websocket 啥的都可以。前端格式和 stockfishwasm 一样。
 

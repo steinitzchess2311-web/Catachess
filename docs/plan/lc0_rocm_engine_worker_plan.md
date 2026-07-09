@@ -18,4 +18,6 @@ Lst Modified by: Codex
 7. Verify local tests, py_compile, frontend build, remote deploy, and production health.
 
 ## 代办
-- If package installation is required, document the exact production install command and model artifact path after probing server package availability.
+- Production LC0 build path: `/home/catadragon/opt/lc0/bin/lc0-rocm`.
+- Production LC0 weights path: `/home/catadragon/opt/lc0/weights/t1-256x10-distilled-swa-2432500.pb.gz`.
+- Production backend is temporarily `onnx-cpu`; revisit `onnx-rocm` after ONNX Runtime ROCm supports `gfx1151`.

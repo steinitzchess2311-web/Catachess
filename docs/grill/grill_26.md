@@ -29,4 +29,4 @@ Last Modified by: Codex
 
 - 采用 LC0 `onnx-rocm` 作为 AlphaZero 阻塞项的替代实现方向。
 - 先让产品和 API 明确支持 `engine=lc0`，并把 `alphazero` 映射到 LC0 优先、AlphaZero command fallback。
-- 部署时如果缺少 LC0 二进制或权重，health 必须明确 unavailable。
+- 已构建 LC0 并下载 `T1-256x10-distilled` 权重；ROCm provider 对 `gfx1151` 运行搜索时报 `hipErrorNoBinaryForGpu`/segfault，生产先使用 `onnx-cpu` backend 保证 Leela/LC0 可用。

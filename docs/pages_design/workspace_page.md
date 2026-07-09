@@ -18,7 +18,7 @@ Last Modified by: Codex
 ## Header Rules
 - Do not expose an editable filesystem-like path field in the main header.
 - Use breadcrumb as the only visible current-location control.
-- Deep breadcrumbs compress the middle ancestors by default and can expand into a horizontal scroll rail.
+- Deep breadcrumbs compress the middle ancestors by default; the `...` control opens a hidden-folder menu instead of a scroll rail.
 - Breadcrumb labels truncate visually; the full folder name remains available through native hover text.
 - Folder depth is not limited by the breadcrumb UI; malformed parent cycles stop breadcrumb reconstruction.
 - Keep create actions primary in private mode.

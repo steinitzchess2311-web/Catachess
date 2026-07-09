@@ -68,43 +68,99 @@ function appendBreadcrumbItem(
 }
 
 function appendBreadcrumbOverflow(
-    state: WorkspaceState,
     elements: WorkspaceElements,
     hiddenItems: BreadcrumbEntry[],
     navigateToFolder: (id: string, title: string) => Promise<void>
 ) {
+    const wrapper = document.createElement('span');
+    wrapper.className = 'breadcrumb-overflow';
+
     const button = document.createElement('button');
     const hiddenPath = hiddenItems.map(item => item.title).join(' / ');
     button.type = 'button';
     button.className = 'breadcrumb-overflow-btn';
     button.textContent = '...';
     button.title = hiddenPath ? `Show hidden folders: ${hiddenPath}` : 'Show full path';
+    button.setAttribute('aria-haspopup', 'menu');
+    button.setAttribute('aria-expanded', 'false');
     button.setAttribute('aria-label', `Show ${hiddenItems.length} hidden breadcrumb item${hiddenItems.length === 1 ? '' : 's'}`);
+
+    const menu = document.createElement('div');
+    menu.className = 'breadcrumb-overflow-menu';
+    menu.setAttribute('role', 'menu');
+    menu.hidden = true;
+
+    hiddenItems.forEach((item) => {
+        const menuItem = document.createElement('button');
+        menuItem.type = 'button';
+        menuItem.className = 'breadcrumb-overflow-menu-item';
+        menuItem.textContent = truncateBreadcrumbTitle(item.title);
+        menuItem.title = item.title;
+        menuItem.setAttribute('role', 'menuitem');
+        menuItem.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            menu.hidden = true;
+            button.setAttribute('aria-expanded', 'false');
+            navigateToFolder(item.id, item.title);
+        });
+        menu.appendChild(menuItem);
+    });
+
+    const closeMenu = () => {
+        menu.hidden = true;
+        button.setAttribute('aria-expanded', 'false');
+        document.removeEventListener('mousedown', handleOutsideClick);
+        document.removeEventListener('keydown', handleEscape);
+    };
+
+    const openMenu = () => {
+        menu.hidden = false;
+        button.setAttribute('aria-expanded', 'true');
+        document.addEventListener('mousedown', handleOutsideClick);
+        document.addEventListener('keydown', handleEscape);
+    };
+
+    function handleOutsideClick(event: MouseEvent) {
+        if (!wrapper.contains(event.target as Node)) {
+            closeMenu();
+        }
+    }
+
+    function handleEscape(event: KeyboardEvent) {
+        if (event.key === 'Escape') {
+            closeMenu();
+            button.focus();
+        }
+    }
+
     button.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
-        renderBreadcrumb(state, elements, navigateToFolder, true);
-        window.requestAnimationFrame(() => {
-            elements.breadcrumb.scrollLeft = elements.breadcrumb.scrollWidth;
-        });
+        if (menu.hidden) {
+            openMenu();
+        } else {
+            closeMenu();
+        }
     });
-    elements.breadcrumb.appendChild(button);
+
+    wrapper.appendChild(button);
+    wrapper.appendChild(menu);
+    elements.breadcrumb.appendChild(wrapper);
 }
 
 export function renderBreadcrumb(
     state: WorkspaceState,
     elements: WorkspaceElements,
-    navigateToFolder: (id: string, title: string) => Promise<void>,
-    expanded = false
+    navigateToFolder: (id: string, title: string) => Promise<void>
 ) {
     const path = state.breadcrumbPath;
-    const shouldCompress = !expanded && path.length > MAX_VISIBLE_BREADCRUMB_ITEMS;
+    const shouldCompress = path.length > MAX_VISIBLE_BREADCRUMB_ITEMS;
     const hiddenItems = shouldCompress ? path.slice(1, -TRAILING_BREADCRUMB_ITEMS) : [];
     const tailItems = shouldCompress ? path.slice(-TRAILING_BREADCRUMB_ITEMS) : path.slice(1);
 
     elements.breadcrumb.innerHTML = '';
     elements.breadcrumb.classList.toggle('breadcrumb--compressed', shouldCompress);
-    elements.breadcrumb.classList.toggle('breadcrumb--expanded', expanded);
 
     if (path.length === 0) return;
 
@@ -112,7 +168,7 @@ export function renderBreadcrumb(
 
     if (shouldCompress) {
         appendBreadcrumbSeparator(elements);
-        appendBreadcrumbOverflow(state, elements, hiddenItems, navigateToFolder);
+        appendBreadcrumbOverflow(elements, hiddenItems, navigateToFolder);
     }
 
     tailItems.forEach((p) => {

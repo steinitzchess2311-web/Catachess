@@ -3,6 +3,12 @@
 import { api } from '../../../assets/api';
 import { WorkspaceState, WorkspaceElements, WorkspaceMode } from './types';
 
+const MAX_VISIBLE_BREADCRUMB_ITEMS = 4;
+const TRAILING_BREADCRUMB_ITEMS = 2;
+const MAX_BREADCRUMB_LABEL_CHARS = 28;
+
+type BreadcrumbEntry = { id: string; title: string };
+
 export function getRootPrefix(state: WorkspaceState): string {
     const map: Record<string, string> = { private: 'root/', public: 'public/', shared: 'shared/', trash: 'trash/' };
     return map[state.mode ?? 'private'] ?? 'root/';
@@ -28,14 +34,90 @@ export function updatePathInputDisplay(state: WorkspaceState, elements: Workspac
     elements.pathInput.value = `${prefix}...`;
 }
 
-export function renderBreadcrumb(state: WorkspaceState, elements: WorkspaceElements, navigateToFolder: (id: string, title: string) => Promise<void>) {
+function truncateBreadcrumbTitle(title: string): string {
+    const chars = Array.from(title || '');
+    if (chars.length <= MAX_BREADCRUMB_LABEL_CHARS) return title;
+    return `${chars.slice(0, MAX_BREADCRUMB_LABEL_CHARS - 3).join('')}...`;
+}
+
+function appendBreadcrumbSeparator(elements: WorkspaceElements) {
+    const separator = document.createElement('span');
+    separator.className = 'breadcrumb-separator';
+    separator.textContent = '/';
+    separator.setAttribute('aria-hidden', 'true');
+    elements.breadcrumb.appendChild(separator);
+}
+
+function appendBreadcrumbItem(
+    elements: WorkspaceElements,
+    item: BreadcrumbEntry,
+    isCurrent: boolean,
+    navigateToFolder: (id: string, title: string) => Promise<void>
+) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'breadcrumb-item';
+    button.textContent = truncateBreadcrumbTitle(item.title);
+    button.title = item.title;
+    button.dataset.id = item.id;
+    if (isCurrent) {
+        button.setAttribute('aria-current', 'page');
+    }
+    button.addEventListener('click', () => navigateToFolder(item.id, item.title));
+    elements.breadcrumb.appendChild(button);
+}
+
+function appendBreadcrumbOverflow(
+    state: WorkspaceState,
+    elements: WorkspaceElements,
+    hiddenItems: BreadcrumbEntry[],
+    navigateToFolder: (id: string, title: string) => Promise<void>
+) {
+    const button = document.createElement('button');
+    const hiddenPath = hiddenItems.map(item => item.title).join(' / ');
+    button.type = 'button';
+    button.className = 'breadcrumb-overflow-btn';
+    button.textContent = '...';
+    button.title = hiddenPath ? `Show hidden folders: ${hiddenPath}` : 'Show full path';
+    button.setAttribute('aria-label', `Show ${hiddenItems.length} hidden breadcrumb item${hiddenItems.length === 1 ? '' : 's'}`);
+    button.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        renderBreadcrumb(state, elements, navigateToFolder, true);
+        window.requestAnimationFrame(() => {
+            elements.breadcrumb.scrollLeft = elements.breadcrumb.scrollWidth;
+        });
+    });
+    elements.breadcrumb.appendChild(button);
+}
+
+export function renderBreadcrumb(
+    state: WorkspaceState,
+    elements: WorkspaceElements,
+    navigateToFolder: (id: string, title: string) => Promise<void>,
+    expanded = false
+) {
+    const path = state.breadcrumbPath;
+    const shouldCompress = !expanded && path.length > MAX_VISIBLE_BREADCRUMB_ITEMS;
+    const hiddenItems = shouldCompress ? path.slice(1, -TRAILING_BREADCRUMB_ITEMS) : [];
+    const tailItems = shouldCompress ? path.slice(-TRAILING_BREADCRUMB_ITEMS) : path.slice(1);
+
     elements.breadcrumb.innerHTML = '';
-    state.breadcrumbPath.forEach((p) => {
-        const span = document.createElement('span');
-        span.className = 'breadcrumb-item';
-        span.textContent = p.title;
-        span.addEventListener('click', () => navigateToFolder(p.id, p.title));
-        elements.breadcrumb.appendChild(span);
+    elements.breadcrumb.classList.toggle('breadcrumb--compressed', shouldCompress);
+    elements.breadcrumb.classList.toggle('breadcrumb--expanded', expanded);
+
+    if (path.length === 0) return;
+
+    appendBreadcrumbItem(elements, path[0], path.length === 1, navigateToFolder);
+
+    if (shouldCompress) {
+        appendBreadcrumbSeparator(elements);
+        appendBreadcrumbOverflow(state, elements, hiddenItems, navigateToFolder);
+    }
+
+    tailItems.forEach((p) => {
+        appendBreadcrumbSeparator(elements);
+        appendBreadcrumbItem(elements, p, p.id === path[path.length - 1].id, navigateToFolder);
     });
 }
 

@@ -211,7 +211,7 @@
     background: #ffffff;
     border-bottom: 1px solid #dbe7f5;
     display: grid;
-    grid-template-columns: minmax(260px, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto;
     gap: 18px;
     align-items: center;
     box-sizing: border-box;
@@ -304,38 +304,89 @@
 }
 
 .breadcrumb {
-    min-height: 24px;
+    max-width: 100%;
+    min-height: 28px;
     display: flex;
     align-items: center;
-    gap: 5px;
-    overflow: hidden;
+    gap: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
     color: #475569;
     font-size: 15px;
     font-weight: 600;
     margin-top: 6px;
     white-space: nowrap;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+
+.breadcrumb::-webkit-scrollbar {
+    height: 4px;
+}
+
+.breadcrumb::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.breadcrumb::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
 }
 
 .breadcrumb-item {
-    max-width: 220px;
+    min-width: 0;
+    max-width: clamp(64px, 16vw, 24ch);
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    display: inline-block;
+    flex: 0 0 auto;
+    padding: 2px 1px;
+    font: inherit;
+    line-height: 1.35;
+    text-align: left;
     cursor: pointer;
 }
 
-.breadcrumb-item:hover {
+.breadcrumb-item[aria-current="page"] {
+    max-width: clamp(96px, 24vw, 32ch);
+    color: #0f172a;
+    font-weight: 720;
+}
+
+.breadcrumb-item:hover,
+.breadcrumb-overflow-btn:hover {
     color: #1d4ed8;
 }
 
-.breadcrumb-item::after {
-    content: "/";
-    margin-left: 5px;
+.breadcrumb-separator {
+    flex: 0 0 auto;
+    margin: 0 7px;
     color: #94a3b8;
 }
 
-.breadcrumb-item:last-child::after {
-    content: "";
-    margin: 0;
+.breadcrumb-overflow-btn {
+    min-width: 30px;
+    height: 24px;
+    padding: 0 8px 2px;
+    border: 1px solid #dbe7f5;
+    border-radius: 999px;
+    background: #f8fbff;
+    color: #64748b;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    font: inherit;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.breadcrumb--expanded .breadcrumb-item {
+    max-width: 24ch;
 }
 
 .path-input-shake {
@@ -899,8 +950,8 @@
 
     .breadcrumb {
         min-height: 0;
-        white-space: normal;
-        flex-wrap: wrap;
+        white-space: nowrap;
+        flex-wrap: nowrap;
         font-size: 15px;
         margin-top: 8px;
     }

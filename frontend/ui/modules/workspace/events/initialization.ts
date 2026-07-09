@@ -26,10 +26,14 @@ export async function initializeToFolder(
                 // Build breadcrumb path by traversing parents
                 const path: Array<{id: string, title: string}> = [];
                 let currentNode = node;
-                let safety = 0;
+                const visitedNodeIds = new Set<string>();
 
-                while (currentNode && safety < 20) {
-                    safety++;
+                while (currentNode) {
+                    if (visitedNodeIds.has(currentNode.id)) {
+                        console.warn(`[WORKSPACE] Stopped breadcrumb build after detecting a parent cycle at ${currentNode.id}`);
+                        break;
+                    }
+                    visitedNodeIds.add(currentNode.id);
                     path.unshift({ id: currentNode.id, title: currentNode.title });
                     if (!currentNode.parent_id || currentNode.parent_id === 'root') {
                         break;

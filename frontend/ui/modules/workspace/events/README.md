@@ -1,7 +1,7 @@
 ## header
 Created at: 2026-07-08 18:02 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 18:02 EDT
+Last Modified at: 2026-07-08 20:32 EDT
 Last Modified by: Codex
 
 ## brief intro
@@ -16,8 +16,8 @@ Last Modified by: Codex
 ## folder structure
 |-eventHandlers.ts DOM event binding for workspace controls
 |-handlerWrappers.ts connects modal, node, rendering, and navigation modules
-|-initialization.ts extracts DOM elements and enters the initial folder
-|-navigation.ts breadcrumb and internal path utilities
+|-initialization.ts extracts DOM elements and rebuilds initial breadcrumbs without a fixed depth cap
+|-navigation.ts compressed breadcrumb and internal path utilities
 |-nodeOperations.ts API calls and sorting helpers
 |-orchestrator.ts creates coordinated handlers and React islands
 |-reactComponents.ts mounts React controls inside the template

@@ -1,3 +1,12 @@
+/*
+ * Created at: 2026-07-08 18:43 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-09 02:27 EDT
+ * Last Modified by: Codex
+ *
+ * Shared application header layout, dropdowns, and responsive behavior.
+ */
+
 .app-header {
   display: flex;
   justify-content: space-between;
@@ -131,13 +140,15 @@
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  width: 300px;
+  width: 340px;
+  max-height: min(520px, calc(100vh - 112px));
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: var(--shadow-2);
   z-index: 1100;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .bell-dropdown-header {
@@ -172,23 +183,46 @@
   gap: 2px;
 }
 
+.bell-item:focus-visible {
+  outline: none;
+  background: #eff6ff;
+  box-shadow: inset 3px 0 0 #2563eb;
+}
+
 .bell-item:hover {
   background: #eff6ff;
+}
+
+.bell-item-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #2563eb;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .bell-item-sender {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-main);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bell-item-content {
   font-size: 13px;
   color: var(--text-secondary);
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 268px;
+  max-width: 100%;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 .bell-open-chat {
@@ -210,12 +244,12 @@
 }
 
 .bell-item--broadcast {
-  background: #fffbeb;
-  border-left: 3px solid #f59e0b;
+  background: #f8fafc;
+  border-left: 3px solid #2563eb;
 }
 
 .bell-item--broadcast:hover {
-  background: #fef3c7;
+  background: #eff6ff;
 }
 
 .bell-item-broadcast-label {
@@ -224,14 +258,28 @@
   gap: 4px;
   font-size: 10px;
   font-weight: 700;
-  color: #b45309;
+  color: #2563eb;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 1px;
 }
 
+.bell-item--workspace {
+  background: #ffffff;
+  border-left: 3px solid #166b5c;
+}
+
+.bell-item--workspace:hover {
+  background: #f1f5f4;
+}
+
+.bell-item--workspace .bell-item-label {
+  color: #166b5c;
+}
+
 .bell-item--seen {
-  opacity: 0.45;
+  background: #f8fafc;
+  opacity: 0.68;
 }
 
 /* ---- Challenge / current game icon ---- */
@@ -498,9 +546,16 @@
   .header-center {
     flex: 1 1 0;
     min-width: 0;
-    justify-content: flex-end;
+    justify-content: flex-start;
     gap: 2px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .header-center::-webkit-scrollbar {
+    display: none;
   }
 
   .header-center .nav-link,
@@ -511,6 +566,7 @@
   }
 
   .header-center .nav-link {
+    flex: 0 0 auto;
     padding: 6px 7px;
   }
 
@@ -518,6 +574,12 @@
     width: 100%;
     min-width: 0;
     justify-content: flex-end;
+  }
+
+  .bell-dropdown {
+    right: -54px;
+    width: min(340px, calc(100vw - 24px));
+    max-height: min(480px, calc(100vh - 116px));
   }
 }
 
@@ -579,6 +641,9 @@
 }
 
 .header-right .username {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: 1px solid #dfe3e6;
   border-radius: 7px;
   color: #202124;
@@ -588,6 +653,34 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.username-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-role-badge {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 18px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.header-role-badge--admin {
+  background: #3aa858;
+}
+
+.header-role-badge--editor {
+  background: #2563eb;
 }
 
 .header-right .username:hover {
@@ -660,5 +753,79 @@
 
   .header-left .logo-image {
     height: 48px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    align-items: flex-start;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .header-left {
+    width: 100%;
+    gap: 8px;
+  }
+
+  .header-left .logo {
+    flex: 0 0 auto;
+  }
+
+  .header-center {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 2px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .header-center::-webkit-scrollbar {
+    display: none;
+  }
+
+  .header-center .nav-link,
+  .nav-link--dropdown {
+    flex: 0 0 auto;
+    padding: 6px 7px;
+    font-size: 13px;
+    line-height: 1.2;
+  }
+
+  .header-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .header-right .username {
+    max-width: min(180px, 48vw);
+    font-size: 13px;
+    padding: 7px 9px;
+  }
+}
+
+@media (max-width: 420px) {
+  .header-left {
+    flex-wrap: wrap;
+  }
+
+  .header-center {
+    order: 3;
+    flex-basis: 100%;
+    width: 100%;
+  }
+
+  .header-center .nav-link,
+  .nav-link--dropdown {
+    padding: 4px 5px;
+    font-size: 11px;
+  }
+
+  .bell-dropdown {
+    right: -48px;
+    width: calc(100vw - 16px);
   }
 }

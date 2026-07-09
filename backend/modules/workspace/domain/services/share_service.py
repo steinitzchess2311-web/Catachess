@@ -1,16 +1,26 @@
 """
-Share service for managing permissions and share links.
+Created at: 2026-07-09 02:09 EDT
+Created by: Codex
+Last Modified at: 2026-07-09 02:35 EDT
+Last Modified by: Codex
+
+Share service for managing permissions, share links, and share notifications.
 """
 
 import secrets
 import uuid
+import logging
 from datetime import datetime
 from hashlib import sha256
 
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.workspace.db.repos.acl_repo import ACLRepository
 from modules.workspace.db.repos.node_repo import NodeRepository
+from modules.workspace.db.tables.notifications import Notification
+from modules.workspace.db.tables.users import User
 from modules.workspace.db.tables.acl import ACL, ShareLink
 from modules.workspace.domain.models.acl import (
     ChangeRoleCommand,
@@ -27,6 +37,9 @@ from modules.workspace.domain.services.node_service import (
     PermissionDeniedError,
 )
 from modules.workspace.events.bus import EventBus, publish_acl_revoked, publish_acl_shared
+
+
+logger = logging.getLogger(__name__)
 
 
 class ShareService:
@@ -151,8 +164,96 @@ class ShareService:
             permission=command.permission.value,
             workspace_id=workspace_id,
         )
+        try:
+            async with self.session.begin_nested():
+                await self._create_share_notification(
+                    actor_id=actor_id,
+                    target_user_id=command.user_id,
+                    object_id=command.object_id,
+                    object_title=node.title,
+                    object_type=node.node_type.value if hasattr(node.node_type, "value") else str(node.node_type),
+                    permission=command.permission.value,
+                )
+        except IntegrityError:
+            logger.info(
+                "Share notification conflicted for object %s and user %s",
+                command.object_id,
+                command.user_id,
+                exc_info=True,
+            )
+        except SQLAlchemyError:
+            logger.warning(
+                "Share notification failed for object %s and user %s",
+                command.object_id,
+                command.user_id,
+                exc_info=True,
+            )
 
         return acl
+
+    async def _create_share_notification(
+        self,
+        *,
+        actor_id: str,
+        target_user_id: str,
+        object_id: str,
+        object_title: str,
+        object_type: str,
+        permission: str,
+    ) -> None:
+        """Create or refresh an in-app share notification for the invited user."""
+        if actor_id == target_user_id:
+            return
+
+        actor_name = actor_id
+        try:
+            uuid.UUID(actor_id)
+        except ValueError:
+            pass
+        else:
+            result = await self.session.execute(select(User.username).where(User.id == actor_id))
+            actor_username = result.scalar_one_or_none()
+            if actor_username:
+                actor_name = actor_username
+
+        title = f"{actor_name} invited you to a study" if object_type == "study" else f"{actor_name} shared {object_title}"
+        body = (
+            f"{actor_name} invited you to '{object_title}' as {permission}"
+            if object_type == "study"
+            else f"{actor_name} shared '{object_title}' with you as {permission}"
+        )
+        link = f"/patch/workspace/{object_id}" if object_type == "study" else f"/workspace/shared?node={object_id}"
+        event_id = f"acl.shared:{object_id}:{target_user_id}"
+        notification_id = "share:" + sha256(event_id.encode("utf-8")).hexdigest()[:32]
+
+        existing = await self.session.execute(
+            select(Notification).where(Notification.id == notification_id)
+        )
+        notification = existing.scalars().first()
+        payload = {
+            "event_id": event_id,
+            "actor_id": actor_id,
+            "actor_name": actor_name,
+            "title": title,
+            "body": body,
+            "target_id": object_id,
+            "target_type": object_type,
+            "permission": permission,
+            "link": link,
+        }
+
+        if notification is None:
+            notification = Notification(
+                id=notification_id,
+                user_id=target_user_id,
+                event_type="acl.shared",
+                payload=payload,
+            )
+            self.session.add(notification)
+        else:
+            notification.payload = payload
+            notification.read_at = None
+        await self.session.flush()
 
     async def revoke_share(
         self, command: RevokeShareCommand, actor_id: str

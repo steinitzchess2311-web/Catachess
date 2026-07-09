@@ -1,7 +1,7 @@
 /**
  * Created at: 2026-07-08 22:36 EDT
  * Created by: Codex
- * Last Modified at: 2026-07-08 22:36 EDT
+ * Last Modified at: 2026-07-09 02:27 EDT
  * Last Modified by: Codex
  *
  * Global app header. Owns navigation, notifications, account entry, and the
@@ -23,7 +23,7 @@ interface HeaderProps {
   userRole?: string | null;  // User's role (admin, editor, etc.)
 }
 
-interface Notification {
+interface ChatNotification {
   id: string;
   conversation_id: string;
   sender_name: string | null;
@@ -36,6 +36,30 @@ interface BroadcastNotif {
   sender_name: string | null;
   content: string;
   created_at: string;
+}
+
+interface WorkspaceNotificationData {
+  link?: string;
+  actor_name?: string;
+  permission?: string;
+  [key: string]: unknown;
+}
+
+interface WorkspaceNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  target_id: string | null;
+  target_type: string | null;
+  data: WorkspaceNotificationData;
+  read_at: string | null;
+  created_at: string;
+}
+
+interface WorkspaceNotificationListResponse {
+  notifications: WorkspaceNotification[];
+  unread_count: number;
 }
 
 const CATACHAT_URL = "https://catachat.catachess.com";
@@ -90,6 +114,18 @@ function currentGameSignature(game: CurrentGameResponse | null): string {
   ].join('|');
 }
 
+function workspaceNotificationLink(notification: WorkspaceNotification): string {
+  const directLink = typeof notification.data?.link === 'string' ? notification.data.link.trim() : '';
+  if (directLink.startsWith('/')) return directLink;
+  if (notification.target_type === 'study' && notification.target_id) {
+    return `/patch/workspace/${notification.target_id}`;
+  }
+  if (notification.target_id) {
+    return `/workspace/shared?node=${encodeURIComponent(notification.target_id)}`;
+  }
+  return '/workspace/shared';
+}
+
 const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
   const displayName = username?.trim() || 'Account';
   const rightClickCountRef = useRef(0);
@@ -98,12 +134,14 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
   const navigate = useNavigate();
 
   const [bellOpen, setBellOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<ChatNotification[]>([]);
   const [latestBroadcast, setLatestBroadcast] = useState<BroadcastNotif | null>(null);
+  const [workspaceNotifications, setWorkspaceNotifications] = useState<WorkspaceNotification[]>([]);
+  const [workspaceUnreadCount, setWorkspaceUnreadCount] = useState(0);
   const [seenIds, setSeenIds] = useState<Set<string>>(() => loadSeenIds());
   const bellRef = useRef<HTMLDivElement>(null);
 
-  // ⚔ Challenge / current game state
+  // Challenge / current game state
   const [challengeOpen, setChallengeOpen] = useState(false);
   const [currentGame, setCurrentGame] = useState<CurrentGameResponse | null>(null);
   const challengeRef = useRef<HTMLDivElement>(null);
@@ -111,16 +149,41 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
   const currentGameRef = useRef<CurrentGameResponse | null>(null);
   const currentGamePollInFlightRef = useRef(false);
 
+  const refreshBellNotifications = useCallback(() => {
+    if (!isAuthed) {
+      setNotifications([]);
+      setLatestBroadcast(null);
+      setWorkspaceNotifications([]);
+      setWorkspaceUnreadCount(0);
+      return;
+    }
+    void api.get('/api/catchat/notifications?limit=5')
+      .then((data: ChatNotification[]) => setNotifications(Array.isArray(data) ? data : []))
+      .catch(() => setNotifications([]));
+    void api.get('/api/catchat/broadcasts?limit=1')
+      .then((data: BroadcastNotif[]) => setLatestBroadcast(Array.isArray(data) ? data[0] ?? null : null))
+      .catch(() => setLatestBroadcast(null));
+    void api.get('/api/v1/workspace/notifications?page=1&page_size=8')
+      .then((data: WorkspaceNotificationListResponse) => {
+        setWorkspaceNotifications(Array.isArray(data.notifications) ? data.notifications : []);
+        setWorkspaceUnreadCount(Number.isFinite(data.unread_count) ? data.unread_count : 0);
+      })
+      .catch(() => {
+        setWorkspaceNotifications([]);
+        setWorkspaceUnreadCount(0);
+      });
+  }, [isAuthed]);
+
   // Fetch notifications + latest broadcast when user is authed
   useEffect(() => {
-    if (!isAuthed) return;
-    api.get('/api/catchat/notifications?limit=5')
-      .then((data: Notification[]) => setNotifications(data))
-      .catch(() => {});
-    api.get('/api/catchat/broadcasts?limit=1')
-      .then((data: BroadcastNotif[]) => setLatestBroadcast(data[0] ?? null))
-      .catch(() => {});
-  }, [isAuthed]);
+    refreshBellNotifications();
+  }, [refreshBellNotifications]);
+
+  useEffect(() => {
+    if (bellOpen) {
+      refreshBellNotifications();
+    }
+  }, [bellOpen, refreshBellNotifications]);
 
   // Poll current game with adaptive cadence: fast only while there is an active game.
   const pollCurrentGame = useCallback(() => {
@@ -199,7 +262,8 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
 
   const unseenCount =
     notifications.filter(n => !seenIds.has(n.id)).length +
-    (latestBroadcast && !seenIds.has(latestBroadcast.id) ? 1 : 0);
+    (latestBroadcast && !seenIds.has(latestBroadcast.id) ? 1 : 0) +
+    workspaceUnreadCount;
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -233,7 +297,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
     }
   };
 
-  const handleLogoClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleLogoClick = () => {
     // Always navigate to home page
     // No special logic needed - let default Link behavior handle it
   };
@@ -276,6 +340,24 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
     openCatachat('/broadcast');
   }
 
+  async function handleWorkspaceNotificationClick(notification: WorkspaceNotification) {
+    setBellOpen(false);
+    const link = workspaceNotificationLink(notification);
+    if (!notification.read_at) {
+      const now = new Date().toISOString();
+      setWorkspaceNotifications(prev => prev.map(item => (
+        item.id === notification.id ? { ...item, read_at: now } : item
+      )));
+      setWorkspaceUnreadCount(count => Math.max(0, count - 1));
+      try {
+        await api.post('/api/v1/workspace/notifications/read', { notification_ids: [notification.id] });
+      } catch {
+        refreshBellNotifications();
+      }
+    }
+    navigate(link);
+  }
+
   return (
     <header className="app-header">
       <div className="header-left">
@@ -287,7 +369,6 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
         >
           <img src={logoImage} alt="ChessorTag" className="logo-image" />
         </Link>
-        {/* Navigation links moved here, next to logo */}
         <nav className="header-center">
           <Link to={isAuthed ? "/workspace/private" : "/workspace/public"} className="nav-link">Workspace</Link>
           <Link to="/playerbase" className="nav-link">Playerbase</Link>
@@ -300,7 +381,6 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
               <Link to="/board-editor" className="nav-dropdown-item">Board Editor</Link>
             </div>
           </div>
-          {/* <Link to="/sponsorship" className="nav-link" style={{ color: '#ff8c00', fontWeight: 600 }}>Sponsorship</Link> */}
         </nav>
       </div>
       <div className="header-right">
@@ -340,7 +420,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
                         className="challenge-go-btn"
                         onClick={() => { setChallengeOpen(false); navigate(`/games/${currentGame.game_id}`); }}
                       >
-                        Go to Game →
+                        Go to Game
                       </button>
                       {currentGame.status === 'waiting' && (
                         <button
@@ -363,7 +443,7 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
           <div className="bell-wrapper" ref={bellRef}>
             <button
               className="bell-btn"
-              aria-label="Messages"
+              aria-label="Notifications"
               onClick={() => setBellOpen(o => !o)}
             >
               <BellIcon width={18} height={18} />
@@ -373,9 +453,8 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
             </button>
             {bellOpen && (
               <div className="bell-dropdown">
-                <div className="bell-dropdown-header">Messages</div>
+                <div className="bell-dropdown-header">Notifications</div>
 
-                {/* Broadcast — always pinned at top */}
                 {latestBroadcast && (
                   <button
                     className={`bell-item bell-item--broadcast ${seenIds.has(latestBroadcast.id) ? 'bell-item--seen' : ''}`}
@@ -390,44 +469,48 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
                   </button>
                 )}
 
-                {/* Regular message notifications */}
-                {notifications.length === 0 && !latestBroadcast ? (
-                  <div className="bell-empty">No new messages</div>
-                ) : (
-                  notifications.map(n => (
-                    <button
-                      key={n.id}
-                      className={`bell-item ${seenIds.has(n.id) ? 'bell-item--seen' : ''}`}
-                      onClick={() => handleNotificationClick(n.id, n.sender_name)}
-                    >
-                      <span className="bell-item-sender">{n.sender_name ?? 'Someone'}</span>
-                      <span className="bell-item-content">{n.content}</span>
-                    </button>
-                  ))
+                {workspaceNotifications.map(notification => (
+                  <button
+                    key={`workspace-${notification.id}`}
+                    className={`bell-item bell-item--workspace ${notification.read_at ? 'bell-item--seen' : ''}`}
+                    onClick={() => { void handleWorkspaceNotificationClick(notification); }}
+                  >
+                    <span className="bell-item-label">
+                      {notification.target_type === 'study' ? 'Study invite' : 'Workspace'}
+                    </span>
+                    <span className="bell-item-sender">{notification.title}</span>
+                    <span className="bell-item-content">{notification.body}</span>
+                  </button>
+                ))}
+
+                {notifications.map(n => (
+                  <button
+                    key={`chat-${n.id}`}
+                    className={`bell-item ${seenIds.has(n.id) ? 'bell-item--seen' : ''}`}
+                    onClick={() => handleNotificationClick(n.id, n.sender_name)}
+                  >
+                    <span className="bell-item-label">CataChat</span>
+                    <span className="bell-item-sender">{n.sender_name ?? 'Someone'}</span>
+                    <span className="bell-item-content">{n.content}</span>
+                  </button>
+                ))}
+
+                {notifications.length === 0 && workspaceNotifications.length === 0 && !latestBroadcast && (
+                  <div className="bell-empty">No new notifications</div>
                 )}
 
                 <button className="bell-open-chat" onClick={() => openCatachat()}>
-                  Open catachat →
+                  Open CataChat
                 </button>
               </div>
             )}
           </div>
         )}
         {isAuthed ? (
-          <Link to={`/@${username || ''}`} className="username" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {displayName}
+          <Link to={`/@${username || ''}`} className="username">
+            <span className="username-label">{displayName}</span>
             {(userRole === 'admin' || userRole === 'editor') && (
-              <span style={{
-                display: 'inline-block',
-                padding: '2px 8px',
-                fontSize: '0.7rem',
-                fontWeight: 700,
-                color: 'white',
-                backgroundColor: userRole === 'admin' ? '#4caf50' : '#2196f3',
-                borderRadius: '10px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.5px'
-              }}>
+              <span className={`header-role-badge header-role-badge--${userRole}`}>
                 {userRole}
               </span>
             )}

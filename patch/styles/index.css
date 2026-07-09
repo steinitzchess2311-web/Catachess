@@ -1580,7 +1580,7 @@ main {
 }
 
 .patch-analysis-settings {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 10px;
   border: 1px solid #e2e8f0;
@@ -1593,12 +1593,17 @@ main {
 }
 
 .patch-analysis-field select {
+  width: 100%;
   min-height: 32px;
   border: 1px solid rgba(20, 25, 34, 0.14);
   border-radius: 8px;
   background: #ffffff;
   color: #111827;
   padding: 0 8px;
+}
+
+.patch-analysis-toggle {
+  justify-content: flex-start;
 }
 
 .patch-analysis-label {

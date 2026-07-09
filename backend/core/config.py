@@ -1,4 +1,12 @@
-# core/config.py
+"""
+Created at: 2026-07-08 23:15 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:15 EDT
+Last Modified by: Codex
+
+Application settings loaded from environment variables.
+"""
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pathlib import Path
 import os
@@ -30,10 +38,25 @@ class Settings(BaseSettings):
     LICHESS_CLOUD_EVAL_URL: str = "https://lichess.org/api/cloud-eval"
 
     # ===== engine queue =====
-    # Number of concurrent engine workers (3 = max 3 simultaneous engine calls)
-    ENGINE_QUEUE_MAX_WORKERS: int = 3
+    # Number of concurrent engine workers. Product default is capped at 10 so
+    # local Stockfish cannot exhaust the 32-core production server.
+    ENGINE_QUEUE_MAX_WORKERS: int = 10
     # Rate limit for /api/engine/analyze endpoint (requests per minute per IP)
     ENGINE_RATE_LIMIT_PER_MINUTE: int = 30
+
+    # ===== local engine workers =====
+    STOCKFISH_BINARY_PATH: str = "/usr/games/stockfish"
+    STOCKFISH_MAX_WORKERS: int = 10
+    STOCKFISH_THREADS_PER_WORKER: int = 1
+    STOCKFISH_HASH_MB: int = 64
+    STOCKFISH_MAX_DEPTH: int = 24
+    STOCKFISH_MAX_MULTIPV: int = 5
+    ENGINE_SLOT_LOCK_DIR: str = "/tmp/catachess_engine_slots"
+    ALPHAZERO_COMMAND: str = ""
+    ALPHAZERO_MODEL_PATH: str = ""
+    ALPHAZERO_MAX_WORKERS: int = 1
+    ALPHAZERO_TIMEOUT: int = 60
+    ALPHAZERO_CUDA_VISIBLE_DEVICES: str = "0"
 
     # ===== multi-spot engine =====
     ENABLE_MULTI_SPOT: bool = False

@@ -1,3 +1,12 @@
+/*
+Created at: 2026-07-08 23:10 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:10 EDT
+Last Modified by: Codex
+
+Plain engine result panel for scores and principal variations.
+*/
+
 import React from 'react';
 import type { EngineLine } from '../../engine/types';
 import { formatScore } from '../utils/formatters';
@@ -7,6 +16,7 @@ export interface AnalysisPanelProps {
   lines: Array<EngineLine & { sanText?: string }>;
   error: string | null;
   turn?: 'w' | 'b';
+  engineLabel?: string;
 }
 
 function scoreTone(score: EngineLine['score']): 'good' | 'equal' | 'bad' {
@@ -23,6 +33,7 @@ export function AnalysisPanel({
   lines,
   error,
   turn = 'w',
+  engineLabel = 'Engine',
 }: AnalysisPanelProps) {
   const primaryLine = lines[0] || null;
   const primaryScore = primaryLine ? formatScore(primaryLine.score) : '--';
@@ -32,7 +43,7 @@ export function AnalysisPanel({
   return (
     <div className="patch-analysis-panel">
       <div className="patch-analysis-summary">
-        <h3 className="patch-analysis-title">Engine analysis</h3>
+        <h3 className="patch-analysis-title">{engineLabel}</h3>
         <div className="patch-analysis-primary-score" data-tone={primaryTone}>
           {primaryScore}
         </div>

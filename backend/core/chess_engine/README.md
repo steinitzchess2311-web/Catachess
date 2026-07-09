@@ -1,6 +1,30 @@
+## header
+Created at: 2026-07-08 23:05 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:30 EDT
+Lst Modified by: Codex
+
+## brief intro
+- goal for this folder: Server-side chess engine clients, local worker adapters, queue integration, and multi-spot orchestration.
+- 架构思路: Keep engine selection in `client.py`, server-hosted worker execution in `local_workers.py`, request backpressure in `queue.py`, and legacy multi-spot routing in `orchestrator/`.
+
+## folder structure
+|-README.md intro to this folder
+|-client.py engine selection client used by `/api/engine/analyze`
+|-local_workers.py local Stockfish and AlphaZero worker adapters with cross-process concurrency limits
+|-queue.py global request queue with deduplication and bounded workers
+|-schemas.py shared EngineResult and EngineLine models
+|-fallback.py legal-move fallback used only when configured
+|-config/ multi-spot configuration loading
+|-orchestrator/ multi-spot routing and failover
+|-spot/ individual HTTP engine spot wrappers and models
+
+## 代办
+- Install a real AlphaZero model/runtime and set `ALPHAZERO_COMMAND` plus `ALPHAZERO_MODEL_PATH` once GPU drivers are healthy.
+
 # Chess Engine Module
 
-> Multi-spot Stockfish engine orchestration with automatic failover
+> Multi-spot Stockfish engine orchestration with automatic failover and local worker support.
 
 This module provides a resilient chess engine client that can route requests across multiple Stockfish engine spots, with automatic failover, priority-based selection, and comprehensive metrics tracking.
 

@@ -3,7 +3,7 @@
 ## header
 Created at: 2026-07-08 20:33 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 20:33 EDT
+Last Modified at: 2026-07-08 23:15 EDT
 Last Modified by: Codex
 
 ## Page Job
@@ -16,6 +16,8 @@ Last Modified by: Codex
 - Study page breadcrumbs compress long paths: first item, `...` overflow menu, and last two items remain visible.
 - Study breadcrumb hidden ancestors remain navigable through the `...` menu and must respect unsaved-change warnings.
 - Right panels should prioritize move tree and explorer workflows with compact tabs and predictable scrolling.
+- Analysis sidebars expose compact controls for Depth, Lines, Engine on/off, and Engine choice.
+- Engine choice options are Auto, Stockfish, and AlphaZero; unavailable engines must report plain errors instead of silently showing another engine's result.
 
 ## Modal Rules
 - Study and analysis workflow modals use the `.patch-modal` family.
@@ -29,6 +31,7 @@ Last Modified by: Codex
 - Blue and white product language shared with workspace.
 - Compact information density.
 - No oversized hero treatment, colorful decorative blocks, or hidden hover-only explanations.
+- Engine analysis panels use white surfaces, thin borders, small rank markers, and restrained score colors.
 
 ## 代办
 - Continue aligning train launcher and opening trainer modals in a later pass.

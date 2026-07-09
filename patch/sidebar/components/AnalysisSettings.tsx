@@ -1,10 +1,22 @@
+/*
+Created at: 2026-07-08 23:10 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:10 EDT
+Last Modified by: Codex
+
+Plain engine settings controls for analysis sidebars.
+*/
+
 import React from 'react';
+import type { EngineMode } from '../../engine/types';
 
 export interface AnalysisSettingsProps {
   currentDepth: number | null;
   nps: number | null;
   multipv: number;
   onMultipvChange: (multipv: number) => void;
+  engineMode: EngineMode;
+  onEngineModeChange: (engineMode: EngineMode) => void;
   engineEnabled: boolean;
   onEngineEnabledChange: (enabled: boolean) => void;
 }
@@ -20,6 +32,8 @@ export function AnalysisSettings({
   nps,
   multipv,
   onMultipvChange,
+  engineMode,
+  onEngineModeChange,
   engineEnabled,
   onEngineEnabledChange,
 }: AnalysisSettingsProps) {
@@ -54,7 +68,15 @@ export function AnalysisSettings({
       </div>
       <div className="patch-analysis-field">
         <span className="patch-analysis-label">Engine</span>
-        <span className="patch-analysis-value">Auto</span>
+        <select
+          value={engineMode}
+          onChange={(e) => onEngineModeChange(e.target.value as EngineMode)}
+          aria-label="Engine mode"
+        >
+          <option value="auto">Auto</option>
+          <option value="stockfish">Stockfish</option>
+          <option value="alphazero">AlphaZero</option>
+        </select>
       </div>
     </div>
   );

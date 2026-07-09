@@ -1,7 +1,16 @@
+/*
+Created at: 2026-07-08 23:10 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:10 EDT
+Last Modified by: Codex
+
+React hook for lifecycle-managed engine analysis.
+*/
+
 import { useState, useEffect, useRef } from 'react';
 import { analyzeAuto } from '../../engine/client';
 import { stopAnalysis } from '../../engine/wasm/stockfish';
-import type { EngineLine, EngineSource } from '../../engine/types';
+import type { EngineLine, EngineMode, EngineSource } from '../../engine/types';
 import { cancelPrecompute } from '../../engine/precompute';
 import { FALLBACK_BACKOFF_MS } from '../utils/config';
 
@@ -12,6 +21,7 @@ export interface UseEngineAnalysisOptions {
   enabled: boolean;
   fen: string;
   multipv: number;
+  engineMode: EngineMode;
 }
 
 export interface UseEngineAnalysisResult {
@@ -35,6 +45,7 @@ export function useEngineAnalysis({
   enabled,
   fen,
   multipv,
+  engineMode,
 }: UseEngineAnalysisOptions): UseEngineAnalysisResult {
   const [lines, setLines] = useState<EngineLine[]>([]);
   const [analysisFen, setAnalysisFen] = useState<string | null>(null);
@@ -81,7 +92,7 @@ export function useEngineAnalysis({
       setLastUpdated(Date.now());
       setHealth('ok');
       setStatus('ready');
-      setEngineOrigin('stockfishWASM');
+      setEngineOrigin(engineMode === 'auto' ? 'stockfishWASM' : null);
       // Compute knps (Lichess style: nodes / millis)
       if (analysis.nodes && analysis.millis && analysis.millis > 0) {
         setNps(Math.round(analysis.nodes / analysis.millis));
@@ -89,7 +100,7 @@ export function useEngineAnalysis({
     };
 
     try {
-      const result = await analyzeAuto(targetFen, multipv, onUpdate);
+      const result = await analyzeAuto(targetFen, multipv, onUpdate, engineMode);
       // Only apply if FEN hasn't changed and WASM hasn't already updated with a deeper result
       if (currentFenRef.current === targetFen) {
         setLines(result.lines);
@@ -141,7 +152,7 @@ export function useEngineAnalysis({
       stopAnalysis();
       inFlightRef.current = false;
     };
-  }, [enabled, fen, multipv]);
+  }, [enabled, fen, multipv, engineMode]);
 
   // Reset state when disabled
   useEffect(() => {
@@ -169,7 +180,7 @@ export function useEngineAnalysis({
     setEngineOrigin(null);
     setCurrentDepth(null);
     setNps(null);
-  }, [enabled, fen, multipv]);
+  }, [enabled, fen, multipv, engineMode]);
 
   return {
     lines,

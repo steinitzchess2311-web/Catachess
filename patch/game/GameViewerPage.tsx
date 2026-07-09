@@ -1,3 +1,12 @@
+/*
+Created at: 2026-07-08 23:10 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:10 EDT
+Last Modified by: Codex
+
+Game viewer page with database game details and analysis tools.
+*/
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import '../../frontend/web/src/pages/analysis/analysis.css';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
@@ -9,6 +18,7 @@ import { StudyErrorBoundary } from '../components/ErrorBoundary';
 import { AnalysisSettings } from '../sidebar/components/AnalysisSettings';
 import { AnalysisPanel } from '../sidebar/components/AnalysisPanel';
 import { useEngineAnalysis } from '../sidebar/hooks/useEngineAnalysis';
+import type { EngineMode } from '../engine/types';
 import { uciLineToSan } from '../chessJS/uci';
 import { getTurn } from '../chessJS/fen';
 import { formatSanWithMoveNumbers } from '../sidebar/utils/formatters';
@@ -83,11 +93,13 @@ function GameSidebar({ game }: { game: GameDetail }) {
   const [activeTab, setActiveTab] = useState<'info' | 'analysis'>('info');
   const [multipv, setMultipv] = useState(3);
   const [engineEnabled, setEngineEnabled] = useState(false);
+  const [engineMode, setEngineMode] = useState<EngineMode>('auto');
 
   const engineAnalysis = useEngineAnalysis({
     enabled: activeTab === 'analysis' && engineEnabled,
     fen: state.currentFen,
     multipv,
+    engineMode,
   });
 
   const formattedLines = useMemo(() => {
@@ -131,6 +143,8 @@ function GameSidebar({ game }: { game: GameDetail }) {
             nps={engineAnalysis.nps}
             multipv={multipv}
             onMultipvChange={setMultipv}
+            engineMode={engineMode}
+            onEngineModeChange={setEngineMode}
             engineEnabled={engineEnabled}
             onEngineEnabledChange={setEngineEnabled}
           />
@@ -139,6 +153,7 @@ function GameSidebar({ game }: { game: GameDetail }) {
             lines={formattedLines}
             error={engineAnalysis.error}
             turn={getTurn(state.currentFen) ?? 'w'}
+            engineLabel={engineMode === 'auto' ? 'Auto engine' : engineMode === 'stockfish' ? 'Stockfish' : 'AlphaZero'}
           />
         </div>
       )}

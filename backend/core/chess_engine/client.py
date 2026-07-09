@@ -1,9 +1,18 @@
-# core/chess_engine/client.py
+"""
+Created at: 2026-07-08 23:10 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:10 EDT
+Last Modified by: Codex
+
+Engine selection client for cloud eval, local workers, and legacy upstream fallback.
+"""
+
 import requests
 import time
 from core.config import settings
 from core.chess_engine.schemas import EngineResult, EngineLine
 from core.chess_engine.fallback import analyze_legal_moves
+from core.chess_engine.local_workers import get_alphazero_worker, get_local_stockfish_worker
 from core.log.log_chess_engine import logger
 from core.errors import ChessEngineError, ChessEngineTimeoutError
 
@@ -30,12 +39,25 @@ class EngineClient:
         method_start = time.time()
 
         if settings.ENGINE_DISABLE_CLOUD:
-            logger.info("[ENGINE CLIENT] Cloud Eval disabled; using sf.catachess")
-            return self._analyze_sf(fen, depth, multipv)
+            logger.info("[ENGINE CLIENT] Cloud Eval disabled; using local Stockfish")
+            return get_local_stockfish_worker().analyze(fen, depth, multipv)
+
+        if engine in ("stockfish", "local-stockfish"):
+            logger.info("[ENGINE CLIENT] Engine override: local Stockfish")
+            return get_local_stockfish_worker().analyze(fen, depth, multipv)
+
+        if engine == "alphazero":
+            logger.info("[ENGINE CLIENT] Engine override: AlphaZero")
+            return get_alphazero_worker().analyze(fen, depth, multipv)
 
         if engine == "sf":
-            logger.info("[ENGINE CLIENT] Engine override: SFCata")
-            return self._analyze_sf(fen, depth, multipv)
+            logger.info("[ENGINE CLIENT] Engine override: local Stockfish")
+            try:
+                return get_local_stockfish_worker().analyze(fen, depth, multipv)
+            except Exception as local_exc:
+                logger.error(f"[ENGINE CLIENT] local Stockfish failed: {local_exc}")
+                logger.info("[ENGINE CLIENT] Falling back to sf.catachess")
+                return self._analyze_sf(fen, depth, multipv)
 
         logger.info(f"[ENGINE CLIENT] Attempting Cloud Eval: fen={fen[:50]}..., multipv={multipv}")
 
@@ -59,11 +81,11 @@ class EngineClient:
             if resp.status_code == 429:
                 # Rate limit
                 logger.warning(f"[ENGINE CLIENT] Lichess Cloud Eval rate limit (429) after {cloud_duration:.3f}s")
-                logger.info("[ENGINE CLIENT] Falling back to sf.catachess due to rate limit")
+                logger.info("[ENGINE CLIENT] Falling back to local Stockfish due to rate limit")
                 try:
-                    return self._analyze_sf(fen, depth, multipv)
+                    return get_local_stockfish_worker().analyze(fen, depth, multipv)
                 except Exception as sf_exc:
-                    logger.error(f"[ENGINE CLIENT] sf.catachess fallback failed: {sf_exc}")
+                    logger.error(f"[ENGINE CLIENT] local Stockfish fallback failed: {sf_exc}")
                     if settings.ENGINE_FALLBACK_MODE != "off":
                         logger.info("[ENGINE CLIENT] Final fallback to legal moves")
                         return analyze_legal_moves(fen, depth, multipv)
@@ -72,11 +94,11 @@ class EngineClient:
             if resp.status_code == 404:
                 # Not found (no cloud eval available for this position)
                 logger.info(f"[ENGINE CLIENT] Cloud eval not found (404) after {cloud_duration:.3f}s")
-                logger.info("[ENGINE CLIENT] Falling back to sf.catachess (position not in cloud)")
+                logger.info("[ENGINE CLIENT] Falling back to local Stockfish (position not in cloud)")
                 try:
-                    return self._analyze_sf(fen, depth, multipv)
+                    return get_local_stockfish_worker().analyze(fen, depth, multipv)
                 except Exception as sf_exc:
-                    logger.error(f"[ENGINE CLIENT] sf.catachess fallback failed: {sf_exc}")
+                    logger.error(f"[ENGINE CLIENT] local Stockfish fallback failed: {sf_exc}")
                     if settings.ENGINE_FALLBACK_MODE != "off":
                         logger.info("[ENGINE CLIENT] Final fallback to legal moves")
                         return analyze_legal_moves(fen, depth, multipv)
@@ -91,11 +113,11 @@ class EngineClient:
         except requests.exceptions.Timeout:
             cloud_duration = time.time() - cloud_start
             logger.error(f"[ENGINE CLIENT] Cloud Eval timeout after {cloud_duration:.3f}s (limit: {self.timeout}s)")
-            logger.info("[ENGINE CLIENT] Falling back to sf.catachess due to timeout")
+            logger.info("[ENGINE CLIENT] Falling back to local Stockfish due to timeout")
             try:
-                return self._analyze_sf(fen, depth, multipv)
+                return get_local_stockfish_worker().analyze(fen, depth, multipv)
             except Exception as sf_exc:
-                logger.error(f"[ENGINE CLIENT] sf.catachess fallback failed: {sf_exc}")
+                logger.error(f"[ENGINE CLIENT] local Stockfish fallback failed: {sf_exc}")
                 if settings.ENGINE_FALLBACK_MODE != "off":
                     logger.info("[ENGINE CLIENT] Final fallback to legal moves")
                     return analyze_legal_moves(fen, depth, multipv)
@@ -104,11 +126,11 @@ class EngineClient:
         except Exception as e:
             cloud_duration = time.time() - cloud_start
             logger.error(f"[ENGINE CLIENT] Cloud Eval failed after {cloud_duration:.3f}s: {e}")
-            logger.info("[ENGINE CLIENT] Falling back to sf.catachess due to error")
+            logger.info("[ENGINE CLIENT] Falling back to local Stockfish due to error")
             try:
-                return self._analyze_sf(fen, depth, multipv)
+                return get_local_stockfish_worker().analyze(fen, depth, multipv)
             except Exception as sf_exc:
-                logger.error(f"[ENGINE CLIENT] sf.catachess fallback failed: {sf_exc}")
+                logger.error(f"[ENGINE CLIENT] local Stockfish fallback failed: {sf_exc}")
                 if settings.ENGINE_FALLBACK_MODE != "off":
                     logger.info("[ENGINE CLIENT] Final fallback to legal moves")
                     return analyze_legal_moves(fen, depth, multipv)

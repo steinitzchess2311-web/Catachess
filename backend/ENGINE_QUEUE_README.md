@@ -21,17 +21,18 @@ Backend（速率限制：30次/分钟/IP）
   ↓
 Engine Queue（排队 + 去重）
   ↓
-Engine Workers（有限个：3个worker）
+Engine Workers（有限个：默认10个worker）
   ↓
-sf.catachess / Lichess Cloud Eval
+本机 Stockfish / AlphaZero / Lichess Cloud Eval
 ```
 
 ## 核心功能
 
 ### 1. **请求排队**
 - 所有引擎请求进入 FIFO 队列
-- 队列大小无限，但只有 3 个 worker 并发处理
-- 防止同时发送过多请求到外部引擎
+- 队列大小无限，但只有有限 worker 并发处理，生产默认 10
+- 本机 Stockfish 另有跨进程 slot lock，4 个 gunicorn worker 合计最多 10 个 Stockfish 进程
+- 防止同时发送过多请求到本机或外部引擎
 
 ### 2. **请求去重**
 - 相同的请求（FEN + depth + multipv + engine）自动合并
@@ -54,7 +55,7 @@ sf.catachess / Lichess Cloud Eval
 
 ```bash
 # 引擎队列配置
-ENGINE_QUEUE_MAX_WORKERS=3           # 最大并发 worker 数（推荐：3-5）
+ENGINE_QUEUE_MAX_WORKERS=10          # 最大并发 worker 数（不建议超过10）
 ENGINE_RATE_LIMIT_PER_MINUTE=30      # 每分钟每 IP 的请求限制（推荐：30-60）
 ```
 
@@ -63,8 +64,8 @@ ENGINE_RATE_LIMIT_PER_MINUTE=30      # 每分钟每 IP 的请求限制（推荐�
 | 场景 | MAX_WORKERS | RATE_LIMIT | 说明 |
 |------|-------------|------------|------|
 | **低流量** | 2 | 20 | 节省资源，适合开发环境 |
-| **中流量（推荐）** | 3 | 30 | 平衡性能和保护 |
-| **高流量** | 5 | 60 | 提高吞吐量，但需确保 sf.catachess 能承受 |
+| **中流量** | 5 | 30 | 平衡性能和保护 |
+| **高流量（生产上限）** | 10 | 60 | 提高吞吐量，但不允许无限制抢 CPU |
 | **严格保护** | 2 | 10 | 防止滥用，适合公开测试 |
 
 ## API 端点
@@ -82,7 +83,7 @@ POST /api/engine/analyze
   "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
   "depth": 20,
   "multipv": 3,
-  "engine": "sf"
+  "engine": "stockfish"
 }
 ```
 
@@ -96,7 +97,7 @@ POST /api/engine/analyze
       "pv": ["e2e4", "e7e5", "g1f3"]
     }
   ],
-  "source": "sf",
+  "source": "LocalStockfish",
   "cache_metadata": {
     "mongodb_hit": false,
     "engine_ms": 542.3,
@@ -115,6 +116,7 @@ GET /api/engine/queue/stats
 {
   "queue_size": 2,              // 当前队列中等待的请求数
   "active_workers": 3,          // 正在处理的 worker 数
+  "max_workers": 10,            // 最大 worker 数
   "total_requests": 145,        // 总请求数（自启动以来）
   "total_completed": 140,       // 已完成数
   "total_failed": 3,            // 失败数
@@ -266,8 +268,8 @@ done
 **原因：** Worker 数量不足或引擎响应慢
 
 **解决：**
-1. 增加 `ENGINE_QUEUE_MAX_WORKERS` (例如改为 5)
-2. 检查 `sf.catachess` 是否正常
+1. 增加 `ENGINE_QUEUE_MAX_WORKERS`（最多 10）
+2. 检查本机 Stockfish 或 AlphaZero worker 状态
 3. 检查 MongoDB 缓存命中率
 
 ### 问题：大量 429 错误
@@ -280,7 +282,7 @@ done
 
 ### 问题：引擎调用失败
 
-**原因：** sf.catachess 不可用
+**原因：** 本机 Stockfish 不可用、AlphaZero 配置缺失，或外部兜底不可用
 
 **解决：**
 1. 检查 `ENGINE_URL` 配置

@@ -1,15 +1,22 @@
 """
+Created at: 2026-07-08 23:10 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:10 EDT
+Last Modified by: Codex
+
 Chess Engine Router
 
 Exposes Analysis (Cloud Eval) to frontend.
 Stage 11: Switched to Lichess Cloud Eval API.
 Stage 12: Added MongoDB global cache.
 Stage 13: Added engine request queue + rate limiting.
+Stage 14: Added local Stockfish worker capability and AlphaZero worker status.
 """
 from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel
 
 from core.chess_engine.client import EngineClient
+from core.chess_engine.local_workers import get_engine_capabilities
 from core.chess_engine.queue import get_engine_queue
 from core.errors import ChessEngineError, ChessEngineTimeoutError
 from core.log.log_chess_engine import logger
@@ -44,6 +51,7 @@ class CacheStoreRequest(BaseModel):
     multipv: int
     lines: list[dict]
     source: str
+    engine_mode: str | None = None
 
 
 # Initialize engine client
@@ -207,9 +215,33 @@ async def engine_health():
     """
     Check engine health.
     """
+    capabilities = get_engine_capabilities()
+    engine_queue = get_engine_queue()
+    stats = engine_queue.get_stats()
     return {
         "status": "healthy",
-        "service": "lichess-cloud-eval",
+        "service": "catachess-engine",
+        "queue": {
+            "queue_size": stats.queue_size,
+            "active_workers": stats.active_workers,
+            "max_workers": engine_queue.max_workers,
+            "total_requests": stats.total_requests,
+            "total_completed": stats.total_completed,
+            "total_failed": stats.total_failed,
+        },
+        "engines": [
+            {
+                "key": capability.key,
+                "label": capability.label,
+                "available": capability.available,
+                "status": capability.status,
+                "detail": capability.detail,
+                "concurrency_limit": capability.concurrency_limit,
+                "active_workers": capability.active_workers,
+                "binary": capability.binary,
+            }
+            for capability in capabilities
+        ],
     }
 
 
@@ -237,7 +269,7 @@ async def cache_stats():
 
 
 @router.get("/cache/lookup")
-async def cache_lookup(fen: str, depth: int = 15, multipv: int = 3):
+async def cache_lookup(fen: str, depth: int = 15, multipv: int = 3, engine_mode: str = "auto"):
     """
     Lookup MongoDB cache entry without triggering engine.
     """
@@ -247,7 +279,7 @@ async def cache_lookup(fen: str, depth: int = 15, multipv: int = 3):
             fen=fen,
             depth=depth,
             multipv=multipv,
-            engine_mode="auto",
+            engine_mode=engine_mode,
         )
         if not cache_result:
             raise HTTPException(
@@ -261,6 +293,7 @@ async def cache_lookup(fen: str, depth: int = 15, multipv: int = 3):
         return {
             "lines": cache_result.get("lines", []),
             "source": cache_result.get("source"),
+            "engine_mode": cache_result.get("engine_mode"),
             "timestamp_ms": timestamp_ms,
             "hit_count": cache_result.get("hit_count", 0),
         }
@@ -285,7 +318,7 @@ async def cache_store(request: CacheStoreRequest):
             fen=request.fen,
             depth=request.depth,
             multipv=request.multipv,
-            engine_mode="auto",
+            engine_mode=request.engine_mode or "auto",
             lines=request.lines,
             source=request.source,
         )
@@ -319,6 +352,7 @@ async def queue_stats():
         return {
             "queue_size": stats.queue_size,
             "active_workers": stats.active_workers,
+            "max_workers": engine_queue.max_workers,
             "total_requests": stats.total_requests,
             "total_completed": stats.total_completed,
             "total_failed": stats.total_failed,

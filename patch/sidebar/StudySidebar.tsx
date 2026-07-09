@@ -1,3 +1,12 @@
+/*
+Created at: 2026-07-08 23:10 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:10 EDT
+Last Modified by: Codex
+
+Study sidebar tabs for chapters, analysis, and predictor panels.
+*/
+
 import React, { useEffect, useState, useMemo } from 'react';
 import { useStudy } from '../studyContext';
 import { uciLineToSan } from '../chessJS/uci';
@@ -10,6 +19,7 @@ import { ImitatorSettings } from './components/ImitatorSettings';
 import { ImitatorPanel } from './components/ImitatorPanel';
 import { useEngineAnalysis } from './hooks/useEngineAnalysis';
 import { useImitator } from './hooks/useImitator';
+import type { EngineMode } from '../engine/types';
 import { formatSanWithMoveNumbers } from './utils/formatters';
 
 export interface StudySidebarProps {
@@ -39,6 +49,7 @@ export function StudySidebar({
   const [activeTab, setActiveTab] = useState<'chapters' | 'analysis' | 'imitator'>('chapters');
   const [multipv, setMultipv] = useState(3);
   const [engineEnabled, setEngineEnabled] = useState(false);
+  const [engineMode, setEngineMode] = useState<EngineMode>('auto');
 
   // Get the global cache manager instance
   const cacheManager = getCacheManager();
@@ -48,6 +59,7 @@ export function StudySidebar({
     enabled: activeTab === 'analysis' && engineEnabled,
     fen: state.currentFen,
     multipv,
+    engineMode,
   });
 
   const imitator = useImitator({
@@ -167,6 +179,8 @@ export function StudySidebar({
             nps={engineAnalysis.nps}
             multipv={multipv}
             onMultipvChange={setMultipv}
+            engineMode={engineMode}
+            onEngineModeChange={setEngineMode}
             engineEnabled={engineEnabled}
             onEngineEnabledChange={setEngineEnabled}
           />
@@ -175,6 +189,7 @@ export function StudySidebar({
             lines={formattedLines}
             error={engineAnalysis.error}
             turn={getTurn(state.currentFen) ?? 'w'}
+            engineLabel={engineMode === 'auto' ? 'Auto engine' : engineMode === 'stockfish' ? 'Stockfish' : 'AlphaZero'}
           />
         </div>
       )}

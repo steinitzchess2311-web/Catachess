@@ -1,4 +1,9 @@
 """
+Created at: 2026-07-08 23:10 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:10 EDT
+Last Modified by: Codex
+
 Engine Request Queue
 
 Implements a global queue for engine analysis requests to prevent
@@ -11,9 +16,9 @@ Architecture:
       ↓
     Engine Queue (排队 + 去重)
       ↓
-    Engine Workers (有限个: 3 workers)
+    Engine Workers (bounded workers, default 10)
       ↓
-    sf.catachess / Lichess Cloud Eval
+    Local Stockfish / AlphaZero / Lichess Cloud Eval
 """
 
 import asyncio
@@ -52,17 +57,17 @@ class EngineQueue:
 
     Features:
     - Request deduplication (same request waits for existing result)
-    - Limited concurrency (max_workers = 3)
+    - Limited concurrency (default max_workers = 10)
     - FIFO queue processing
     - Statistics tracking
     """
 
-    def __init__(self, max_workers: int = 3):
+    def __init__(self, max_workers: int = 10):
         """
         Initialize the engine queue.
 
         Args:
-            max_workers: Maximum concurrent engine calls (default: 3)
+            max_workers: Maximum concurrent engine calls (default: 10)
         """
         self._queue: asyncio.Queue = asyncio.Queue()
         self._max_workers = max_workers
@@ -84,6 +89,11 @@ class EngineQueue:
         }
 
         self._running = False
+
+    @property
+    def max_workers(self) -> int:
+        """Maximum concurrent queue workers."""
+        return self._max_workers
 
     def start(self):
         """Start the worker pool"""
@@ -316,7 +326,7 @@ def get_engine_queue() -> EngineQueue:
             from core.config import settings
             max_workers = settings.ENGINE_QUEUE_MAX_WORKERS
         except Exception:
-            max_workers = 3  # Fallback default
+            max_workers = 10  # Fallback default
 
         _global_queue = EngineQueue(max_workers=max_workers)
         _global_queue.start()

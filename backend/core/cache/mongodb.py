@@ -1,4 +1,9 @@
 """
+Created at: 2026-07-08 23:10 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:10 EDT
+Last Modified by: Codex
+
 MongoDB Engine Cache
 
 Global cache for chess engine analysis results.
@@ -104,9 +109,16 @@ class MongoEngineCache:
         except Exception as e:
             logger.warning(f"[MONGODB CACHE] Index creation warning: {e}")
 
-    def _generate_cache_key(self, fen: str, depth: int, multipv: int) -> str:
-        """Generate unique cache key (engine-agnostic)"""
-        return f"fen:{fen}|depth:{depth}|multipv:{multipv}"
+    def _generate_cache_key(
+        self,
+        fen: str,
+        depth: int,
+        multipv: int,
+        engine_mode: str | None = None,
+    ) -> str:
+        """Generate unique cache key scoped by engine mode."""
+        mode = engine_mode or "auto"
+        return f"engine:{mode}|fen:{fen}|depth:{depth}|multipv:{multipv}"
 
     async def get(self, fen: str, depth: int, multipv: int, engine_mode: str | None = None) -> Optional[dict]:
         """
@@ -118,7 +130,7 @@ class MongoEngineCache:
         if not self.initialized or self.collection is None:
             return None
 
-        cache_key = self._generate_cache_key(fen, depth, multipv)
+        cache_key = self._generate_cache_key(fen, depth, multipv, engine_mode)
         query_start = time.time()
 
         try:
@@ -134,6 +146,7 @@ class MongoEngineCache:
                     "cache_key": cache_key,
                     "lines": result.get("lines", []),
                     "source": result.get("source"),
+                    "engine_mode": result.get("engine_mode", engine_mode or "auto"),
                     "timestamp": result.get("timestamp"),
                     "hit_count": result.get("hit_count", 0),
                 }
@@ -169,7 +182,7 @@ class MongoEngineCache:
         if not self.initialized or self.collection is None:
             return False
 
-        cache_key = self._generate_cache_key(fen, depth, multipv)
+        cache_key = self._generate_cache_key(fen, depth, multipv, engine_mode)
         store_start = time.time()
 
         try:

@@ -1,4 +1,13 @@
-import type { EngineAnalysis } from './types';
+/*
+Created at: 2026-07-08 23:10 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 23:10 EDT
+Last Modified by: Codex
+
+Frontend engine client for Auto/WASM and explicit server worker modes.
+*/
+
+import type { EngineAnalysis, EngineMode } from './types';
 import { getCacheManager } from './cache';
 import { generateCacheKey } from './cache/utils';
 import { analyzeWithWasm } from './wasm/stockfish';
@@ -40,6 +49,10 @@ function mapBackendSource(source: string | undefined): EngineAnalysis['source'] 
   if (source === 'stockfish-wasm') return 'stockfish-wasm';
   if (source === 'lichess-cloud') return 'lichess-cloud';
   if (source === 'sf-catachess') return 'sf-catachess';
+  if (source === 'local-stockfish') return 'local-stockfish';
+  if (source === 'LocalStockfish') return 'local-stockfish';
+  if (source === 'alphazero') return 'alphazero';
+  if (source === 'AlphaZero') return 'alphazero';
   if (source === 'SFCata') return 'sf-catachess';
   if (source === 'CloudEval') return 'lichess-cloud';
   if (source === 'Fallback') return 'backend';
@@ -52,7 +65,8 @@ async function storeMongoCache(
   depth: number,
   multipv: number,
   lines: any[],
-  source: EngineAnalysis['source']
+  source: EngineAnalysis['source'],
+  engineMode: EngineMode = 'auto'
 ): Promise<void> {
   await fetch(`${API_BASE}/api/engine/cache/store`, {
     method: 'POST',
@@ -63,19 +77,33 @@ async function storeMongoCache(
       multipv,
       lines,
       source,
+      engine_mode: engineMode,
     }),
   });
 }
 
-async function callSfcata(
+function backendEngineMode(mode: EngineMode): string {
+  if (mode === 'stockfish') return 'stockfish';
+  if (mode === 'alphazero') return 'alphazero';
+  return 'sf';
+}
+
+function originForMode(mode: EngineMode, source: EngineAnalysis['source']): EngineAnalysis['origin'] {
+  if (mode === 'stockfish' || source === 'local-stockfish') return 'Stockfish';
+  if (mode === 'alphazero' || source === 'alphazero') return 'AlphaZero';
+  return 'SFCata';
+}
+
+async function callServerEngine(
   fen: string,
   depth: number,
-  multipv: number
+  multipv: number,
+  engineMode: EngineMode
 ): Promise<EngineAnalysis> {
   const resp = await fetch(`${API_BASE}/api/engine/analyze`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fen, depth, multipv, engine: 'sf' }),
+    body: JSON.stringify({ fen, depth, multipv, engine: backendEngineMode(engineMode) }),
   });
   if (!resp.ok) {
     const text = await resp.text();
@@ -104,7 +132,7 @@ async function callSfcata(
   return {
     source: mapBackendSource(data.source),
     lines: Array.isArray(data.lines) ? data.lines : [],
-    origin: 'SFCata',
+    origin: originForMode(engineMode, mapBackendSource(data.source)),
   };
 }
 
@@ -115,10 +143,12 @@ const SFCATA_DEPTH = 20;
 export async function analyzeAuto(
   fen: string,
   multipv: number,
-  onUpdate?: (analysis: EngineAnalysis, currentDepth: number) => void
+  onUpdate?: (analysis: EngineAnalysis, currentDepth: number) => void,
+  engineMode: EngineMode = 'auto'
 ): Promise<EngineAnalysis> {
   const cacheManager = getCacheManager();
-  const cacheKey = generateCacheKey({ fen, depth: WASM_CACHE_DEPTH, multipv });
+  const cacheDepth = engineMode === 'auto' ? WASM_CACHE_DEPTH : SFCATA_DEPTH;
+  const cacheKey = `${engineMode}:${generateCacheKey({ fen, depth: cacheDepth, multipv })}`;
 
   if (IN_FLIGHT.has(cacheKey)) {
     return IN_FLIGHT.get(cacheKey)!;
@@ -137,39 +167,41 @@ export async function analyzeAuto(
     : undefined;
 
   const run = (async () => {
-    // Step 1: Stockfish WASM (time-based, streaming via onUpdate)
-    try {
-      const wasmResult = await analyzeWithWasm(fen, multipv, WASM_MOVETIME_MS, throttledUpdate);
-      if (wasmResult.lines.length > 0) {
-        const timestamp = Date.now();
-        // Fire-and-forget: don't block result delivery on I/O
-        cacheManager.set(
-          { fen, depth: WASM_CACHE_DEPTH, multipv },
-          { fen, depth: WASM_CACHE_DEPTH, multipv, lines: wasmResult.lines, source: wasmResult.source, timestamp }
-        ).catch(() => {});
-        storeMongoCache(fen, WASM_CACHE_DEPTH, multipv, wasmResult.lines, wasmResult.source)
-          .catch(e => console.warn('[ENGINE CLIENT] MongoDB store failed (wasm):', e));
-        return { ...wasmResult, origin: 'stockfishWASM' as const };
+    if (engineMode === 'auto') {
+      // Step 1: Stockfish WASM (time-based, streaming via onUpdate)
+      try {
+        const wasmResult = await analyzeWithWasm(fen, multipv, WASM_MOVETIME_MS, throttledUpdate);
+        if (wasmResult.lines.length > 0) {
+          const timestamp = Date.now();
+          // Fire-and-forget: don't block result delivery on I/O
+          cacheManager.set(
+            { fen, depth: WASM_CACHE_DEPTH, multipv },
+            { fen, depth: WASM_CACHE_DEPTH, multipv, lines: wasmResult.lines, source: wasmResult.source, timestamp }
+          ).catch(() => {});
+          storeMongoCache(fen, WASM_CACHE_DEPTH, multipv, wasmResult.lines, wasmResult.source, 'auto')
+            .catch(e => console.warn('[ENGINE CLIENT] MongoDB store failed (wasm):', e));
+          return { ...wasmResult, origin: 'stockfishWASM' as const };
+        }
+      } catch (error) {
+        console.warn('[ENGINE CLIENT] Stockfish WASM failed:', error);
       }
-    } catch (error) {
-      console.warn('[ENGINE CLIENT] Stockfish WASM failed:', error);
     }
 
-    // Step 2: SFCata fallback
+    // Step 2: server engine fallback or explicit server worker.
     cacheManager.recordNetworkCall();
-    const sfResult = await callSfcata(fen, SFCATA_DEPTH, multipv);
+    const sfResult = await callServerEngine(fen, SFCATA_DEPTH, multipv, engineMode);
     if (sfResult.lines.length > 0) {
       const timestamp = Date.now();
       // Fire-and-forget
       cacheManager.set(
-        { fen, depth: WASM_CACHE_DEPTH, multipv },
-        { fen, depth: WASM_CACHE_DEPTH, multipv, lines: sfResult.lines, source: sfResult.source, timestamp }
+        { fen, depth: cacheDepth, multipv },
+        { fen, depth: cacheDepth, multipv, lines: sfResult.lines, source: sfResult.source, timestamp }
       ).catch(() => {});
-      storeMongoCache(fen, WASM_CACHE_DEPTH, multipv, sfResult.lines, sfResult.source)
+      storeMongoCache(fen, cacheDepth, multipv, sfResult.lines, sfResult.source, engineMode)
         .catch(e => console.warn('[ENGINE CLIENT] MongoDB store failed (sfcata):', e));
     }
 
-    return { ...sfResult, origin: 'SFCata' as const };
+    return sfResult;
   })();
 
   IN_FLIGHT.set(cacheKey, run);
@@ -183,7 +215,8 @@ export async function analyzeAuto(
 export async function analyzeWithFallback(
   fen: string,
   multipv: number,
-  onUpdate?: (analysis: EngineAnalysis, currentDepth: number) => void
+  onUpdate?: (analysis: EngineAnalysis, currentDepth: number) => void,
+  engineMode: EngineMode = 'auto'
 ): Promise<EngineAnalysis> {
-  return analyzeAuto(fen, multipv, onUpdate);
+  return analyzeAuto(fen, multipv, onUpdate, engineMode);
 }

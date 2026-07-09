@@ -1,5 +1,9 @@
 /* ============================================================
    user_profile — 公开展示页 + 编辑页样式
+   Created at: 2026-07-08 21:07 EDT
+   Created by: Codex
+   Last Modified at: 2026-07-08 22:04 EDT
+   Last Modified by: Codex
    设计语言：深色 Hero + 白色内容卡，与 player 模块保持一致
    ============================================================ */
 
@@ -1085,6 +1089,10 @@ a.up-activity__target:hover {
   overflow-wrap: anywhere;
 }
 
+.up-hero__title-prefix {
+  color: #ea580c;
+}
+
 .up-hero__actions {
   grid-column: 3;
   grid-row: 1;
@@ -1143,17 +1151,6 @@ a.up-activity__target:hover {
   border-color: #fecaca;
   background: #fef2f2;
   color: #dc2626;
-}
-
-.up-hero__actions .logout-dialog {
-  right: 0;
-  left: auto;
-  bottom: auto;
-  top: calc(100% + 8px);
-  transform: none;
-  border: 1px solid var(--up-border);
-  border-radius: 8px;
-  box-shadow: 0 18px 36px rgba(15, 23, 42, 0.16);
 }
 
 .up-body {
@@ -1232,6 +1229,29 @@ a.up-activity__target:hover {
 
 .up-ratings-row__val {
   color: var(--up-ink);
+}
+
+.up-card--online {
+  gap: 14px;
+}
+
+.up-online-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.up-online-stat__value {
+  color: var(--up-ink);
+  font-size: 28px;
+  font-weight: 780;
+  line-height: 1;
+}
+
+.up-online-stat__label {
+  color: var(--up-muted);
+  font-size: 13px;
+  font-weight: 620;
 }
 
 .up-main {

@@ -3,7 +3,7 @@
 ## header
 Created at: 2026-07-08 20:12 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 20:58 EDT
+Last Modified at: 2026-07-08 21:41 EDT
 Last Modified by: Codex
 
 ## brief intro
@@ -20,8 +20,8 @@ Last Modified by: Codex
 |-DragMoveModal.css drag move compatibility styles
 |-FolderTree.tsx folder picker tree for move flows
 |-FolderTreeItem.tsx expandable folder row
-|-LogoutButton.tsx legacy logout button component
-|-LogoutButton.css legacy logout button styles
+|-LogoutButton.tsx centered logout confirmation dialog with token clearing
+|-LogoutButton.css logout confirmation dialog styles
 |-MoveModal.tsx moves a workspace node to a destination folder
 |-MoveModal.css move modal folder picker styles
 |-NodeActionsModal.tsx action sheet for workspace nodes with title-only header and body metadata

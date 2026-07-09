@@ -1,12 +1,12 @@
 ## header
 Created at: 2026-07-08 21:07 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 21:07 EDT
+Last Modified at: 2026-07-08 21:41 EDT
 Last Modified by: Codex
 
 ## brief intro
 - goal for this folder: Own the public profile and edit profile frontend module.
-- 架构思路: Keep API normalization, profile types, public profile display, edit form behavior, and module styles colocated so profile title/rating display rules are easy to audit.
+- 架构思路: Keep API normalization, profile types, public profile display, edit form behavior, stored online-time display, and module styles colocated so profile identity rules are easy to audit.
 
 ## folder structure
 |-api.ts profile API client and response normalization

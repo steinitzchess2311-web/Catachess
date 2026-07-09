@@ -1,4 +1,10 @@
+// Created at: 2026-07-08 22:04 EDT
+// Created by: Codex
+// Last Modified at: 2026-07-08 22:04 EDT
+// Last Modified by: Codex
+
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '@ui/assets/api';
 import './LogoutButton.css';
 
@@ -53,22 +59,27 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({ onLogout }) => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         dialogRef.current &&
-        !dialogRef.current.contains(event.target as Node) &&
-        buttonRef.current &&
-        !buttonRef.current.contains(event.target as Node)
+        !dialogRef.current.contains(event.target as Node)
       ) {
         setShowDialog(false);
       }
     };
 
-    // Add event listener with a small delay to avoid immediate closure
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowDialog(false);
+      }
+    };
+
     const timeoutId = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
     }, 0);
 
     return () => {
       clearTimeout(timeoutId);
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [showDialog]);
 
@@ -81,18 +92,33 @@ const LogoutButton: React.FC<LogoutButtonProps> = ({ onLogout }) => {
       >
         Log out
       </button>
-      {showDialog && (
-        <div ref={dialogRef} className="logout-dialog">
-          <p className="logout-dialog-text">Are you sure you want to log out?</p>
-          <div className="logout-dialog-buttons">
-            <button className="logout-dialog-btn logout-btn-no" onClick={handleCancel}>
-              No
-            </button>
-            <button className="logout-dialog-btn logout-btn-yes" onClick={handleConfirm}>
-              Yes
-            </button>
+      {showDialog && createPortal(
+        <div className="logout-dialog-backdrop" role="presentation">
+          <div
+            ref={dialogRef}
+            className="logout-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-dialog-title"
+          >
+            <div className="logout-dialog__header">
+              <span className="logout-dialog__eyebrow">Account</span>
+              <h2 id="logout-dialog-title" className="logout-dialog__title">Log out?</h2>
+            </div>
+            <p className="logout-dialog-text">
+              You will need to sign in again before opening your private workspace.
+            </p>
+            <div className="logout-dialog-buttons">
+              <button className="logout-dialog-btn logout-btn-no" onClick={handleCancel}>
+                Cancel
+              </button>
+              <button className="logout-dialog-btn logout-btn-yes" onClick={handleConfirm}>
+                Log out
+              </button>
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

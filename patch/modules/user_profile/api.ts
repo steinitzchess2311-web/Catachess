@@ -1,5 +1,9 @@
 // ============================================================
 // user_profile — API 封装
+// Created at: 2026-07-08 21:07 EDT
+// Created by: Codex
+// Last Modified at: 2026-07-08 22:04 EDT
+// Last Modified by: Codex
 // ============================================================
 
 import { api } from '@ui/assets/api';
@@ -30,6 +34,7 @@ export async function fetchPublicProfile(username: string): Promise<PublicProfil
     lichess_username: (data.lichess_username as string) ?? null,
     chesscom_username: (data.chesscom_username as string) ?? null,
     self_intro: (data.self_intro as string) ?? null,
+    total_online_seconds: Number(data.total_online_seconds ?? 0),
   });
 
   // 1. 尝试公开接口（后端实现后直接生效）
@@ -62,6 +67,7 @@ export async function fetchPublicProfile(username: string): Promise<PublicProfil
     lichess_username: null,
     chesscom_username: null,
     self_intro: null,
+    total_online_seconds: 0,
   };
 }
 
@@ -137,13 +143,19 @@ export async function fetchMyProfile(): Promise<EditableProfile> {
     lichess_username: data.lichess_username ?? null,
     chesscom_username: data.chesscom_username ?? null,
     self_intro: data.self_intro ?? null,
+    total_online_seconds: Number(data.total_online_seconds ?? 0),
   };
 }
 
 /** 保存当前用户资料 */
 export async function saveMyProfile(profile: EditableProfile): Promise<void> {
   await api.put('/user/profile', {
-    ...profile,
+    username: profile.username,
+    fide_title: profile.fide_title,
+    chinese_athlete_title: profile.chinese_athlete_title,
+    lichess_username: profile.lichess_username,
+    chesscom_username: profile.chesscom_username,
+    self_intro: profile.self_intro,
     fide_rating: profile.fide_rating || null,
     cfc_rating: profile.cfc_rating || null,
     ecf_rating: profile.ecf_rating || null,

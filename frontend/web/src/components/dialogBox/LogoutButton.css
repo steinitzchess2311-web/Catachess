@@ -1,3 +1,10 @@
+/*
+Created at: 2026-07-08 22:04 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 22:04 EDT
+Last Modified by: Codex
+*/
+
 /* Logout Button Wrapper */
 .logout-button-wrapper {
   position: relative;
@@ -32,81 +39,113 @@
   transform: scale(0.98);
 }
 
-/* Logout Dialog - positioned above button */
-.logout-dialog {
-  position: absolute;
-  bottom: calc(100% + 8px); /* 8px gap above button */
-  left: 50%;
-  transform: translateX(-50%);
-  width: 200px;
-  background-color: var(--surface);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-3);
-  padding: var(--space-md);
-  z-index: 1001;
-  animation: dialogSlideUp 0.2s ease-out;
+.logout-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.36);
 }
 
-@keyframes dialogSlideUp {
+.logout-dialog {
+  width: min(420px, 100%);
+  background-color: #ffffff;
+  border: 1px solid #dbe7f5;
+  border-radius: 10px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+  padding: 22px;
+  z-index: 5001;
+  animation: dialogScaleIn 0.16s ease-out;
+}
+
+@keyframes dialogScaleIn {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(8px);
+    transform: translateY(8px) scale(0.98);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0) scale(1);
   }
+}
+
+.logout-dialog__header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.logout-dialog__eyebrow {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.logout-dialog__title {
+  margin: 0;
+  color: #0f172a;
+  font-size: 24px;
+  font-weight: 780;
+  letter-spacing: 0;
+  line-height: 1.15;
 }
 
 /* Dialog Text */
 .logout-dialog-text {
-  margin: 0 0 var(--space-md) 0;
-  font-size: var(--font-sm);
-  color: var(--text-main);
-  text-align: center;
-  line-height: 1.4;
+  margin: 0 0 20px 0;
+  font-size: 15px;
+  color: #475569;
+  text-align: left;
+  line-height: 1.5;
 }
 
 /* Dialog Buttons Container */
 .logout-dialog-buttons {
   display: flex;
-  gap: var(--space-sm);
-  justify-content: center;
+  gap: 10px;
+  justify-content: flex-end;
 }
 
 /* Dialog Button Base */
 .logout-dialog-btn {
-  flex: 1;
-  padding: var(--space-xs) var(--space-sm);
-  font-size: var(--font-sm);
-  border-radius: var(--radius-sm);
+  min-height: 40px;
+  padding: 8px 16px;
+  font-size: 14px;
+  border-radius: 8px;
   cursor: pointer;
   font-family: var(--font-family);
-  font-weight: 500;
+  font-weight: 680;
   transition: all 0.2s ease;
-  border: 2px solid;
+  border: 1px solid;
 }
 
 /* No Button - Blue border, blue text */
 .logout-btn-no {
-  border-color: var(--primary);
-  background: transparent;
-  color: var(--primary);
+  border-color: #dbe7f5;
+  background: #ffffff;
+  color: #334155;
 }
 
 .logout-btn-no:hover {
-  background-color: var(--primary-bg);
+  background-color: #f8fafc;
 }
 
 /* Yes Button - Red border, red text */
 .logout-btn-yes {
-  border-color: var(--error);
-  background: transparent;
-  color: var(--error);
+  border-color: #dc2626;
+  background: #dc2626;
+  color: #ffffff;
 }
 
 .logout-btn-yes:hover {
-  background-color: rgba(217, 48, 37, 0.08);
+  background-color: #b91c1c;
+  border-color: #b91c1c;
 }
 
 .logout-dialog-btn:active {

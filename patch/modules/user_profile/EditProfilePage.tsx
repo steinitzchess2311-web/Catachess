@@ -1,5 +1,9 @@
 // ============================================================
 // EditProfilePage — /settings 编辑个人资料页
+// Created at: 2026-07-08 21:07 EDT
+// Created by: Codex
+// Last Modified at: 2026-07-08 22:04 EDT
+// Last Modified by: Codex
 //
 // 仅登录用户可访问（App.tsx 里用 <Protected> 包裹）
 // 保存成功后自动跳转到公开页
@@ -62,6 +66,7 @@ const EMPTY: EditableProfile = {
   lichess_username: null,
   chesscom_username: null,
   self_intro: null,
+  total_online_seconds: 0,
 };
 
 export function EditProfilePage({ currentUsername }: EditProfilePageProps) {
@@ -175,7 +180,7 @@ export function EditProfilePage({ currentUsername }: EditProfilePageProps) {
               </div>
             </Field>
 
-            <Field label="中国棋协 称号 (Chinese Chess Association Title)">
+            <Field label="中国棋协称号 (Chinese Chess Association Title)">
               <div className="up-edit-title-grid" role="group" aria-label="Chinese Chess Association Title">
                 <button
                   type="button"

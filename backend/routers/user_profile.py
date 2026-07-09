@@ -1,4 +1,9 @@
 """
+Created at: 2026-07-08 21:07 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 22:04 EDT
+Last Modified by: Codex
+
 User Profile Router - User profile and settings endpoints
 
 Endpoints:
@@ -70,6 +75,7 @@ class UserProfileResponse(BaseModel):
     chinese_athlete_title: str | None = None
     fide_title: str | None = None
     self_intro: str | None = None
+    total_online_seconds: int = 0
 
     class Config:
         from_attributes = True
@@ -112,6 +118,7 @@ class PublicProfileResponse(BaseModel):
     lichess_username: str | None = None
     chesscom_username: str | None = None
     self_intro: str | None = None
+    total_online_seconds: int = 0
 
     class Config:
         from_attributes = True
@@ -180,6 +187,7 @@ def get_public_profile(
         lichess_username=user.lichess_username,
         chesscom_username=user.chesscom_username,
         self_intro=user.self_intro,
+        total_online_seconds=user.total_online_seconds or 0,
     )
 
 
@@ -230,6 +238,7 @@ def get_profile(
         chinese_athlete_title=normalize_chinese_chess_association_title(user.chinese_athlete_title),
         fide_title=user.fide_title,
         self_intro=user.self_intro,
+        total_online_seconds=user.total_online_seconds or 0,
     )
 
 
@@ -308,4 +317,5 @@ def update_profile(
         chinese_athlete_title=normalize_chinese_chess_association_title(updated_user.chinese_athlete_title),
         fide_title=updated_user.fide_title,
         self_intro=updated_user.self_intro,
+        total_online_seconds=updated_user.total_online_seconds or 0,
     )

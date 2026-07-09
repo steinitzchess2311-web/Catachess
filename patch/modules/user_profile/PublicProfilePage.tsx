@@ -1,5 +1,9 @@
 // ============================================================
 // PublicProfilePage — /@username public profile
+// Created at: 2026-07-08 21:07 EDT
+// Created by: Codex
+// Last Modified at: 2026-07-08 22:04 EDT
+// Last Modified by: Codex
 // ============================================================
 
 import React, { useEffect, useState } from 'react';
@@ -30,6 +34,25 @@ function activityLabel(type: string): string {
   if (normalized.includes('profile')) return 'Profile';
   if (normalized.includes('game')) return 'Game';
   return 'Activity';
+}
+
+function formatOnlineTime(totalSeconds: number | null | undefined): string {
+  const seconds = Math.max(0, Math.floor(Number(totalSeconds ?? 0)));
+  if (seconds < 60) return 'Less than 1m';
+
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+
+  if (days > 0) {
+    return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+  }
+
+  if (hours > 0) {
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+
+  return `${minutes}m`;
 }
 
 function ActivityTimeline({
@@ -198,10 +221,9 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
 
   const hasRatings = profile.fide_rating || profile.cfc_rating || profile.ecf_rating;
   const hasLinks = profile.lichess_username || profile.chesscom_username;
-  const hasSidebar = Boolean(profile.self_intro || hasLinks || hasRatings);
+  const hasSidebar = true;
   const displayTitle = profileTitlePrefix(profile);
   const displayUsername = profile.username || cleanUsername;
-  const displayName = displayTitle ? `${displayTitle} ${displayUsername}` : displayUsername;
 
   return (
     <div className="up-page">
@@ -218,7 +240,14 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
 
           {/* 称号 + 用户名 */}
           <div className="up-hero__identity">
-            <h1 className="up-hero__username">{displayName}</h1>
+            <h1 className="up-hero__username">
+              {displayTitle && (
+                <>
+                  <span className="up-hero__title-prefix">{displayTitle}</span>{' '}
+                </>
+              )}
+              <span>{displayUsername}</span>
+            </h1>
           </div>
 
           {isOwnProfile && (
@@ -240,6 +269,16 @@ export function PublicProfilePage({ currentUsername }: PublicProfilePageProps) {
         <div className={`up-body__inner ${hasSidebar ? '' : 'up-body__inner--single'}`}>
 
           <aside className="up-sidebar">
+
+            <div className="up-card up-card--online">
+              <h3 className="up-card__title">Online Time</h3>
+              <div className="up-online-stat">
+                <span className="up-online-stat__value">
+                  {formatOnlineTime(profile.total_online_seconds)}
+                </span>
+                <span className="up-online-stat__label">Total on CataChess</span>
+              </div>
+            </div>
 
             {profile.self_intro && (
               <div className="up-card">

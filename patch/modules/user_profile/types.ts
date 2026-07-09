@@ -1,5 +1,9 @@
 // ============================================================
 // user_profile — 类型定义
+// Created at: 2026-07-08 21:07 EDT
+// Created by: Codex
+// Last Modified at: 2026-07-08 22:04 EDT
+// Last Modified by: Codex
 // ============================================================
 
 /** 用户公开资料（任何人可见）*/
@@ -13,6 +17,7 @@ export interface PublicProfile {
   lichess_username: string | null;
   chesscom_username: string | null;
   self_intro: string | null;
+  total_online_seconds: number;
 }
 
 export interface PublicActivity {

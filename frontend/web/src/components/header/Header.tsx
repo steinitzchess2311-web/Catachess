@@ -1,3 +1,13 @@
+/**
+ * Created at: 2026-07-08 22:36 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-08 22:36 EDT
+ * Last Modified by: Codex
+ *
+ * Global app header. Owns navigation, notifications, account entry, and the
+ * adaptive active-game poller used for the games shortcut.
+ */
+
 import React, { useRef, useState, useEffect, useCallback } from "react";
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BellIcon, SpeakerLoudIcon } from "@radix-ui/react-icons";
@@ -30,6 +40,8 @@ interface BroadcastNotif {
 
 const CATACHAT_URL = "https://catachat.catachess.com";
 const SEEN_KEY = 'catachat_seen_ids';
+const ACTIVE_GAME_POLL_MS = 5_000;
+const IDLE_GAME_POLL_MS = 30_000;
 
 function DuelIcon() {
   return (
@@ -67,6 +79,17 @@ function saveSeenIds(ids: Set<string>) {
   localStorage.setItem(SEEN_KEY, JSON.stringify(arr));
 }
 
+function currentGameSignature(game: CurrentGameResponse | null): string {
+  if (!game) return 'none';
+  return [
+    game.game_id,
+    game.status,
+    game.current_state?.fen ?? '',
+    game.current_state?.turn ?? '',
+    game.current_state?.move_count ?? '',
+  ].join('|');
+}
+
 const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
   const displayName = username?.trim() || 'Account';
   const rightClickCountRef = useRef(0);
@@ -84,6 +107,9 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
   const [challengeOpen, setChallengeOpen] = useState(false);
   const [currentGame, setCurrentGame] = useState<CurrentGameResponse | null>(null);
   const challengeRef = useRef<HTMLDivElement>(null);
+  const currentGameSignatureRef = useRef(currentGameSignature(null));
+  const currentGameRef = useRef<CurrentGameResponse | null>(null);
+  const currentGamePollInFlightRef = useRef(false);
 
   // Fetch notifications + latest broadcast when user is authed
   useEffect(() => {
@@ -96,26 +122,66 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
       .catch(() => {});
   }, [isAuthed]);
 
-  // Poll current game every 15s
+  // Poll current game with adaptive cadence: fast only while there is an active game.
   const pollCurrentGame = useCallback(() => {
-    if (!isAuthed || !username) return;
+    if (!isAuthed || !username || document.visibilityState === 'hidden' || currentGamePollInFlightRef.current) return;
+    currentGamePollInFlightRef.current = true;
     getCurrentGame(username)
       .then((data) => {
-        setCurrentGame(data);
+        const nextSignature = currentGameSignature(data);
+        if (nextSignature !== currentGameSignatureRef.current) {
+          currentGameSignatureRef.current = nextSignature;
+          currentGameRef.current = data;
+          setCurrentGame(data);
+        }
       })
       .catch((err) => {
         console.warn('[Header] getCurrentGame failed:', err);
+      })
+      .finally(() => {
+        currentGamePollInFlightRef.current = false;
       });
   }, [isAuthed, username]);
 
   useEffect(() => {
     pollCurrentGame();
-    const id = setInterval(pollCurrentGame, 5_000);
-    // also refresh when the tab regains focus
-    window.addEventListener('focus', pollCurrentGame);
+    let timerId: number | null = null;
+
+    const scheduleNextPoll = () => {
+      if (timerId !== null) {
+        window.clearTimeout(timerId);
+      }
+      const activeStatus = currentGameRef.current?.status;
+      const delay = activeStatus === 'waiting' || activeStatus === 'ongoing'
+        ? ACTIVE_GAME_POLL_MS
+        : IDLE_GAME_POLL_MS;
+      timerId = window.setTimeout(() => {
+        pollCurrentGame();
+        scheduleNextPoll();
+      }, delay);
+    };
+
+    const handleVisibilityOrFocus = () => {
+      if (document.visibilityState === 'hidden') {
+        if (timerId !== null) {
+          window.clearTimeout(timerId);
+          timerId = null;
+        }
+        return;
+      }
+      pollCurrentGame();
+      scheduleNextPoll();
+    };
+
+    scheduleNextPoll();
+    window.addEventListener('focus', handleVisibilityOrFocus);
+    document.addEventListener('visibilitychange', handleVisibilityOrFocus);
     return () => {
-      clearInterval(id);
-      window.removeEventListener('focus', pollCurrentGame);
+      if (timerId !== null) {
+        window.clearTimeout(timerId);
+      }
+      window.removeEventListener('focus', handleVisibilityOrFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityOrFocus);
     };
   }, [pollCurrentGame]);
 
@@ -183,6 +249,8 @@ const Header: React.FC<HeaderProps> = ({ username, isAuthed, userRole }) => {
     if (!currentGame || !username) return;
     try {
       await abortGame(currentGame.game_id, username);
+      currentGameSignatureRef.current = currentGameSignature(null);
+      currentGameRef.current = null;
       setCurrentGame(null);
     } catch {
       // server may already have handled it

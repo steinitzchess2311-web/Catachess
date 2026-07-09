@@ -1,4 +1,8 @@
-# 🐱 CatPet - Desktop Pet System
+# CatPet - Desktop Pet System
+Created at: 2026-07-08 22:36 EDT
+Created by: Codex
+Last Modified at: 2026-07-08 22:36 EDT
+Last Modified by: Codex
 
 像素风格的桌面宠物猫，可以在屏幕上自由拖动和互动。
 
@@ -106,11 +110,15 @@ patch/modules/cats/
 - 使用 CSS background-position 实现 sprite animation
 - requestAnimationFrame 控制动画帧率
 - CSS transform 实现左右镜像
+- 宠物位置通过容器 `translate3d(...)` 直接写入 DOM，避免移动期间每一帧触发 React 重渲染。
+- 行为状态机 `start()` 会先清理旧 timeout，避免多次启动叠加自主行为计时器。
 
 ### 性能优化
 - `image-rendering: pixelated` 保持像素锐利
 - `will-change: background-position` 优化动画性能
 - React.memo 避免不必要的重渲染
+- 长时间移动、下落、拖拽过程避免帧级 `setPosition`。
+- 方向和旋转状态有变更 guard，避免相同值在动画帧中重复触发 state setter。
 
 ## 开发日志
 

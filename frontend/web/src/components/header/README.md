@@ -1,7 +1,7 @@
 ## header
 Created at: 2026-07-08 18:43:55 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 18:43:55 EDT
+Last Modified at: 2026-07-08 22:36 EDT
 Last Modified by: Codex
 
 ## brief intro
@@ -14,3 +14,4 @@ Last Modified by: Codex
 
 ## 代办
 - Extract inline account role badge styling into CSS when the account area is redesigned.
+- Keep active-game polling adaptive and visibility-aware; avoid reintroducing fixed global 5 second polling.

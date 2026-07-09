@@ -1,7 +1,7 @@
 # Deployment Evaluation Grill Notes
 Created at: 2026-07-07 13:11:05 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 22:15 EDT
+Last Modified at: 2026-07-08 22:36 EDT
 Last Modified by: Codex
 
 ## brief intro
@@ -14,6 +14,7 @@ Last Modified by: Codex
 |-grill_20.md self-review for completing the Jul 8 todo file in production loops
 |-grill_21.md self-review for profile online time and logout polish
 |-grill_22.md self-review for study autosave cadence and backpressure
+|-grill_23.md self-review for frontend jank diagnosis and always-on work reduction
 
 ## 代办
 - Add a new grill file for each future deployment architecture decision.

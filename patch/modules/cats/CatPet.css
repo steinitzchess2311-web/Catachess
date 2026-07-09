@@ -5,6 +5,8 @@
 .cat-pet-container {
   display: inline-block;
   transition: opacity 0.2s ease;
+  will-change: transform;
+  contain: layout style paint;
 }
 
 .cat-pet-container:hover {

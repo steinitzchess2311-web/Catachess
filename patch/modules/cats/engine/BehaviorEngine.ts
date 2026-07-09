@@ -1,4 +1,9 @@
 /**
+ * Created at: 2026-07-08 22:36 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-08 22:36 EDT
+ * Last Modified by: Codex
+ *
  * Behavior Engine - AI state machine for cat behaviors
  */
 
@@ -25,6 +30,7 @@ export class BehaviorEngine {
   private stateStartTime: number = Date.now();
   private nextTransition: StateTransition | null = null;
   private timeoutId: number | null = null;
+  private interactionTimeoutId: number | null = null;
   private readonly config: BehaviorConfig;
 
   constructor(config: Partial<BehaviorConfig> = {}) {
@@ -50,6 +56,7 @@ export class BehaviorEngine {
    * Start autonomous behavior
    */
   start(onStateChange: (state: CatState) => void): void {
+    this.stop();
     this.scheduleNextTransition(onStateChange);
   }
 
@@ -60,6 +67,10 @@ export class BehaviorEngine {
     if (this.timeoutId !== null) {
       clearTimeout(this.timeoutId);
       this.timeoutId = null;
+    }
+    if (this.interactionTimeoutId !== null) {
+      clearTimeout(this.interactionTimeoutId);
+      this.interactionTimeoutId = null;
     }
     this.nextTransition = null;
   }
@@ -89,7 +100,10 @@ export class BehaviorEngine {
       return false;
     } else if (this.currentState === 'idle') {
       this.transitionTo('play', onStateChange);
-      setTimeout(() => this.transitionTo('idle', onStateChange), 5000);
+      this.interactionTimeoutId = window.setTimeout(() => {
+        this.interactionTimeoutId = null;
+        this.transitionTo('idle', onStateChange);
+      }, 5000);
       return false;
     }
     return false;

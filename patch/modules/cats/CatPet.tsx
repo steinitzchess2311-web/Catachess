@@ -1,4 +1,9 @@
 /**
+ * Created at: 2026-07-08 22:36 EDT
+ * Created by: Codex
+ * Last Modified at: 2026-07-08 22:36 EDT
+ * Last Modified by: Codex
+ *
  * CatPet - Main Desktop Pet Component
  *
  * Phase 2 Features:
@@ -43,6 +48,35 @@ export function CatPet({
   const behaviorEngine = useRef<BehaviorEngine | null>(null);
   const movementEngine = useRef<MovementEngine | null>(null);
   const isUserInteracting = useRef(false);
+  const positionRef = useRef<Position>(position);
+  const directionRef = useRef<'left' | 'right'>(direction);
+  const rotationRef = useRef(rotation);
+
+  const applyPosition = useCallback((nextPosition: Position, syncReactState = false) => {
+    positionRef.current = { ...nextPosition };
+    if (containerRef.current) {
+      containerRef.current.style.transform = `translate3d(${nextPosition.x}px, ${nextPosition.y}px, 0)`;
+    }
+    if (syncReactState) {
+      setPosition(nextPosition);
+    }
+  }, []);
+
+  useEffect(() => {
+    applyPosition(position, false);
+  }, [applyPosition, position]);
+
+  const applyDirection = useCallback((nextDirection: 'left' | 'right') => {
+    if (directionRef.current === nextDirection) return;
+    directionRef.current = nextDirection;
+    setDirection(nextDirection);
+  }, []);
+
+  const applyRotation = useCallback((nextRotation: number) => {
+    if (Math.abs(rotationRef.current - nextRotation) < 0.5) return;
+    rotationRef.current = nextRotation;
+    setRotation(nextRotation);
+  }, []);
 
   // Initialize engines
   useEffect(() => {
@@ -55,21 +89,21 @@ export function CatPet({
       setCurrentAnimation(newState);
 
       if (newState === 'walk' && movementEngine.current) {
-        setRotation(0);
+        applyRotation(0);
         const target = movementEngine.current.generateRandomTarget();
         movementEngine.current.moveTo(target, (pos, dir) => {
-          setPosition(pos);
-          setDirection(dir);
+          applyPosition(pos);
+          applyDirection(dir);
         });
       } else if (newState === 'climb' && movementEngine.current) {
         const target = movementEngine.current.generateClimbTarget();
         movementEngine.current.climb(target, (pos, dir, rot) => {
-          setPosition(pos);
-          setDirection(dir);
-          setRotation(rot);  // Set rotation for climbing (90 or -90 degrees)
+          applyPosition(pos);
+          applyDirection(dir);
+          applyRotation(rot);  // Set rotation for climbing (90 or -90 degrees)
         });
       } else if (movementEngine.current) {
-        setRotation(0);  // Reset rotation for idle, sit, sleep, play
+        applyRotation(0);  // Reset rotation for idle, sit, sleep, play
         movementEngine.current.stopMovement();
       }
     };
@@ -80,7 +114,7 @@ export function CatPet({
       behaviorEngine.current?.destroy();
       movementEngine.current?.destroy();
     };
-  }, [enableAI]);
+  }, [enableAI, applyDirection, applyPosition, applyRotation]);
 
   // Route change detection - trigger fall animation only if cat is in upper 3/4 of screen
   useEffect(() => {
@@ -89,7 +123,7 @@ export function CatPet({
 
       // Check if cat is in upper 3/4 of screen (needs to fall)
       const fallThreshold = window.innerHeight * 0.75;
-      const shouldFall = position.y < fallThreshold;
+      const shouldFall = positionRef.current.y < fallThreshold;
 
       // Stop AI
       behaviorEngine.current?.stop();
@@ -102,12 +136,12 @@ export function CatPet({
         if (movementEngine.current) {
           movementEngine.current.fall(
             (pos, rot) => {
-              setPosition(pos);
-              setRotation(rot);
+              applyPosition(pos);
+              applyRotation(rot);
             },
             () => {
               // After landing, return to idle
-              setRotation(0);
+              applyRotation(0);
               setCurrentAnimation('idle');
 
               // Restart AI behavior
@@ -116,21 +150,21 @@ export function CatPet({
                   setCurrentAnimation(newState);
 
                   if (newState === 'walk' && movementEngine.current) {
-                    setRotation(0);
+                    applyRotation(0);
                     const target = movementEngine.current.generateRandomTarget();
                     movementEngine.current.moveTo(target, (pos, dir) => {
-                      setPosition(pos);
-                      setDirection(dir);
+                      applyPosition(pos);
+                      applyDirection(dir);
                     });
                   } else if (newState === 'climb' && movementEngine.current) {
                     const target = movementEngine.current.generateClimbTarget();
                     movementEngine.current.climb(target, (pos, dir, rot) => {
-                      setPosition(pos);
-                      setDirection(dir);
-                      setRotation(rot);
+                      applyPosition(pos);
+                      applyDirection(dir);
+                      applyRotation(rot);
                     });
                   } else if (movementEngine.current) {
-                    setRotation(0);
+                    applyRotation(0);
                     movementEngine.current.stopMovement();
                   }
                 };
@@ -142,7 +176,7 @@ export function CatPet({
         }
       } else {
         // Cat is already at bottom, just restart AI without falling
-        setRotation(0);
+        applyRotation(0);
         setCurrentAnimation('idle');
 
         if (enableAI && behaviorEngine.current) {
@@ -150,21 +184,21 @@ export function CatPet({
             setCurrentAnimation(newState);
 
             if (newState === 'walk' && movementEngine.current) {
-              setRotation(0);
+              applyRotation(0);
               const target = movementEngine.current.generateRandomTarget();
               movementEngine.current.moveTo(target, (pos, dir) => {
-                setPosition(pos);
-                setDirection(dir);
+                applyPosition(pos);
+                applyDirection(dir);
               });
             } else if (newState === 'climb' && movementEngine.current) {
               const target = movementEngine.current.generateClimbTarget();
               movementEngine.current.climb(target, (pos, dir, rot) => {
-                setPosition(pos);
-                setDirection(dir);
-                setRotation(rot);
+                applyPosition(pos);
+                applyDirection(dir);
+                applyRotation(rot);
               });
             } else if (movementEngine.current) {
-              setRotation(0);
+              applyRotation(0);
               movementEngine.current.stopMovement();
             }
           };
@@ -173,7 +207,7 @@ export function CatPet({
         }
       }
     }
-  }, [location.pathname, enableAI, position.y]);
+  }, [location.pathname, enableAI, applyDirection, applyPosition, applyRotation]);
 
   // Pause AI during user interaction
   useEffect(() => {
@@ -185,28 +219,28 @@ export function CatPet({
         setCurrentAnimation(newState);
 
         if (newState === 'walk' && movementEngine.current) {
-          setRotation(0);
+          applyRotation(0);
           const target = movementEngine.current.generateRandomTarget();
           movementEngine.current.moveTo(target, (pos, dir) => {
-            setPosition(pos);
-            setDirection(dir);
+            applyPosition(pos);
+            applyDirection(dir);
           });
         } else if (newState === 'climb' && movementEngine.current) {
           const target = movementEngine.current.generateClimbTarget();
           movementEngine.current.climb(target, (pos, dir, rot) => {
-            setPosition(pos);
-            setDirection(dir);
-            setRotation(rot);
+            applyPosition(pos);
+            applyDirection(dir);
+            applyRotation(rot);
           });
         } else if (movementEngine.current) {
-          setRotation(0);
+          applyRotation(0);
           movementEngine.current.stopMovement();
         }
       };
 
       behaviorEngine.current.start(handleStateChange);
     }
-  }, [isDragging, enableAI]);
+  }, [isDragging, enableAI, applyDirection, applyPosition, applyRotation]);
 
   // Mouse down - start dragging
   const handleMouseDown = useCallback(
@@ -238,11 +272,13 @@ export function CatPet({
       const newX = e.clientX - dragOffset.current.x;
       const newY = e.clientY - dragOffset.current.y;
 
-      setPosition({ x: newX, y: newY });
+      applyPosition({ x: newX, y: newY });
       movementEngine.current?.setPosition({ x: newX, y: newY });
     };
 
     const handleMouseUp = () => {
+      applyPosition(positionRef.current, true);
+      movementEngine.current?.setPosition(positionRef.current);
       setIsDragging(false);
       isUserInteracting.current = false;
       onInteraction?.('drag-end');
@@ -255,7 +291,7 @@ export function CatPet({
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, onInteraction]);
+  }, [isDragging, onInteraction, applyPosition]);
 
   // Click interaction
   const handleClick = useCallback(
@@ -275,12 +311,12 @@ export function CatPet({
           setCurrentAnimation('fall');
           movementEngine.current.fall(
             (pos, rot) => {
-              setPosition(pos);
-              setRotation(rot);
+              applyPosition(pos);
+              applyRotation(rot);
             },
             () => {
               // After landing, return to idle
-              setRotation(0);
+              applyRotation(0);
               setCurrentAnimation('idle');
 
               // Restart AI behavior
@@ -289,21 +325,21 @@ export function CatPet({
                   setCurrentAnimation(newState);
 
                   if (newState === 'walk' && movementEngine.current) {
-                    setRotation(0);
+                    applyRotation(0);
                     const target = movementEngine.current.generateRandomTarget();
                     movementEngine.current.moveTo(target, (pos, dir) => {
-                      setPosition(pos);
-                      setDirection(dir);
+                      applyPosition(pos);
+                      applyDirection(dir);
                     });
                   } else if (newState === 'climb' && movementEngine.current) {
                     const target = movementEngine.current.generateClimbTarget();
                     movementEngine.current.climb(target, (pos, dir, rot) => {
-                      setPosition(pos);
-                      setDirection(dir);
-                      setRotation(rot);
+                      applyPosition(pos);
+                      applyDirection(dir);
+                      applyRotation(rot);
                     });
                   } else if (movementEngine.current) {
-                    setRotation(0);
+                    applyRotation(0);
                     movementEngine.current.stopMovement();
                   }
                 };
@@ -323,7 +359,7 @@ export function CatPet({
 
       onInteraction?.('click');
     },
-    [isDragging, onInteraction, enableAI]
+    [isDragging, onInteraction, enableAI, applyDirection, applyPosition, applyRotation]
   );
 
   return (
@@ -332,8 +368,9 @@ export function CatPet({
       className={`cat-pet-container ${isDragging ? 'dragging' : ''}`}
       style={{
         position: 'fixed',
-        left: `${position.x}px`,
-        top: `${position.y}px`,
+        left: 0,
+        top: 0,
+        transform: `translate3d(${positionRef.current.x}px, ${positionRef.current.y}px, 0)`,
         cursor: enableDrag ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
         zIndex: 9999,
         userSelect: 'none',

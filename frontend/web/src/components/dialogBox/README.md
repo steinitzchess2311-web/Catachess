@@ -24,7 +24,7 @@ Last Modified by: Codex
 |-LogoutButton.css legacy logout button styles
 |-MoveModal.tsx moves a workspace node to a destination folder
 |-MoveModal.css move modal folder picker styles
-|-NodeActionsModal.tsx action sheet for workspace nodes
+|-NodeActionsModal.tsx action sheet for workspace nodes with title-only header and body metadata
 |-NodeActionsModal.css action sheet compatibility styles
 |-NodeShareModal.tsx visibility and user sharing dialog
 |-NodeShareModal.css share dialog custom styles

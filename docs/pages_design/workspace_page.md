@@ -34,5 +34,6 @@ Last Modified by: Codex
 - Emoji must not be used as primary interface icons.
 - Each dialog header names the job, not the internal object type twice.
 - Node action menus show metadata plainly; do not hide important details behind hover-only tooltips.
+- Node action headers show type and title only; created/updated dates belong in the body metadata block.
 - Destructive actions use red only for the destructive control and supporting warning state.
 - Share settings use three visibility choices: Public, Private, Shared.

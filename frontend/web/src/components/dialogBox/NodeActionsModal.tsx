@@ -103,9 +103,6 @@ const NodeActionsModal: React.FC<NodeActionsModalProps> = ({
             <div className="cc-dialog-title-block">
               <p className="cc-dialog-kicker">{typeLabel}</p>
               <h3 id="node-actions-title" className="cc-dialog-title">{node.title}</h3>
-              <p className="cc-dialog-subtitle">
-                Modified {formatDate(node.updated_at)}
-              </p>
             </div>
           </div>
           <button type="button" className="cc-dialog-close" onClick={onClose} aria-label="Close">

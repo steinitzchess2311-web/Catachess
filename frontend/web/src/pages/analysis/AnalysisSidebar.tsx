@@ -92,7 +92,7 @@ export function AnalysisSidebar() {
             engineEnabled={engineEnabled}
             lines={formattedLines}
             error={engineAnalysis.error}
-            engineLabel={engineMode === 'auto' ? 'Auto engine' : engineMode === 'stockfish' ? 'Stockfish' : 'AlphaZero'}
+            engineLabel={engineMode === 'auto' ? 'Auto engine' : engineMode === 'stockfish' ? 'Stockfish' : engineMode === 'lc0' ? 'Leela/LC0' : 'AlphaZero'}
           />
         </>
       )}

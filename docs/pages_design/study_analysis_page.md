@@ -3,7 +3,7 @@
 ## header
 Created at: 2026-07-08 20:33 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 23:20 EDT
+Last Modified at: 2026-07-08 23:31 EDT
 Last Modified by: Codex
 
 ## Page Job
@@ -18,7 +18,7 @@ Last Modified by: Codex
 - Right panels should prioritize move tree and explorer workflows with compact tabs and predictable scrolling.
 - Analysis sidebars expose compact controls for Depth, Lines, Engine on/off, and Engine choice.
 - Predictor sidebars expose provider, top-k, Elo, enable control, and probability rows for human-like move prediction.
-- Engine choice options are Auto, Stockfish, and AlphaZero; unavailable engines must report plain errors instead of silently showing another engine's result.
+- Engine choice options are Auto, Stockfish, and Leela/LC0; unavailable engines must report plain errors instead of silently showing another engine's result.
 
 ## Modal Rules
 - Study and analysis workflow modals use the `.patch-modal` family.

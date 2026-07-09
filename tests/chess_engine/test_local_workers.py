@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "backend"))
 from core.chess_engine.local_workers import (
     AlphaZeroWorker,
     CrossProcessSlotLimiter,
+    Lc0Worker,
     LocalStockfishWorker,
     parse_stockfish_info_lines,
 )
@@ -69,6 +70,30 @@ def test_alphazero_unavailable_does_not_fallback_to_stockfish() -> None:
             )
 
     assert "AlphaZero unavailable" in str(exc.value)
+
+
+def test_lc0_capability_reports_missing_runtime() -> None:
+    worker = Lc0Worker(binary_path="/definitely/missing/lc0", weights_path="", max_workers=1, timeout=1)
+
+    capability = worker.capability()
+
+    assert capability.key == "lc0"
+    assert capability.available is False
+    assert capability.concurrency_limit == 1
+    assert "Missing" in capability.detail
+
+
+def test_lc0_unavailable_does_not_fallback_to_stockfish() -> None:
+    worker = Lc0Worker(binary_path="/definitely/missing/lc0", weights_path="", max_workers=1, timeout=1)
+
+    with pytest.raises(ChessEngineError) as exc:
+        worker.analyze(
+            fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            depth=10,
+            multipv=1,
+        )
+
+    assert "LC0 unavailable" in str(exc.value)
 
 
 def test_cross_process_slot_limiter_rejects_second_slot_when_full(tmp_path: Path) -> None:

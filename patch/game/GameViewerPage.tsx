@@ -153,7 +153,7 @@ function GameSidebar({ game }: { game: GameDetail }) {
             lines={formattedLines}
             error={engineAnalysis.error}
             turn={getTurn(state.currentFen) ?? 'w'}
-            engineLabel={engineMode === 'auto' ? 'Auto engine' : engineMode === 'stockfish' ? 'Stockfish' : 'AlphaZero'}
+            engineLabel={engineMode === 'auto' ? 'Auto engine' : engineMode === 'stockfish' ? 'Stockfish' : engineMode === 'lc0' ? 'Leela/LC0' : 'AlphaZero'}
           />
         </div>
       )}

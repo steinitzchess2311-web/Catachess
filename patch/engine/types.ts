@@ -15,7 +15,7 @@ export interface EngineLine {
   pv: string[];
 }
 
-export type EngineMode = 'auto' | 'stockfish' | 'alphazero';
+export type EngineMode = 'auto' | 'stockfish' | 'lc0' | 'alphazero';
 
 export type EngineSource =
   | 'backend'
@@ -23,6 +23,7 @@ export type EngineSource =
   | 'sf-catachess'
   | 'stockfish-wasm'
   | 'local-stockfish'
+  | 'lc0'
   | 'alphazero';
 
 export interface EngineAnalysis {
@@ -36,6 +37,7 @@ export interface EngineAnalysis {
     | 'stockfishWASM'
     | 'SFCata'
     | 'Stockfish'
+    | 'Leela/LC0'
     | 'AlphaZero';
   currentDepth?: number;
   nodes?: number;

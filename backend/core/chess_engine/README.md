@@ -1,7 +1,7 @@
 ## header
 Created at: 2026-07-08 23:05 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 23:30 EDT
+Last Modified at: 2026-07-08 23:31 EDT
 Lst Modified by: Codex
 
 ## brief intro
@@ -11,7 +11,7 @@ Lst Modified by: Codex
 ## folder structure
 |-README.md intro to this folder
 |-client.py engine selection client used by `/api/engine/analyze`
-|-local_workers.py local Stockfish and AlphaZero worker adapters with cross-process concurrency limits
+|-local_workers.py local Stockfish, LC0, and AlphaZero-compatible worker adapters with cross-process concurrency limits
 |-queue.py global request queue with deduplication and bounded workers
 |-schemas.py shared EngineResult and EngineLine models
 |-fallback.py legal-move fallback used only when configured
@@ -20,7 +20,7 @@ Lst Modified by: Codex
 |-spot/ individual HTTP engine spot wrappers and models
 
 ## 代办
-- Install a real AlphaZero model/runtime and set `ALPHAZERO_COMMAND` plus `ALPHAZERO_MODEL_PATH` once GPU drivers are healthy.
+- Install LC0 ROCm binary and set `LC0_WEIGHTS_PATH`; keep AlphaZero command fallback optional.
 
 # Chess Engine Module
 

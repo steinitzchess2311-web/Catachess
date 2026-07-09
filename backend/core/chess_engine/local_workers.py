@@ -337,6 +337,151 @@ class AlphaZeroWorker:
             return False
 
 
+class Lc0Worker:
+    """Leela Chess Zero UCI worker protected by a GPU-aware slot limiter."""
+
+    def __init__(
+        self,
+        binary_path: str | None = None,
+        weights_path: str | None = None,
+        max_workers: int | None = None,
+        timeout: int | None = None,
+    ) -> None:
+        configured_binary = binary_path or settings.LC0_BINARY_PATH
+        self.binary_path = configured_binary or shutil.which("lc0") or "/usr/games/lc0"
+        self.weights_path = weights_path if weights_path is not None else settings.LC0_WEIGHTS_PATH
+        self.max_workers = _positive_int(max_workers or settings.LC0_MAX_WORKERS, 1)
+        self.timeout = _positive_int(timeout or settings.LC0_TIMEOUT, 60)
+        self._slot_limiter = CrossProcessSlotLimiter("lc0", self.max_workers)
+        self._active_workers = 0
+        self._lock = threading.Lock()
+
+    @property
+    def active_workers(self) -> int:
+        with self._lock:
+            return self._active_workers
+
+    def capability(self) -> EngineCapability:
+        binary_exists = bool(self.binary_path and Path(self.binary_path).exists())
+        weights_ready = bool(self.weights_path and Path(self.weights_path).exists())
+        rocm_ready = self._rocm_available()
+        available = binary_exists and weights_ready and rocm_ready
+
+        missing: list[str] = []
+        if not binary_exists:
+            missing.append(f"LC0 binary at {self.binary_path}")
+        if not weights_ready:
+            missing.append("LC0_WEIGHTS_PATH")
+        if not rocm_ready:
+            missing.append("ROCm runtime")
+
+        return EngineCapability(
+            key="lc0",
+            label="Leela/LC0",
+            available=available,
+            status="available" if available else "unavailable",
+            detail=(
+                f"backend={settings.LC0_BACKEND} weights={self.weights_path}"
+                if available
+                else "Missing " + ", ".join(missing)
+            ),
+            concurrency_limit=self.max_workers,
+            active_workers=self.active_workers,
+            binary=self.binary_path,
+        )
+
+    def analyze(self, fen: str, depth: int, multipv: int) -> EngineResult:
+        capability = self.capability()
+        if not capability.available:
+            raise ChessEngineError(f"LC0 unavailable: {capability.detail}")
+
+        start = time.time()
+        with self._slot_limiter.acquire(timeout=self.timeout):
+            with self._lock:
+                self._active_workers += 1
+            try:
+                return self._run_uci(fen=fen, depth=depth, multipv=multipv)
+            finally:
+                with self._lock:
+                    self._active_workers -= 1
+                logger.info(
+                    "[LC0] request finished in %.3fs active=%s/%s",
+                    time.time() - start,
+                    self.active_workers,
+                    self.max_workers,
+                )
+
+    def _run_uci(self, fen: str, depth: int, multipv: int) -> EngineResult:
+        bounded_nodes = max(
+            1,
+            min(int(depth) * settings.LC0_NODES_PER_DEPTH, settings.LC0_MAX_NODES),
+        )
+        bounded_multipv = max(1, min(int(multipv), settings.LC0_MAX_MULTIPV))
+        command = [
+            self.binary_path,
+            "--backend",
+            settings.LC0_BACKEND,
+            "--weights",
+            self.weights_path,
+        ]
+
+        proc = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
+        assert proc.stdin is not None
+        assert proc.stdout is not None
+
+        info_lines: list[str] = []
+        try:
+            LocalStockfishWorker._send(proc, "uci")
+            LocalStockfishWorker._read_until(proc, "uciok", timeout=10)
+            LocalStockfishWorker._send(proc, f"setoption name MultiPV value {bounded_multipv}")
+            LocalStockfishWorker._send(proc, "isready")
+            LocalStockfishWorker._read_until(proc, "readyok", timeout=10)
+            LocalStockfishWorker._send(proc, f"position fen {fen}")
+            LocalStockfishWorker._send(proc, f"go nodes {bounded_nodes}")
+
+            deadline = time.time() + self.timeout
+            while time.time() < deadline:
+                line = proc.stdout.readline()
+                if not line:
+                    break
+                line = line.strip()
+                if line.startswith("info "):
+                    info_lines.append(line)
+                if line.startswith("bestmove"):
+                    break
+
+            if time.time() >= deadline:
+                raise ChessEngineTimeoutError(self.timeout)
+
+            lines = parse_stockfish_info_lines(info_lines, LocalStockfishWorker._fen_turn(fen))
+            if not lines:
+                raise ChessEngineError("No usable LC0 analysis lines")
+            return EngineResult(lines=lines, source="LC0")
+        finally:
+            LocalStockfishWorker._send_quit(proc)
+
+    @staticmethod
+    def _rocm_available() -> bool:
+        try:
+            result = subprocess.run(
+                ["rocminfo"],
+                capture_output=True,
+                text=True,
+                timeout=5,
+            )
+            output = f"{result.stdout}\n{result.stderr}"
+            return result.returncode == 0 and ("gfx" in output or "GPU" in output)
+        except Exception:
+            return False
+
+
 def parse_stockfish_info_lines(info_lines: list[str], turn: str = "w") -> list[EngineLine]:
     """Parse Stockfish UCI info lines into best lines at the deepest depth."""
 
@@ -402,6 +547,7 @@ def _normalize_score_for_white(score: int | str, turn: str) -> int | str:
 
 _stockfish_worker: LocalStockfishWorker | None = None
 _alphazero_worker: AlphaZeroWorker | None = None
+_lc0_worker: Lc0Worker | None = None
 
 
 def get_local_stockfish_worker() -> LocalStockfishWorker:
@@ -418,8 +564,16 @@ def get_alphazero_worker() -> AlphaZeroWorker:
     return _alphazero_worker
 
 
+def get_lc0_worker() -> Lc0Worker:
+    global _lc0_worker
+    if _lc0_worker is None:
+        _lc0_worker = Lc0Worker()
+    return _lc0_worker
+
+
 def get_engine_capabilities() -> list[EngineCapability]:
     return [
         get_local_stockfish_worker().capability(),
+        get_lc0_worker().capability(),
         get_alphazero_worker().capability(),
     ]

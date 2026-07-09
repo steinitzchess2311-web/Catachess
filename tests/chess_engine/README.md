@@ -1,7 +1,7 @@
 ## header
 Created at: 2026-07-08 23:05 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 23:05 EDT
+Last Modified at: 2026-07-08 23:31 EDT
 Lst Modified by: Codex
 
 ## brief intro
@@ -10,7 +10,7 @@ Lst Modified by: Codex
 
 ## folder structure
 |-README.md intro to this folder
-|-test_local_workers.py tests local Stockfish parsing/capability and AlphaZero unavailable semantics
+|-test_local_workers.py tests local Stockfish parsing/capability plus LC0 and AlphaZero unavailable semantics
 |-orchestrator/ tests multi-spot engine routing and failover
 |-spot/ tests individual engine spot models and wrappers
 

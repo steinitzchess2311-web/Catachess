@@ -57,6 +57,14 @@ class Settings(BaseSettings):
     ALPHAZERO_MAX_WORKERS: int = 1
     ALPHAZERO_TIMEOUT: int = 60
     ALPHAZERO_CUDA_VISIBLE_DEVICES: str = "0"
+    LC0_BINARY_PATH: str = "/usr/games/lc0"
+    LC0_WEIGHTS_PATH: str = ""
+    LC0_BACKEND: str = "rocm"
+    LC0_MAX_WORKERS: int = 1
+    LC0_TIMEOUT: int = 60
+    LC0_NODES_PER_DEPTH: int = 64
+    LC0_MAX_NODES: int = 1600
+    LC0_MAX_MULTIPV: int = 5
 
     # ===== human move predictors =====
     PREDICTOR_RATE_LIMIT_PER_MINUTE: int = 20

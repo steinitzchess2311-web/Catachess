@@ -51,6 +51,8 @@ function mapBackendSource(source: string | undefined): EngineAnalysis['source'] 
   if (source === 'sf-catachess') return 'sf-catachess';
   if (source === 'local-stockfish') return 'local-stockfish';
   if (source === 'LocalStockfish') return 'local-stockfish';
+  if (source === 'lc0') return 'lc0';
+  if (source === 'LC0') return 'lc0';
   if (source === 'alphazero') return 'alphazero';
   if (source === 'AlphaZero') return 'alphazero';
   if (source === 'SFCata') return 'sf-catachess';
@@ -84,12 +86,14 @@ async function storeMongoCache(
 
 function backendEngineMode(mode: EngineMode): string {
   if (mode === 'stockfish') return 'stockfish';
+  if (mode === 'lc0') return 'lc0';
   if (mode === 'alphazero') return 'alphazero';
   return 'sf';
 }
 
 function originForMode(mode: EngineMode, source: EngineAnalysis['source']): EngineAnalysis['origin'] {
   if (mode === 'stockfish' || source === 'local-stockfish') return 'Stockfish';
+  if (mode === 'lc0' || source === 'lc0') return 'Leela/LC0';
   if (mode === 'alphazero' || source === 'alphazero') return 'AlphaZero';
   return 'SFCata';
 }

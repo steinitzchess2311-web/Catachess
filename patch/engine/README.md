@@ -1,12 +1,12 @@
 ## header
 Created at: 2026-07-08 23:05 EDT
 Created by: Codex
-Last Modified at: 2026-07-08 23:05 EDT
+Last Modified at: 2026-07-08 23:31 EDT
 Lst Modified by: Codex
 
 ## brief intro
 - goal for this folder: Frontend engine analysis client, browser cache, Stockfish WASM wrapper, and precompute system.
-- 架构思路: Auto mode prefers browser Stockfish WASM for responsive feedback; explicit Stockfish/AlphaZero modes call the backend engine API so server worker limits apply.
+- 架构思路: Auto mode prefers browser Stockfish WASM for responsive feedback; explicit Stockfish and Leela/LC0 modes call the backend engine API so server worker limits apply.
 
 ## folder structure
 |-README.md intro to this folder

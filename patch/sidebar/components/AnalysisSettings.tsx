@@ -75,7 +75,7 @@ export function AnalysisSettings({
         >
           <option value="auto">Auto</option>
           <option value="stockfish">Stockfish</option>
-          <option value="alphazero">AlphaZero</option>
+          <option value="lc0">Leela/LC0</option>
         </select>
       </div>
     </div>

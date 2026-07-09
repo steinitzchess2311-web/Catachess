@@ -12,7 +12,7 @@ import time
 from core.config import settings
 from core.chess_engine.schemas import EngineResult, EngineLine
 from core.chess_engine.fallback import analyze_legal_moves
-from core.chess_engine.local_workers import get_alphazero_worker, get_local_stockfish_worker
+from core.chess_engine.local_workers import get_alphazero_worker, get_lc0_worker, get_local_stockfish_worker
 from core.log.log_chess_engine import logger
 from core.errors import ChessEngineError, ChessEngineTimeoutError
 
@@ -46,9 +46,17 @@ class EngineClient:
             logger.info("[ENGINE CLIENT] Engine override: local Stockfish")
             return get_local_stockfish_worker().analyze(fen, depth, multipv)
 
+        if engine in ("lc0", "leela"):
+            logger.info("[ENGINE CLIENT] Engine override: LC0")
+            return get_lc0_worker().analyze(fen, depth, multipv)
+
         if engine == "alphazero":
-            logger.info("[ENGINE CLIENT] Engine override: AlphaZero")
-            return get_alphazero_worker().analyze(fen, depth, multipv)
+            logger.info("[ENGINE CLIENT] Engine override: AlphaZero-compatible neural engine")
+            try:
+                return get_lc0_worker().analyze(fen, depth, multipv)
+            except Exception as lc0_exc:
+                logger.error(f"[ENGINE CLIENT] LC0 neural engine failed: {lc0_exc}")
+                return get_alphazero_worker().analyze(fen, depth, multipv)
 
         if engine == "sf":
             logger.info("[ENGINE CLIENT] Engine override: local Stockfish")
